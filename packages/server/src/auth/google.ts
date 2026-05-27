@@ -37,7 +37,7 @@ async function getJwksUri(): Promise<string> {
   const res = await fetch(GOOGLE_DISCOVERY);
   if (!res.ok) throw new Error("Failed to fetch Google OIDC discovery");
   const data = await res.json();
-  jwksUri = data.jwks_uri;
+  jwksUri = data.jwks_uri as string;
   return jwksUri;
 }
 

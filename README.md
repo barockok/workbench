@@ -17,6 +17,7 @@ Self-hosted MCP tool aggregator for AI agents.
 
 ```bash
 # Setup
+cp .env.example .env
 npm install
 
 # Dev
@@ -25,9 +26,25 @@ npm run dev
 # Test
 npm run test
 
+# Build
+npm run build
+
 # Docker
 docker-compose up -d
 ```
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill in the required values. See [docs/architecture.md](docs/architecture.md) for details on each variable.
+
+### Google Workspace SSO (optional)
+
+To enable Google Sign-In:
+
+1. Create OAuth 2.0 credentials in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Add `http://localhost:5173/auth/google/callback` as an authorized redirect URI
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env`
+4. Set `SESSION_SECRET` to a random 32+ character string for JWT signing
 
 ## Architecture
 

@@ -32,8 +32,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!config.GOOGLE_CLIENT_ID) {
       return reply.status(503).send({ error: "Google SSO not configured" });
     }
-    const state = crypto.randomUUID();
-    const url = buildAuthUrl(state);
+    const url = buildAuthUrl();
     return { url };
   });
 
