@@ -9,7 +9,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@a-workbench/shared": "workspace:*",
+    "@a-workbench/shared": "*",
     "@modelcontextprotocol/sdk": "^1.29",
     "fastify": "^4.28",
     "better-sqlite3": "^11.5",
