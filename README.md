@@ -69,6 +69,13 @@ export default {
 };
 ```
 
+## TODO
+
+- [ ] Admin docs: how to get credentials (Google app ID, Slack token, Jira OAuth, etc.)
+- [ ] Claude skill: `/run-workbench` — start local dev server
+- [ ] Claude skill: `/new-plugin` — scaffold new integration plugin
+- [ ] Claude skill: `/deploy-workbench` — deploy to production
+
 ## License
 
 MIT
