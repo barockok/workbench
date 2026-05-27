@@ -1,0 +1,15 @@
+{
+  "name": "@a-workbench/sample-oauth",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "fastify": "^4.28"
+  },
+  "devDependencies": {
+    "typescript": "^5.4",
+    "tsx": "^4.15"
+  }
+}
