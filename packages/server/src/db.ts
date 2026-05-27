@@ -13,7 +13,9 @@ export const db = new Database(config.DATABASE_URL);
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
-    api_key_hash TEXT NOT NULL,
+    api_key_hash TEXT,
+    email TEXT UNIQUE,
+    google_sub TEXT UNIQUE,
     is_admin BOOLEAN DEFAULT FALSE,
     created_at INTEGER DEFAULT (unixepoch())
   );
@@ -53,3 +55,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_audit_integration ON audit_log(integration, created_at);
 `);
+
+// Migrations
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN email TEXT`);
+} catch { /* already exists */ }
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN google_sub TEXT`);
+} catch { /* already exists */ }
