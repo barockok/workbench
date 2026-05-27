@@ -23,7 +23,7 @@
     "better-sqlite3": "^11.5",
     "zod": "^3.23",
     "bcryptjs": "^2.4",
-    "jose": "^5.9"
+    "jose": "^6.1"
   },
   "devDependencies": {
     "typescript": "^5.4",
