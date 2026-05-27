@@ -6,3 +6,6 @@ dist/
 coverage/
 data/
 *.db
+.turbo/
+packages/plugins/**/*.js
+packages/plugins/**/*.d.ts
