@@ -5,6 +5,6 @@ export default {
     type: "oauth2",
     authorizationUrl: "https://slack.com/oauth/v2/authorize",
     tokenUrl: "https://slack.com/api/oauth.v2.access",
-    scopes: ["chat:write", "channels:read", "groups:read", "im:read", "mpim:read", "files:write"],
+    scopes: ["chat:write", "channels:read", "groups:read", "im:read", "mpim:read", "files:write", "users:read.email"],
   },
 };
