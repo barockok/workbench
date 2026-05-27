@@ -1,0 +1,6 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY packages/sample-oauth/package.json ./
+RUN npm install
+COPY packages/sample-oauth/src ./src
+CMD ["npx", "tsx", "watch", "src/index.ts"]

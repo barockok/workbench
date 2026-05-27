@@ -10,3 +10,12 @@ services:
       - NODE_ENV=production
     volumes:
       - ./data:/data
+
+  sample-oauth:
+    build:
+      context: .
+      dockerfile: Dockerfile.sample-oauth
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
