@@ -25,6 +25,13 @@ let jwksUri: string | null = null;
 // Nonce storage keyed by state, with automatic expiry (10 minutes)
 const nonceMap = new Map<string, { nonce: string; expiresAt: number }>();
 
+function pruneExpiredNonces(): void {
+  const now = Date.now();
+  for (const [state, entry] of nonceMap) {
+    if (entry.expiresAt < now) nonceMap.delete(state);
+  }
+}
+
 async function getJwksUri(): Promise<string> {
   if (jwksUri) return jwksUri;
   const res = await fetch(GOOGLE_DISCOVERY);
@@ -38,6 +45,9 @@ export function buildAuthUrl(): string {
   if (!config.GOOGLE_CLIENT_ID) {
     throw new Error("GOOGLE_CLIENT_ID not configured");
   }
+
+  // Prune expired nonces before inserting a new one
+  pruneExpiredNonces();
 
   // Generate state and store it in pending_auth
   const state = createAuthState(crypto.randomUUID(), "google-sso");
