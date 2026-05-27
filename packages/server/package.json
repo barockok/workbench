@@ -1,0 +1,26 @@
+{
+  "name": "@a-workbench/server",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@a-workbench/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29",
+    "fastify": "^4.28",
+    "better-sqlite3": "^11.5",
+    "zod": "^3.23",
+    "bcryptjs": "^2.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.4",
+    "vitest": "^1.6",
+    "tsx": "^4.15",
+    "@types/node": "^20",
+    "@types/bcryptjs": "^2.4"
+  }
+}

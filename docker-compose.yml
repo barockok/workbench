@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  a-workbench:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - DATABASE_URL=/data/tokens.db
+      - NODE_ENV=production
+    volumes:
+      - ./data:/data
