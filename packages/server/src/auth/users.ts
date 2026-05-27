@@ -19,3 +19,10 @@ export function verifyApiKey(apiKey: string): string | null {
   }
   return null;
 }
+
+export function getUserById(userId: string): { id: string; email: string | null } | null {
+  const row = db.prepare("SELECT id, email FROM users WHERE id = ?").get(userId) as
+    | { id: string; email: string | null }
+    | undefined;
+  return row ?? null;
+}
