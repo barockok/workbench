@@ -10,6 +10,7 @@ const builtinPlugins = [
   "atlassian-bitbucket",
   "asana",
   "github",
+  "slack",
 ];
 
 function findPluginsBasePath(): string | undefined {
