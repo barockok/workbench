@@ -12,6 +12,7 @@ export function createUser(id: string): { apiKey: string } {
 export function verifyApiKey(apiKey: string): string | null {
   const users = db.prepare("SELECT id, api_key_hash FROM users").all() as { id: string; api_key_hash: string }[];
   for (const user of users) {
+    if (!user.api_key_hash) continue;
     if (bcrypt.compareSync(apiKey, user.api_key_hash)) {
       return user.id;
     }
