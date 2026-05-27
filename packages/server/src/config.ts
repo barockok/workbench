@@ -13,6 +13,14 @@ const configSchema = z.object({
   AUDIT_LOG_DEST: z.enum(["sqlite", "stdout", "kafka"]).default("sqlite"),
   AUDIT_LOG_KAFKA_BROKERS: z.string().optional(),
   AUDIT_LOG_KAFKA_TOPIC: z.string().default("audit-log"),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  SESSION_SECRET: z.string().min(32).default(
+    process.env.NODE_ENV === "test"
+      ? "test-session-secret-32-chars-long!!"
+      : ""
+  ),
+  PORTAL_URL: z.string().url().default("http://localhost:5173"),
 });
 
 export const config = configSchema.parse(process.env);
