@@ -23,11 +23,12 @@ Self-hosted MCP tool aggregator for AI agents (Claude Code, etc.) with per-user 
 - [x] Sample OAuth app for testing
 - [x] CLAUDE.md + docs (architecture, usage, onboarding)
 - [x] Tests: 18 passing across 7 test files
-- [x] **Plugins: Google (Gmail, Drive, Sheets, Calendar, Gemini)**
-- [x] **Plugins: Atlassian (Jira, Confluence, Bitbucket)**
-- [x] **Plugins: Asana**
-- [x] **Plugins: GitHub**
-- [x] **Plugins: Slack**
+- [x] **Plugins: Google (25 tools)**
+- [x] **Plugins: Atlassian — Jira (6), Confluence (6), Bitbucket (5)**
+- [x] **Plugins: Asana (5)**
+- [x] **Plugins: GitHub (9)**
+- [x] **Plugins: Slack (12)**
+- [x] **Gap closure: 68 tools total (was 31)**
 - [x] **Telemetry: OpenTelemetry tracing**
 
 ## Git History
@@ -44,10 +45,11 @@ b8d73bf chore: init monorepo with turbo
 
 ## Stats
 - 120+ files
-- 15 commits
+- 16 commits
 - 18 tests passing
 - 7 test files
-- 6 built-in plugins
+- 7 built-in plugins
+- 68 tools total (was 31)
 
 ## Commands
 ```bash
