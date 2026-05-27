@@ -11,7 +11,6 @@ const builtinPlugins = [
   "asana",
   "github",
   "slack",
-  "postgres",
 ];
 
 function findPluginsBasePath(): string | undefined {
