@@ -5,12 +5,19 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test": "NODE_ENV=test vitest run",
+    "test:coverage": "NODE_ENV=test vitest run --coverage"
   },
   "dependencies": {
     "@a-workbench/shared": "*",
     "@modelcontextprotocol/sdk": "^1.29",
+    "@opentelemetry/api": "^1.8",
+    "@opentelemetry/sdk-node": "^0.51",
+    "@opentelemetry/sdk-trace-node": "^1.24",
+    "@opentelemetry/auto-instrumentations-node": "^0.47",
+    "@opentelemetry/resources": "^1.24",
+    "@opentelemetry/semantic-conventions": "^1.24",
+    "@opentelemetry/instrumentation-http": "^0.51",
     "fastify": "^4.28",
     "better-sqlite3": "^11.5",
     "zod": "^3.23",

@@ -22,7 +22,12 @@ Self-hosted MCP tool aggregator for AI agents (Claude Code, etc.) with per-user 
 - [x] /prep-release slash command
 - [x] Sample OAuth app for testing
 - [x] CLAUDE.md + docs (architecture, usage, onboarding)
-- [x] Tests: 15 passing across 6 test files
+- [x] Tests: 18 passing across 7 test files
+- [x] **Plugins: Google (Gmail, Drive, Sheets, Calendar, Gemini)**
+- [x] **Plugins: Atlassian (Jira, Confluence, Bitbucket)**
+- [x] **Plugins: Asana**
+- [x] **Plugins: GitHub**
+- [x] **Telemetry: OpenTelemetry tracing**
 
 ## Git History
 ```
@@ -37,16 +42,17 @@ b8d73bf chore: init monorepo with turbo
 ```
 
 ## Stats
-- 101 files
-- 8 commits
-- 15 tests passing
-- 6 test files
+- 120+ files
+- 15 commits
+- 18 tests passing
+- 7 test files
+- 6 built-in plugins
 
 ## Commands
 ```bash
 cd workspace/a-workbench
 npm install              # install deps
-ENCRYPTION_KEY=$(openssl rand -hex 32) npm run test  # run tests
+npm run test             # run tests (auto-sets test env)
 npm run build            # production build
 docker-compose up -d     # run with Docker
 ```
@@ -56,9 +62,16 @@ docker-compose up -d     # run with Docker
 a-workbench/
 ├── packages/
 │   ├── shared/            # shared types + schemas
-│   ├── server/            # Fastify + MCP + auth + plugins
+│   ├── server/            # Fastify + MCP + auth + plugins + telemetry
 │   ├── portal/            # React connection management UI
 │   └── sample-oauth/      # test OAuth provider
+├── packages/plugins/      # built-in integrations
+│   ├── google/            # Gmail, Drive, Sheets, Calendar, Gemini
+│   ├── atlassian-jira/    # createIssue, searchIssues, getIssue
+│   ├── atlassian-confluence/  # createPage, searchPages
+│   ├── atlassian-bitbucket/   # listRepos, createPR
+│   ├── asana/             # createTask, listTasks
+│   └── github/            # listRepos, createIssue, createPR
 ├── .github/workflows/     # CI/CD
 ├── .claude/commands/      # /prep-release slash command
 ├── docs/                  # architecture, usage, onboarding

@@ -3,6 +3,7 @@ import { registry } from "../plugins/registry";
 import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
 import { getToken } from "../auth/tokens";
+import { withSpan } from "../telemetry/tracing";
 
 export const metaTools = [
   {
@@ -38,64 +39,70 @@ export const metaTools = [
       args: z.record(z.unknown()),
     }),
     handler: async (ctx: { userId: string }, args: { tool: string; args: Record<string, unknown> }) => {
-      const start = Date.now();
-      const tool = registry.getTool(args.tool);
+      const targetTool = registry.getTool(args.tool);
+      return withSpan(
+        "execute_tool",
+        async () => {
+          const start = Date.now();
 
-      if (!tool) {
-        await auditLogger.log({
-          user_id: ctx.userId,
-          tool: args.tool,
-          action: "EXECUTE",
-          success: false,
-          error: "Tool not found",
-          duration_ms: Date.now() - start,
-        });
-        return { error: "Tool not found" };
-      }
+          if (!targetTool) {
+            await auditLogger.log({
+              user_id: ctx.userId,
+              tool: args.tool,
+              action: "EXECUTE",
+              success: false,
+              error: "Tool not found",
+              duration_ms: Date.now() - start,
+            });
+            return { error: "Tool not found" };
+          }
 
-      const token = getToken(ctx.userId, tool.integration);
-      if (!token) {
-        await auditLogger.log({
-          user_id: ctx.userId,
-          integration: tool.integration,
-          tool: args.tool,
-          action: "EXECUTE",
-          success: false,
-          error: "NOT_CONNECTED",
-          duration_ms: Date.now() - start,
-        });
-        return {
-          error: "NOT_CONNECTED",
-          integration: tool.integration,
-          message: `${tool.integration} not connected. Use get_auth_url('${tool.integration}') to connect.`,
-        };
-      }
+          const token = getToken(ctx.userId, targetTool.integration);
+          if (!token) {
+            await auditLogger.log({
+              user_id: ctx.userId,
+              integration: targetTool.integration,
+              tool: args.tool,
+              action: "EXECUTE",
+              success: false,
+              error: "NOT_CONNECTED",
+              duration_ms: Date.now() - start,
+            });
+            return {
+              error: "NOT_CONNECTED",
+              integration: targetTool.integration,
+              message: `${targetTool.integration} not connected. Use get_auth_url('${targetTool.integration}') to connect.`,
+            };
+          }
 
-      try {
-        const toolCtx = createContext(ctx.userId, tool.integration);
-        const result = await tool.handler(toolCtx, args.args);
-        await auditLogger.log({
-          user_id: ctx.userId,
-          integration: tool.integration,
-          tool: args.tool,
-          action: "EXECUTE",
-          success: true,
-          duration_ms: Date.now() - start,
-        });
-        return { result };
-      } catch (e) {
-        const err = e instanceof Error ? e.message : String(e);
-        await auditLogger.log({
-          user_id: ctx.userId,
-          integration: tool.integration,
-          tool: args.tool,
-          action: "EXECUTE",
-          success: false,
-          error: err,
-          duration_ms: Date.now() - start,
-        });
-        return { error: err };
-      }
+          try {
+            const toolCtx = createContext(ctx.userId, targetTool.integration);
+            const result = await targetTool.handler(toolCtx, args.args);
+            await auditLogger.log({
+              user_id: ctx.userId,
+              integration: targetTool.integration,
+              tool: args.tool,
+              action: "EXECUTE",
+              success: true,
+              duration_ms: Date.now() - start,
+            });
+            return { result };
+          } catch (e) {
+            const err = e instanceof Error ? e.message : String(e);
+            await auditLogger.log({
+              user_id: ctx.userId,
+              integration: targetTool.integration,
+              tool: args.tool,
+              action: "EXECUTE",
+              success: false,
+              error: err,
+              duration_ms: Date.now() - start,
+            });
+            return { error: err };
+          }
+        },
+        { tool: args.tool, integration: targetTool?.integration || "unknown" }
+      );
     },
   },
   {
