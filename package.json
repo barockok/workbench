@@ -2,7 +2,10 @@
   "name": "a-workbench",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "packageManager": "npm@10.2.0",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
@@ -11,5 +14,14 @@
   },
   "devDependencies": {
     "turbo": "^2.9"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.76.0",
+    "@opentelemetry/instrumentation-http": "^0.218.0",
+    "@opentelemetry/resources": "^2.7.1",
+    "@opentelemetry/sdk-node": "^0.218.0",
+    "@opentelemetry/sdk-trace-node": "^2.7.1",
+    "@opentelemetry/semantic-conventions": "^1.41.1"
   }
 }

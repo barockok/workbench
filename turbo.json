@@ -1,8 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": { "dependsOn": ["^build"] },
-    "test": { "dependsOn": ["build"] },
+    "test": { "dependsOn": ["build"], "env": ["ENCRYPTION_KEY", "NODE_ENV"] },
     "lint": {},
     "dev": { "cache": false, "persistent": true }
   }
