@@ -70,3 +70,124 @@ export const createPR = {
     return res.json();
   },
 };
+
+export const getRepo = {
+  name: "github_get_repo",
+  description: "Get a GitHub repository by owner and name",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(`https://api.github.com/repos/${args.owner}/${args.repo}`);
+    return res.json();
+  },
+};
+
+export const getContent = {
+  name: "github_get_content",
+  description: "Get contents of a file or directory in a GitHub repo",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    path: z.string().default(""),
+    ref: z.string().optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("path", args.path);
+    if (args.ref) params.set("ref", args.ref);
+    const res = await ctx.http(`https://api.github.com/repos/${args.owner}/${args.repo}/contents/${args.path}?${params}`);
+    return res.json();
+  },
+};
+
+export const listCommits = {
+  name: "github_list_commits",
+  description: "List commits in a GitHub repository",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    sha: z.string().optional(),
+    perPage: z.number().default(30),
+    page: z.number().default(1),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    if (args.sha) params.set("sha", args.sha);
+    params.set("per_page", String(args.perPage));
+    params.set("page", String(args.page));
+    const res = await ctx.http(`https://api.github.com/repos/${args.owner}/${args.repo}/commits?${params}`);
+    return res.json();
+  },
+};
+
+export const listBranches = {
+  name: "github_list_branches",
+  description: "List branches in a GitHub repository",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    perPage: z.number().default(30),
+    page: z.number().default(1),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("per_page", String(args.perPage));
+    params.set("page", String(args.page));
+    const res = await ctx.http(`https://api.github.com/repos/${args.owner}/${args.repo}/branches?${params}`);
+    return res.json();
+  },
+};
+
+export const createOrUpdateFile = {
+  name: "github_create_or_update_file",
+  description: "Create or update a file in a GitHub repository",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    path: z.string(),
+    message: z.string(),
+    content: z.string(),
+    sha: z.string().optional(),
+    branch: z.string().default("main"),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const body: any = {
+      message: args.message,
+      content: Buffer.from(args.content).toString("base64"),
+      branch: args.branch,
+    };
+    if (args.sha) body.sha = args.sha;
+    const res = await ctx.http(`https://api.github.com/repos/${args.owner}/${args.repo}/contents/${args.path}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  },
+};
+
+export const listReleases = {
+  name: "github_list_releases",
+  description: "List releases for a GitHub repository",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    perPage: z.number().default(30),
+    page: z.number().default(1),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("per_page", String(args.perPage));
+    params.set("page", String(args.page));
+    const res = await ctx.http(`https://api.github.com/repos/${args.owner}/${args.repo}/releases?${params}`);
+    return res.json();
+  },
+};

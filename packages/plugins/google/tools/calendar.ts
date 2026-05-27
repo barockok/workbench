@@ -46,3 +46,78 @@ export const createEvent = {
     return res.json();
   },
 };
+
+export const getEvent = {
+  name: "google_calendar_get_event",
+  description: "Get a specific Google Calendar event",
+  integration: "google",
+  inputSchema: z.object({
+    calendarId: z.string().default("primary"),
+    eventId: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(args.calendarId)}/events/${args.eventId}`
+    );
+    return res.json();
+  },
+};
+
+export const updateEvent = {
+  name: "google_calendar_update_event",
+  description: "Update a Google Calendar event",
+  integration: "google",
+  inputSchema: z.object({
+    calendarId: z.string().default("primary"),
+    eventId: z.string(),
+    summary: z.string().optional(),
+    start: z.object({ dateTime: z.string() }).optional(),
+    end: z.object({ dateTime: z.string() }).optional(),
+    description: z.string().optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const { calendarId, eventId, ...body } = args;
+    const res = await ctx.http(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${eventId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    return res.json();
+  },
+};
+
+export const deleteEvent = {
+  name: "google_calendar_delete_event",
+  description: "Delete a Google Calendar event",
+  integration: "google",
+  inputSchema: z.object({
+    calendarId: z.string().default("primary"),
+    eventId: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(args.calendarId)}/events/${args.eventId}`,
+      { method: "DELETE" }
+    );
+    if (res.status === 204) return { success: true };
+    return res.json();
+  },
+};
+
+export const listCalendars = {
+  name: "google_calendar_list_calendars",
+  description: "List all Google Calendars for the user",
+  integration: "google",
+  inputSchema: z.object({
+    maxResults: z.number().default(10),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("maxResults", String(args.maxResults));
+    const res = await ctx.http(`https://www.googleapis.com/calendar/v3/users/me/calendarList?${params}`);
+    return res.json();
+  },
+};

@@ -47,3 +47,53 @@ export const createPR = {
     return res.json();
   },
 };
+
+export const getRepo = {
+  name: "bitbucket_get_repo",
+  description: "Get a Bitbucket repository",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(`https://api.bitbucket.org/2.0/repositories/${args.workspace}/${args.repoSlug}`);
+    return res.json();
+  },
+};
+
+export const listPRs = {
+  name: "bitbucket_list_prs",
+  description: "List pull requests in a Bitbucket repository",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    state: z.enum(["OPEN", "MERGED", "DECLINED", "SUPERSEDED"]).default("OPEN"),
+    page: z.number().default(1),
+    pagelen: z.number().default(10),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("state", args.state);
+    params.set("page", String(args.page));
+    params.set("pagelen", String(args.pagelen));
+    const res = await ctx.http(`https://api.bitbucket.org/2.0/repositories/${args.workspace}/${args.repoSlug}/pullrequests?${params}`);
+    return res.json();
+  },
+};
+
+export const getPR = {
+  name: "bitbucket_get_pr",
+  description: "Get a specific Bitbucket pull request",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    pullRequestId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(`https://api.bitbucket.org/2.0/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.pullRequestId}`);
+    return res.json();
+  },
+};
