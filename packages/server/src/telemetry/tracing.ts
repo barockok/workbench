@@ -1,14 +1,14 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
+import { Resource } from "@opentelemetry/resources";
+import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { trace, SpanStatusCode } from "@opentelemetry/api";
 
-const resource = resourceFromAttributes({
-  [ATTR_SERVICE_NAME]: "a-workbench",
-  [ATTR_SERVICE_VERSION]: "0.1.0",
+const resource = new Resource({
+  [SemanticResourceAttributes.SERVICE_NAME]: "a-workbench",
+  [SemanticResourceAttributes.SERVICE_VERSION]: "0.1.0",
 });
 
 const provider = new NodeTracerProvider({ resource });

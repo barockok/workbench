@@ -21,7 +21,8 @@
     "fastify": "^4.28",
     "better-sqlite3": "^11.5",
     "zod": "^3.23",
-    "bcryptjs": "^2.4"
+    "bcryptjs": "^2.4",
+    "pg": "^8.21"
   },
   "devDependencies": {
     "typescript": "^5.4",
