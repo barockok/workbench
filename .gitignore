@@ -9,3 +9,4 @@ data/
 .turbo/
 packages/plugins/**/*.js
 packages/plugins/**/*.d.ts
+.handoff

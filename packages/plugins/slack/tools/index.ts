@@ -161,3 +161,69 @@ export const sendDM = {
     return res.json();
   },
 };
+
+export const searchAll = {
+  name: "slack_search_all",
+  description: "Search messages and files across Slack",
+  integration: "slack",
+  inputSchema: z.object({
+    query: z.string(),
+    count: z.number().default(20),
+    page: z.number().default(1),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("query", args.query);
+    params.set("count", String(args.count));
+    params.set("page", String(args.page));
+    const res = await ctx.http(`https://slack.com/api/search.all?${params}`);
+    return res.json();
+  },
+};
+
+export const listUsers = {
+  name: "slack_list_users",
+  description: "List all users in the Slack workspace",
+  integration: "slack",
+  inputSchema: z.object({
+    limit: z.number().default(100),
+    cursor: z.string().optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("limit", String(args.limit));
+    if (args.cursor) params.set("cursor", args.cursor);
+    const res = await ctx.http(`https://slack.com/api/users.list?${params}`);
+    return res.json();
+  },
+};
+
+export const findUsers = {
+  name: "slack_find_users",
+  description: "Find Slack users by name",
+  integration: "slack",
+  inputSchema: z.object({
+    query: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("query", args.query);
+    const res = await ctx.http(`https://slack.com/api/users.lookupByEmail?${params}`);
+    if (!res.ok) {
+      // Fallback to search if lookupByEmail fails
+      const searchParams = new URLSearchParams();
+      searchParams.set("query", args.query);
+      const searchRes = await ctx.http(`https://slack.com/api/users.list?${searchParams}`);
+      const data = await searchRes.json();
+      if (data.members) {
+        const filtered = data.members.filter((u: any) =>
+          u.name?.toLowerCase().includes(args.query.toLowerCase()) ||
+          u.real_name?.toLowerCase().includes(args.query.toLowerCase())
+        );
+        return { ok: true, members: filtered };
+      }
+      return data;
+    }
+    return res.json();
+  },
+};
