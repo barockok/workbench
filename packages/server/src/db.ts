@@ -59,7 +59,11 @@ db.exec(`
 // Migrations
 try {
   db.exec(`ALTER TABLE users ADD COLUMN email TEXT`);
-} catch { /* already exists */ }
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
 try {
   db.exec(`ALTER TABLE users ADD COLUMN google_sub TEXT`);
-} catch { /* already exists */ }
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
