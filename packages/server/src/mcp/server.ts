@@ -95,7 +95,7 @@ const metaTools = [
   },
 ];
 
-export async function handleMcpRequest(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+export async function handleMcpRequest(body: Record<string, unknown>, userId: string): Promise<Record<string, unknown>> {
   const { method, params, id } = body;
 
   if (method === "tools/list") {
@@ -132,7 +132,7 @@ export async function handleMcpRequest(body: Record<string, unknown>): Promise<R
       };
     }
 
-    const result = await tool.handler({ userId: "anonymous" }, parsed.data as any);
+    const result = await tool.handler({ userId }, parsed.data as any);
     return {
       jsonrpc: "2.0",
       id,
