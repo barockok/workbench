@@ -2,6 +2,7 @@ import { jwtVerify, createRemoteJWKSet } from "jose";
 import { config } from "../config";
 import { db } from "../db";
 import crypto from "crypto";
+import { createAuthState, verifyAuthState } from "./oauth";
 
 const GOOGLE_DISCOVERY = "https://accounts.google.com/.well-known/openid-configuration";
 
@@ -21,6 +22,9 @@ interface GoogleIdToken {
 
 let jwksUri: string | null = null;
 
+// Nonce storage keyed by state, with automatic expiry (10 minutes)
+const nonceMap = new Map<string, { nonce: string; expiresAt: number }>();
+
 async function getJwksUri(): Promise<string> {
   if (jwksUri) return jwksUri;
   const res = await fetch(GOOGLE_DISCOVERY);
@@ -30,10 +34,18 @@ async function getJwksUri(): Promise<string> {
   return jwksUri;
 }
 
-export function buildAuthUrl(state: string): string {
+export function buildAuthUrl(): string {
   if (!config.GOOGLE_CLIENT_ID) {
     throw new Error("GOOGLE_CLIENT_ID not configured");
   }
+
+  // Generate state and store it in pending_auth
+  const state = createAuthState(crypto.randomUUID(), "google-sso");
+
+  // Generate nonce and store it keyed by state
+  const nonce = crypto.randomBytes(16).toString("hex");
+  nonceMap.set(state, { nonce, expiresAt: Date.now() + 10 * 60 * 1000 });
+
   const redirectUri = `${config.PORTAL_URL}/auth/google/callback`;
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", config.GOOGLE_CLIENT_ID);
@@ -41,6 +53,7 @@ export function buildAuthUrl(state: string): string {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("scope", "openid email profile");
   url.searchParams.set("state", state);
+  url.searchParams.set("nonce", nonce);
   url.searchParams.set("access_type", "online");
   return url.toString();
 }
@@ -68,7 +81,7 @@ export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens>
   return res.json();
 }
 
-export async function verifyGoogleIdToken(idToken: string): Promise<GoogleIdToken> {
+export async function verifyGoogleIdToken(idToken: string, expectedNonce?: string): Promise<GoogleIdToken> {
   const uri = await getJwksUri();
   const JWKS = createRemoteJWKSet(new URL(uri));
   const { payload } = await jwtVerify(idToken, JWKS, {
@@ -79,6 +92,9 @@ export async function verifyGoogleIdToken(idToken: string): Promise<GoogleIdToke
   if (!payload.sub || !payload.email) {
     throw new Error("Invalid ID token payload");
   }
+  if (expectedNonce !== undefined && payload.nonce !== expectedNonce) {
+    throw new Error("Invalid nonce");
+  }
   return {
     sub: payload.sub,
     email: payload.email as string,
@@ -88,9 +104,22 @@ export async function verifyGoogleIdToken(idToken: string): Promise<GoogleIdToke
   };
 }
 
-export async function handleCallback(code: string, _state: string): Promise<{ userId: string; email: string }> {
+export async function handleCallback(code: string, state: string): Promise<{ userId: string; email: string }> {
+  // Verify state to prevent CSRF
+  const authState = verifyAuthState(state);
+  if (!authState || authState.integration !== "google-sso") {
+    throw new Error("Invalid state");
+  }
+
+  // Look up and consume nonce to prevent ID token replay
+  const nonceEntry = nonceMap.get(state);
+  if (!nonceEntry || nonceEntry.expiresAt < Date.now()) {
+    throw new Error("Invalid or expired nonce");
+  }
+  nonceMap.delete(state);
+
   const tokens = await exchangeCodeForTokens(code);
-  const googleUser = await verifyGoogleIdToken(tokens.id_token);
+  const googleUser = await verifyGoogleIdToken(tokens.id_token, nonceEntry.nonce);
 
   if (!googleUser.email_verified) {
     throw new Error("Email not verified");
