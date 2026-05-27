@@ -27,6 +27,7 @@ Self-hosted MCP tool aggregator for AI agents (Claude Code, etc.) with per-user 
 - [x] **Plugins: Atlassian (Jira, Confluence, Bitbucket)**
 - [x] **Plugins: Asana**
 - [x] **Plugins: GitHub**
+- [x] **Plugins: Slack**
 - [x] **Telemetry: OpenTelemetry tracing**
 
 ## Git History
