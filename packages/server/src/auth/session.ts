@@ -13,13 +13,19 @@ export async function signSession(payload: SessionPayload, expiresInHours = 24):
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${expiresInHours}h`)
+    .setAudience("a-workbench")
+    .setIssuer("a-workbench")
     .sign(secret);
 }
 
 export async function verifySession(token: string): Promise<SessionPayload> {
-  const { payload } = await jwtVerify(token, secret, { clockTolerance: 60 });
-  if (!payload.sub || !payload.email) {
+  const { payload } = await jwtVerify(token, secret, {
+    clockTolerance: 5,
+    audience: "a-workbench",
+    issuer: "a-workbench",
+  });
+  if (typeof payload.sub !== "string" || typeof payload.email !== "string") {
     throw new Error("Invalid session payload");
   }
-  return { userId: payload.sub, email: payload.email as string };
+  return { userId: payload.sub, email: payload.email };
 }
