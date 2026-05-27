@@ -10,9 +10,19 @@ interface Props {
   onSuccess: () => void;
 }
 
+function isSafeLoginUrl(raw: string): boolean {
+  try {
+    const u = new URL(raw);
+    return u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default function CookieAuthPopup({ integration, loginUrl, sessionId, onClose, onSuccess }: Props) {
   const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const safeLogin = isSafeLoginUrl(loginUrl);
 
   async function handleCapture() {
     setCapturing(true);
@@ -47,12 +57,19 @@ export default function CookieAuthPopup({ integration, loginUrl, sessionId, onCl
         </div>
 
         <div className="flex-1 min-h-[400px]">
-          <iframe
-            src={loginUrl}
-            className="w-full h-full min-h-[400px] border-0"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            title={`${integration} login`}
-          />
+          {safeLogin ? (
+            <iframe
+              src={loginUrl}
+              className="w-full h-full min-h-[400px] border-0"
+              sandbox="allow-scripts allow-forms"
+              referrerPolicy="no-referrer"
+              title={`${integration} login`}
+            />
+          ) : (
+            <div className="p-4 text-sm text-red-700 bg-red-50">
+              Refusing to render login: loginUrl is not https.
+            </div>
+          )}
         </div>
 
         {error && (
