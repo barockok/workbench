@@ -24,10 +24,11 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL,
     integration TEXT NOT NULL,
-    access_token BLOB NOT NULL,
+    access_token BLOB,
     refresh_token BLOB,
     expires_at INTEGER,
     scopes TEXT,
+    cookies BLOB,
     created_at INTEGER DEFAULT (unixepoch()),
     updated_at INTEGER DEFAULT (unixepoch()),
     UNIQUE(user_id, integration)
@@ -64,6 +65,16 @@ try {
 }
 try {
   db.exec(`ALTER TABLE users ADD COLUMN google_sub TEXT`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
+try {
+  db.exec(`ALTER TABLE connections ADD COLUMN cookies BLOB`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
+try {
+  db.exec(`ALTER TABLE pending_auth ADD COLUMN session_data TEXT`);
 } catch (e: any) {
   if (!e.message?.includes("duplicate column name")) throw e;
 }

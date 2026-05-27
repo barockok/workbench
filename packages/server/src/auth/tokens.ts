@@ -50,3 +50,10 @@ export function getToken(userId: string, integration: string): TokenData | null 
 export function deleteToken(userId: string, integration: string): void {
   db.prepare("DELETE FROM connections WHERE user_id = ? AND integration = ?").run(userId, integration);
 }
+
+export function hasConnection(userId: string, integration: string): boolean {
+  const row = db.prepare(
+    "SELECT 1 FROM connections WHERE user_id = ? AND integration = ? AND (access_token IS NOT NULL OR cookies IS NOT NULL)"
+  ).get(userId, integration) as { 1: number } | undefined;
+  return !!row;
+}

@@ -6,6 +6,15 @@ import { verifyApiKey, getUserById } from "../auth/users";
 import { buildAuthUrl, handleCallback } from "../auth/google";
 import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
+import { getToken } from "../auth/tokens";
+import {
+  startCookieSession,
+  captureCookies,
+  closeCookieSession,
+  storeCookies,
+  hasValidCookies,
+  getSessionOwner,
+} from "../auth/cookie";
 
 async function authenticate(request: { headers: { authorization?: string } }): Promise<{ userId: string } | null> {
   const auth = request.headers.authorization;
@@ -97,7 +106,87 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(401).send({ error: "Unauthorized" });
     }
     const { integration } = request.params as { integration: string };
+    const integ = registry.getIntegration(integration);
+    if (!integ) {
+      return reply.status(404).send({ error: "Integration not found" });
+    }
+
+    if (integ.auth.type === "cookie") {
+      const { sessionId, cdpUrl } = await startCookieSession(
+        user.userId,
+        integration,
+        integ.auth.loginUrl,
+        integ.auth.targetDomain,
+        integ.auth.cookieDomains
+      );
+      return { type: "cookie", sessionId, cdpUrl, loginUrl: integ.auth.loginUrl };
+    }
+
     const state = createAuthState(user.userId, integration);
     return { state };
+  });
+
+  // Cookie auth capture
+  app.post("/api/auth/cookie/:integration/capture", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const { integration } = request.params as { integration: string };
+    const { sessionId } = request.body as { sessionId: string };
+
+    const owner = getSessionOwner(sessionId);
+    if (!owner || owner.userId !== user.userId || owner.integration !== integration) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
+
+    try {
+      const cookies = await captureCookies(sessionId);
+      storeCookies(user.userId, integration, cookies);
+      await closeCookieSession(sessionId);
+      return { success: true, cookieCount: cookies.cookies.length };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
+  });
+
+  // Cookie auth cancel
+  app.post("/api/auth/cookie/:integration/cancel", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const { integration } = request.params as { integration: string };
+    const { sessionId } = request.body as { sessionId: string };
+
+    const owner = getSessionOwner(sessionId);
+    if (!owner || owner.userId !== user.userId || owner.integration !== integration) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
+
+    await closeCookieSession(sessionId);
+    return { success: true };
+  });
+
+  // Connection status per integration
+  app.get("/api/connections", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const integrations = registry.listIntegrations();
+    return {
+      connections: integrations.map((i) => ({
+        name: i.name,
+        connected:
+          i.auth.type === "cookie"
+            ? hasValidCookies(user.userId, i.name)
+            : !!getToken(user.userId, i.name),
+      })),
+    };
   });
 }
