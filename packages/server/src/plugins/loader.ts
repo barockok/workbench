@@ -11,6 +11,7 @@ const builtinPlugins = [
   "asana",
   "github",
   "slack",
+  "httpbin-cookie",
 ];
 
 function findPluginsBasePath(): string | undefined {

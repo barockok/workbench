@@ -3,6 +3,7 @@ import { registry } from "../plugins/registry";
 import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
 import { getToken } from "../auth/tokens";
+import { hasValidCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 
 export const metaTools = [
@@ -57,8 +58,12 @@ export const metaTools = [
             return { error: "Tool not found" };
           }
 
-          const token = getToken(ctx.userId, targetTool.integration);
-          if (!token) {
+          const integ = registry.getIntegration(targetTool.integration);
+          const isConnected = integ?.auth.type === "cookie"
+            ? hasValidCookies(ctx.userId, targetTool.integration)
+            : !!getToken(ctx.userId, targetTool.integration);
+
+          if (!isConnected) {
             await auditLogger.log({
               user_id: ctx.userId,
               integration: targetTool.integration,
@@ -115,7 +120,10 @@ export const metaTools = [
         integrations: integrations.map((i) => ({
           name: i.name,
           version: i.version,
-          connected: !!getToken(ctx.userId, i.name),
+          connected:
+            i.auth.type === "cookie"
+              ? hasValidCookies(ctx.userId, i.name)
+              : !!getToken(ctx.userId, i.name),
         })),
       };
     },
@@ -125,6 +133,17 @@ export const metaTools = [
     description: "Get OAuth URL to connect an integration",
     inputSchema: z.object({ integration: z.string() }),
     handler: async (ctx: { userId: string }, args: { integration: string }) => {
+      const integration = registry.getIntegration(args.integration);
+      if (!integration) return { error: "Integration not found" };
+
+      if (integration.auth.type === "cookie") {
+        return {
+          type: "cookie",
+          url: `/api/auth/${args.integration}?user=${ctx.userId}`,
+          instructions: `Open the URL, log in to ${integration.auth.loginUrl}, then confirm.`,
+        };
+      }
+
       return {
         url: `/api/auth/${args.integration}?user=${ctx.userId}`,
       };

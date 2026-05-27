@@ -1,7 +1,7 @@
 export interface Integration {
   name: string;
   version: string;
-  auth: OAuthConfig | ApiKeyConfig | NoneConfig;
+  auth: OAuthConfig | ApiKeyConfig | CookieConfig | NoneConfig;
 }
 
 export interface OAuthConfig {
@@ -14,6 +14,13 @@ export interface OAuthConfig {
 export interface ApiKeyConfig {
   type: "apikey";
   headerName: string;
+}
+
+export interface CookieConfig {
+  type: "cookie";
+  loginUrl: string;
+  targetDomain: string;
+  cookieDomains?: string[];
 }
 
 export interface NoneConfig {

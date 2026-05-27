@@ -30,6 +30,8 @@ Self-hosted MCP tool aggregator for AI agents (Claude Code, etc.) with per-user 
 - [x] **Plugins: Slack (12)**
 - [x] **Gap closure: 68 tools total (was 31)**
 - [x] **Telemetry: OpenTelemetry tracing**
+- [x] **Cookie auth: HITL browser-based authentication with Playwright**
+- [x] **Sample plugin: httpbin-cookie for testing cookie auth flow**
 
 ## Git History
 ```
@@ -44,12 +46,12 @@ b8d73bf chore: init monorepo with turbo
 ```
 
 ## Stats
-- 120+ files
+- 130+ files
 - 16 commits
-- 18 tests passing
-- 7 test files
-- 7 built-in plugins
-- 68 tools total (was 31)
+- 33 tests passing
+- 9 test files
+- 8 built-in plugins
+- 71 tools total
 
 ## Commands
 ```bash
@@ -74,7 +76,8 @@ a-workbench/
 │   ├── atlassian-confluence/  # createPage, searchPages
 │   ├── atlassian-bitbucket/   # listRepos, createPR
 │   ├── asana/             # createTask, listTasks
-│   └── github/            # listRepos, createIssue, createPR
+│   ├── github/            # listRepos, createIssue, createPR
+│   └── httpbin-cookie/    # sample cookie-auth plugin (getCookies, setCookie, getHeaders)
 ├── .github/workflows/     # CI/CD
 ├── .claude/commands/      # /prep-release slash command
 ├── docs/                  # architecture, usage, onboarding

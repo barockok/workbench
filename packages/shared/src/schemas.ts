@@ -32,6 +32,12 @@ export const integrationSchema = z.object({
       headerName: z.string(),
     }),
     z.object({
+      type: z.literal("cookie"),
+      loginUrl: z.string().url(),
+      targetDomain: z.string(),
+      cookieDomains: z.array(z.string()).optional(),
+    }),
+    z.object({
       type: z.literal("none"),
     }),
   ]),
