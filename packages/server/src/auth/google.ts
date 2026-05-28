@@ -56,7 +56,7 @@ export function buildAuthUrl(): string {
   const nonce = crypto.randomBytes(16).toString("hex");
   nonceMap.set(state, { nonce, expiresAt: Date.now() + 10 * 60 * 1000 });
 
-  const redirectUri = `${config.PORTAL_URL}/auth/google/callback`;
+  const redirectUri = `${config.PORTAL_URL}/api/auth/google/callback`;
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", config.GOOGLE_CLIENT_ID);
   url.searchParams.set("redirect_uri", redirectUri);
@@ -72,7 +72,7 @@ export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens>
   if (!config.GOOGLE_CLIENT_ID || !config.GOOGLE_CLIENT_SECRET) {
     throw new Error("Google OAuth not configured");
   }
-  const redirectUri = `${config.PORTAL_URL}/auth/google/callback`;
+  const redirectUri = `${config.PORTAL_URL}/api/auth/google/callback`;
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
