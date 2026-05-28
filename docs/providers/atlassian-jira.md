@@ -2,10 +2,10 @@
 
 Plugin: `packages/plugins/atlassian-jira`
 Auth type: OAuth 2.0 (3LO — three-legged)
-Last verified against official docs: 2026-05-27
+Last verified against official docs: 2026-05-29
 
 Scopes used (from `manifest.ts`):
-`read:jira-work`, `write:jira-work`, `read:me`
+`read:jira-work`, `write:jira-work`, `read:me`, `read:jira-user`
 
 ---
 
@@ -28,13 +28,18 @@ Left menu → **Permissions** → next to **Jira API** click **Add**, then **Con
 
 Add classic scopes:
 
-| Scope | Grants |
-|---|---|
-| `read:jira-work` | Read issues, projects, comments, attachments |
-| `write:jira-work` | Create/edit/transition issues, post comments |
-| `read:me` | Read the authenticated user's account info |
+| Scope | Grants | Needed for |
+|---|---|---|
+| `read:jira-work` | Read issues, projects, comments, attachments | `jira_project_types`, `jira_search_issues`, `jira_get_issue` |
+| `write:jira-work` | Create/edit/transition issues, post comments | `jira_create_issue` |
+| `read:me` | Read the authenticated user's account info | callback (identifies the user) |
+| `read:jira-user` | View user profiles (username, email, avatar) in Jira | `jira_search_users` |
 
-> Atlassian also offers **granular scopes** (e.g. `read:issue:jira`, `write:issue:jira`). The plugin currently uses classic scopes — keep them consistent with `manifest.ts`. If you switch to granular, update the manifest and re-consent.
+> Atlassian also offers **granular scopes** (e.g. `read:issue:jira`, `write:issue:jira`). The plugin currently uses classic scopes — keep them consistent with `manifest.ts`. If you switch to granular, update the manifest and re-consent. An OAuth 2.0 (3LO) app cannot mix classic and granular scopes — the developer console disables the granular checkboxes while any classic scope is selected.
+
+### Boards / Jira Software
+
+`jira_get_boards` calls `/rest/agile/1.0/board`, which sits under the **Jira Software API** and needs `read:board-scope:jira-software`. That API is **not offered** on the Permissions page of a standard OAuth 2.0 (3LO) app in `developer.atlassian.com/console/myapps/` — the only API rows there are Personal data reporting, User identity, Confluence, Jira platform REST, Compass GraphQL, and BRIE. Until Atlassian exposes Jira Software as an addable API on 3LO apps (or you migrate to a Forge / Connect app), `jira_get_boards` will return `Unauthorized; scope does not match`.
 
 ## 3. Configure Authorization (callback URL)
 
@@ -90,6 +95,8 @@ Plugin handles this automatically — no setup needed, just be aware when debugg
 |---|---|
 | `invalid_redirect_uri` | Callback URL not registered exactly (Atlassian is strict on scheme + path) |
 | `invalid_scope` | Scope not added under Permissions → Jira API. Granular vs classic mismatch is a common cause. |
+| `Unauthorized; scope does not match` | App is missing the scope — toggle it under Permissions → Jira API and re-consent. For `read:board-scope:jira-software` this is the Atlassian-app-type limit noted above; not fixable in this app. |
+| `The requested API has been removed` on `/rest/api/3/search` | You're on a pre-CHANGE-2046 plugin build — pull the latest, which uses `/rest/api/3/search/jql`. |
 | 401 with valid token | Forgot to resolve `cloudid` and called `<site>.atlassian.net` directly |
 | 403 `OAUTH_2_FORBIDDEN` | User lacks the requested permission in Jira itself (project/issue restrictions) |
 | Refresh fails after long idle | Atlassian refresh tokens rotate — store the new `refresh_token` returned on each refresh call |
