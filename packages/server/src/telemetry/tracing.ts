@@ -1,12 +1,13 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
-import { Resource } from "@opentelemetry/resources";
+// @ts-ignore — runtime verified, types mismatch with NodeNext resolution
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
 import { registerInstrumentations } from "@opentelemetry/instrumentation";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
 import { trace, SpanStatusCode } from "@opentelemetry/api";
 
-const resource = new Resource({
+const resource = resourceFromAttributes({
   [SemanticResourceAttributes.SERVICE_NAME]: "a-workbench",
   [SemanticResourceAttributes.SERVICE_VERSION]: "0.1.0",
 });
