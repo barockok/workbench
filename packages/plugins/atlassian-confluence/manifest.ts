@@ -5,6 +5,11 @@ export default {
     type: "oauth2",
     authorizationUrl: "https://auth.atlassian.com/authorize",
     tokenUrl: "https://auth.atlassian.com/oauth/token",
-    scopes: ["read:confluence-content.summary", "write:confluence-content", "search:confluence"],
+    scopes: [
+      "read:confluence-content.summary",
+      "write:confluence-content",
+      "search:confluence",
+      "read:confluence-space.summary",
+    ],
   },
 };
