@@ -1,0 +1,209 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { handleMcpRequest } from "../src/mcp/server";
+import { registry } from "../src/plugins/registry";
+
+vi.mock("../src/plugins/context", () => ({
+  createContext: vi.fn(() => ({ userId: "user-1", getToken: vi.fn(), http: vi.fn() })),
+}));
+
+vi.mock("../src/auth/tokens", () => ({
+  getToken: vi.fn(() => ({ accessToken: "tok", scopes: "" })),
+}));
+
+vi.mock("../src/auth/cookie", () => ({
+  hasValidCookies: vi.fn(() => false),
+}));
+
+vi.mock("../src/telemetry/tracing", () => ({
+  withSpan: vi.fn((_name: string, fn: Function) => fn()),
+}));
+
+describe("handleMcpRequest", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("lists tools", async () => {
+    const res = await handleMcpRequest({ method: "tools/list", id: 1 }, "user-1");
+    expect(res.jsonrpc).toBe("2.0");
+    expect(res.id).toBe(1);
+    expect(res.result.tools).toBeInstanceOf(Array);
+    expect(res.result.tools.length).toBeGreaterThan(0);
+    expect(res.result.tools[0]).toHaveProperty("name");
+    expect(res.result.tools[0]).toHaveProperty("description");
+  });
+
+  it("calls a tool and returns result", async () => {
+    const mockTool = {
+      name: "test_tool",
+      description: "Test",
+      integration: "test-integ",
+      inputSchema: { type: "object" as const, properties: {} },
+      handler: vi.fn().mockResolvedValue({ done: true }),
+    };
+    vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "test-integ",
+      version: "1.0.0",
+      auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+    } as any);
+
+    const res = await handleMcpRequest(
+      { method: "tools/call", id: 2, params: { name: "search_tools", arguments: { query: "test" } } },
+      "user-1"
+    );
+    expect(res.jsonrpc).toBe("2.0");
+    expect(res.id).toBe(2);
+    expect(res.result.content[0].type).toBe("text");
+    const parsed = JSON.parse(res.result.content[0].text);
+    expect(parsed).toHaveProperty("tools");
+  });
+
+  it("returns error for unknown tool", async () => {
+    const res = await handleMcpRequest(
+      { method: "tools/call", id: 3, params: { name: "unknown_tool", arguments: {} } },
+      "user-1"
+    );
+    expect(res.jsonrpc).toBe("2.0");
+    expect(res.error.code).toBe(-32602);
+    expect(res.error.message).toContain("Tool not found");
+  });
+
+  it("returns error for invalid arguments", async () => {
+    const res = await handleMcpRequest(
+      { method: "tools/call", id: 4, params: { name: "search_tools", arguments: { wrong: 1 } } },
+      "user-1"
+    );
+    expect(res.jsonrpc).toBe("2.0");
+    expect(res.error.code).toBe(-32602);
+    expect(res.error.message).toContain("Invalid arguments");
+  });
+
+  it("returns error for unknown method", async () => {
+    const res = await handleMcpRequest({ method: "unknown", id: 5 }, "user-1");
+    expect(res.jsonrpc).toBe("2.0");
+    expect(res.error.code).toBe(-32601);
+    expect(res.error.message).toContain("Method not found");
+  });
+
+  it("handles execute_tool via mcp call", async () => {
+    const mockTool = {
+      name: "exec_tool",
+      description: "Exec",
+      integration: "test-integ",
+      inputSchema: { type: "object" as const, properties: {} },
+      handler: vi.fn().mockResolvedValue({ result: "ok" }),
+    };
+    vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "test-integ",
+      version: "1.0.0",
+      auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+    } as any);
+
+    const res = await handleMcpRequest(
+      {
+        method: "tools/call",
+        id: 6,
+        params: { name: "execute_tool", arguments: { tool: "exec_tool", args: {} } },
+      },
+      "user-1"
+    );
+    expect(res.jsonrpc).toBe("2.0");
+    expect(res.result.content[0].type).toBe("text");
+  });
+
+  it("returns NOT_CONNECTED when token missing", async () => {
+    const { getToken } = await import("../src/auth/tokens");
+    vi.mocked(getToken).mockReturnValue(null);
+
+    const mockTool = {
+      name: "exec_tool",
+      description: "Exec",
+      integration: "test-integ",
+      inputSchema: { type: "object" as const, properties: {} },
+      handler: vi.fn(),
+    };
+    vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "test-integ",
+      version: "1.0.0",
+      auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+    } as any);
+
+    const res = await handleMcpRequest(
+      {
+        method: "tools/call",
+        id: 7,
+        params: { name: "execute_tool", arguments: { tool: "exec_tool", args: {} } },
+      },
+      "user-1"
+    );
+    const parsed = JSON.parse(res.result.content[0].text);
+    expect(parsed.error).toBe("NOT_CONNECTED");
+  });
+
+  it("returns error when handler throws", async () => {
+    const { getToken } = await import("../src/auth/tokens");
+    vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+
+    const mockTool = {
+      name: "exec_tool",
+      description: "Exec",
+      integration: "test-integ",
+      inputSchema: { type: "object" as const, properties: {} },
+      handler: vi.fn().mockRejectedValue(new Error("handler-error")),
+    };
+    vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "test-integ",
+      version: "1.0.0",
+      auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+    } as any);
+
+    const res = await handleMcpRequest(
+      {
+        method: "tools/call",
+        id: 8,
+        params: { name: "execute_tool", arguments: { tool: "exec_tool", args: {} } },
+      },
+      "user-1"
+    );
+    const parsed = JSON.parse(res.result.content[0].text);
+    expect(parsed.error).toBe("handler-error");
+  });
+
+  it("lists integrations via mcp call", async () => {
+    vi.spyOn(registry, "listIntegrations").mockReturnValue([
+      { name: "slack", version: "1.0.0", auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] } },
+    ]);
+
+    const res = await handleMcpRequest(
+      { method: "tools/call", id: 9, params: { name: "list_integrations", arguments: {} } },
+      "user-1"
+    );
+    const parsed = JSON.parse(res.result.content[0].text);
+    expect(parsed.integrations).toBeInstanceOf(Array);
+    expect(parsed.integrations[0].name).toBe("slack");
+  });
+
+  it("returns cookie auth url via mcp call", async () => {
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "legacy",
+      version: "1.0.0",
+      auth: { type: "cookie" as const, loginUrl: "https://legacy.com/login", targetDomain: "legacy.com" },
+    } as any);
+
+    const res = await handleMcpRequest(
+      {
+        method: "tools/call",
+        id: 10,
+        params: { name: "get_auth_url", arguments: { integration: "legacy" } },
+      },
+      "user-1"
+    );
+    const parsed = JSON.parse(res.result.content[0].text);
+    expect(parsed.type).toBe("cookie");
+    expect(parsed.url).toContain("/api/auth/legacy");
+  });
+});
