@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { FastifyInstance } from "fastify";
 import { registry } from "../plugins/registry";
 import { createAuthState } from "../auth/oauth";
+import { buildPluginAuthUrl, handlePluginCallback } from "../auth/plugin-oauth";
 import { verifyApiKey, getUserById } from "../auth/users";
 import { buildAuthUrl, handleCallback } from "../auth/google";
 import { signSession, verifySession } from "../auth/session";
@@ -122,8 +123,43 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return { type: "cookie", sessionId, cdpUrl, loginUrl: integ.auth.loginUrl };
     }
 
+    if (integ.auth.type === "oauth2") {
+      try {
+        const url = buildPluginAuthUrl(user.userId, integration);
+        return { type: "oauth2", url };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return reply.status(503).send({ error: message });
+      }
+    }
+
     const state = createAuthState(user.userId, integration);
     return { state };
+  });
+
+  // Plugin OAuth callback (generic — works for any oauth2 plugin
+  // whose creds are wired in getPluginOAuthCreds). Namespaced under
+  // /plugin/ to avoid colliding with /api/auth/google/callback (SSO).
+  app.get("/api/auth/plugin/:integration/callback", async (request, reply) => {
+    const { integration } = request.params as { integration: string };
+    const { code, state, error } = request.query as Record<string, string>;
+
+    if (error) {
+      return reply.status(400).send({ error: `Provider error: ${error}` });
+    }
+    if (!code || !state) {
+      return reply.status(400).send({ error: "Missing code or state" });
+    }
+
+    try {
+      await handlePluginCallback(integration, code, state);
+      const redirect = new URL(config.PORTAL_URL);
+      redirect.hash = `connected=${integration}`;
+      return reply.redirect(redirect.toString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
   });
 
   // Cookie auth capture

@@ -90,7 +90,28 @@ Restart the server after setting.
 
 ### Plugin OAuth (tool calls)
 
-The Google plugin's per-user OAuth (`manifest.ts` → `auth.type: "oauth2"`) currently piggybacks on the same Google OAuth client when SSO is enabled. If you want a separate OAuth app for plugin calls vs. SSO, create a second Web Application client in step 4 and wire it separately (plugin-credential storage is on the implementation roadmap — see `docs/architecture.md` and `goal.md`).
+Per-user Google Workspace tool access (Gmail, Drive, etc.) uses a separate code path. Two options:
+
+**Option A — share with SSO (quickest):** leave `GOOGLE_PLUGIN_CLIENT_ID/SECRET` unset; the plugin code path falls back to `GOOGLE_CLIENT_ID/SECRET`. You still must add the plugin's redirect URI to the same GCP OAuth client:
+
+```
+${SERVER_PUBLIC_URL}/api/auth/plugin/google/callback
+```
+
+For local dev:
+```
+http://localhost:3000/api/auth/plugin/google/callback
+```
+
+**Option B — separate client (recommended):** create a second Web Application client in step 4 (name it `a-workbench google plugin`). Use the redirect URI above. Then:
+
+```bash
+GOOGLE_PLUGIN_CLIENT_ID=<client-b-id>
+GOOGLE_PLUGIN_CLIENT_SECRET=<client-b-secret>
+SERVER_PUBLIC_URL=https://<your-host>
+```
+
+Either way, the consent screen must list every plugin scope (step 3) — Google enforces this at the consent screen level, not per OAuth client.
 
 ## 6. First connection
 
