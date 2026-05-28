@@ -110,13 +110,13 @@ export default function Dashboard() {
       <main className="main">
         <div className="section-head">
           <div>
-            <div className="eyebrow"><span className="dot" /> integration registry</div>
+            <div className="eyebrow"><span className="dot" /> // registry ── integrations</div>
             <h2 className="headline">
-              Wire your<br /><em>workbench</em><span style={{ color: "var(--accent)" }}>.</span>
+              Integration registry <em>/</em> wire your workbench<em>.</em>
             </h2>
           </div>
           <div className="headline-meta">
-            <div><b>{pad(connectedCount)}</b> connected</div>
+            <div><em>{pad(connectedCount)}</em> connected</div>
             <div><b>{pad(availableCount)}</b> awaiting</div>
             <div><b>{pad(integrations.length)}</b> total</div>
           </div>
