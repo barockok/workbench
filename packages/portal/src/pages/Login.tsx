@@ -7,13 +7,6 @@ export default function Login() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.startsWith("#token=")) {
-      login(hash.slice(7));
-      window.location.hash = "";
-      window.location.href = "/";
-      return;
-    }
     if (token) window.location.href = "/";
   }, [login, token]);
 
