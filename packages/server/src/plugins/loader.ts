@@ -9,6 +9,8 @@ const builtinPlugins = [
   "google-sheets",
   "google-calendar",
   "google-gemini",
+  "google-docs",
+  "google-slides",
   "atlassian-jira",
   "atlassian-confluence",
   "atlassian-bitbucket",
