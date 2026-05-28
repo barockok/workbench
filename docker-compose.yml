@@ -8,6 +8,7 @@ services:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - DATABASE_URL=/data/tokens.db
       - NODE_ENV=production
+      - SESSION_SECRET=${SESSION_SECRET}
     volumes:
       - ./data:/data
 
@@ -19,3 +20,5 @@ services:
       - "3002:3002"
     environment:
       - NODE_ENV=development
+
+# Fix: add SESSION_SECRET for production startup
