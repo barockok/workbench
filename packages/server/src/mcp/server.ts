@@ -60,9 +60,27 @@ const metaTools = [
             };
           }
 
+          // Validate args against the plugin tool's own schema so that
+          // Zod defaults (e.g. pageSize=10) get applied. Without this,
+          // execute_tool blindly forwards whatever the caller sent and
+          // the plugin sees `undefined` for optional-with-default fields.
+          let parsedArgs: unknown = args.args;
+          try {
+            const schema = (tool as { inputSchema?: { safeParse?: (v: unknown) => { success: boolean; data?: unknown; error?: { message: string } } } }).inputSchema;
+            if (schema?.safeParse) {
+              const parsed = schema.safeParse(args.args ?? {});
+              if (!parsed.success) {
+                return { error: `Invalid arguments for ${args.tool}: ${parsed.error?.message ?? "schema mismatch"}` };
+              }
+              parsedArgs = parsed.data;
+            }
+          } catch {
+            // fall through with raw args if schema parsing throws unexpectedly
+          }
+
           try {
             const toolCtx = createContext(ctx.userId, tool.integration);
-            const result = await tool.handler(toolCtx, args.args);
+            const result = await tool.handler(toolCtx, parsedArgs as Record<string, unknown>);
             return { result };
           } catch (e) {
             const err = e instanceof Error ? e.message : String(e);
@@ -114,10 +132,64 @@ const metaTools = [
   },
 ];
 
-export async function handleMcpRequest(body: Record<string, unknown>, userId: string): Promise<Record<string, unknown>> {
+export async function handleMcpRequest(body: Record<string, unknown>, userId: string): Promise<Record<string, unknown> | null> {
   const { method, params, id } = body;
 
+  // MCP lifecycle: initialize handshake.
+  if (method === "initialize") {
+    const requested = (params as { protocolVersion?: string } | undefined)?.protocolVersion;
+    return {
+      jsonrpc: "2.0",
+      id,
+      result: {
+        protocolVersion: requested ?? "2025-06-18",
+        capabilities: { tools: {} },
+        serverInfo: { name: "a-workbench", version: "0.1.0" },
+      },
+    };
+  }
+
+  // Client confirms it's done initializing — no response required.
+  if (method === "notifications/initialized" || method === "initialized") {
+    return null;
+  }
+
+  // Optional capability methods: respond with empty lists so clients don't
+  // treat them as protocol violations.
+  if (method === "resources/list") {
+    return { jsonrpc: "2.0", id, result: { resources: [] } };
+  }
+  if (method === "prompts/list") {
+    return { jsonrpc: "2.0", id, result: { prompts: [] } };
+  }
+
   if (method === "tools/list") {
+    const schemas: Record<string, Record<string, unknown>> = {
+      search_tools: {
+        type: "object",
+        properties: { query: { type: "string", description: "Search keyword" } },
+        required: ["query"],
+      },
+      get_tool_schema: {
+        type: "object",
+        properties: { tool: { type: "string", description: "Tool name" } },
+        required: ["tool"],
+      },
+      execute_tool: {
+        type: "object",
+        properties: {
+          tool: { type: "string", description: "Tool name returned by search_tools" },
+          args: { type: "object", description: "Arguments for the tool", additionalProperties: true },
+        },
+        required: ["tool", "args"],
+      },
+      list_integrations: { type: "object", properties: {} },
+      get_auth_url: {
+        type: "object",
+        properties: { integration: { type: "string", description: "Integration name" } },
+        required: ["integration"],
+      },
+    };
     return {
       jsonrpc: "2.0",
       id,
@@ -125,7 +197,7 @@ export async function handleMcpRequest(body: Record<string, unknown>, userId: st
         tools: metaTools.map((t) => ({
           name: t.name,
           description: t.description,
-          inputSchema: { type: "object", properties: {} },
+          inputSchema: schemas[t.name] ?? { type: "object", properties: {} },
         })),
       },
     };
