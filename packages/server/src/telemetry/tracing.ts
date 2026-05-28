@@ -1,26 +1,44 @@
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
-// @ts-ignore — runtime verified, types mismatch with NodeNext resolution
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import { registerInstrumentations } from "@opentelemetry/instrumentation";
-import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
+// Telemetry init is wrapped in try/catch — server must boot even when
+// OpenTelemetry deps are partially installed or mismatched (e.g. local
+// dev with hoisted v2 resources vs locked v1 in workspace).
 import { trace, SpanStatusCode } from "@opentelemetry/api";
 
-const resource = resourceFromAttributes({
-  [SemanticResourceAttributes.SERVICE_NAME]: "a-workbench",
-  [SemanticResourceAttributes.SERVICE_VERSION]: "0.1.0",
-});
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { NodeSDK } = require("@opentelemetry/sdk-node");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { NodeTracerProvider } = require("@opentelemetry/sdk-trace-node");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const resourcesPkg = require("@opentelemetry/resources");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { SemanticResourceAttributes } = require("@opentelemetry/semantic-conventions");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { registerInstrumentations } = require("@opentelemetry/instrumentation");
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { HttpInstrumentation } = require("@opentelemetry/instrumentation-http");
 
-const provider = new NodeTracerProvider({ resource });
-provider.register();
+  // v2 exposes resourceFromAttributes; v1 exposes Resource constructor.
+  const buildResource = resourcesPkg.resourceFromAttributes
+    ? resourcesPkg.resourceFromAttributes
+    : (attrs: Record<string, unknown>) => new resourcesPkg.Resource(attrs);
 
-registerInstrumentations({
-  instrumentations: [new HttpInstrumentation()],
-});
+  const resource = buildResource({
+    [SemanticResourceAttributes.SERVICE_NAME]: "a-workbench",
+    [SemanticResourceAttributes.SERVICE_VERSION]: "0.1.0",
+  });
 
-const sdk = new NodeSDK({ resource, traceExporter: undefined });
-sdk.start();
+  const provider = new NodeTracerProvider({ resource });
+  provider.register();
+
+  registerInstrumentations({ instrumentations: [new HttpInstrumentation()] });
+
+  const sdk = new NodeSDK({ resource, traceExporter: undefined });
+  sdk.start();
+} catch (e) {
+  const msg = e instanceof Error ? e.message : String(e);
+  // eslint-disable-next-line no-console
+  console.warn(`[telemetry] disabled: ${msg}`);
+}
 
 export const tracer = trace.getTracer("a-workbench");
 
