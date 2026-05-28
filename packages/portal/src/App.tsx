@@ -3,9 +3,17 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 
+function Boot({ label = "INIT" }: { label?: string }) {
+  return (
+    <div className="boot">
+      <span>{label}<span className="blinker" /></span>
+    </div>
+  );
+}
+
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (isLoading) return <Boot label="VERIFY SESSION" />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -18,16 +26,7 @@ function AppRoutes() {
         path="/*"
         element={
           <RequireAuth>
-            <div className="min-h-screen bg-gray-50">
-              <header className="bg-white shadow">
-                <div className="max-w-7xl mx-auto px-4 py-4">
-                  <h1 className="text-xl font-bold">a-workbench</h1>
-                </div>
-              </header>
-              <main className="max-w-7xl mx-auto px-4 py-8">
-                <Dashboard />
-              </main>
-            </div>
+            <Dashboard />
           </RequireAuth>
         }
       />
