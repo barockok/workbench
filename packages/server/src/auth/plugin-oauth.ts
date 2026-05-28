@@ -18,22 +18,25 @@ interface ClientCreds {
  *
  * To add a new provider: extend the switch with its env var pair.
  */
-const GOOGLE_SUB_PLUGINS = new Set([
-  "google-gmail",
-  "google-drive",
-  "google-sheets",
-  "google-calendar",
-  "google-gemini",
-]);
+/**
+ * Each plugin owns its own OAuth client — no sharing, no fallback.
+ *
+ * Env var naming convention:
+ *   plugin name `google-gmail` → `GOOGLE_GMAIL_CLIENT_ID` / `_SECRET`
+ *   plugin name `atlassian-jira` → `ATLASSIAN_JIRA_CLIENT_ID` / `_SECRET`
+ *
+ * Transform: kebab → upper snake.
+ */
+export function envVarPrefix(integration: string): string {
+  return integration.replace(/-/g, "_").toUpperCase();
+}
 
 export function getPluginOAuthCreds(integration: string): ClientCreds | null {
-  if (GOOGLE_SUB_PLUGINS.has(integration)) {
-    const id = config.GOOGLE_PLUGIN_CLIENT_ID ?? config.GOOGLE_CLIENT_ID;
-    const secret = config.GOOGLE_PLUGIN_CLIENT_SECRET ?? config.GOOGLE_CLIENT_SECRET;
-    if (!id || !secret) return null;
-    return { clientId: id, clientSecret: secret };
-  }
-  return null;
+  const prefix = envVarPrefix(integration);
+  const id = process.env[`${prefix}_CLIENT_ID`];
+  const secret = process.env[`${prefix}_CLIENT_SECRET`];
+  if (!id || !secret) return null;
+  return { clientId: id, clientSecret: secret };
 }
 
 export function getPluginCallbackUrl(integration: string): string {
@@ -45,7 +48,8 @@ export function getPluginCallbackUrl(integration: string): string {
  * Google needs access_type=offline + prompt=consent to issue refresh tokens.
  */
 function providerExtraParams(integration: string): Record<string, string> {
-  if (GOOGLE_SUB_PLUGINS.has(integration)) {
+  // Google needs access_type=offline + prompt=consent for refresh tokens.
+  if (integration.startsWith("google-")) {
     return {
       access_type: "offline",
       prompt: "consent",

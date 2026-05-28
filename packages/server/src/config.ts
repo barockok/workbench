@@ -15,8 +15,6 @@ const configSchema = z.object({
   AUDIT_LOG_KAFKA_TOPIC: z.string().default("audit-log"),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GOOGLE_PLUGIN_CLIENT_ID: z.string().optional(),
-  GOOGLE_PLUGIN_CLIENT_SECRET: z.string().optional(),
   SERVER_PUBLIC_URL: z.string().url().default("http://localhost:3000"),
   SESSION_SECRET: z.string().min(32).default(
     process.env.NODE_ENV === "test"
