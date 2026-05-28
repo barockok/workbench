@@ -12,3 +12,6 @@ plugins/
 .claude/
 api-key.txt
 *.transcript.jsonl
+
+# Screenshots may contain user email / PII
+*.png
