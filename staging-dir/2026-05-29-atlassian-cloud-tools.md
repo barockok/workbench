@@ -180,3 +180,62 @@ Tested every jira + confluence tool against the updated app scopes:
 ### Net
 
 Of the read-only smoke set, **4 PASS / 2 UPSTREAM-deprecated / 1 SCOPE-blocked by app type**. The two UPSTREAM rows are now the only remaining work for full coverage of jira+confluence — both are plugin endpoint migrations, no scope or auth changes needed.
+
+---
+
+## Addendum 4 — endpoint migrations done
+
+Two upstream deprecations from the previous addendum are fixed in the plugins. After the change, every read-only tool tested now PASSes except `jira_get_boards`, which is still blocked at the Atlassian app permissions layer (Jira Software API not offered for OAuth 2.0 (3LO) apps in the developer console).
+
+### `jira_search_issues` → `/rest/api/3/search/jql`
+
+`packages/plugins/atlassian-jira/tools/index.ts`:
+
+```ts
+// before
+const res = await ctx.http(
+  `https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/search?${params}`
+);
+
+// after — CHANGE-2046 migration
+if (args.nextPageToken) params.set("nextPageToken", args.nextPageToken);
+if (args.fields?.length) params.set("fields", args.fields.join(","));
+const res = await ctx.http(
+  `https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/search/jql?${params}`
+);
+```
+
+Schema now accepts the new pagination knobs (`nextPageToken`, optional `fields[]`). Response shape per the new API: `{ issues: [{ id }], nextPageToken, isLast }`. Verified with `{jql: "assignee=currentUser()", maxResults: 3}` returning three real issue IDs and a pagination token.
+
+### `confluence_list_spaces` → CQL search fallback (not v2)
+
+`packages/plugins/atlassian-confluence/tools/index.ts`:
+
+The natural target is `/wiki/api/v2/spaces`, but Confluence v2 endpoints require **granular scopes** (`read:space:confluence`), and the app is currently using **classic scopes**. The Atlassian developer console gates granular scopes behind a *Granular scopes* tab in the Edit dialog, and the granular checkboxes are disabled while any classic scope is selected — the platform doesn't let an OAuth 2.0 app mix the two scope models.
+
+A full switch from classic to granular would mean re-scoping every confluence plugin tool (page get/create/update/delete each have their own granular equivalents, the connect flow has to be re-consented, all stored tokens get invalidated) — too broad for this staging.
+
+Replaced the call with a CQL search that uses the already-granted `search:confluence` scope and the still-supported `/wiki/rest/api/search` endpoint:
+
+```ts
+const params = new URLSearchParams();
+params.set("cql", "type=space");
+params.set("limit", String(args.limit));
+const res = await ctx.http(
+  `https://api.atlassian.com/ex/confluence/cloud-id/wiki/rest/api/search?${params}`
+);
+```
+
+Response is an envelope of search hits, each carrying a `space` object with `key`, `name`, `type`, `_links.self`, etc. Verified `{limit: 5}` returns the real `MIS / Technology` space among others. Manifest scopes untouched.
+
+### Final matrix (this branch)
+
+| Tool                       | Status |
+|----------------------------|--------|
+| `jira_project_types`       | PASS |
+| `jira_search_issues`       | PASS (after `/search/jql` migration) |
+| `jira_search_users`        | PASS (after `read:jira-user` add) |
+| `confluence_search_pages`  | PASS |
+| `confluence_list_spaces`   | PASS (after CQL fallback) |
+| `jira_get_boards`          | BLOCKED — Jira Software API scope `read:board-scope:jira-software` not available for this OAuth 2.0 (3LO) app in the developer console; would require switching the app type (out of scope for this staging). |
+
