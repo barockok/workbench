@@ -148,3 +148,35 @@ No Jira Software API row is offered, and the *Add Marketplace or custom app* enr
 - `atlassian-jira` — no manifest change; `jira_get_boards` remains blocked at the Atlassian app-permissions layer.
 
 Both findings recorded; manifest change committed alongside this addendum.
+
+---
+
+## Addendum 3 — retest after adding `read:jira-user`
+
+Tested every jira + confluence tool against the updated app scopes:
+
+### jira
+
+| Tool                  | Result |
+|-----------------------|--------|
+| `jira_project_types`  | PASS — real project type list |
+| `jira_search_users`   | PASS — returned real Atlassian user (added `read:jira-user` to manifest; scope was already enabled on the app) |
+| `jira_search_issues`  | UPSTREAM — `/rest/api/3/search` removed (CHANGE-2046). Plugin must migrate to `/rest/api/3/search/jql`. Not scope. |
+| `jira_get_boards`     | BLOCKED — `Unauthorized; scope does not match`. Needs `read:board-scope:jira-software`, lives under **Jira Software API**, not offered for this OAuth 2.0 (3LO) app in the developer console. |
+| `jira_create_issue`   | not tested in this round (write; needs a target project) |
+| `jira_get_issue`      | not tested in this round (needs an issue key) |
+
+### confluence
+
+| Tool                  | Result |
+|-----------------------|--------|
+| `confluence_search_pages` | PASS — real page `UAT` (`id: 6897795134`) |
+| `confluence_list_spaces`  | UPSTREAM — `authorized: true, valid: true` (scope OK after the earlier add), but 410 `GoneException: This deprecated endpoint has been removed.` Plugin uses `/wiki/rest/api/space`; should migrate to `/wiki/api/v2/spaces`. Not scope. |
+| `confluence_get_page`     | not tested in this round (needs a page id) |
+| `confluence_create_page`  | not tested in this round (write; needs a space) |
+| `confluence_update_page`  | not tested in this round (write) |
+| `confluence_delete_page`  | not tested in this round (destructive) |
+
+### Net
+
+Of the read-only smoke set, **4 PASS / 2 UPSTREAM-deprecated / 1 SCOPE-blocked by app type**. The two UPSTREAM rows are now the only remaining work for full coverage of jira+confluence — both are plugin endpoint migrations, no scope or auth changes needed.
