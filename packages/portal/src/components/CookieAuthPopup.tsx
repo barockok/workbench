@@ -44,51 +44,39 @@ export default function CookieAuthPopup({ integration, loginUrl, sessionId, onCl
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Log in to {integration}</h2>
-          <button onClick={handleCancel} className="text-gray-500 hover:text-gray-700">&times;</button>
+    <div className="modal-backdrop" role="dialog" aria-modal="true">
+      <div className="modal">
+        <div className="modal-head">
+          <h2 className="modal-title">Pair <span>{integration}</span></h2>
+          <button onClick={handleCancel} className="btn-ghost" aria-label="Close">Close</button>
         </div>
 
-        <div className="p-4 bg-gray-50 text-sm">
-          <p>1. Complete login in the browser window below</p>
-          <p>2. Click "Done — I've logged in" when finished</p>
+        <div className="modal-instructions">
+          <div><b>01</b> — Complete login in the embedded browser below.</div>
+          <div><b>02</b> — Click "Capture session" once authenticated.</div>
         </div>
 
-        <div className="flex-1 min-h-[400px]">
+        <div className="modal-body">
           {safeLogin ? (
             <iframe
               src={loginUrl}
-              className="w-full h-full min-h-[400px] border-0"
               sandbox="allow-scripts allow-forms"
               referrerPolicy="no-referrer"
               title={`${integration} login`}
             />
           ) : (
-            <div className="p-4 text-sm text-red-700 bg-red-50">
+            <div style={{ padding: 20, color: "var(--danger)", fontFamily: "var(--mono)", fontSize: 12 }}>
               Refusing to render login: loginUrl is not https.
             </div>
           )}
         </div>
 
-        {error && (
-          <div className="p-4 bg-red-50 text-red-700 text-sm">{error}</div>
-        )}
+        {error && <div className="modal-error">ERR — {error}</div>}
 
-        <div className="p-4 border-t flex gap-3 justify-end">
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleCapture}
-            disabled={capturing}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          >
-            {capturing ? "Capturing..." : "Done — I've logged in"}
+        <div className="modal-foot">
+          <button onClick={handleCancel} className="btn-ghost">Cancel</button>
+          <button onClick={handleCapture} disabled={capturing} className="btn-connect">
+            {capturing ? "Capturing…" : "Capture session"}
           </button>
         </div>
       </div>

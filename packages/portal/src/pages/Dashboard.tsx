@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchIntegrations, fetchConnections, startCookieAuth } from "../api";
+import { fetchIntegrations, fetchConnections, startIntegrationAuth } from "../api";
 import { useAuth } from "../context/AuthContext";
 import CookieAuthPopup from "../components/CookieAuthPopup";
 
@@ -9,6 +9,13 @@ interface CookieAuthState {
   loginUrl: string;
   cdpUrl: string;
   sessionId: string;
+}
+
+type Integration = { name: string; version: string };
+type Filter = "all" | "connected" | "available";
+
+function pad(n: number) {
+  return n.toString().padStart(2, "0");
 }
 
 export default function Dashboard() {
@@ -23,18 +30,35 @@ export default function Dashboard() {
   });
 
   const [cookieAuth, setCookieAuth] = useState<CookieAuthState | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
 
-  const connectionMap = new Map(
-    connectionsData?.connections?.map((c: { name: string; connected: boolean }) => [c.name, c.connected]) ?? []
+  const connectionMap = useMemo(
+    () =>
+      new Map(
+        connectionsData?.connections?.map(
+          (c: { name: string; connected: boolean }) => [c.name, c.connected]
+        ) ?? []
+      ),
+    [connectionsData]
   );
 
-  async function handleConnect(integration: string) {
-    const integ = data?.integrations?.find((i: { name: string }) => i.name === integration);
-    if (!integ) return;
+  const integrations: Integration[] = data?.integrations ?? [];
+  const connectedCount = integrations.filter((i) => connectionMap.get(i.name)).length;
+  const availableCount = integrations.length - connectedCount;
 
-    // For cookie auth, start HITL session
+  const visible = integrations.filter((i) => {
+    const c = connectionMap.get(i.name) ?? false;
+    if (filter === "connected") return c;
+    if (filter === "available") return !c;
+    return true;
+  });
+
+  const [connectError, setConnectError] = useState<string | null>(null);
+
+  async function handleConnect(integration: string) {
+    setConnectError(null);
     try {
-      const result = await startCookieAuth(integration);
+      const result = await startIntegrationAuth(integration);
       if (result.type === "cookie") {
         setCookieAuth({
           integration,
@@ -44,53 +68,156 @@ export default function Dashboard() {
         });
         return;
       }
-    } catch {
-      // Fallback: not cookie auth, ignore
+      if (result.type === "oauth2") {
+        window.location.href = result.url;
+        return;
+      }
+      setConnectError(`Manual auth required for ${integration}.`);
+    } catch (e) {
+      setConnectError(e instanceof Error ? e.message : "Connect failed");
     }
-
-    // For OAuth, redirect to auth URL
-    window.location.href = `/api/auth/${integration}`;
   }
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="boot">
+        <span>LOADING REGISTRY<span className="blinker" /></span>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold">Integrations</h2>
-        <div className="flex items-center gap-4">
-          {user?.email && <span className="text-sm text-gray-600">{user.email}</span>}
+    <div className="app">
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark" />
+          <span className="brand-name">a-workbench</span>
+          <span className="brand-slash">/</span>
+          <span className="brand-tag">operator console</span>
+        </div>
+
+        <div className="status-strip">
+          <span><b>{integrations.length}</b> integrations</span>
+          <span className="sep">·</span>
+          <span><b>{connectedCount}</b> live</span>
+          <span className="sep">·</span>
+          <span>node <b>online</b></span>
+        </div>
+
+        <div className="user-block">
+          {user?.email && <span className="user-email">{user.email}</span>}
+          <button onClick={logout} className="btn-ghost">Sign out</button>
+        </div>
+      </header>
+
+      <main className="main">
+        <div className="section-head">
+          <div>
+            <div className="eyebrow"><span className="dot" /> // registry ── integrations</div>
+            <h2 className="headline">
+              Integration registry <em>/</em> wire your workbench<em>.</em>
+            </h2>
+          </div>
+          <div className="headline-meta">
+            <div><em>{pad(connectedCount)}</em> connected</div>
+            <div><b>{pad(availableCount)}</b> awaiting</div>
+            <div><b>{pad(integrations.length)}</b> total</div>
+          </div>
+        </div>
+
+        {connectError && (
+          <div className="login-error" style={{ marginBottom: 16 }}>
+            ERR — {connectError}
+          </div>
+        )}
+
+        <div className="filter-row" role="tablist">
           <button
-            onClick={logout}
-            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+            className="filter-chip"
+            aria-pressed={filter === "all"}
+            onClick={() => setFilter("all")}
           >
-            Logout
+            All <span className="count">{integrations.length}</span>
+          </button>
+          <button
+            className="filter-chip"
+            aria-pressed={filter === "connected"}
+            onClick={() => setFilter("connected")}
+          >
+            Connected <span className="count">{connectedCount}</span>
+          </button>
+          <button
+            className="filter-chip"
+            aria-pressed={filter === "available"}
+            onClick={() => setFilter("available")}
+          >
+            Available <span className="count">{availableCount}</span>
           </button>
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {data?.integrations?.map((i: { name: string; version: string }) => {
-          const connected = connectionMap.get(i.name) ?? false;
-          return (
-            <div key={i.name} className="bg-white p-4 rounded shadow">
-              <div className="font-medium">{i.name}</div>
-              <div className="text-sm text-gray-500">{i.version}</div>
-              <div className="mt-2 flex items-center gap-2">
-                {connected ? (
-                  <span className="text-sm text-green-600 font-medium">Connected</span>
-                ) : (
-                  <button
-                    onClick={() => handleConnect(i.name)}
-                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-                  >
-                    Connect
-                  </button>
-                )}
-              </div>
+
+        <div className="grid">
+          {visible.map((i, idx) => {
+            const connected = connectionMap.get(i.name) ?? false;
+            return (
+              <article
+                key={i.name}
+                className="card"
+                style={{ animationDelay: `${Math.min(idx * 35, 600)}ms` }}
+              >
+                <div className="card-top">
+                  <span className="card-index">№ {pad(idx + 1)}</span>
+                  <span className={`card-status ${connected ? "live" : ""}`}>
+                    <span className="led" />
+                    {connected ? "Live" : "Standby"}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="card-name">{i.name}</h3>
+                  <div className="card-ver">v{i.version}</div>
+                </div>
+
+                <div className="card-bottom">
+                  {connected ? (
+                    <>
+                      <span className="card-meta">Session active</span>
+                      <button
+                        className="btn-disconnect"
+                        onClick={() => handleConnect(i.name)}
+                        title="Re-authorize"
+                      >
+                        Refresh
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="card-meta">Not paired</span>
+                      <button className="btn-connect" onClick={() => handleConnect(i.name)}>
+                        Connect →
+                      </button>
+                    </>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+
+          {visible.length === 0 && (
+            <div
+              className="card"
+              style={{ gridColumn: "1 / -1", textAlign: "center", justifyContent: "center", alignItems: "center" }}
+            >
+              <span className="card-meta">No integrations in this filter.</span>
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      </main>
+
+      <footer className="ticker">
+        <span><span className="ok">●</span> system nominal</span>
+        <span>registry sync · {new Date().toISOString().slice(11, 19)} UTC</span>
+        <span>build · <span className="ok">stable</span></span>
+      </footer>
 
       {cookieAuth && (
         <CookieAuthPopup

@@ -36,11 +36,30 @@ export async function fetchConnections() {
   return res.json();
 }
 
-export async function startCookieAuth(integration: string): Promise<{ type: string; sessionId: string; cdpUrl: string; loginUrl: string }> {
+export type StartAuthResult =
+  | { type: "cookie"; sessionId: string; cdpUrl: string; loginUrl: string }
+  | { type: "oauth2"; url: string }
+  | { type: "manual"; state: string };
+
+export async function startIntegrationAuth(integration: string): Promise<StartAuthResult> {
   const res = await fetch(`${API_URL}/api/auth/${integration}`, { headers: getHeaders() });
-  if (!res.ok) throw new Error("Failed to start cookie auth");
-  return res.json();
+  if (res.status === 401) {
+    localStorage.removeItem("awb_token");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.error || "Failed to start integration auth");
+  }
+  const data = await res.json();
+  if (data.type) return data as StartAuthResult;
+  if (data.state) return { type: "manual", state: data.state };
+  throw new Error("Unknown auth response");
 }
+
+/** @deprecated use startIntegrationAuth */
+export const startCookieAuth = startIntegrationAuth;
 
 export async function captureCookies(integration: string, sessionId: string): Promise<{ success: boolean; cookieCount: number }> {
   const res = await fetch(`${API_URL}/api/auth/cookie/${integration}/capture`, {
