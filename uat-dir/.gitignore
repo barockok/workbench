@@ -6,3 +6,12 @@ plugins/
 *.db
 *.key
 *.secret
+
+# Claude / MCP test artifacts containing API keys or transcripts
+.mcp.json
+.claude/
+api-key.txt
+*.transcript.jsonl
+
+# Screenshots may contain user email / PII
+*.png

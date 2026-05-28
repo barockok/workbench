@@ -32,6 +32,11 @@ async function main() {
     }
     const body = request.body as Record<string, unknown>;
     const result = await handleMcpRequest(body, userId);
+    // JSON-RPC notifications return null — no body, just 202 Accepted.
+    if (result === null) {
+      reply.status(202).send();
+      return;
+    }
     reply.send(result);
   });
 
