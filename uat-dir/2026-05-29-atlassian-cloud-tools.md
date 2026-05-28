@@ -103,3 +103,48 @@ And mirror message for jira with `read:board-scope:jira-software`.
 Manifests **reverted** to their previous state (`atlassian-confluence`: `read:confluence-content.summary`, `write:confluence-content`, `search:confluence`; `atlassian-jira`: `read:jira-work`, `write:jira-work`, `read:me`) so the dashboard keeps working for the tools that don't need the extra scopes. Jira + confluence reconnected with the existing scopes.
 
 No code change committed for this addendum.
+
+---
+
+## Addendum 2 — driving developer.atlassian.com via Playwright
+
+User asked: can the scope add be done via Playwright + Chrome extension instead of asking the owner to click around the developer console manually? Yes for one of the two.
+
+Steps actually executed in Chrome via `playwright-cli --s=chrome`:
+
+1. `goto https://developer.atlassian.com/console/myapps/`
+2. Click the `a-workbench` app row → app overview.
+3. Sidebar **Permissions** → API list.
+4. Confluence API row → **Configure** → **Edit Scopes** → opens *"Edit Confluence API"* dialog.
+5. Tick `read:confluence-space.summary` row checkbox → toast updates: *"This change will add 1 new scopes and remove 0 scopes"*.
+6. **Save**. Confluence API scope count goes from 3 → 4.
+
+Confluence manifest then updated to include `read:confluence-space.summary`, the stored token cleared, and the integration reconnected through the portal — the new consent screen lists *Read Confluence space summary* and accepts cleanly.
+
+`execute_tool confluence_list_spaces`:
+```
+{"statusCode":410,
+ "data":{"authorized":true,"valid":true,"errors":[],"successful":true},
+ "message":"com.atlassian.confluence.api.service.exceptions.pagesmodes.GoneException: This deprecated endpoint has been removed."}
+```
+`authorized: true` confirms the scope grant landed. The 410 is a **separate upstream plugin issue** — the v1 endpoint `/wiki/rest/api/space` is gone, the plugin needs to migrate to `/wiki/api/v2/spaces`. Same shape as the earlier `jira_search_issues` deprecation.
+
+### Jira board scope — blocked by app type, not by the manifest
+
+Tried the same pattern for `read:board-scope:jira-software`. The *Edit Jira API* dialog (titled *"Edit Jira platform REST API"*) does not list any board-scope scopes — those live under a separate **Jira Software API**. The app's *Permissions* page only offers six APIs:
+
+- Personal data reporting API
+- User identity API
+- Confluence API
+- Jira API (= "Jira platform REST API")
+- Compass GraphQL API
+- BRIE API
+
+No Jira Software API row is offered, and the *Add Marketplace or custom app* enroll flow is for Marketplace/custom installs, not for adding a stock Atlassian REST API. So for this OAuth 2.0 (3LO) integration the Jira Software board scope cannot be added through the developer console UI. Plugin tool `jira_get_boards` stays blocked behind `Unauthorized; scope does not match`.
+
+### Net effect on the matrix
+
+- `atlassian-confluence` — manifest gains `read:confluence-space.summary`. `confluence_list_spaces` now reaches the API and fails on an upstream deprecation, not on scope. (Plugin endpoint migration is the remaining work to make this PASS end-to-end.)
+- `atlassian-jira` — no manifest change; `jira_get_boards` remains blocked at the Atlassian app-permissions layer.
+
+Both findings recorded; manifest change committed alongside this addendum.
