@@ -5,6 +5,12 @@ export default {
     type: "oauth2",
     authorizationUrl: "https://auth.atlassian.com/authorize",
     tokenUrl: "https://auth.atlassian.com/oauth/token",
-    scopes: ["read:jira-work", "write:jira-work", "read:me", "read:jira-user"],
+    scopes: [
+      "read:jira-work",
+      "write:jira-work",
+      "read:me",
+      "read:jira-user",
+      "offline_access",
+    ],
   },
 };
