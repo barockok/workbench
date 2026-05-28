@@ -12,8 +12,10 @@ FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/packages/server/dist ./server
-COPY --from=builder /app/packages/server/node_modules ./server/node_modules
-COPY --from=builder /app/packages/shared/dist ./server/node_modules/@a-workbench/shared
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/shared/dist ./node_modules/@a-workbench/shared
 COPY --from=builder /app/packages/portal/dist ./portal
+COPY --from=builder /app/packages/plugins ./plugins
 EXPOSE 3000
-CMD ["node", "server/index.js"]
+RUN npm install -g tsx@4.19.4
+CMD ["tsx", "server/index.js"]
