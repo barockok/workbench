@@ -8,6 +8,25 @@ export interface ToolContext {
   http(url: string, init?: RequestInit): Promise<Response>;
 }
 
+// Cache resolved Atlassian cloud IDs per (user, product) so we don't hit
+// the /accessible-resources endpoint on every tool call.
+const atlassianCloudIdCache = new Map<string, string>();
+
+async function resolveAtlassianCloudId(
+  accessToken: string,
+  product: "jira" | "confluence"
+): Promise<string> {
+  const res = await fetch("https://api.atlassian.com/oauth/token/accessible-resources", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error(`accessible-resources ${res.status}`);
+  const sites = (await res.json()) as Array<{ id: string; scopes?: string[]; url?: string }>;
+  const needle = product === "jira" ? "jira" : "confluence";
+  const match = sites.find((s) => (s.scopes ?? []).some((sc) => sc.includes(needle))) ?? sites[0];
+  if (!match) throw new Error(`No accessible Atlassian site for ${product}`);
+  return match.id;
+}
+
 export function createContext(userId: string, integration: string): ToolContext {
   let tokenData: TokenData | null = null;
   let cookieData: CookieData | null = null;
@@ -63,7 +82,26 @@ export function createContext(userId: string, integration: string): ToolContext 
       const token = await this.getToken();
       headers.set("Authorization", `Bearer ${token}`);
 
-      return fetch(url, {
+      // Atlassian plugins ship URLs with a literal `cloud-id` placeholder
+      // (because the OAuth flow doesn't know which Atlassian site the user
+      // will pick until consent). Resolve and substitute it on the fly.
+      let resolvedUrl = url;
+      const atlassianMatch = url.match(/^https:\/\/api\.atlassian\.com\/ex\/(jira|confluence)\/cloud-id\//);
+      if (atlassianMatch) {
+        const product = atlassianMatch[1] as "jira" | "confluence";
+        const cacheKey = `${userId}:${product}`;
+        let cloudId = atlassianCloudIdCache.get(cacheKey);
+        if (!cloudId) {
+          cloudId = await resolveAtlassianCloudId(token, product);
+          atlassianCloudIdCache.set(cacheKey, cloudId);
+        }
+        resolvedUrl = url.replace(
+          `/ex/${product}/cloud-id/`,
+          `/ex/${product}/${cloudId}/`
+        );
+      }
+
+      return fetch(resolvedUrl, {
         ...init,
         headers,
       });

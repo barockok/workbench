@@ -8,11 +8,11 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 5173,
+    port: 3000,
     strictPort: true,
     proxy: {
-      "/api": "http://localhost:3000",
-      "/callback": "http://localhost:3000",
+      "/api": "http://localhost:3001",
+      "/callback": "http://localhost:3001",
     },
   },
 });
