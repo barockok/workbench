@@ -6,6 +6,8 @@ Plugins (one per product, each with its own scope and connection):
 - `packages/plugins/google-sheets` — `spreadsheets` + `drive.file`
 - `packages/plugins/google-calendar` — `calendar`
 - `packages/plugins/google-gemini` — `generative-language.retriever`
+- `packages/plugins/google-docs` — `documents` + `drive.file`
+- `packages/plugins/google-slides` — `presentations` + `drive.file`
 
 Auth type: OAuth 2.0 (Authorization Code, with refresh tokens)
 Last verified against official docs: 2026-05-28
@@ -31,6 +33,8 @@ In the [API Library](https://console.cloud.google.com/apis/library), enable each
 | `spreadsheets` | Google Sheets API | `google-sheets` |
 | `calendar` | Google Calendar API | `google-calendar` |
 | `generative-language.retriever` | Generative Language API | `google-gemini` |
+| `documents` | Google Docs API | `google-docs` |
+| `presentations` | Google Slides API | `google-slides` |
 
 Disable APIs you don't need — fewer APIs = simpler verification.
 
@@ -46,6 +50,8 @@ Disable APIs you don't need — fewer APIs = simpler verification.
    https://www.googleapis.com/auth/spreadsheets
    https://www.googleapis.com/auth/calendar
    https://www.googleapis.com/auth/generative-language.retriever
+   https://www.googleapis.com/auth/documents
+   https://www.googleapis.com/auth/presentations
    ```
 5. **Test users** tab → add every Google account that will connect while the app is in `Testing` status. Without this, you'll get `Error 403: access_denied`.
 
@@ -59,7 +65,7 @@ Refs:
 
 ## 4. Create OAuth 2.0 Clients
 
-You need **6 clients total** — 1 for portal SSO, 5 for the plugins (one per plugin).
+You need **8 clients total** — 1 for portal SSO, 7 for the plugins (one per plugin).
 
 ### Portal SSO client
 
@@ -87,6 +93,8 @@ Repeat for each plugin. Each client gets **only its own** redirect URI.
 | `a-workbench sheets` | `https://<host>/api/auth/plugin/google-sheets/callback` | `http://localhost:3000/api/auth/plugin/google-sheets/callback` |
 | `a-workbench calendar` | `https://<host>/api/auth/plugin/google-calendar/callback` | `http://localhost:3000/api/auth/plugin/google-calendar/callback` |
 | `a-workbench gemini` | `https://<host>/api/auth/plugin/google-gemini/callback` | `http://localhost:3000/api/auth/plugin/google-gemini/callback` |
+| `a-workbench docs` | `https://<host>/api/auth/plugin/google-docs/callback` | `http://localhost:3000/api/auth/plugin/google-docs/callback` |
+| `a-workbench slides` | `https://<host>/api/auth/plugin/google-slides/callback` | `http://localhost:3000/api/auth/plugin/google-slides/callback` |
 
 Map each to its env var (see `.env.example`):
 ```bash
@@ -116,13 +124,13 @@ Restart the server after setting.
 
 Each plugin's credentials are set per step 4 above. Env var naming convention: `<PLUGIN_NAME_UPPER_SNAKE>_CLIENT_ID/SECRET`. The loader reads these directly from `process.env` — no `config.ts` entry needed when you add a new plugin.
 
-All 5 clients can live in the **same GCP project + same consent screen**, as long as the screen lists every scope each client requests. You can also use separate projects per plugin if you want maximum isolation (independent billing, separate verification timelines).
+All 7 clients can live in the **same GCP project + same consent screen**, as long as the screen lists every scope each client requests. You can also use separate projects per plugin if you want maximum isolation (independent billing, separate verification timelines).
 
 ## 6. First connection
 
 1. Start the server (`npm run dev`) and portal.
 2. Sign in via Google SSO.
-3. From the portal Connections page, click **Connect** on any Google plugin card (Gmail, Drive, Sheets, Calendar, Gemini).
+3. From the portal Connections page, click **Connect** on any Google plugin card (Gmail, Drive, Sheets, Calendar, Gemini, Docs, Slides).
 4. Approve the consent screen — Google lists only the scopes for that plugin's `manifest.ts`.
 5. You're redirected back to `/api/auth/plugin/<name>/callback` → token stored encrypted in `connections`.
 6. Repeat for each plugin you want to enable. Grants are independent — connecting Gmail does not auto-connect Drive.
