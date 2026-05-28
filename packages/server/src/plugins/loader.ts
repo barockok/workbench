@@ -41,6 +41,12 @@ function filterTools(module: Record<string, unknown>) {
   );
 }
 
+function unwrapDefault<T>(mod: Record<string, unknown>): T {
+  const d = mod.default as Record<string, unknown> | undefined;
+  if (d && "default" in d) return d.default as T;
+  return mod.default as T;
+}
+
 async function loadBuiltin(pluginName: string, basePath: string): Promise<void> {
   const pluginPath = path.join(basePath, pluginName);
 
@@ -49,7 +55,7 @@ async function loadBuiltin(pluginName: string, basePath: string): Promise<void> 
     const toolsMod = await import(path.join(pluginPath, "tools/index"));
 
     registry.register({
-      integration: manifestMod.default,
+      integration: unwrapDefault(manifestMod),
       tools: filterTools(toolsMod),
     });
   } catch (e) {
@@ -79,7 +85,7 @@ export async function loadPlugins(): Promise<void> {
       const manifestMod = await import(path.join(pluginPath, "manifest"));
       const toolsMod = await import(path.join(pluginPath, "tools/index"));
       registry.register({
-        integration: manifestMod.default,
+        integration: unwrapDefault(manifestMod),
         tools: filterTools(toolsMod),
       });
       console.log(`Loaded plugin: ${dir}`);
