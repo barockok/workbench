@@ -244,6 +244,109 @@ All secrets in `uat-dir/.env` (gitignored, never committed).
 
 ---
 
+## Plugin Validation Process (Added 2026-05-28)
+
+This section documents the end-to-end validation workflow for new plugins (tested with `google-docs` and `google-slides`).
+
+### Prerequisites
+
+- Docker Compose running with `a-workbench` service
+- Server env vars set: `ENCRYPTION_KEY`, `SESSION_SECRET`
+- Plugin OAuth credentials available (e.g. `GOOGLE_DOCS_CLIENT_ID` / `_SECRET`)
+- Playwright MCP Extension attached to Chrome
+
+### Step 1: Docker Build & Startup
+
+```bash
+# Build image
+ docker compose build --no-cache a-workbench
+
+# Start service (with env vars)
+ENCRYPTION_KEY=... SESSION_SECRET=... docker compose up -d a-workbench
+
+# Verify startup
+ docker compose logs a-workbench --tail 20
+```
+
+**Check:** Server starts without config validation errors.
+
+### Step 2: Verify Plugin Loading
+
+```bash
+# Create test user (if needed)
+cd packages/server && npx tsx -e "import { createUser } from './src/auth/users.ts'; console.log(createUser('uat-test-user').apiKey);"
+
+# List integrations — should include new plugins
+curl -s http://localhost:3000/api/integrations \
+  -H "Authorization: Bearer <API_KEY>"
+```
+
+**Check:** New plugin names appear in integrations list.
+
+### Step 3: OAuth Flow — URL Generation
+
+```bash
+curl -s "http://localhost:3000/api/auth/<plugin-name>" \
+  -H "Authorization: Bearer <API_KEY>"
+```
+
+**Check:** Returns `{"type": "oauth2", "url": "https://accounts.google.com/..."}` with correct:
+- `client_id`
+- `redirect_uri` matching registered URI in provider console
+- `scope` matching plugin manifest
+
+### Step 4: OAuth Flow — Browser Consent (Playwright)
+
+```bash
+# Attach to Playwright MCP Extension
+PLAYWRIGHT_MCP_EXTENSION_TOKEN=... playwright-cli attach --extension=chrome
+
+# Navigate to OAuth URL
+playwright-cli --s=chrome goto "<oauth_url_from_step_3>"
+
+# Select account, approve consent, click Continue through warnings
+```
+
+**Common issues:**
+- `redirect_uri_mismatch` → add URI to provider console (e.g. Google Cloud Console)
+- `invalid_client` → check client_id / secret env vars
+- Browser shows `chrome-error://chromewebdata/` for localhost redirect → normal if Playwright can't render localhost; check server logs for callback receipt
+
+**Check server logs:**
+```bash
+docker compose logs a-workbench --tail 10
+# Should show: GET /api/auth/plugin/<plugin>/callback?code=...&state=... → 302
+```
+
+### Step 5: Verify Token Stored
+
+```bash
+curl -s http://localhost:3000/api/connections \
+  -H "Authorization: Bearer <API_KEY>"
+```
+
+**Check:** Plugin shows `"connected": true`.
+
+### Step 6: Tool Execution
+
+```bash
+# Via MCP endpoint
+curl -s -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <API_KEY>" \
+  -d '{"method":"tools/call","params":{"name":"execute_tool","arguments":{"tool":"<tool_name>","args":{...}}}}'
+```
+
+**Test matrix:**
+- Search/list tools (read, no doc ID needed)
+- Create tool (write)
+- Get tool (read specific resource)
+- Batch update tool (write)
+
+**Check:** Tools return live data from provider API, not mock data.
+
+---
+
 ## Recommendations
 
 1. **Add remaining Google redirect URIs to Cloud Console:**
