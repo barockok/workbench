@@ -45,12 +45,17 @@ export const searchIssues = {
   inputSchema: z.object({
     jql: z.string(),
     maxResults: z.number().default(10),
+    nextPageToken: z.string().optional(),
+    fields: z.array(z.string()).optional(),
   }),
   handler: async (ctx: any, args: any) => {
+    // CHANGE-2046: legacy /rest/api/3/search was removed; use /search/jql.
     const params = new URLSearchParams();
     params.set("jql", args.jql);
     params.set("maxResults", String(args.maxResults));
-    const res = await ctx.http(`https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/search?${params}`);
+    if (args.nextPageToken) params.set("nextPageToken", args.nextPageToken);
+    if (args.fields?.length) params.set("fields", args.fields.join(","));
+    const res = await ctx.http(`https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/search/jql?${params}`);
     return res.json();
   },
 };
