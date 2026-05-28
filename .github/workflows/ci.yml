@@ -41,6 +41,7 @@ jobs:
         with:
           files: ./packages/server/coverage/lcov.info
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   docker:
     runs-on: ubuntu-latest

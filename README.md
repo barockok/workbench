@@ -1,7 +1,7 @@
 # a-workbench
 
-[![CI](https://github.com/YOUR_ORG/a-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_ORG/a-workbench/actions)
-[![codecov](https://codecov.io/gh/YOUR_ORG/a-workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_ORG/a-workbench)
+[![CI](https://github.com/barockok/workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/barockok/workbench/actions)
+[![codecov](https://codecov.io/gh/barockok/workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/barockok/workbench)
 
 Self-hosted MCP tool aggregator for AI agents.
 
