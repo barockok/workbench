@@ -53,8 +53,8 @@ async function loadBuiltin(pluginName: string, basePath: string): Promise<void> 
   const pluginPath = path.join(basePath, pluginName);
 
   try {
-    const manifestMod = await import(path.join(pluginPath, "manifest"));
-    const toolsMod = await import(path.join(pluginPath, "tools/index"));
+    const manifestMod = await import(path.join(pluginPath, "manifest.ts"));
+    const toolsMod = await import(path.join(pluginPath, "tools/index.ts"));
 
     registry.register({
       integration: unwrapDefault(manifestMod),
@@ -84,8 +84,8 @@ export async function loadPlugins(): Promise<void> {
   for (const dir of dirs) {
     const pluginPath = path.join(pluginsDir, dir);
     try {
-      const manifestMod = await import(path.join(pluginPath, "manifest"));
-      const toolsMod = await import(path.join(pluginPath, "tools/index"));
+      const manifestMod = await import(path.join(pluginPath, "manifest.ts"));
+      const toolsMod = await import(path.join(pluginPath, "tools/index.ts"));
       registry.register({
         integration: unwrapDefault(manifestMod),
         tools: filterTools(toolsMod),
