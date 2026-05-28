@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+*.env
+data
+plugins
+.turbo
+*.db
+.DS_Store
+.claude
