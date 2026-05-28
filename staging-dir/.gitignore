@@ -1,0 +1,8 @@
+# staging environment — never commit credentials
+.env
+*.env
+data/
+plugins/
+*.db
+*.key
+*.secret
