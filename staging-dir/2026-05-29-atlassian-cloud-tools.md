@@ -82,3 +82,24 @@ Combining the previous matrix (`2026-05-29-plugin-matrix-e2e.md`) with this retr
 - Tester identity not named in this report; the dashboard screenshot containing the email is gitignored (`*.png`).
 - API key minted by `UPDATE users SET api_key_hash` lives only in `staging-dir/.mcp.json` (gitignored) and the runtime memory of this session.
 - Pre-commit cred grep on staged changes: clean.
+
+---
+
+## Addendum — scope adds blocked at Atlassian Console
+
+Tried adding the two scopes recommended above:
+
+- `atlassian-confluence` manifest: `read:confluence-space.summary`
+- `atlassian-jira` manifest: `read:board-scope:jira-software`
+
+Re-consent flow for both halted on Atlassian's "Something went wrong" page. Expanding *Information for the owner of a-workbench* showed:
+
+> This app has requested Confluence API scopes that have not been added to the app. Configure the app at https://developer.atlassian.com/apps and add the following scopes to the Confluence API: `read:confluence-space.summary`.
+
+And mirror message for jira with `read:board-scope:jira-software`.
+
+**Resolution path** (owner action, outside this staging): in the a-workbench Atlassian 3LO app at `https://developer.atlassian.com/apps`, open **Permissions → Jira API / Confluence API**, add the two granular scopes, save. After that the consent flow will pass and `confluence_list_spaces` + `jira_get_boards` will work without manifest changes (the manifest scopes match the app config).
+
+Manifests **reverted** to their previous state (`atlassian-confluence`: `read:confluence-content.summary`, `write:confluence-content`, `search:confluence`; `atlassian-jira`: `read:jira-work`, `write:jira-work`, `read:me`) so the dashboard keeps working for the tools that don't need the extra scopes. Jira + confluence reconnected with the existing scopes.
+
+No code change committed for this addendum.
