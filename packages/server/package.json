@@ -13,24 +13,25 @@
     "@a-workbench/shared": "*",
     "@modelcontextprotocol/sdk": "^1.29",
     "@opentelemetry/api": "^1.8",
+    "@opentelemetry/auto-instrumentations-node": "^0.47",
+    "@opentelemetry/instrumentation-http": "^0.51",
+    "@opentelemetry/resources": "^1.24",
     "@opentelemetry/sdk-node": "^0.51",
     "@opentelemetry/sdk-trace-node": "^1.24",
-    "@opentelemetry/auto-instrumentations-node": "^0.47",
-    "@opentelemetry/resources": "^1.24",
     "@opentelemetry/semantic-conventions": "^1.24",
-    "@opentelemetry/instrumentation-http": "^0.51",
-    "fastify": "^4.28",
-    "better-sqlite3": "^11.5",
-    "zod": "^3.23",
     "bcryptjs": "^2.4",
+    "better-sqlite3": "^11.5",
+    "fastify": "^4.28",
     "jose": "^6.1",
-    "playwright": "^1.44"
+    "playwright": "^1.44",
+    "zod": "^3.23"
   },
   "devDependencies": {
-    "typescript": "^5.4",
-    "vitest": "^1.6",
-    "tsx": "^4.15",
+    "@types/bcryptjs": "^2.4",
     "@types/node": "^20",
-    "@types/bcryptjs": "^2.4"
+    "@vitest/coverage-v8": "^1.6.1",
+    "tsx": "^4.15",
+    "typescript": "^5.4",
+    "vitest": "^1.6"
   }
 }
