@@ -25,7 +25,7 @@ One markdown per supported integration, with current official steps to obtain OA
 Every plugin's OAuth redirect URL follows the same shape:
 
 ```
-https://<your-a-workbench-host>/api/auth/<plugin-name>/callback
+https://<your-a-workbench-host>/api/auth/plugin/<plugin-name>/callback
 ```
 
 For local development swap host for `http://localhost:3000`.
