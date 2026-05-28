@@ -75,9 +75,16 @@ export const listSpaces = {
     limit: z.number().default(25),
   }),
   handler: async (ctx: any, args: any) => {
+    // Legacy /wiki/rest/api/space was removed (410), and the v2
+    // /wiki/api/v2/spaces endpoint requires granular Confluence scopes
+    // that aren't selectable while the app uses classic scopes. Fall
+    // back to a CQL search for type=space, which only needs
+    // `search:confluence` (already granted) and returns the spaces in
+    // the same kind of `results` envelope.
     const params = new URLSearchParams();
+    params.set("cql", "type=space");
     params.set("limit", String(args.limit));
-    const res = await ctx.http(`https://api.atlassian.com/ex/confluence/cloud-id/wiki/rest/api/space?${params}`);
+    const res = await ctx.http(`https://api.atlassian.com/ex/confluence/cloud-id/wiki/rest/api/search?${params}`);
     return res.json();
   },
 };
