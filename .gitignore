@@ -1,12 +1,33 @@
+# Environment variables
+.env
+.env.*
+
+# Data
+data/
+*.db
+
+# Node
 node_modules/
 dist/
 *.log
-.env
-.DS_Store
 coverage/
-data/
-*.db
+
+# Turbo cache
 .turbo/
+
+# Generated plugin builds
 packages/plugins/**/*.js
 packages/plugins/**/*.d.ts
+
+# Handoff scratch
 .handoff
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Playwright CLI snapshots/screenshots (may capture real user PII)
+.playwright-cli/
