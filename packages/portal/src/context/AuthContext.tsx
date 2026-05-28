@@ -15,8 +15,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function readBootToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash;
+  if (hash.startsWith("#token=")) {
+    const bootToken = decodeURIComponent(hash.slice(7));
+    localStorage.setItem("awb_token", bootToken);
+    // Strip the token from URL so it doesn't linger in history.
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    return bootToken;
+  }
+  return localStorage.getItem("awb_token");
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(localStorage.getItem("awb_token"));
+  const [token, setToken] = useState<string | null>(readBootToken);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchIntegrations, fetchConnections, startCookieAuth } from "../api";
+import { fetchIntegrations, fetchConnections, startIntegrationAuth } from "../api";
 import { useAuth } from "../context/AuthContext";
 import CookieAuthPopup from "../components/CookieAuthPopup";
 
@@ -53,12 +53,12 @@ export default function Dashboard() {
     return true;
   });
 
-  async function handleConnect(integration: string) {
-    const integ = integrations.find((i) => i.name === integration);
-    if (!integ) return;
+  const [connectError, setConnectError] = useState<string | null>(null);
 
+  async function handleConnect(integration: string) {
+    setConnectError(null);
     try {
-      const result = await startCookieAuth(integration);
+      const result = await startIntegrationAuth(integration);
       if (result.type === "cookie") {
         setCookieAuth({
           integration,
@@ -68,11 +68,14 @@ export default function Dashboard() {
         });
         return;
       }
-    } catch {
-      // fall through to OAuth
+      if (result.type === "oauth2") {
+        window.location.href = result.url;
+        return;
+      }
+      setConnectError(`Manual auth required for ${integration}.`);
+    } catch (e) {
+      setConnectError(e instanceof Error ? e.message : "Connect failed");
     }
-
-    window.location.href = `/api/auth/${integration}`;
   }
 
   if (isLoading) {
@@ -121,6 +124,12 @@ export default function Dashboard() {
             <div><b>{pad(integrations.length)}</b> total</div>
           </div>
         </div>
+
+        {connectError && (
+          <div className="login-error" style={{ marginBottom: 16 }}>
+            ERR — {connectError}
+          </div>
+        )}
 
         <div className="filter-row" role="tablist">
           <button
