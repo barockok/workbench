@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  a-workbench:
+    build: ..
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - SERVER_PUBLIC_URL=http://localhost:3000
+      - PORTAL_URL=http://localhost:3000
+    volumes:
+      - ./data:/data
