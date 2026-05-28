@@ -60,9 +60,27 @@ const metaTools = [
             };
           }
 
+          // Validate args against the plugin tool's own schema so that
+          // Zod defaults (e.g. pageSize=10) get applied. Without this,
+          // execute_tool blindly forwards whatever the caller sent and
+          // the plugin sees `undefined` for optional-with-default fields.
+          let parsedArgs: unknown = args.args;
+          try {
+            const schema = (tool as { inputSchema?: { safeParse?: (v: unknown) => { success: boolean; data?: unknown; error?: { message: string } } } }).inputSchema;
+            if (schema?.safeParse) {
+              const parsed = schema.safeParse(args.args ?? {});
+              if (!parsed.success) {
+                return { error: `Invalid arguments for ${args.tool}: ${parsed.error?.message ?? "schema mismatch"}` };
+              }
+              parsedArgs = parsed.data;
+            }
+          } catch {
+            // fall through with raw args if schema parsing throws unexpectedly
+          }
+
           try {
             const toolCtx = createContext(ctx.userId, tool.integration);
-            const result = await tool.handler(toolCtx, args.args);
+            const result = await tool.handler(toolCtx, parsedArgs as Record<string, unknown>);
             return { result };
           } catch (e) {
             const err = e instanceof Error ? e.message : String(e);
