@@ -98,29 +98,29 @@ Restart the server after setting.
 
 Per-user Google Workspace tool access (Gmail, Drive, etc.) uses a separate code path. Two options:
 
-All 5 sub-plugins share **one** OAuth client (same GCP project, same consent screen). Each plugin has its **own** callback path — register every one in the GCP OAuth client's Authorized redirect URIs list:
+Each of the 5 Google sub-plugins is an **independent integration**. Create **one OAuth client per plugin** in step 4 — five separate clients. Each gets its own redirect URI and its own env-var pair.
 
-```
-${SERVER_PUBLIC_URL}/api/auth/plugin/google-gmail/callback
-${SERVER_PUBLIC_URL}/api/auth/plugin/google-drive/callback
-${SERVER_PUBLIC_URL}/api/auth/plugin/google-sheets/callback
-${SERVER_PUBLIC_URL}/api/auth/plugin/google-calendar/callback
-${SERVER_PUBLIC_URL}/api/auth/plugin/google-gemini/callback
-```
+| Plugin | Redirect URI | Env vars |
+|---|---|---|
+| `google-gmail` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-gmail/callback` | `GOOGLE_GMAIL_CLIENT_ID` / `GOOGLE_GMAIL_CLIENT_SECRET` |
+| `google-drive` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-drive/callback` | `GOOGLE_DRIVE_CLIENT_ID` / `GOOGLE_DRIVE_CLIENT_SECRET` |
+| `google-sheets` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-sheets/callback` | `GOOGLE_SHEETS_CLIENT_ID` / `GOOGLE_SHEETS_CLIENT_SECRET` |
+| `google-calendar` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-calendar/callback` | `GOOGLE_CALENDAR_CLIENT_ID` / `GOOGLE_CALENDAR_CLIENT_SECRET` |
+| `google-gemini` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-gemini/callback` | `GOOGLE_GEMINI_CLIENT_ID` / `GOOGLE_GEMINI_CLIENT_SECRET` |
 
-Local dev — add each with `http://localhost:3000` prefix too.
+For local dev also register `http://localhost:3000/api/auth/plugin/<plugin>/callback` on each client.
 
-**Option A — share with SSO (quickest):** leave `GOOGLE_PLUGIN_CLIENT_ID/SECRET` unset; the plugin code path falls back to `GOOGLE_CLIENT_ID/SECRET`.
+Env var naming convention: `<PLUGIN_NAME_UPPER_SNAKE>_CLIENT_ID/SECRET`. The plugin loader reads these directly from `process.env` — no `config.ts` entry needed when you add a new plugin.
 
-**Option B — separate client (recommended):** create a second Web Application client in step 4 (name it `a-workbench google plugin`). Use the redirect URIs above. Then:
+### Why separate clients
 
-```bash
-GOOGLE_PLUGIN_CLIENT_ID=<client-b-id>
-GOOGLE_PLUGIN_CLIENT_SECRET=<client-b-secret>
-SERVER_PUBLIC_URL=https://<your-host>
-```
+- **Least privilege.** Compromise of one client (leaked secret, revoked verification) does not break the others.
+- **Independent quotas / verification.** Sensitive scopes like `gmail.modify` need separate review than `calendar`. A failed Gmail verification does not block Calendar.
+- **Audit clarity.** Each token in `connections` is tied to one client ID — easier to revoke per product.
 
-Either way, the consent screen must list every plugin scope (step 3) — Google enforces this at the consent screen level, not per OAuth client.
+### Consent screen
+
+All 5 clients can live in the **same GCP project + same consent screen**, as long as the screen lists every scope each client requests. You can also use separate projects per plugin if you want maximum isolation (independent billing, separate verification timelines).
 
 ## 6. First connection
 

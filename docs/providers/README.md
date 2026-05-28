@@ -41,7 +41,12 @@ Per-plugin OAuth client credentials use the convention:
 
 Examples:
 ```bash
-GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET          # also used for portal SSO
+GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET           # portal SSO only
+GOOGLE_GMAIL_CLIENT_ID / GOOGLE_GMAIL_CLIENT_SECRET
+GOOGLE_DRIVE_CLIENT_ID / GOOGLE_DRIVE_CLIENT_SECRET
+GOOGLE_SHEETS_CLIENT_ID / GOOGLE_SHEETS_CLIENT_SECRET
+GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET
+GOOGLE_GEMINI_CLIENT_ID / GOOGLE_GEMINI_CLIENT_SECRET
 GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET
 SLACK_CLIENT_ID / SLACK_CLIENT_SECRET
 ATLASSIAN_JIRA_CLIENT_ID / ATLASSIAN_JIRA_CLIENT_SECRET
@@ -50,7 +55,7 @@ ATLASSIAN_BITBUCKET_CLIENT_ID / ATLASSIAN_BITBUCKET_CLIENT_SECRET
 ASANA_CLIENT_ID / ASANA_CLIENT_SECRET
 ```
 
-> Note: today only `GOOGLE_*` is wired (portal SSO via `packages/server/src/auth/google.ts`). Per-plugin OAuth credential storage and admin-portal entry is on the roadmap — see `goal.md` and the design plan in `docs/architecture.md`.
+> Plugin loader reads these straight from `process.env` (see `getPluginOAuthCreds` in `packages/server/src/auth/plugin-oauth.ts`). No `config.ts` entry required when you add a new plugin — just set the env vars matching the plugin name. Today only the Google plugins are exercised end-to-end; other providers need callback handlers wired (the dispatch is generic).
 
 ### Where credentials are stored
 
