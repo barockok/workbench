@@ -32,7 +32,7 @@ jobs:
         run: npm run build
 
       - name: Test
-        run: npm run test:coverage
+        run: npm run test:coverage -w @a-workbench/server
         env:
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
 
