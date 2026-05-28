@@ -1,6 +1,56 @@
-import { getToken, TokenData } from "../auth/tokens";
+import { getToken, storeToken, TokenData } from "../auth/tokens";
 import { getCookies, CookieData, isCookieExpired } from "../auth/cookie";
+import { getPluginOAuthCreds } from "../auth/plugin-oauth";
 import { registry } from "./registry";
+
+// Refresh a few seconds before the actual expiry to absorb clock skew.
+const TOKEN_EXPIRY_SKEW_SECONDS = 30;
+
+async function refreshAccessToken(
+  userId: string,
+  integration: string,
+  data: TokenData
+): Promise<TokenData> {
+  if (!data.refreshToken) throw new Error("Token expired and no refresh_token stored");
+  const integ = registry.getIntegration(integration);
+  if (!integ || integ.auth.type !== "oauth2") {
+    throw new Error("Cannot refresh non-oauth2 integration");
+  }
+  const creds = getPluginOAuthCreds(integration);
+  if (!creds) throw new Error(`OAuth client not configured for ${integration}`);
+
+  const res = await fetch(integ.auth.tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: creds.clientId,
+      client_secret: creds.clientSecret,
+      refresh_token: data.refreshToken,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Refresh failed ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const tokens = (await res.json()) as {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
+  const refreshed: TokenData = {
+    accessToken: tokens.access_token,
+    // Some providers (Google) re-issue the same refresh token implicitly;
+    // others (Atlassian) rotate it. Keep whichever we last saw.
+    refreshToken: tokens.refresh_token ?? data.refreshToken,
+    expiresAt: tokens.expires_in
+      ? Math.floor(Date.now() / 1000) + tokens.expires_in
+      : undefined,
+    scopes: data.scopes,
+  };
+  storeToken(userId, integration, refreshed);
+  return refreshed;
+}
 
 export interface ToolContext {
   userId: string;
@@ -38,6 +88,10 @@ export function createContext(userId: string, integration: string): ToolContext 
       if (!tokenData) {
         tokenData = getToken(userId, integration);
         if (!tokenData) throw new Error("Not connected");
+      }
+      const now = Math.floor(Date.now() / 1000);
+      if (tokenData.expiresAt && tokenData.expiresAt - TOKEN_EXPIRY_SKEW_SECONDS <= now) {
+        tokenData = await refreshAccessToken(userId, integration, tokenData);
       }
       return tokenData.accessToken;
     },

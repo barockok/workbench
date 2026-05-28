@@ -10,6 +10,7 @@ export default {
       "write:confluence-content",
       "search:confluence",
       "read:confluence-space.summary",
+      "offline_access",
     ],
   },
 };
