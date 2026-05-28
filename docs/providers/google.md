@@ -24,16 +24,13 @@ Splitting means a user can connect (e.g.) only Gmail without granting Drive acce
 
 In the [API Library](https://console.cloud.google.com/apis/library), enable each API matching the scopes you want to expose:
 
-| Scope | API to enable |
-|---|---|
-| `gmail.modify` | Gmail API |
-| `drive` | Google Drive API |
-| `spreadsheets` | Google Sheets API |
-| `documents` | Google Docs API |
-| `presentations` | Google Slides API |
-| `calendar` | Google Calendar API |
-| `meetings.space.readonly` | Google Meet REST API |
-| `generative-language.retriever` | Generative Language API |
+| Scope | API to enable | Plugin |
+|---|---|---|
+| `gmail.modify` | Gmail API | `google-gmail` |
+| `drive` | Google Drive API | `google-drive` |
+| `spreadsheets` | Google Sheets API | `google-sheets` |
+| `calendar` | Google Calendar API | `google-calendar` |
+| `generative-language.retriever` | Generative Language API | `google-gemini` |
 
 Disable APIs you don't need — fewer APIs = simpler verification.
 
@@ -42,15 +39,12 @@ Disable APIs you don't need — fewer APIs = simpler verification.
 1. Go to https://console.cloud.google.com/auth/overview
 2. User type: **Internal** if your Google Workspace org owns it (no verification needed); **External** otherwise.
 3. Fill app name, support email, developer contact.
-4. **Scopes** tab → add every scope your `manifest.ts` lists:
+4. **Scopes** tab → add only the scopes for the plugins you will enable (one consent screen can cover all 5 clients if they share the same project):
    ```
    https://www.googleapis.com/auth/gmail.modify
    https://www.googleapis.com/auth/drive
    https://www.googleapis.com/auth/spreadsheets
-   https://www.googleapis.com/auth/documents
-   https://www.googleapis.com/auth/presentations
    https://www.googleapis.com/auth/calendar
-   https://www.googleapis.com/auth/meetings.space.readonly
    https://www.googleapis.com/auth/generative-language.retriever
    ```
 5. **Test users** tab → add every Google account that will connect while the app is in `Testing` status. Without this, you'll get `Error 403: access_denied`.
@@ -63,21 +57,45 @@ Refs:
 - https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance
 - https://support.google.com/cloud/answer/9110914 (OAuth verification FAQ)
 
-## 4. Create the OAuth 2.0 Client ID
+## 4. Create OAuth 2.0 Clients
 
-1. Go to https://console.cloud.google.com/auth/clients
-2. **Create Client** → **Web application**
-3. Name: anything (e.g. `a-workbench server`)
-4. **Authorized redirect URIs** — add:
+You need **6 clients total** — 1 for portal SSO, 5 for the plugins (one per plugin).
+
+### Portal SSO client
+
+1. https://console.cloud.google.com/auth/clients → **Create Client** → **Web application**
+2. Name: `a-workbench portal SSO`
+3. **Authorized redirect URIs**:
    ```
    https://<your-a-workbench-host>/api/auth/google/callback
-   ```
-   For local dev also add:
-   ```
    http://localhost:3000/api/auth/google/callback
    ```
-   Path must match the route registered in `packages/server/src/api/routes.ts`.
-5. **Create** → copy the **Client ID** and **Client secret**.
+4. **Create** → copy → `.env`:
+   ```bash
+   GOOGLE_CLIENT_ID=...
+   GOOGLE_CLIENT_SECRET=...
+   ```
+
+### Plugin clients (one per product)
+
+Repeat for each plugin. Each client gets **only its own** redirect URI.
+
+| Client name | Redirect URI (production) | Redirect URI (local dev) |
+|---|---|---|
+| `a-workbench gmail` | `https://<host>/api/auth/plugin/google-gmail/callback` | `http://localhost:3000/api/auth/plugin/google-gmail/callback` |
+| `a-workbench drive` | `https://<host>/api/auth/plugin/google-drive/callback` | `http://localhost:3000/api/auth/plugin/google-drive/callback` |
+| `a-workbench sheets` | `https://<host>/api/auth/plugin/google-sheets/callback` | `http://localhost:3000/api/auth/plugin/google-sheets/callback` |
+| `a-workbench calendar` | `https://<host>/api/auth/plugin/google-calendar/callback` | `http://localhost:3000/api/auth/plugin/google-calendar/callback` |
+| `a-workbench gemini` | `https://<host>/api/auth/plugin/google-gemini/callback` | `http://localhost:3000/api/auth/plugin/google-gemini/callback` |
+
+Map each to its env var (see `.env.example`):
+```bash
+GOOGLE_GMAIL_CLIENT_ID=...
+GOOGLE_GMAIL_CLIENT_SECRET=...
+GOOGLE_DRIVE_CLIENT_ID=...
+GOOGLE_DRIVE_CLIENT_SECRET=...
+# ... etc
+```
 
 > The downloaded `client_secret.json` is convenient but optional — only the two values are needed.
 
@@ -96,29 +114,7 @@ Restart the server after setting.
 
 ### Plugin OAuth (tool calls)
 
-Per-user Google Workspace tool access (Gmail, Drive, etc.) uses a separate code path. Two options:
-
-Each of the 5 Google sub-plugins is an **independent integration**. Create **one OAuth client per plugin** in step 4 — five separate clients. Each gets its own redirect URI and its own env-var pair.
-
-| Plugin | Redirect URI | Env vars |
-|---|---|---|
-| `google-gmail` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-gmail/callback` | `GOOGLE_GMAIL_CLIENT_ID` / `GOOGLE_GMAIL_CLIENT_SECRET` |
-| `google-drive` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-drive/callback` | `GOOGLE_DRIVE_CLIENT_ID` / `GOOGLE_DRIVE_CLIENT_SECRET` |
-| `google-sheets` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-sheets/callback` | `GOOGLE_SHEETS_CLIENT_ID` / `GOOGLE_SHEETS_CLIENT_SECRET` |
-| `google-calendar` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-calendar/callback` | `GOOGLE_CALENDAR_CLIENT_ID` / `GOOGLE_CALENDAR_CLIENT_SECRET` |
-| `google-gemini` | `${SERVER_PUBLIC_URL}/api/auth/plugin/google-gemini/callback` | `GOOGLE_GEMINI_CLIENT_ID` / `GOOGLE_GEMINI_CLIENT_SECRET` |
-
-For local dev also register `http://localhost:3000/api/auth/plugin/<plugin>/callback` on each client.
-
-Env var naming convention: `<PLUGIN_NAME_UPPER_SNAKE>_CLIENT_ID/SECRET`. The plugin loader reads these directly from `process.env` — no `config.ts` entry needed when you add a new plugin.
-
-### Why separate clients
-
-- **Least privilege.** Compromise of one client (leaked secret, revoked verification) does not break the others.
-- **Independent quotas / verification.** Sensitive scopes like `gmail.modify` need separate review than `calendar`. A failed Gmail verification does not block Calendar.
-- **Audit clarity.** Each token in `connections` is tied to one client ID — easier to revoke per product.
-
-### Consent screen
+Each plugin's credentials are set per step 4 above. Env var naming convention: `<PLUGIN_NAME_UPPER_SNAKE>_CLIENT_ID/SECRET`. The loader reads these directly from `process.env` — no `config.ts` entry needed when you add a new plugin.
 
 All 5 clients can live in the **same GCP project + same consent screen**, as long as the screen lists every scope each client requests. You can also use separate projects per plugin if you want maximum isolation (independent billing, separate verification timelines).
 
@@ -126,9 +122,10 @@ All 5 clients can live in the **same GCP project + same consent screen**, as lon
 
 1. Start the server (`npm run dev`) and portal.
 2. Sign in via Google SSO.
-3. From the portal Connections page, click **Connect** on the Google card.
-4. Approve the consent screen — Google will list every scope from `manifest.ts`.
-5. You're redirected back to `/callback/google` → token stored encrypted in `connections`.
+3. From the portal Connections page, click **Connect** on any Google plugin card (Gmail, Drive, Sheets, Calendar, Gemini).
+4. Approve the consent screen — Google lists only the scopes for that plugin's `manifest.ts`.
+5. You're redirected back to `/api/auth/plugin/<name>/callback` → token stored encrypted in `connections`.
+6. Repeat for each plugin you want to enable. Grants are independent — connecting Gmail does not auto-connect Drive.
 
 ## Troubleshooting
 
