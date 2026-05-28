@@ -1,10 +1,16 @@
 # Google (Workspace) — OAuth Credential Setup
 
-Plugin: `packages/plugins/google`
-Auth type: OAuth 2.0 (Authorization Code, with refresh tokens)
-Last verified against official docs: 2026-05-27
+Plugins (one per product, each with its own scope and connection):
+- `packages/plugins/google-gmail` — `gmail.modify`
+- `packages/plugins/google-drive` — `drive`
+- `packages/plugins/google-sheets` — `spreadsheets` + `drive.file`
+- `packages/plugins/google-calendar` — `calendar`
+- `packages/plugins/google-gemini` — `generative-language.retriever`
 
-Covers Gmail, Drive, Sheets, Docs, Slides, Calendar, Meet (read-only), Gemini Generative Language.
+Auth type: OAuth 2.0 (Authorization Code, with refresh tokens)
+Last verified against official docs: 2026-05-28
+
+Splitting means a user can connect (e.g.) only Gmail without granting Drive access. Each plugin has its own row in the `connections` table and its own consent prompt.
 
 ---
 
@@ -92,18 +98,21 @@ Restart the server after setting.
 
 Per-user Google Workspace tool access (Gmail, Drive, etc.) uses a separate code path. Two options:
 
-**Option A — share with SSO (quickest):** leave `GOOGLE_PLUGIN_CLIENT_ID/SECRET` unset; the plugin code path falls back to `GOOGLE_CLIENT_ID/SECRET`. You still must add the plugin's redirect URI to the same GCP OAuth client:
+All 5 sub-plugins share **one** OAuth client (same GCP project, same consent screen). Each plugin has its **own** callback path — register every one in the GCP OAuth client's Authorized redirect URIs list:
 
 ```
-${SERVER_PUBLIC_URL}/api/auth/plugin/google/callback
+${SERVER_PUBLIC_URL}/api/auth/plugin/google-gmail/callback
+${SERVER_PUBLIC_URL}/api/auth/plugin/google-drive/callback
+${SERVER_PUBLIC_URL}/api/auth/plugin/google-sheets/callback
+${SERVER_PUBLIC_URL}/api/auth/plugin/google-calendar/callback
+${SERVER_PUBLIC_URL}/api/auth/plugin/google-gemini/callback
 ```
 
-For local dev:
-```
-http://localhost:3000/api/auth/plugin/google/callback
-```
+Local dev — add each with `http://localhost:3000` prefix too.
 
-**Option B — separate client (recommended):** create a second Web Application client in step 4 (name it `a-workbench google plugin`). Use the redirect URI above. Then:
+**Option A — share with SSO (quickest):** leave `GOOGLE_PLUGIN_CLIENT_ID/SECRET` unset; the plugin code path falls back to `GOOGLE_CLIENT_ID/SECRET`.
+
+**Option B — separate client (recommended):** create a second Web Application client in step 4 (name it `a-workbench google plugin`). Use the redirect URIs above. Then:
 
 ```bash
 GOOGLE_PLUGIN_CLIENT_ID=<client-b-id>

@@ -3,7 +3,7 @@ import { z } from "zod";
 export const generateContent = {
   name: "google_gemini_generate",
   description: "Generate content with Google Gemini",
-  integration: "google",
+  integration: "google-gemini",
   inputSchema: z.object({
     prompt: z.string(),
     model: z.string().default("gemini-1.5-flash"),

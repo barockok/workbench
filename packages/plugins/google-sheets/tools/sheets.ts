@@ -3,7 +3,7 @@ import { z } from "zod";
 export const readSheet = {
   name: "google_sheets_read",
   description: "Read values from a Google Sheet",
-  integration: "google",
+  integration: "google-sheets",
   inputSchema: z.object({
     spreadsheetId: z.string(),
     range: z.string(),
@@ -19,7 +19,7 @@ export const readSheet = {
 export const writeSheet = {
   name: "google_sheets_write",
   description: "Write values to a Google Sheet",
-  integration: "google",
+  integration: "google-sheets",
   inputSchema: z.object({
     spreadsheetId: z.string(),
     range: z.string(),
@@ -41,7 +41,7 @@ export const writeSheet = {
 export const createSpreadsheet = {
   name: "google_sheets_create",
   description: "Create a new Google Spreadsheet",
-  integration: "google",
+  integration: "google-sheets",
   inputSchema: z.object({
     title: z.string(),
     sheets: z.array(z.string()).optional(),
@@ -63,7 +63,7 @@ export const createSpreadsheet = {
 export const searchSheets = {
   name: "google_sheets_search",
   description: "Search for Google Sheets in Drive",
-  integration: "google",
+  integration: "google-sheets",
   inputSchema: z.object({
     query: z.string(),
     pageSize: z.number().default(10),

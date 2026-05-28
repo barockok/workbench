@@ -3,7 +3,7 @@ import { z } from "zod";
 export const sendEmail = {
   name: "google_gmail_send",
   description: "Send an email via Gmail",
-  integration: "google",
+  integration: "google-gmail",
   inputSchema: z.object({
     to: z.string().email(),
     subject: z.string(),
@@ -28,7 +28,7 @@ export const sendEmail = {
 export const listEmails = {
   name: "google_gmail_list",
   description: "List emails from Gmail inbox",
-  integration: "google",
+  integration: "google-gmail",
   inputSchema: z.object({
     maxResults: z.number().default(10),
     query: z.string().optional(),
@@ -46,7 +46,7 @@ export const listEmails = {
 export const getEmail = {
   name: "google_gmail_get",
   description: "Get a specific email by ID",
-  integration: "google",
+  integration: "google-gmail",
   inputSchema: z.object({
     id: z.string(),
   }),
@@ -59,7 +59,7 @@ export const getEmail = {
 export const getProfile = {
   name: "google_gmail_profile",
   description: "Get Gmail user profile",
-  integration: "google",
+  integration: "google-gmail",
   inputSchema: z.object({}),
   handler: async (ctx: any, _args: any) => {
     const res = await ctx.http("https://gmail.googleapis.com/gmail/v1/users/me/profile");
@@ -70,7 +70,7 @@ export const getProfile = {
 export const listLabels = {
   name: "google_gmail_labels",
   description: "List Gmail labels",
-  integration: "google",
+  integration: "google-gmail",
   inputSchema: z.object({}),
   handler: async (ctx: any, _args: any) => {
     const res = await ctx.http("https://gmail.googleapis.com/gmail/v1/users/me/labels");
@@ -81,7 +81,7 @@ export const listLabels = {
 export const listThreads = {
   name: "google_gmail_threads",
   description: "List Gmail threads",
-  integration: "google",
+  integration: "google-gmail",
   inputSchema: z.object({
     maxResults: z.number().default(10),
     query: z.string().optional(),
@@ -98,7 +98,7 @@ export const listThreads = {
 export const createDraft = {
   name: "google_gmail_draft",
   description: "Create a Gmail draft",
-  integration: "google",
+  integration: "google-gmail",
   inputSchema: z.object({
     to: z.string().email(),
     subject: z.string(),

@@ -3,7 +3,7 @@ import { z } from "zod";
 export const listFiles = {
   name: "google_drive_list",
   description: "List files in Google Drive",
-  integration: "google",
+  integration: "google-drive",
   inputSchema: z.object({
     pageSize: z.number().default(10),
     query: z.string().optional(),
@@ -21,7 +21,7 @@ export const listFiles = {
 export const createFolder = {
   name: "google_drive_create_folder",
   description: "Create a folder in Google Drive",
-  integration: "google",
+  integration: "google-drive",
   inputSchema: z.object({
     name: z.string(),
     parentId: z.string().optional(),
@@ -43,7 +43,7 @@ export const createFolder = {
 export const searchFiles = {
   name: "google_drive_search",
   description: "Search files in Google Drive",
-  integration: "google",
+  integration: "google-drive",
   inputSchema: z.object({
     query: z.string(),
     pageSize: z.number().default(10),
@@ -61,7 +61,7 @@ export const searchFiles = {
 export const uploadFile = {
   name: "google_drive_upload",
   description: "Upload a file to Google Drive",
-  integration: "google",
+  integration: "google-drive",
   inputSchema: z.object({
     name: z.string(),
     content: z.string(),
@@ -99,7 +99,7 @@ export const uploadFile = {
 export const downloadFile = {
   name: "google_drive_download",
   description: "Download a file from Google Drive",
-  integration: "google",
+  integration: "google-drive",
   inputSchema: z.object({
     fileId: z.string(),
   }),
@@ -112,7 +112,7 @@ export const downloadFile = {
 export const trashFile = {
   name: "google_drive_trash",
   description: "Move a file to trash in Google Drive",
-  integration: "google",
+  integration: "google-drive",
   inputSchema: z.object({
     fileId: z.string(),
   }),
@@ -129,7 +129,7 @@ export const trashFile = {
 export const updatePermissions = {
   name: "google_drive_permissions",
   description: "Update permissions for a Google Drive file",
-  integration: "google",
+  integration: "google-drive",
   inputSchema: z.object({
     fileId: z.string(),
     email: z.string().email(),
