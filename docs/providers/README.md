@@ -6,7 +6,11 @@ One markdown per supported integration, with current official steps to obtain OA
 
 | Provider | Plugin | Auth | Doc |
 |---|---|---|---|
-| Google Workspace (Gmail, Drive, Docs, Sheets, Slides, Calendar, Meet, Gemini) | `google` | OAuth 2.0 | [google.md](./google.md) |
+| Google Gmail | `google-gmail` | OAuth 2.0 | [google.md](./google.md) |
+| Google Drive | `google-drive` | OAuth 2.0 | [google.md](./google.md) |
+| Google Sheets | `google-sheets` | OAuth 2.0 | [google.md](./google.md) |
+| Google Calendar | `google-calendar` | OAuth 2.0 | [google.md](./google.md) |
+| Google Gemini | `google-gemini` | OAuth 2.0 | [google.md](./google.md) |
 | GitHub | `github` | OAuth App | [github.md](./github.md) |
 | Slack | `slack` | OAuth 2.0 (v2 bot) | [slack.md](./slack.md) |
 | Jira (Atlassian Cloud) | `atlassian-jira` | OAuth 2.0 (3LO) | [atlassian-jira.md](./atlassian-jira.md) |

@@ -4,7 +4,11 @@ import { config } from "../config";
 import { registry } from "./registry";
 
 const builtinPlugins = [
-  "google",
+  "google-gmail",
+  "google-drive",
+  "google-sheets",
+  "google-calendar",
+  "google-gemini",
   "atlassian-jira",
   "atlassian-confluence",
   "atlassian-bitbucket",

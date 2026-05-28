@@ -3,7 +3,7 @@ import { z } from "zod";
 export const listEvents = {
   name: "google_calendar_list_events",
   description: "List events from Google Calendar",
-  integration: "google",
+  integration: "google-calendar",
   inputSchema: z.object({
     calendarId: z.string().default("primary"),
     maxResults: z.number().default(10),
@@ -24,7 +24,7 @@ export const listEvents = {
 export const createEvent = {
   name: "google_calendar_create_event",
   description: "Create an event in Google Calendar",
-  integration: "google",
+  integration: "google-calendar",
   inputSchema: z.object({
     calendarId: z.string().default("primary"),
     summary: z.string(),
@@ -50,7 +50,7 @@ export const createEvent = {
 export const getEvent = {
   name: "google_calendar_get_event",
   description: "Get a specific Google Calendar event",
-  integration: "google",
+  integration: "google-calendar",
   inputSchema: z.object({
     calendarId: z.string().default("primary"),
     eventId: z.string(),
@@ -66,7 +66,7 @@ export const getEvent = {
 export const updateEvent = {
   name: "google_calendar_update_event",
   description: "Update a Google Calendar event",
-  integration: "google",
+  integration: "google-calendar",
   inputSchema: z.object({
     calendarId: z.string().default("primary"),
     eventId: z.string(),
@@ -92,7 +92,7 @@ export const updateEvent = {
 export const deleteEvent = {
   name: "google_calendar_delete_event",
   description: "Delete a Google Calendar event",
-  integration: "google",
+  integration: "google-calendar",
   inputSchema: z.object({
     calendarId: z.string().default("primary"),
     eventId: z.string(),
@@ -110,7 +110,7 @@ export const deleteEvent = {
 export const listCalendars = {
   name: "google_calendar_list_calendars",
   description: "List all Google Calendars for the user",
-  integration: "google",
+  integration: "google-calendar",
   inputSchema: z.object({
     maxResults: z.number().default(10),
   }),
