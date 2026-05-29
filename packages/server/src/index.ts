@@ -1,10 +1,13 @@
 import Fastify from "fastify";
+import fastifyWebsocket from "@fastify/websocket";
+import WebSocket from "ws";
 import { config } from "./config";
 import { handleMcpRequest } from "./mcp/server";
 import { registerApiRoutes } from "./api/routes";
 import { loadPlugins } from "./plugins/loader";
 import { verifyApiKey } from "./auth/users";
 import { verifySession } from "./auth/session";
+import { getSessionCdpEndpoint } from "./auth/cookie";
 import "./telemetry/tracing";
 
 async function getUserIdFromAuth(auth?: string): Promise<string | null> {
@@ -19,10 +22,181 @@ async function getUserIdFromAuth(auth?: string): Promise<string | null> {
 }
 
 async function main() {
-  const app = Fastify({ logger: true });
+  const app = Fastify({
+    logger: {
+      // Defense in depth: even though tokens are no longer in URLs, redact
+      // anything that ever lands in this category so a future regression
+      // can't leak them into access logs.
+      redact: {
+        paths: [
+          "req.headers.authorization",
+          "req.url",
+          'req.query.token',
+          'req.query.cdpToken',
+        ],
+        remove: false,
+        censor: "[REDACTED]",
+      },
+    },
+  });
 
+  // Origin allowlist for browser-driven endpoints (specifically the CDP WS
+  // proxy). Without this, a malicious page could open a WebSocket to our
+  // proxy from the user's already-authenticated portal session.
+  const allowedOrigins = new Set<string>(
+    [config.PORTAL_URL, config.SERVER_PUBLIC_URL].filter(Boolean)
+  );
+  function isOriginAllowed(origin: string | undefined): boolean {
+    if (!origin) return false;
+    try {
+      const u = new URL(origin);
+      const normalized = `${u.protocol}//${u.host}`;
+      return allowedOrigins.has(normalized);
+    } catch {
+      return false;
+    }
+  }
+
+  await app.register(fastifyWebsocket);
   await loadPlugins();
   await registerApiRoutes(app);
+
+  // Reject the WS upgrade itself when the Origin header doesn't match the
+  // portal — blocks Cross-Site WebSocket Hijacking. Applies BEFORE the
+  // websocket handshake completes.
+  app.addHook("preValidation", async (request, reply) => {
+    if (request.url.startsWith("/api/auth/cookie/") && request.url.includes("/cdp")) {
+      const origin = request.headers.origin;
+      if (!isOriginAllowed(origin)) {
+        return reply.code(403).send({ error: "Origin not allowed" });
+      }
+    }
+  });
+
+  // Proxy raw Chrome DevTools Protocol WebSocket from the browser to the
+  // headed Chromium spawned by startCookieSession.
+  //
+  // Auth is intentionally NOT in the URL. The client must send a single
+  // JSON auth frame as its first message:
+  //   { "type": "auth", "sessionId": "...", "cdpToken": "..." }
+  // The server then validates the (sessionId, cdpToken) pair against the
+  // in-memory session map; only on success does it dial chromium and start
+  // proxying frames. Anything else closes the connection with 4401.
+  app.get<{ Params: { integration: string } }>(
+    "/api/auth/cookie/:integration/cdp",
+    { websocket: true },
+    (conn, request) => {
+      const browserWs = conn as unknown as WebSocket;
+
+      // Re-check origin in the handler too — defense in depth against any
+      // route ordering or hook-skipping regression.
+      if (!isOriginAllowed(request.headers.origin)) {
+        try { browserWs.close(4403, "Origin not allowed"); } catch { /* noop */ }
+        return;
+      }
+
+      // CDP frames are JSON text — chromium closes the socket (1006) if we
+      // forward Buffer with the default binary opcode. Normalize both ways.
+      const toText = (data: WebSocket.RawData): string => {
+        if (typeof data === "string") return data;
+        if (Buffer.isBuffer(data)) return data.toString("utf8");
+        if (Array.isArray(data)) return Buffer.concat(data).toString("utf8");
+        return Buffer.from(data as ArrayBuffer).toString("utf8");
+      };
+
+      let upstream: WebSocket | null = null;
+      let upstreamReady = false;
+      const pending: string[] = [];
+      const authTimeout = setTimeout(() => {
+        try { browserWs.close(4408, "auth timeout"); } catch { /* noop */ }
+      }, 5000);
+
+      function startProxy(target: string) {
+        // Chromium's CDP WebSocket gates Origin against
+        // --remote-allow-origins. Send a known origin from our side and
+        // match it on the chromium args (`http://127.0.0.1`).
+        upstream = new WebSocket(target, {
+          perMessageDeflate: false,
+          origin: "http://127.0.0.1",
+        });
+        upstream.on("open", () => {
+          upstreamReady = true;
+          for (const msg of pending) upstream!.send(msg);
+          pending.length = 0;
+        });
+        upstream.on("message", (data: WebSocket.RawData) => {
+          if (browserWs.readyState === WebSocket.OPEN) browserWs.send(toText(data));
+        });
+        const upstreamClosed = () => {
+          try { browserWs.close(); } catch { /* noop */ }
+        };
+        upstream.on("close", upstreamClosed);
+        upstream.on("error", upstreamClosed);
+      }
+
+      browserWs.on("message", async (data: WebSocket.RawData) => {
+        const text = toText(data);
+        if (!upstream) {
+          // First frame must be the auth handshake.
+          let msg: { type?: string; sessionId?: string; cdpToken?: string; bearer?: string };
+          try {
+            msg = JSON.parse(text);
+          } catch {
+            try { browserWs.close(4400, "Bad auth frame"); } catch { /* noop */ }
+            return;
+          }
+          if (
+            msg.type !== "auth" ||
+            !msg.sessionId ||
+            !msg.cdpToken ||
+            !msg.bearer
+          ) {
+            try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
+            return;
+          }
+          // Verify the caller is the same portal user who started the
+          // cookie session. The browser can't set Authorization on a WS,
+          // but it can include its bearer in the first auth frame.
+          const authedUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
+          if (!authedUserId) {
+            try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
+            return;
+          }
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const { getSessionOwner } = require("./auth/cookie") as typeof import("./auth/cookie");
+          const owner = getSessionOwner(msg.sessionId);
+          if (!owner || owner.userId !== authedUserId) {
+            try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
+            return;
+          }
+          const target = getSessionCdpEndpoint(msg.sessionId, authedUserId, msg.cdpToken);
+          if (!target) {
+            try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
+            return;
+          }
+          clearTimeout(authTimeout);
+          startProxy(target);
+          // Tell the client it can start sending CDP commands now.
+          try { browserWs.send(JSON.stringify({ type: "ready" })); } catch { /* noop */ }
+          return;
+        }
+        if (upstreamReady && upstream.readyState === WebSocket.OPEN) {
+          upstream.send(text);
+        } else {
+          pending.push(text);
+        }
+      });
+
+      browserWs.on("close", () => {
+        clearTimeout(authTimeout);
+        try { upstream?.close(); } catch { /* noop */ }
+      });
+      browserWs.on("error", () => {
+        clearTimeout(authTimeout);
+        try { upstream?.close(); } catch { /* noop */ }
+      });
+    }
+  );
 
   app.post("/mcp", async (request, reply) => {
     const auth = request.headers.authorization;
