@@ -37,7 +37,13 @@ export async function fetchConnections() {
 }
 
 export type StartAuthResult =
-  | { type: "cookie"; sessionId: string; cdpUrl: string; loginUrl: string }
+  | {
+      type: "cookie";
+      sessionId: string;
+      cdpProxyUrl: string;
+      cdpToken: string;
+      loginUrl: string;
+    }
   | { type: "oauth2"; url: string }
   | { type: "manual"; state: string };
 
