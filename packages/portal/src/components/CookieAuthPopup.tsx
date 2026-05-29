@@ -12,7 +12,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-export default function CookieAuthPopup({ integration, cdpProxyUrl, sessionId, onClose, onSuccess }: Props) {
+export default function CookieAuthPopup({ integration, cdpProxyUrl, cdpToken, sessionId, onClose, onSuccess }: Props) {
   const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +49,12 @@ export default function CookieAuthPopup({ integration, cdpProxyUrl, sessionId, o
         </div>
 
         <div className="modal-body" style={{ padding: 0, background: "#000" }}>
-          <CdpScreencast cdpProxyUrl={cdpProxyUrl} width={1024} />
+          <CdpScreencast
+            cdpProxyUrl={cdpProxyUrl}
+            sessionId={sessionId}
+            cdpToken={cdpToken}
+            width={1024}
+          />
         </div>
 
         {error && <div className="modal-error">ERR — {error}</div>}
