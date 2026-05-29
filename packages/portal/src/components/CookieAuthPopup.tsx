@@ -1,28 +1,20 @@
 import { useState } from "react";
 import { captureCookies, cancelCookieAuth } from "../api";
+import CdpScreencast from "./CdpScreencast";
 
 interface Props {
   integration: string;
   loginUrl: string;
-  cdpUrl: string;
+  cdpProxyUrl: string;
+  cdpToken: string;
   sessionId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-function isSafeLoginUrl(raw: string): boolean {
-  try {
-    const u = new URL(raw);
-    return u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-export default function CookieAuthPopup({ integration, loginUrl, sessionId, onClose, onSuccess }: Props) {
+export default function CookieAuthPopup({ integration, cdpProxyUrl, sessionId, onClose, onSuccess }: Props) {
   const [capturing, setCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const safeLogin = isSafeLoginUrl(loginUrl);
 
   async function handleCapture() {
     setCapturing(true);
@@ -52,23 +44,12 @@ export default function CookieAuthPopup({ integration, loginUrl, sessionId, onCl
         </div>
 
         <div className="modal-instructions">
-          <div><b>01</b> — Complete login in the embedded browser below.</div>
+          <div><b>01</b> — Complete login in the remote browser below (mouse + keyboard streamed via CDP).</div>
           <div><b>02</b> — Click "Capture session" once authenticated.</div>
         </div>
 
-        <div className="modal-body">
-          {safeLogin ? (
-            <iframe
-              src={loginUrl}
-              sandbox="allow-scripts allow-forms"
-              referrerPolicy="no-referrer"
-              title={`${integration} login`}
-            />
-          ) : (
-            <div style={{ padding: 20, color: "var(--danger)", fontFamily: "var(--mono)", fontSize: 12 }}>
-              Refusing to render login: loginUrl is not https.
-            </div>
-          )}
+        <div className="modal-body" style={{ padding: 0, background: "#000" }}>
+          <CdpScreencast cdpProxyUrl={cdpProxyUrl} width={1024} />
         </div>
 
         {error && <div className="modal-error">ERR — {error}</div>}
