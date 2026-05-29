@@ -124,8 +124,11 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         type: "cookie",
         sessionId,
         cdpToken,
-        // Portal opens this relative WS URL — server proxies onto Chromium.
-        cdpProxyUrl: `/api/auth/cookie/${integration}/cdp?sessionId=${sessionId}&token=${cdpToken}`,
+        // Portal opens this relative WS URL — no secrets in the URL, so it
+        // is safe to land in access logs / history. The client sends
+        // {type:"auth",sessionId,cdpToken} as its first ws frame; the
+        // server validates and only then dials chromium.
+        cdpProxyUrl: `/api/auth/cookie/${integration}/cdp`,
         loginUrl: integ.auth.loginUrl,
       };
     }
