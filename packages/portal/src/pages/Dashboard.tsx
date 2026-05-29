@@ -7,7 +7,8 @@ import CookieAuthPopup from "../components/CookieAuthPopup";
 interface CookieAuthState {
   integration: string;
   loginUrl: string;
-  cdpUrl: string;
+  cdpProxyUrl: string;
+  cdpToken: string;
   sessionId: string;
 }
 
@@ -63,7 +64,8 @@ export default function Dashboard() {
         setCookieAuth({
           integration,
           loginUrl: result.loginUrl,
-          cdpUrl: result.cdpUrl,
+          cdpProxyUrl: result.cdpProxyUrl,
+          cdpToken: result.cdpToken,
           sessionId: result.sessionId,
         });
         return;
@@ -223,7 +225,8 @@ export default function Dashboard() {
         <CookieAuthPopup
           integration={cookieAuth.integration}
           loginUrl={cookieAuth.loginUrl}
-          cdpUrl={cookieAuth.cdpUrl}
+          cdpProxyUrl={cookieAuth.cdpProxyUrl}
+          cdpToken={cookieAuth.cdpToken}
           sessionId={cookieAuth.sessionId}
           onClose={() => setCookieAuth(null)}
           onSuccess={() => refetchConnections()}
