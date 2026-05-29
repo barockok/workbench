@@ -1,11 +1,20 @@
 name: Release
 
+# Push a v* tag to cut a release: builds the Docker image (chromium baked in),
+# pushes it to GHCR, and creates a GitHub Release from RELEASE_NOTES.md.
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to release (e.g., 0.2.0)'
+      tag:
+        description: "Existing tag to (re)build, e.g. v0.1.0"
         required: true
+
+permissions:
+  contents: write # create the GitHub Release
+  packages: write # push to GHCR via GITHUB_TOKEN
 
 jobs:
   release:
@@ -13,12 +22,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
           fetch-depth: 0
+
+      - name: Resolve version
+        id: v
+        run: echo "version=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -31,26 +46,33 @@ jobs:
         env:
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
 
-      - name: Generate release notes
-        run: |
-          echo "## Changes since last release" > RELEASE_NOTES.md
-          git log $(git describe --tags --abbrev=0)..HEAD --oneline >> RELEASE_NOTES.md
+      - name: Lowercase image name
+        id: img
+        run: echo "repo=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Create tag
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag -a v${{ github.event.inputs.version }} -m "Release v${{ github.event.inputs.version }}"
-          git push origin v${{ github.event.inputs.version }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
-        run: |
-          docker build -t ghcr.io/${{ github.repository }}:v${{ github.event.inputs.version }} .
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker push ghcr.io/${{ github.repository }}:v${{ github.event.inputs.version }}
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ steps.img.outputs.repo }}:${{ steps.v.outputs.version }}
+            ghcr.io/${{ steps.img.outputs.repo }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ github.event.inputs.version }}
+          tag_name: ${{ steps.v.outputs.version }}
           body_path: RELEASE_NOTES.md
