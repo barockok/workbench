@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
 interface Props {
-  // Relative path to the proxy WS, e.g. /api/auth/cookie/<int>/cdp?sessionId=...&token=...
+  // Relative path to the proxy WS, e.g. /api/auth/cookie/<int>/cdp.
+  // No secrets in the URL — the client sends an auth handshake as the
+  // first frame instead.
   cdpProxyUrl: string;
+  sessionId: string;
+  cdpToken: string;
   // Width of the rendered view (height keeps aspect ratio from chromium frames).
   width: number;
 }
@@ -19,11 +23,12 @@ interface CdpMessage {
  * keyboard input back over the same CDP socket so the user can complete a
  * login flow on a remote browser without exposing it directly.
  */
-export default function CdpScreencast({ cdpProxyUrl, width }: Props) {
+export default function CdpScreencast({ cdpProxyUrl, sessionId, cdpToken, width }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const cmdIdRef = useRef(1);
   const remoteSizeRef = useRef({ width: 0, height: 0 });
+  const readyRef = useRef(false);
   const [status, setStatus] = useState<"connecting" | "live" | "closed" | "error">("connecting");
   const [error, setError] = useState<string | null>(null);
 
@@ -39,25 +44,32 @@ export default function CdpScreencast({ cdpProxyUrl, width }: Props) {
     }
 
     ws.onopen = () => {
-      setStatus("live");
-      // Don't set viewport here — let chromium keep its native window size; we
-      // only care about screencast frames. Enable input + screencast.
-      send("Page.enable");
-      send("Runtime.enable");
-      send("Page.startScreencast", {
-        format: "jpeg",
-        quality: 70,
-        maxWidth: 1280,
-        maxHeight: 900,
-        everyNthFrame: 1,
-      });
+      // First frame is the auth handshake — the URL carries no secrets.
+      // We also include the user's portal bearer so the server can verify
+      // the WS caller is the same user who opened the cookie session.
+      const bearer = localStorage.getItem("awb_token") ?? "";
+      ws.send(JSON.stringify({ type: "auth", sessionId, cdpToken, bearer }));
     };
 
     ws.onmessage = async (ev) => {
-      let msg: CdpMessage;
+      let msg: CdpMessage & { type?: string };
       try {
         msg = JSON.parse(typeof ev.data === "string" ? ev.data : await new Response(ev.data).text());
       } catch {
+        return;
+      }
+      if (msg.type === "ready" && !readyRef.current) {
+        readyRef.current = true;
+        setStatus("live");
+        send("Page.enable");
+        send("Runtime.enable");
+        send("Page.startScreencast", {
+          format: "jpeg",
+          quality: 70,
+          maxWidth: 1280,
+          maxHeight: 900,
+          everyNthFrame: 1,
+        });
         return;
       }
       if (msg.method === "Page.screencastFrame") {
@@ -111,7 +123,7 @@ export default function CdpScreencast({ cdpProxyUrl, width }: Props) {
         // noop
       }
     };
-  }, [cdpProxyUrl]);
+  }, [cdpProxyUrl, sessionId, cdpToken]);
 
   // Translate a DOM event on the canvas into chromium coordinates.
   function canvasToRemote(e: React.MouseEvent<HTMLCanvasElement>) {
