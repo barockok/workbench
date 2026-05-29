@@ -113,14 +113,21 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
 
     if (integ.auth.type === "cookie") {
-      const { sessionId, cdpUrl } = await startCookieSession(
+      const { sessionId, cdpToken } = await startCookieSession(
         user.userId,
         integration,
         integ.auth.loginUrl,
         integ.auth.targetDomain,
         integ.auth.cookieDomains
       );
-      return { type: "cookie", sessionId, cdpUrl, loginUrl: integ.auth.loginUrl };
+      return {
+        type: "cookie",
+        sessionId,
+        cdpToken,
+        // Portal opens this relative WS URL — server proxies onto Chromium.
+        cdpProxyUrl: `/api/auth/cookie/${integration}/cdp?sessionId=${sessionId}&token=${cdpToken}`,
+        loginUrl: integ.auth.loginUrl,
+      };
     }
 
     if (integ.auth.type === "oauth2") {
