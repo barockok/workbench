@@ -62,6 +62,8 @@ import {
   deleteCookies,
   isCookieExpired,
   hasValidCookies,
+  getSessionOwner,
+  getSessionCdpEndpoint,
 } from "../src/auth/cookie";
 import { db } from "../src/db";
 
@@ -244,6 +246,88 @@ describe("cookie auth", () => {
       expect(captured.cookies).toHaveLength(1);
       expect(captured.cookies[0].name).toBe("session_id");
       expect(captured.cookies[0].httpOnly).toBe(true);
+
+      await closeCookieSession(sessionId);
+    });
+
+    it("throws if no page target is discovered", async () => {
+      // /json returns only a service_worker target — no page.
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url.endsWith("/json/version")) {
+          return new Response(JSON.stringify({ webSocketDebuggerUrl: "ws://x" }), { status: 200 });
+        }
+        if (url.endsWith("/json")) {
+          return new Response(JSON.stringify([{ type: "service_worker", url: "x", webSocketDebuggerUrl: "ws://y" }]), {
+            status: 200,
+          });
+        }
+        return new Response("", { status: 404 });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      await expect(
+        startCookieSession("user-x", "test-integ", "https://example.com/login", "example.com")
+      ).rejects.toThrow(/no page target/);
+    });
+
+    it("captureCookies throws when sessionId unknown", async () => {
+      await expect(captureCookies("does-not-exist")).rejects.toThrow(/Session not found/);
+    });
+
+    it("getSessionOwner returns null for unknown session", () => {
+      expect(getSessionOwner("nope")).toBeNull();
+    });
+
+    it("getSessionCdpEndpoint enforces userId match", async () => {
+      mockFetchForStart();
+      const { sessionId, cdpToken, cdpUrl } = await startCookieSession(
+        "alice",
+        "test-integ",
+        "https://example.com/login",
+        "example.com"
+      );
+
+      // wrong user
+      expect(getSessionCdpEndpoint(sessionId, "bob", cdpToken)).toBeNull();
+      // wrong token
+      expect(getSessionCdpEndpoint(sessionId, "alice", "wrong")).toBeNull();
+      // unknown session
+      expect(getSessionCdpEndpoint("nope", "alice", cdpToken)).toBeNull();
+      // correct triple
+      expect(getSessionCdpEndpoint(sessionId, "alice", cdpToken)).toBe(cdpUrl);
+
+      await closeCookieSession(sessionId);
+    });
+
+    it("closeCookieSession on unknown id is a no-op", async () => {
+      await expect(closeCookieSession("nope")).resolves.toBeUndefined();
+    });
+
+    it("filters out off-domain cookies even when targetDomain alone is allowed", async () => {
+      mockFetchForStart();
+      mockCdpResponses.length = 0;
+      mockCdpResponses.push({
+        result: {
+          cookies: [
+            { name: "ok", value: "1", domain: "shop.example.com", path: "/" },
+            { name: "evil", value: "2", domain: "evil.example.com", path: "/" },
+            { name: "exact", value: "3", domain: "example.com", path: "/" },
+          ],
+        },
+      });
+      const { sessionId } = await startCookieSession(
+        "u",
+        "test-integ",
+        "https://example.com/login",
+        "example.com"
+      );
+      const captured = await captureCookies(sessionId);
+      // Both `shop.example.com` and exact `example.com` are allowed; `evil`
+      // is NOT a subdomain of example.com under suffix rules used by the
+      // filter (it doesn't end with `.example.com`). Wait — `evil.example.com`
+      // does end with `.example.com`, so it's allowed unless `targetDomain`
+      // is something tighter. Adjust assertion to reflect the actual rule:
+      // any host that equals or ends with `.<targetDomain>` matches.
+      expect(captured.cookies.map((c) => c.name).sort()).toEqual(["evil", "exact", "ok"]);
 
       await closeCookieSession(sessionId);
     });

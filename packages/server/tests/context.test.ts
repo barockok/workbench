@@ -4,11 +4,16 @@ import { registry } from "../src/plugins/registry";
 
 vi.mock("../src/auth/tokens", () => ({
   getToken: vi.fn(),
+  storeToken: vi.fn(),
 }));
 
 vi.mock("../src/auth/cookie", () => ({
   getCookies: vi.fn(),
   isCookieExpired: vi.fn(() => false),
+}));
+
+vi.mock("../src/auth/plugin-oauth", () => ({
+  getPluginOAuthCreds: vi.fn(),
 }));
 
 const mockCookieIntegration = {
@@ -210,6 +215,280 @@ describe("createContext", () => {
 
       const callArgs = (global.fetch as any).mock.calls[0];
       expect(callArgs[1].headers.get("Authorization")).toBe("Bearer tok-123");
+    });
+  });
+
+  describe("token refresh", () => {
+    const oauth2Integration = {
+      name: "google-gmail",
+      version: "1.0.0",
+      auth: {
+        type: "oauth2" as const,
+        tokenUrl: "https://oauth2.googleapis.com/token",
+        authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+        scopes: ["https://www.googleapis.com/auth/gmail.modify"],
+      },
+    };
+
+    it("refreshes access token when expiry is within skew window", async () => {
+      const { getToken, storeToken } = await import("../src/auth/tokens");
+      const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
+
+      vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
+      vi.mocked(getPluginOAuthCreds).mockReturnValue({ clientId: "cid", clientSecret: "csec" });
+
+      // Stored token already expired.
+      const now = Math.floor(Date.now() / 1000);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "stale",
+        refreshToken: "rt-old",
+        expiresAt: now - 60,
+        scopes: "read",
+      });
+
+      const fetchMock = vi.fn(async () =>
+        new Response(JSON.stringify({ access_token: "fresh", expires_in: 3600 }), { status: 200 })
+      );
+      global.fetch = fetchMock as any;
+
+      const ctx = createContext("user-1", "google-gmail");
+      const token = await ctx.getToken();
+
+      expect(token).toBe("fresh");
+      const call = fetchMock.mock.calls[0];
+      expect(call[0]).toBe("https://oauth2.googleapis.com/token");
+      const body = (call[1] as RequestInit).body as URLSearchParams;
+      expect(body.get("grant_type")).toBe("refresh_token");
+      expect(body.get("client_id")).toBe("cid");
+      expect(body.get("client_secret")).toBe("csec");
+      expect(body.get("refresh_token")).toBe("rt-old");
+      expect(storeToken).toHaveBeenCalledWith(
+        "user-1",
+        "google-gmail",
+        expect.objectContaining({ accessToken: "fresh", refreshToken: "rt-old" })
+      );
+    });
+
+    it("accepts rotated refresh token from response", async () => {
+      const { getToken, storeToken } = await import("../src/auth/tokens");
+      const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
+
+      vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
+      vi.mocked(getPluginOAuthCreds).mockReturnValue({ clientId: "cid", clientSecret: "csec" });
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "stale",
+        refreshToken: "rt-old",
+        expiresAt: 1, // expired
+        scopes: "read",
+      });
+
+      global.fetch = vi.fn(async () =>
+        new Response(JSON.stringify({ access_token: "fresh", refresh_token: "rt-new", expires_in: 3600 }), {
+          status: 200,
+        })
+      ) as any;
+
+      const ctx = createContext("user-1", "google-gmail");
+      await ctx.getToken();
+      expect(storeToken).toHaveBeenCalledWith(
+        "user-1",
+        "google-gmail",
+        expect.objectContaining({ accessToken: "fresh", refreshToken: "rt-new" })
+      );
+    });
+
+    it("does not refresh when expiry is in the future", async () => {
+      const { getToken, storeToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "still-good",
+        refreshToken: "rt",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        scopes: "read",
+      });
+      const fetchMock = vi.fn();
+      global.fetch = fetchMock as any;
+
+      const ctx = createContext("user-1", "google-gmail");
+      const token = await ctx.getToken();
+      expect(token).toBe("still-good");
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(storeToken).not.toHaveBeenCalled();
+    });
+
+    it("throws if no refresh token stored", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "stale",
+        expiresAt: 1,
+        scopes: "read",
+      });
+
+      const ctx = createContext("user-1", "google-gmail");
+      await expect(ctx.getToken()).rejects.toThrow(/no refresh_token/i);
+    });
+
+    it("throws if refresh upstream returns non-OK", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
+      vi.mocked(getPluginOAuthCreds).mockReturnValue({ clientId: "cid", clientSecret: "csec" });
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "stale",
+        refreshToken: "rt",
+        expiresAt: 1,
+        scopes: "read",
+      });
+      global.fetch = vi.fn(async () => new Response("invalid_grant", { status: 400 })) as any;
+
+      const ctx = createContext("user-1", "google-gmail");
+      await expect(ctx.getToken()).rejects.toThrow(/Refresh failed 400/);
+    });
+
+    it("throws if plugin OAuth creds are not configured", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
+      vi.mocked(getPluginOAuthCreds).mockReturnValue(null);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "stale",
+        refreshToken: "rt",
+        expiresAt: 1,
+        scopes: "read",
+      });
+
+      const ctx = createContext("user-1", "google-gmail");
+      await expect(ctx.getToken()).rejects.toThrow(/OAuth client not configured/);
+    });
+
+    it("refuses to refresh non-oauth2 integrations", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "stale",
+        refreshToken: "rt",
+        expiresAt: 1,
+        scopes: "read",
+      });
+
+      const ctx = createContext("user-1", "legacy");
+      await expect(ctx.getToken()).rejects.toThrow(/Cannot refresh non-oauth2/);
+    });
+  });
+
+  describe("Atlassian cloud-id resolution", () => {
+    const jiraIntegration = {
+      name: "atlassian-jira",
+      version: "1.0.0",
+      auth: {
+        type: "oauth2" as const,
+        tokenUrl: "https://auth.atlassian.com/oauth/token",
+        authorizationUrl: "https://auth.atlassian.com/authorize",
+        scopes: ["read:jira-work"],
+      },
+    };
+
+    it("substitutes cloud-id placeholder for atlassian-jira URLs", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(jiraIntegration);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "atok",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        scopes: "read:jira-work",
+      });
+
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url.endsWith("/oauth/token/accessible-resources")) {
+          return new Response(JSON.stringify([{ id: "abc-cloud-id-123", scopes: ["read:jira-work"] }]), {
+            status: 200,
+          });
+        }
+        return new Response("ok", { status: 200 });
+      });
+      global.fetch = fetchMock as any;
+
+      const ctx = createContext("user-cid", "atlassian-jira");
+      await ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/myself");
+
+      // Last call should be the substituted URL.
+      const lastCall = fetchMock.mock.calls.at(-1)!;
+      expect(lastCall[0]).toBe(
+        "https://api.atlassian.com/ex/jira/abc-cloud-id-123/rest/api/3/myself"
+      );
+    });
+
+    it("caches the resolved cloud-id across requests", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(jiraIntegration);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "atok",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        scopes: "read:jira-work",
+      });
+
+      let resourcesCalls = 0;
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url.endsWith("/oauth/token/accessible-resources")) {
+          resourcesCalls++;
+          return new Response(JSON.stringify([{ id: "cached-id", scopes: ["read:jira-work"] }]), {
+            status: 200,
+          });
+        }
+        return new Response("ok", { status: 200 });
+      });
+      global.fetch = fetchMock as any;
+
+      const ctx = createContext("user-cache", "atlassian-jira");
+      await ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/a");
+      await ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/b");
+
+      expect(resourcesCalls).toBe(1);
+    });
+
+    it("leaves non-Atlassian URLs untouched", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "google-gmail",
+        version: "1.0.0",
+        auth: {
+          type: "oauth2" as const,
+          tokenUrl: "https://oauth2.googleapis.com/token",
+          authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+          scopes: ["x"],
+        },
+      });
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "g",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        scopes: "x",
+      });
+
+      const fetchMock = vi.fn(async () => new Response("ok"));
+      global.fetch = fetchMock as any;
+
+      const ctx = createContext("user-x", "google-gmail");
+      await ctx.http("https://gmail.googleapis.com/gmail/v1/users/me/profile");
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock.mock.calls[0][0]).toBe(
+        "https://gmail.googleapis.com/gmail/v1/users/me/profile"
+      );
+    });
+
+    it("throws when accessible-resources upstream fails", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(jiraIntegration);
+      vi.mocked(getToken).mockReturnValue({
+        accessToken: "atok",
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        scopes: "read:jira-work",
+      });
+      global.fetch = vi.fn(async () => new Response("nope", { status: 401 })) as any;
+
+      const ctx = createContext("user-err", "atlassian-jira");
+      await expect(
+        ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/x")
+      ).rejects.toThrow(/accessible-resources 401/);
     });
   });
 });
