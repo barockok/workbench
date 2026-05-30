@@ -1,6 +1,10 @@
 import { ToolDefinition, Integration } from "@a-workbench/shared";
+import { z } from "zod";
 
 export interface PluginTool extends ToolDefinition {
+  // Narrow the base `unknown` to a real Zod schema so callers (e.g.
+  // execute_tool) can `.safeParse` args without hand-rolled casts.
+  inputSchema: z.ZodTypeAny;
   handler: (ctx: unknown, args: unknown) => Promise<unknown>;
 }
 
