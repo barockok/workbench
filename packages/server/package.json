@@ -1,6 +1,6 @@
 {
   "name": "@a-workbench/server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@a-workbench/shared": "*",
+    "@fastify/static": "^7.0.4",
     "@fastify/websocket": "^10.0.1",
     "@modelcontextprotocol/sdk": "^1.29",
     "@opentelemetry/api": "^1.8",
