@@ -4,6 +4,7 @@ import WebSocket from "ws";
 import { config } from "./config";
 import { handleMcpRequest } from "./mcp/server";
 import { registerApiRoutes } from "./api/routes";
+import { registerPortal } from "./portal";
 import { loadPlugins } from "./plugins/loader";
 import { verifyApiKey } from "./auth/users";
 import { verifySession } from "./auth/session";
@@ -232,6 +233,11 @@ async function main() {
     }
     reply.send(result);
   });
+
+  // Serve the built portal (static + SPA fallback). Registered last so API,
+  // MCP, and the CDP WS routes take precedence and the SPA fallback only
+  // catches genuine client-route 404s.
+  await registerPortal(app);
 
   await app.listen({ port: parseInt(config.PORT), host: "0.0.0.0" });
   console.log(`Server running on port ${config.PORT}`);
