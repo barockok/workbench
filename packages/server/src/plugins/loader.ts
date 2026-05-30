@@ -75,8 +75,12 @@ export async function loadPlugins(): Promise<void> {
     }
   }
 
-  // Dynamically load from plugins directory if it exists
-  const pluginsDir = config.PLUGINS_DIR;
+  // Dynamically load custom plugins from PLUGINS_DIR. Resolve to an absolute
+  // path first: a relative dir (the default "./plugins", and what ships in the
+  // container image) would otherwise reach import() as a bare specifier — Node's
+  // ESM resolver reads "plugins/slack/manifest.ts" as package "plugins" and
+  // throws ERR_MODULE_NOT_FOUND. See findings/2026-05-30-relative-plugins-dir-import.
+  const pluginsDir = path.resolve(config.PLUGINS_DIR);
   if (!fs.existsSync(pluginsDir)) return;
 
   const dirs = fs.readdirSync(pluginsDir).filter((d) =>
@@ -84,6 +88,10 @@ export async function loadPlugins(): Promise<void> {
   );
 
   for (const dir of dirs) {
+    // In the container image PLUGINS_DIR and the built-in base path are the same
+    // directory, so every built-in dir would be re-imported here. The built-in
+    // loop already registered them; skip to avoid redundant loads.
+    if (builtinPlugins.includes(dir)) continue;
     const pluginPath = path.join(pluginsDir, dir);
     try {
       const manifestMod = await import(path.join(pluginPath, "manifest.ts"));
