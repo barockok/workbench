@@ -54,7 +54,7 @@ export default function Connect() {
           <div><b>02</b> — Click "Capture session" once authenticated.</div>
         </div>
         <div className="modal-body" style={{ padding: 0, background: "#000" }}>
-          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
+          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} bearer={jwt} />
         </div>
         {error && <div className="modal-error">ERR — {error}</div>}
         <div className="modal-foot">
