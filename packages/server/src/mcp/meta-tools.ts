@@ -3,7 +3,7 @@ import { registry } from "../plugins/registry";
 import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
 import { getToken } from "../auth/tokens";
-import { hasValidCookies, startCookieSession } from "../auth/cookie";
+import { hasValidCookies, startCookieSession, closeCookieSession } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
@@ -29,19 +29,30 @@ async function startConnect(
   const ttl = config.CONNECT_TTL_SECONDS;
 
   if (integ.auth.type === "cookie") {
-    const { sessionId, cdpToken } = await startCookieSession(
-      userId, integration, integ.auth.loginUrl, integ.auth.targetDomain, integ.auth.cookieDomains
-    );
-    const rec = createPending({ userId, integration, type: "cookie", ttlSeconds: ttl, cookieSessionId: sessionId });
-    const jwt = await signConnectToken(
-      { connectionId: rec.connectionId, userId, integration, sessionId, cdpToken }, ttl
-    );
-    return { connectionId: rec.connectionId, type: "cookie", url: `${config.PORTAL_URL}/connect/${integration}?t=${jwt}` };
+    let sessionId: string | undefined;
+    try {
+      const session = await startCookieSession(
+        userId, integration, integ.auth.loginUrl, integ.auth.targetDomain, integ.auth.cookieDomains
+      );
+      sessionId = session.sessionId;
+      const rec = createPending({ userId, integration, type: "cookie", ttlSeconds: ttl, cookieSessionId: sessionId });
+      const jwt = await signConnectToken(
+        { connectionId: rec.connectionId, userId, integration, sessionId, cdpToken: session.cdpToken }, ttl
+      );
+      return { connectionId: rec.connectionId, type: "cookie", url: `${config.PORTAL_URL}/connect/${integration}?t=${jwt}` };
+    } catch (err) {
+      if (sessionId) await closeCookieSession(sessionId).catch(() => undefined);
+      return { error: err instanceof Error ? err.message : String(err) };
+    }
   }
 
-  const rec = createPending({ userId, integration, type: "oauth2", ttlSeconds: ttl });
-  const url = buildPluginAuthUrl(userId, integration);
-  return { connectionId: rec.connectionId, type: "oauth2", url };
+  try {
+    const rec = createPending({ userId, integration, type: "oauth2", ttlSeconds: ttl });
+    const url = buildPluginAuthUrl(userId, integration);
+    return { connectionId: rec.connectionId, type: "oauth2", url };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 // `satisfies` (not an explicit annotation) keeps each element's `name` as a
@@ -116,7 +127,7 @@ export const metaTools = [
             return {
               error: "NOT_CONNECTED",
               integration: targetTool.integration,
-              message: `${targetTool.integration} not connected. Use get_auth_url('${targetTool.integration}') to connect.`,
+              message: `${targetTool.integration} not connected. Use connect('${targetTool.integration}') to connect.`,
             };
           }
 
@@ -208,17 +219,18 @@ export const metaTools = [
     name: "connect",
     description: "Begin connecting an integration. Returns an openable URL (OAuth consent for oauth2, a browser login link for cookie auth) and a connectionId. Then call wait_for_connection.",
     inputSchema: z.object({ integration: z.string() }),
-    handler: async (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
+    handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
   {
     name: "wait_for_connection",
     description: "Block until a connection started by connect() completes. Returns status CONNECTED, TIMEOUT, or EXPIRED.",
     inputSchema: z.object({ connectionId: z.string(), timeoutSec: z.number().int().positive().max(900).default(300) }),
-    handler: async (_ctx: { userId: string }, args: { connectionId: string; timeoutSec: number }) => {
+    handler: async (ctx: { userId: string }, args: { connectionId: string; timeoutSec: number }) => {
       const deadline = Date.now() + args.timeoutSec * 1000;
       for (;;) {
         const rec = getPending(args.connectionId);
         if (!rec) return { error: "Unknown connectionId" };
+        if (rec.userId !== ctx.userId) return { error: "Unknown connectionId" }; // same shape — no existence oracle
         if (rec.status === "CONNECTED") return { status: "CONNECTED" };
         if (rec.status === "EXPIRED") return { status: "EXPIRED" };
         if (Date.now() >= deadline) { await reapOne(args.connectionId); return { status: "TIMEOUT" }; }
@@ -230,7 +242,7 @@ export const metaTools = [
     name: "get_auth_url",
     description: "Deprecated alias of connect(). Get a URL to connect an integration.",
     inputSchema: z.object({ integration: z.string() }),
-    handler: async (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
+    handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
 ] satisfies readonly MetaTool[];
 
