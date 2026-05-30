@@ -405,6 +405,29 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(400);
       expect(JSON.parse(res.body).error).toBe("Session expired");
     });
+
+    it("returns 400 on zero cookies and does not store/close/markConnected", async () => {
+      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "user-1", integration: "legacy" });
+      vi.mocked(captureCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [],
+        capturedAt: 1,
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/cookie/legacy/capture",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { sessionId: "sess-1" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error).toContain("No cookies");
+      expect(storeCookies).not.toHaveBeenCalled();
+      expect(closeCookieSession).not.toHaveBeenCalled();
+      expect(markConnected).not.toHaveBeenCalled();
+    });
   });
 
   describe("POST /api/auth/cookie/:integration/cancel", () => {
@@ -555,6 +578,32 @@ describe("API routes", () => {
         headers: { authorization: "Bearer garbage" },
       });
       expect(res.statusCode).toBe(401);
+    });
+
+    it("POST /api/connect/capture 400s on zero cookies and does not store/close/markConnected", async () => {
+      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "u1", integration: "legacy" });
+      vi.mocked(captureCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [],
+        capturedAt: 1,
+      });
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toContain("No cookies");
+      expect(storeCookies).not.toHaveBeenCalled();
+      expect(closeCookieSession).not.toHaveBeenCalled();
+      expect(markConnected).not.toHaveBeenCalled();
     });
   });
 
