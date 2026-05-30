@@ -16,6 +16,8 @@ import {
   hasValidCookies,
   getSessionOwner,
 } from "../auth/cookie";
+import { verifyConnectToken } from "../auth/connect-token";
+import { markConnected, startReaper } from "../auth/connections";
 
 async function authenticate(request: { headers: { authorization?: string } }): Promise<{ userId: string } | null> {
   const auth = request.headers.authorization;
@@ -37,6 +39,8 @@ async function authenticate(request: { headers: { authorization?: string } }): P
 }
 
 export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
+  startReaper();
+
   // --- Auth routes ---
   app.get("/api/auth/google", async (_request, reply) => {
     if (!config.GOOGLE_CLIENT_ID) {
@@ -162,7 +166,8 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
 
     try {
-      await handlePluginCallback(integration, code, state);
+      const { userId } = await handlePluginCallback(integration, code, state);
+      markConnected(userId, integration);
       const redirect = new URL(config.PORTAL_URL);
       redirect.hash = `connected=${integration}`;
       return reply.redirect(redirect.toString());
@@ -191,6 +196,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       const cookies = await captureCookies(sessionId);
       storeCookies(user.userId, integration, cookies);
       await closeCookieSession(sessionId);
+      markConnected(user.userId, integration);
       return { success: true, cookieCount: cookies.cookies.length };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -215,6 +221,46 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     await closeCookieSession(sessionId);
     return { success: true };
+  });
+
+  // Connect-JWT endpoints (used by the /connect magic-link page — no portal session)
+  app.get("/api/connect/session", async (request, reply) => {
+    const auth = request.headers.authorization;
+    if (!auth?.startsWith("Bearer ")) return reply.status(401).send({ error: "Unauthorized" });
+    let payload;
+    try { payload = await verifyConnectToken(auth.slice(7)); }
+    catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
+    const integ = registry.getIntegration(payload.integration);
+    if (!integ || integ.auth.type !== "cookie") return reply.status(404).send({ error: "Integration not found" });
+    return {
+      integration: payload.integration,
+      loginUrl: integ.auth.loginUrl,
+      cdpProxyUrl: `/api/auth/cookie/${payload.integration}/cdp`,
+      sessionId: payload.sessionId,
+      cdpToken: payload.cdpToken,
+    };
+  });
+
+  app.post("/api/connect/capture", async (request, reply) => {
+    const auth = request.headers.authorization;
+    if (!auth?.startsWith("Bearer ")) return reply.status(401).send({ error: "Unauthorized" });
+    let payload;
+    try { payload = await verifyConnectToken(auth.slice(7)); }
+    catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
+    const owner = getSessionOwner(payload.sessionId);
+    if (!owner || owner.userId !== payload.userId || owner.integration !== payload.integration) {
+      return reply.status(403).send({ error: "Forbidden" });
+    }
+    try {
+      const cookies = await captureCookies(payload.sessionId);
+      storeCookies(payload.userId, payload.integration, cookies);
+      await closeCookieSession(payload.sessionId);
+      markConnected(payload.userId, payload.integration);
+      return { success: true, cookieCount: cookies.cookies.length };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(400).send({ error: message });
+    }
   });
 
   // Connection status per integration
