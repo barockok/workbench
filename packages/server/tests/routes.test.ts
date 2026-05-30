@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import Fastify from "fastify";
 import { registerApiRoutes } from "../src/api/routes";
 import { db } from "../src/db";
 import { registry } from "../src/plugins/registry";
+import { signConnectToken } from "../src/auth/connect-token";
+import { stopReaper } from "../src/auth/connections";
 
 vi.mock("../src/config", () => ({
   config: {
@@ -65,6 +67,16 @@ vi.mock("../src/auth/oauth", () => ({
   createAuthState: vi.fn(() => "test-state"),
 }));
 
+vi.mock("../src/auth/connections", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/auth/connections")>();
+  return {
+    ...actual,
+    startReaper: vi.fn(),
+    stopReaper: vi.fn(),
+    markConnected: vi.fn(),
+  };
+});
+
 async function buildApp() {
   const app = Fastify();
   await registerApiRoutes(app);
@@ -76,6 +88,10 @@ describe("API routes", () => {
     db.exec("DELETE FROM users");
     db.exec("DELETE FROM pending_auth");
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    stopReaper();
   });
 
   describe("GET /api/auth/google", () => {
@@ -389,6 +405,29 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(400);
       expect(JSON.parse(res.body).error).toBe("Session expired");
     });
+
+    it("returns 400 on zero cookies and does not store/close/markConnected", async () => {
+      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "user-1", integration: "legacy" });
+      vi.mocked(captureCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [],
+        capturedAt: 1,
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/cookie/legacy/capture",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { sessionId: "sess-1" },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error).toContain("No cookies");
+      expect(storeCookies).not.toHaveBeenCalled();
+      expect(closeCookieSession).not.toHaveBeenCalled();
+      expect(markConnected).not.toHaveBeenCalled();
+    });
   });
 
   describe("POST /api/auth/cookie/:integration/cancel", () => {
@@ -427,6 +466,144 @@ describe("API routes", () => {
         payload: { sessionId: "sess-1" },
       });
       expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe("connect endpoints", () => {
+    const mockCookieIntegForConnect = {
+      name: "legacy",
+      version: "1.0.0",
+      auth: {
+        type: "cookie" as const,
+        loginUrl: "https://legacy.com/login",
+        targetDomain: "legacy.com",
+      },
+    };
+
+    it("GET /api/connect/session returns session info for a valid token", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegForConnect);
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/connect/session",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.integration).toBe("legacy");
+      expect(body.sessionId).toBe("s1");
+      expect(body.cdpToken).toBe("t1");
+      expect(body.cdpProxyUrl).toBe("/api/auth/cookie/legacy/cdp");
+    });
+
+    it("GET /api/connect/session 401s on a bad token", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/connect/session",
+        headers: { authorization: "Bearer garbage" },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("GET /api/connect/session 404s when integration is not cookie-type / not found", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/connect/session",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("POST /api/connect/capture captures cookies for the token owner", async () => {
+      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "u1", integration: "legacy" });
+      vi.mocked(captureCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [{ name: "x", value: "y" }],
+        capturedAt: 1,
+      });
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.success).toBe(true);
+      expect(body.cookieCount).toBe(1);
+      expect(storeCookies).toHaveBeenCalled();
+      expect(closeCookieSession).toHaveBeenCalledWith("s1");
+      expect(markConnected).toHaveBeenCalledWith("u1", "legacy");
+      expect(captureCookies).toHaveBeenCalledWith("s1");
+    });
+
+    it("POST /api/connect/capture 403s on ownership mismatch", async () => {
+      const { getSessionOwner } = await import("../src/auth/cookie");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "other", integration: "legacy" });
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it("POST /api/connect/capture 401s on a bad token", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: "Bearer garbage" },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("POST /api/connect/capture 400s on zero cookies and does not store/close/markConnected", async () => {
+      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "u1", integration: "legacy" });
+      vi.mocked(captureCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [],
+        capturedAt: 1,
+      });
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toContain("No cookies");
+      expect(storeCookies).not.toHaveBeenCalled();
+      expect(closeCookieSession).not.toHaveBeenCalled();
+      expect(markConnected).not.toHaveBeenCalled();
     });
   });
 
