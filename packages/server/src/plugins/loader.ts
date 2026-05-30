@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
+import { z } from "zod";
 import { config } from "../config";
-import { registry } from "./registry";
+import { registry, PluginTool } from "./registry";
 
 const builtinPlugins = [
   "google-gmail",
@@ -32,14 +33,15 @@ function findPluginsBasePath(): string | undefined {
   return undefined;
 }
 
-function filterTools(module: Record<string, unknown>) {
+function filterTools(module: Record<string, unknown>): PluginTool[] {
   return Object.values(module).filter(
-    (v): v is { name: string; description: string; integration: string; inputSchema: unknown; handler: (ctx: unknown, args: unknown) => Promise<unknown> } =>
+    (v): v is PluginTool =>
       typeof v === "object" &&
       v !== null &&
       "name" in v &&
       "handler" in v &&
-      typeof (v as Record<string, unknown>).handler === "function"
+      typeof (v as Record<string, unknown>).handler === "function" &&
+      (v as Record<string, unknown>).inputSchema instanceof z.ZodType
   );
 }
 
