@@ -35,6 +35,8 @@ Secondary problem (closes finding `2026-05-30-abandoned-cookie-session-leak`): a
 
 ### 1. MCP tool surface (`mcp/meta-tools.ts`)
 
+**Precondition (dedup):** `metaTools` is currently declared twice — in `mcp/meta-tools.ts` (exported, unit-tested) and inline in `mcp/server.ts` (the copy actually wired to the MCP JSON-RPC handler, with a separately hardcoded JSON-schema map). Adding tools to only one would either do nothing at runtime or require double-maintenance. First consolidate to a single source: `meta-tools.ts` exports both `metaTools` and a `metaToolSchemas` map; `server.ts` imports both and deletes its inline copies.
+
 Two new meta-tools; `get_auth_url` becomes a thin alias for back-compat.
 
 - **`connect(integration)`** — starts a *pending connection*, returns:
@@ -73,10 +75,13 @@ Matching a callback/capture back to a pending record: by `(userId, integration)`
 ### 3. One-time magic-link token
 
 - `connect` (cookie path) mints a short JWT with `jose` HS256 signed by `config.SESSION_SECRET`, audience `a-workbench-connect` (distinct from the `a-workbench` session audience so a connect token can never be used as a session), payload `{ connectionId, userId, sessionId, exp }`, expiry = TTL (10 min).
-- New portal route `GET /connect/:integration?t=<jwt>` — a public page that:
-  1. Verifies the JWT (audience `a-workbench-connect`, not expired).
-  2. Uses the embedded `sessionId` + the existing CDP proxy (`/api/auth/cookie/:integration/cdp`) to render the login canvas — no prior portal login required.
-  3. On the user finishing login, calls the existing capture endpoint with `sessionId`.
+- JWT payload: `{ connectionId, userId, integration, sessionId, cdpToken, exp }`.
+- New portal route `GET /connect/:integration?t=<jwt>` — a public page (outside `RequireAuth`) that:
+  1. Reads `t` from the query; treats it as an opaque bearer.
+  2. Calls `GET /api/connect/session` with `Authorization: Bearer <jwt>` → server verifies the JWT and returns `{ integration, loginUrl, cdpProxyUrl, sessionId, cdpToken }`.
+  3. Renders the existing `CdpScreencast` (first WS frame `{sessionId, cdpToken}`) so the human logs in — no prior portal login required.
+  4. On "Capture session", calls `POST /api/connect/capture` with `Authorization: Bearer <jwt>`.
+- Because the magic-link page has no portal session, capture/bootstrap use **dedicated connect-JWT-authenticated endpoints** (`/api/connect/*`), not the session-authenticated `/api/auth/cookie/:integration/capture`. The connect endpoints derive `userId`/`integration`/`sessionId` from the verified JWT.
 - Token is single-use: consumed when capture succeeds (record flips `CONNECTED`) or when the session expires. Server-side validation: capture is gated by the live cookie session existing; once `closeCookieSession` runs, the token is dead.
 
 Helpers live in `auth/connect-token.ts` (`signConnectToken`, `verifyConnectToken`), mirroring `auth/session.ts`.
