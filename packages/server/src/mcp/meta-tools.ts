@@ -6,6 +6,18 @@ import { getToken } from "../auth/tokens";
 import { hasValidCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 
+// Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
+// can call `.safeParse` directly without hand-rolled casts. `handler` is kept
+// loosely typed because each tool has its own ctx/args signature.
+interface MetaTool {
+  name: string;
+  description: string;
+  inputSchema: z.ZodTypeAny;
+  handler: (ctx: never, args: never) => Promise<unknown>;
+}
+
+// `satisfies` (not an explicit annotation) keeps each element's `name` as a
+// string literal, so `metaToolSchemas` below can require exactly these keys.
 export const metaTools = [
   {
     name: "search_tools",
@@ -86,25 +98,34 @@ export const metaTools = [
           // the plugin sees `undefined` for optional-with-default fields.
           let parsedArgs: unknown = args.args;
           try {
-            const schema = (targetTool as { inputSchema?: { safeParse?: (v: unknown) => { success: boolean; data?: unknown; error?: { message: string } } } }).inputSchema;
-            if (schema?.safeParse) {
-              const parsed = schema.safeParse(args.args ?? {});
-              if (!parsed.success) {
-                await auditLogger.log({
-                  user_id: ctx.userId,
-                  integration: targetTool.integration,
-                  tool: args.tool,
-                  action: "EXECUTE",
-                  success: false,
-                  error: "INVALID_ARGS",
-                  duration_ms: Date.now() - start,
-                });
-                return { error: `Invalid arguments for ${args.tool}: ${parsed.error?.message ?? "schema mismatch"}` };
-              }
-              parsedArgs = parsed.data;
+            const parsed = targetTool.inputSchema.safeParse(args.args ?? {});
+            if (!parsed.success) {
+              await auditLogger.log({
+                user_id: ctx.userId,
+                integration: targetTool.integration,
+                tool: args.tool,
+                action: "EXECUTE",
+                success: false,
+                error: "INVALID_ARGS",
+                duration_ms: Date.now() - start,
+              });
+              return { error: `Invalid arguments for ${args.tool}: ${parsed.error?.message ?? "schema mismatch"}` };
             }
-          } catch {
-            // fall through with raw args if schema parsing throws unexpectedly
+            parsedArgs = parsed.data;
+          } catch (e) {
+            // Unexpected throw during schema parsing (e.g. a malformed schema).
+            // Don't swallow silently: record it observably, then fall through
+            // with raw args so execution still proceeds.
+            const err = e instanceof Error ? e.message : String(e);
+            await auditLogger.log({
+              user_id: ctx.userId,
+              integration: targetTool.integration,
+              tool: args.tool,
+              action: "EXECUTE",
+              success: false,
+              error: `SAFEPARSE_ERROR: ${err}`,
+              duration_ms: Date.now() - start,
+            });
           }
 
           try {
@@ -176,11 +197,13 @@ export const metaTools = [
       };
     },
   },
-];
+] satisfies readonly MetaTool[];
 
 // JSON Schema descriptions for the meta-tools, surfaced via MCP `tools/list`.
 // Kept here so the tool definitions and their wire schemas stay co-located.
-export const metaToolSchemas: Record<string, Record<string, unknown>> = {
+// Keyed by tool name so adding a meta-tool without a wire schema is a
+// compile error rather than a silent fallback in tools/list.
+export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<string, unknown>> = {
   search_tools: {
     type: "object",
     properties: { query: { type: "string", description: "Search keyword" } },
