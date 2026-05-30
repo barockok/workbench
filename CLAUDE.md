@@ -61,4 +61,4 @@ When you learn something non-obvious:
 
 ### Findings Index
 
-- None yet
+- [2026-05-30 abandoned cookie session leak](docs/findings/2026-05-30-abandoned-cookie-session-leak.md) — headless chromium + tmpdir leak on abandoned login; resolved by connect reaper
