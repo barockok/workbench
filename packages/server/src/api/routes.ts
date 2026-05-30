@@ -194,6 +194,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     try {
       const cookies = await captureCookies(sessionId);
+      if (cookies.cookies.length === 0) {
+        return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
+      }
       storeCookies(user.userId, integration, cookies);
       await closeCookieSession(sessionId);
       markConnected(user.userId, integration);
@@ -253,6 +256,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
     try {
       const cookies = await captureCookies(payload.sessionId);
+      if (cookies.cookies.length === 0) {
+        return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
+      }
       storeCookies(payload.userId, payload.integration, cookies);
       await closeCookieSession(payload.sessionId);
       markConnected(payload.userId, payload.integration);
