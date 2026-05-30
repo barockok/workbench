@@ -486,6 +486,76 @@ describe("API routes", () => {
       });
       expect(res.statusCode).toBe(401);
     });
+
+    it("GET /api/connect/session 404s when integration is not cookie-type / not found", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/connect/session",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("POST /api/connect/capture captures cookies for the token owner", async () => {
+      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "u1", integration: "legacy" });
+      vi.mocked(captureCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [{ name: "x", value: "y" }],
+        capturedAt: 1,
+      });
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.success).toBe(true);
+      expect(body.cookieCount).toBe(1);
+      expect(storeCookies).toHaveBeenCalled();
+      expect(closeCookieSession).toHaveBeenCalledWith("s1");
+      expect(markConnected).toHaveBeenCalledWith("u1", "legacy");
+      expect(captureCookies).toHaveBeenCalledWith("s1");
+    });
+
+    it("POST /api/connect/capture 403s on ownership mismatch", async () => {
+      const { getSessionOwner } = await import("../src/auth/cookie");
+      vi.mocked(getSessionOwner).mockReturnValue({ userId: "other", integration: "legacy" });
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it("POST /api/connect/capture 401s on a bad token", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/capture",
+        headers: { authorization: "Bearer garbage" },
+      });
+      expect(res.statusCode).toBe(401);
+    });
   });
 
   describe("GET /api/connections", () => {
