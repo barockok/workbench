@@ -61,9 +61,20 @@ export function markConnected(userId: string, integration: string): void {
   if (newest) newest.status = "CONNECTED";
 }
 
-/** Sweep: any PENDING record past expiry → close its cookie session + mark EXPIRED. */
+/** Grace window (seconds) before a terminal record is pruned from the store. */
+const PRUNE_GRACE_SECONDS = 3600;
+
+/**
+ * Sweep: any PENDING record past expiry → close its cookie session + mark EXPIRED.
+ * Then prune terminal records (CONNECTED/EXPIRED) whose expiry is older than the
+ * grace window, so the store doesn't grow unbounded in a long-running server.
+ * The grace (1h) sits well beyond any wait_for_connection timeout (max 900s), so
+ * an in-flight wait can still read a freshly-EXPIRED record before it's pruned.
+ */
 export async function reapExpired(): Promise<void> {
   const t = nowSec();
+  const pruneCutoff = t - PRUNE_GRACE_SECONDS;
+  const toDelete: string[] = [];
   for (const rec of store.values()) {
     if (rec.status === "PENDING" && rec.expiresAt <= t) {
       if (rec.cookieSessionId) {
@@ -71,6 +82,15 @@ export async function reapExpired(): Promise<void> {
       }
       rec.status = "EXPIRED";
     }
+    if (
+      (rec.status === "CONNECTED" || rec.status === "EXPIRED") &&
+      rec.expiresAt <= pruneCutoff
+    ) {
+      toDelete.push(rec.connectionId);
+    }
+  }
+  for (const id of toDelete) {
+    store.delete(id);
   }
 }
 
