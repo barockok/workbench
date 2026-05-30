@@ -1,3 +1,32 @@
+# a-workbench v0.2.0
+
+_2026-05-30_
+
+Headline: **MCP-initiated connect** — agents can drive a user through cookie/OAuth auth via a public magic-link page, without leaving the MCP session.
+
+## Features
+- Public `/connect` magic-link page for cookie auth initiated from MCP.
+- `connect` + `wait_for_connection` MCP tools (plus `get_auth_url` alias).
+- Connect session/capture endpoints; mark connections `CONNECTED`; start reaper.
+- Single-use connect-token sign/verify.
+- Pending-connection store + cookie-session reaper; prune terminal records past the grace window.
+
+## Fixes
+- Plugin loader: resolve `PLUGINS_DIR` to an absolute path and skip built-in-named dirs — eliminates 14 `ERR_MODULE_NOT_FOUND` errors on container boot (found validating the release image; plugins loaded fine but spammed the log). See `docs/findings/2026-05-30-relative-plugins-dir-import.md`.
+- Reject cookie capture with zero cookies instead of marking `CONNECTED`.
+- Accept connect JWT for CDP screencast WS auth on the public connect page.
+- `wait_for_connection` ownership check; clean up cookie-session on connect failure.
+
+## Chores / Internal
+- Single source of truth for MCP meta-tools + schemas; tighten meta-tool types; stop swallowing `safeParse` errors.
+- Connect/capture ownership + session 404 test coverage.
+- New env documented: `SESSION_SECRET`, `ENCRYPTION_KEY`, `CONNECT_TTL_SECONDS`.
+
+## Release validation
+- Docker image built + booted locally: `npm ci` + build succeed, container boots clean (0 plugin errors), 14 integrations / 80 tools register, headless chromium baked in for cookie capture.
+
+---
+
 # a-workbench v0.1.0
 
 First tagged release. Self-hosted MCP tool aggregator for AI agents — connects to SaaS tools via per-user auth, extensible via a plugin SDK.
