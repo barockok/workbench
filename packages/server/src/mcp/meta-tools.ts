@@ -80,9 +80,36 @@ export const metaTools = [
             };
           }
 
+          // Validate args against the plugin tool's own schema so that
+          // Zod defaults (e.g. pageSize=10) get applied. Without this,
+          // execute_tool blindly forwards whatever the caller sent and
+          // the plugin sees `undefined` for optional-with-default fields.
+          let parsedArgs: unknown = args.args;
+          try {
+            const schema = (targetTool as { inputSchema?: { safeParse?: (v: unknown) => { success: boolean; data?: unknown; error?: { message: string } } } }).inputSchema;
+            if (schema?.safeParse) {
+              const parsed = schema.safeParse(args.args ?? {});
+              if (!parsed.success) {
+                await auditLogger.log({
+                  user_id: ctx.userId,
+                  integration: targetTool.integration,
+                  tool: args.tool,
+                  action: "EXECUTE",
+                  success: false,
+                  error: "INVALID_ARGS",
+                  duration_ms: Date.now() - start,
+                });
+                return { error: `Invalid arguments for ${args.tool}: ${parsed.error?.message ?? "schema mismatch"}` };
+              }
+              parsedArgs = parsed.data;
+            }
+          } catch {
+            // fall through with raw args if schema parsing throws unexpectedly
+          }
+
           try {
             const toolCtx = createContext(ctx.userId, targetTool.integration);
-            const result = await targetTool.handler(toolCtx, args.args);
+            const result = await targetTool.handler(toolCtx, parsedArgs as Record<string, unknown>);
             await auditLogger.log({
               user_id: ctx.userId,
               integration: targetTool.integration,
@@ -150,3 +177,32 @@ export const metaTools = [
     },
   },
 ];
+
+// JSON Schema descriptions for the meta-tools, surfaced via MCP `tools/list`.
+// Kept here so the tool definitions and their wire schemas stay co-located.
+export const metaToolSchemas: Record<string, Record<string, unknown>> = {
+  search_tools: {
+    type: "object",
+    properties: { query: { type: "string", description: "Search keyword" } },
+    required: ["query"],
+  },
+  get_tool_schema: {
+    type: "object",
+    properties: { tool: { type: "string", description: "Tool name" } },
+    required: ["tool"],
+  },
+  execute_tool: {
+    type: "object",
+    properties: {
+      tool: { type: "string", description: "Tool name returned by search_tools" },
+      args: { type: "object", description: "Arguments for the tool", additionalProperties: true },
+    },
+    required: ["tool", "args"],
+  },
+  list_integrations: { type: "object", properties: {} },
+  get_auth_url: {
+    type: "object",
+    properties: { integration: { type: "string", description: "Integration name" } },
+    required: ["integration"],
+  },
+};
