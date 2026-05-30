@@ -9,6 +9,10 @@ interface Props {
   cdpToken: string;
   // Width of the rendered view (height keeps aspect ratio from chromium frames).
   width: number;
+  // Optional WS auth bearer. When provided (e.g. the connect JWT on the public
+  // /connect page, which has no portal session), it's used instead of the
+  // portal session token from localStorage.
+  bearer?: string;
 }
 
 interface CdpMessage {
@@ -23,7 +27,7 @@ interface CdpMessage {
  * keyboard input back over the same CDP socket so the user can complete a
  * login flow on a remote browser without exposing it directly.
  */
-export default function CdpScreencast({ cdpProxyUrl, sessionId, cdpToken, width }: Props) {
+export default function CdpScreencast({ cdpProxyUrl, sessionId, cdpToken, width, bearer: bearerProp }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const cmdIdRef = useRef(1);
@@ -47,7 +51,8 @@ export default function CdpScreencast({ cdpProxyUrl, sessionId, cdpToken, width 
       // First frame is the auth handshake — the URL carries no secrets.
       // We also include the user's portal bearer so the server can verify
       // the WS caller is the same user who opened the cookie session.
-      const bearer = localStorage.getItem("awb_token") ?? "";
+      // The public connect page passes its connect JWT via bearerProp instead.
+      const bearer = bearerProp ?? localStorage.getItem("awb_token") ?? "";
       ws.send(JSON.stringify({ type: "auth", sessionId, cdpToken, bearer }));
     };
 
@@ -123,7 +128,7 @@ export default function CdpScreencast({ cdpProxyUrl, sessionId, cdpToken, width 
         // noop
       }
     };
-  }, [cdpProxyUrl, sessionId, cdpToken]);
+  }, [cdpProxyUrl, sessionId, cdpToken, bearerProp]);
 
   // Translate a DOM event on the canvas into chromium coordinates.
   function canvasToRemote(e: React.MouseEvent<HTMLCanvasElement>) {

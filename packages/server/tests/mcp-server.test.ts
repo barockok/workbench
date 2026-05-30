@@ -12,6 +12,21 @@ vi.mock("../src/auth/tokens", () => ({
 
 vi.mock("../src/auth/cookie", () => ({
   hasValidCookies: vi.fn(() => false),
+  startCookieSession: vi.fn(async () => ({ sessionId: "sess-1", cdpUrl: "ws://x", cdpToken: "cdp-1" })),
+}));
+
+vi.mock("../src/auth/connections", () => ({
+  createPending: vi.fn(() => ({ connectionId: "conn-1", status: "PENDING" })),
+  getPending: vi.fn(),
+  reapOne: vi.fn(async () => undefined),
+}));
+
+vi.mock("../src/auth/connect-token", () => ({
+  signConnectToken: vi.fn(async () => "jwt-123"),
+}));
+
+vi.mock("../src/auth/plugin-oauth", () => ({
+  buildPluginAuthUrl: vi.fn(() => "https://provider.example/oauth?x=1"),
 }));
 
 vi.mock("../src/telemetry/tracing", () => ({
@@ -187,7 +202,7 @@ describe("handleMcpRequest", () => {
     expect(parsed.integrations[0].name).toBe("slack");
   });
 
-  it("returns cookie auth url via mcp call", async () => {
+  it("returns cookie magic-link via mcp call (get_auth_url alias)", async () => {
     vi.spyOn(registry, "getIntegration").mockReturnValue({
       name: "legacy",
       version: "1.0.0",
@@ -204,6 +219,6 @@ describe("handleMcpRequest", () => {
     );
     const parsed = JSON.parse(res.result.content[0].text);
     expect(parsed.type).toBe("cookie");
-    expect(parsed.url).toContain("/api/auth/legacy");
+    expect(parsed.url).toContain("/connect/legacy");
   });
 });
