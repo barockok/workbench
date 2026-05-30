@@ -50,6 +50,14 @@ export function getPending(connectionId: string): PendingConnection | undefined 
 /**
  * Flip the newest PENDING record for (userId, integration) to CONNECTED.
  * Called from the cookie capture handler and the oauth callback handler.
+ *
+ * Resolution is by (userId, integration) — NOT by connectionId — because the
+ * capture/oauth-callback handlers don't carry the originating connectionId.
+ * "Newest wins" is deliberate: on the rare same-user/same-integration
+ * concurrent connect, the most recent attempt is the one marked CONNECTED.
+ * Impact is benign (both records belong to the same user/target). The `>=`
+ * tiebreak picks the last-inserted record on a same-second createdAt tie
+ * (Map iteration is insertion-ordered), i.e. latest-inserted.
  */
 export function markConnected(userId: string, integration: string): void {
   let newest: PendingConnection | undefined;
