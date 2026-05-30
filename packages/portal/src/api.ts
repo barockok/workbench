@@ -85,6 +85,29 @@ export async function cancelCookieAuth(integration: string, sessionId: string): 
   });
 }
 
+export async function connectSession(jwt: string) {
+  const res = await fetch(`${API_URL}/api/connect/session`, {
+    headers: { authorization: `Bearer ${jwt}` },
+  });
+  if (!res.ok) throw new Error((await res.json()).error ?? "Link invalid");
+  return res.json() as Promise<{
+    integration: string;
+    loginUrl: string;
+    cdpProxyUrl: string;
+    sessionId: string;
+    cdpToken: string;
+  }>;
+}
+
+export async function connectCapture(jwt: string) {
+  const res = await fetch(`${API_URL}/api/connect/capture`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${jwt}` },
+  });
+  if (!res.ok) throw new Error((await res.json()).error ?? "Capture failed");
+  return res.json() as Promise<{ success: boolean; cookieCount: number }>;
+}
+
 export async function fetchMe() {
   const res = await fetch(`${API_URL}/api/auth/me`, { headers: getHeaders() });
   if (!res.ok) return null;

@@ -36,6 +36,26 @@ vi.mock("../src/auth/tokens", () => ({
 
 vi.mock("../src/auth/cookie", () => ({
   hasValidCookies: vi.fn(() => false),
+  startCookieSession: vi.fn(async () => ({ sessionId: "sess-1", cdpUrl: "ws://x", cdpToken: "cdp-1" })),
+  closeCookieSession: vi.fn(async () => undefined),
+}));
+
+vi.mock("../src/auth/connections", () => ({
+  createPending: vi.fn(() => ({ connectionId: "conn-1", status: "PENDING" })),
+  getPending: vi.fn(),
+  reapOne: vi.fn(async () => undefined),
+}));
+
+vi.mock("../src/auth/connect-token", () => ({
+  signConnectToken: vi.fn(async () => "jwt-123"),
+}));
+
+vi.mock("../src/auth/plugin-oauth", () => ({
+  buildPluginAuthUrl: vi.fn(() => "https://provider.example/oauth?x=1"),
+}));
+
+vi.mock("../src/config", () => ({
+  config: { PORTAL_URL: "http://portal.test", CONNECT_TTL_SECONDS: 600 },
 }));
 
 vi.mock("../src/telemetry/tracing", () => ({
@@ -148,28 +168,95 @@ describe("meta-tools", () => {
   });
 
   describe("get_auth_url", () => {
-    it("returns url for oauth2 integration", async () => {
+    it("returns url for oauth2 integration (alias of connect)", async () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
       const tool = findTool("get_auth_url");
       const result = await tool.handler({ userId: "user-1" }, { integration: "test-integ" });
-      expect(result.url).toContain("/api/auth/test-integ");
-      expect(result.type).toBeUndefined();
+      expect(result.url).toContain("provider.example");
+      expect(result.connectionId).toBe("conn-1");
     });
-
-    it("returns cookie auth info for cookie integration", async () => {
+    it("returns cookie magic-link (alias of connect)", async () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
       const tool = findTool("get_auth_url");
       const result = await tool.handler({ userId: "user-1" }, { integration: "legacy" });
       expect(result.type).toBe("cookie");
-      expect(result.url).toContain("/api/auth/legacy");
-      expect(result.instructions).toContain("legacy.com");
+      expect(result.url).toContain("/connect/legacy");
     });
-
     it("returns error for unknown integration", async () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
       const tool = findTool("get_auth_url");
       const result = await tool.handler({ userId: "user-1" }, { integration: "missing" });
       expect(result.error).toBe("Integration not found");
+    });
+  });
+
+  describe("connect", () => {
+    it("returns provider URL + connectionId for oauth2", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
+      const tool = findTool("connect");
+      const result = await tool.handler({ userId: "user-1" }, { integration: "test-integ" });
+      expect(result.connectionId).toBe("conn-1");
+      expect(result.type).toBe("oauth2");
+      expect(result.url).toContain("provider.example");
+    });
+
+    it("returns a portal magic-link + connectionId for cookie", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
+      const tool = findTool("connect");
+      const result = await tool.handler({ userId: "user-1" }, { integration: "legacy" });
+      expect(result.connectionId).toBe("conn-1");
+      expect(result.type).toBe("cookie");
+      expect(result.url).toContain("/connect/legacy?t=jwt-123");
+    });
+
+    it("returns error for unknown integration", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
+      const tool = findTool("connect");
+      const result = await tool.handler({ userId: "user-1" }, { integration: "missing" });
+      expect(result.error).toBe("Integration not found");
+    });
+  });
+
+  describe("wait_for_connection", () => {
+    it("returns CONNECTED when the record is connected", async () => {
+      const { getPending } = await import("../src/auth/connections");
+      vi.mocked(getPending).mockReturnValue({ status: "CONNECTED", userId: "user-1" } as any);
+      const tool = findTool("wait_for_connection");
+      const result = await tool.handler({ userId: "user-1" }, { connectionId: "conn-1", timeoutSec: 1 });
+      expect(result.status).toBe("CONNECTED");
+    });
+
+    it("returns TIMEOUT and reaps when never connected", async () => {
+      const { getPending, reapOne } = await import("../src/auth/connections");
+      vi.mocked(getPending).mockReturnValue({ status: "PENDING", userId: "user-1" } as any);
+      const tool = findTool("wait_for_connection");
+      const result = await tool.handler({ userId: "user-1" }, { connectionId: "conn-1", timeoutSec: 1 });
+      expect(result.status).toBe("TIMEOUT");
+      expect(reapOne).toHaveBeenCalledWith("conn-1");
+    });
+
+    it("returns EXPIRED when the record is expired", async () => {
+      const { getPending } = await import("../src/auth/connections");
+      vi.mocked(getPending).mockReturnValue({ status: "EXPIRED", userId: "user-1" } as any);
+      const tool = findTool("wait_for_connection");
+      const result = await tool.handler({ userId: "user-1" }, { connectionId: "conn-1", timeoutSec: 1 });
+      expect(result.status).toBe("EXPIRED");
+    });
+
+    it("returns error for unknown connectionId", async () => {
+      const { getPending } = await import("../src/auth/connections");
+      vi.mocked(getPending).mockReturnValue(undefined);
+      const tool = findTool("wait_for_connection");
+      const result = await tool.handler({ userId: "user-1" }, { connectionId: "nope", timeoutSec: 1 });
+      expect(result.error).toBe("Unknown connectionId");
+    });
+
+    it("rejects access to another user's connection (IDOR)", async () => {
+      const { getPending } = await import("../src/auth/connections");
+      vi.mocked(getPending).mockReturnValue({ status: "CONNECTED", userId: "other-user" } as any);
+      const tool = findTool("wait_for_connection");
+      const result = await tool.handler({ userId: "user-1" }, { connectionId: "conn-1", timeoutSec: 1 });
+      expect(result.error).toBe("Unknown connectionId");
     });
   });
 });
