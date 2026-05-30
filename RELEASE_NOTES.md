@@ -1,3 +1,22 @@
+# a-workbench v0.2.1
+
+_2026-05-30_
+
+Patch: **the portal is now served by the server.** v0.2.0 baked the built portal
+into the image at `/app/portal` but nothing served it, and the `/connect`
+magic-link pointed at the dev server — so the UI (incl. the new connect page) was
+unreachable from the image.
+
+## Fixes
+- Serve the built portal as static files from the server with SPA fallback: any
+  non-API/MCP GET resolves to `index.html`, so client routes like
+  `/connect/:integration` load on direct navigation. API/MCP 404s stay JSON.
+  (`@fastify/static`, new `PORTAL_DIST_DIR`, default `./portal`.)
+- `docker-compose.yml`: default `PORTAL_URL` / `SERVER_PUBLIC_URL` to the server
+  origin so portal + connect magic-link URLs resolve out of the box.
+
+---
+
 # a-workbench v0.2.0
 
 _2026-05-30_
