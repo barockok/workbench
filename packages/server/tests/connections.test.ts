@@ -57,4 +57,29 @@ describe("pending-connection store", () => {
     expect(closeCookieSession).not.toHaveBeenCalled();
     expect(getPending(rec.connectionId)?.status).toBe("PENDING");
   });
+
+  it("prunes a terminal record whose expiry is past the grace window", async () => {
+    const rec = createPending({
+      userId: "u1",
+      integration: "jira",
+      type: "oauth2",
+      ttlSeconds: -7200, // expired > 1h ago
+    });
+    markConnected("u1", "jira"); // terminal: CONNECTED
+    expect(getPending(rec.connectionId)?.status).toBe("CONNECTED");
+    await reapExpired();
+    expect(getPending(rec.connectionId)).toBeUndefined();
+  });
+
+  it("does not prune a terminal record still within the grace window", async () => {
+    const rec = createPending({
+      userId: "u1",
+      integration: "jira",
+      type: "cookie",
+      ttlSeconds: -1, // expiresAt ~now, within 1h grace
+      cookieSessionId: "sess-1",
+    });
+    await reapExpired(); // PENDING → EXPIRED, but not pruned (within grace)
+    expect(getPending(rec.connectionId)?.status).toBe("EXPIRED");
+  });
 });
