@@ -8,6 +8,7 @@ import { loadPlugins } from "./plugins/loader";
 import { verifyApiKey } from "./auth/users";
 import { verifySession } from "./auth/session";
 import { getSessionCdpEndpoint } from "./auth/cookie";
+import { verifyConnectToken } from "./auth/connect-token";
 import "./telemetry/tracing";
 
 async function getUserIdFromAuth(auth?: string): Promise<string | null> {
@@ -157,7 +158,25 @@ async function main() {
           // Verify the caller is the same portal user who started the
           // cookie session. The browser can't set Authorization on a WS,
           // but it can include its bearer in the first auth frame.
-          const authedUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
+          let authedUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
+          if (!authedUserId) {
+            // The public magic-link /connect page has no portal session, so
+            // it presents its connect JWT here instead. Accept it only when
+            // it verifies AND is bound to exactly this session — the
+            // sessionId + cdpToken equality prevents reusing a connect JWT
+            // to attach to a different session.
+            try {
+              const payload = await verifyConnectToken(msg.bearer);
+              if (
+                payload.sessionId === msg.sessionId &&
+                payload.cdpToken === msg.cdpToken
+              ) {
+                authedUserId = payload.userId;
+              }
+            } catch {
+              // Not a valid connect JWT — treat as not authed.
+            }
+          }
           if (!authedUserId) {
             try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
             return;
