@@ -1,6 +1,7 @@
 # Finding: abandoned cookie login sessions leak chromium + tmpdir
 
 **Date:** 2026-05-30
+**Status:** Resolved (reaper shipped — see plan 2026-05-30-mcp-initiated-connect).
 **Area:** `packages/server/src/auth/cookie.ts`
 
 ## What
