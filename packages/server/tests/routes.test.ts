@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
 import Fastify from "fastify";
 import { registerApiRoutes } from "../src/api/routes";
 import { db } from "../src/db";
 import { registry } from "../src/plugins/registry";
+import { signConnectToken } from "../src/auth/connect-token";
+import { stopReaper } from "../src/auth/connections";
 
 vi.mock("../src/config", () => ({
   config: {
@@ -65,6 +67,16 @@ vi.mock("../src/auth/oauth", () => ({
   createAuthState: vi.fn(() => "test-state"),
 }));
 
+vi.mock("../src/auth/connections", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/auth/connections")>();
+  return {
+    ...actual,
+    startReaper: vi.fn(),
+    stopReaper: vi.fn(),
+    markConnected: vi.fn(),
+  };
+});
+
 async function buildApp() {
   const app = Fastify();
   await registerApiRoutes(app);
@@ -76,6 +88,10 @@ describe("API routes", () => {
     db.exec("DELETE FROM users");
     db.exec("DELETE FROM pending_auth");
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    stopReaper();
   });
 
   describe("GET /api/auth/google", () => {
@@ -427,6 +443,48 @@ describe("API routes", () => {
         payload: { sessionId: "sess-1" },
       });
       expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe("connect endpoints", () => {
+    const mockCookieIntegForConnect = {
+      name: "legacy",
+      version: "1.0.0",
+      auth: {
+        type: "cookie" as const,
+        loginUrl: "https://legacy.com/login",
+        targetDomain: "legacy.com",
+      },
+    };
+
+    it("GET /api/connect/session returns session info for a valid token", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegForConnect);
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/connect/session",
+        headers: { authorization: `Bearer ${jwt}` },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.integration).toBe("legacy");
+      expect(body.sessionId).toBe("s1");
+      expect(body.cdpToken).toBe("t1");
+      expect(body.cdpProxyUrl).toBe("/api/auth/cookie/legacy/cdp");
+    });
+
+    it("GET /api/connect/session 401s on a bad token", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/connect/session",
+        headers: { authorization: "Bearer garbage" },
+      });
+      expect(res.statusCode).toBe(401);
     });
   });
 
