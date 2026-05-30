@@ -22,6 +22,7 @@ const configSchema = z.object({
       : ""
   ),
   PORTAL_URL: z.string().url().default("http://localhost:5173"),
+  CONNECT_TTL_SECONDS: z.coerce.number().int().positive().default(600),
 });
 
 export const config = configSchema.parse(process.env);
