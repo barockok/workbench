@@ -16,6 +16,11 @@ permissions:
   contents: write # create the GitHub Release
   packages: write # push to GHCR via GITHUB_TOKEN
 
+# Run JavaScript actions on Node 24 ahead of the 2026-06-16 forced migration
+# (checkout, setup-node, docker/*, action-gh-release still declare Node 20).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   release:
     runs-on: ubuntu-latest
