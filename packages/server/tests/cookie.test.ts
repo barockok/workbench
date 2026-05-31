@@ -140,6 +140,34 @@ describe("cookie auth", () => {
       };
       expect(isCookieExpired(data)).toBe(false);
     });
+
+    it("returns false when one cookie expired but a live one remains (don't let junk poison the set)", () => {
+      // Real internal-app repro: a short-lived Keycloak/analytics cookie expires
+      // seconds after capture, but the long-lived session token is still valid.
+      const now = Math.floor(Date.now() / 1000);
+      const data = {
+        domain: "example.internal",
+        cookies: [
+          { name: "KC_AUTH_SESSION_HASH", value: "x", domain: "sso.example.internal", path: "/", expires: now - 10 },
+          { name: "__Secure-next-auth.session-token.0", value: "y", domain: "internal-app.example.internal", path: "/", expires: now + 86400 },
+        ],
+        capturedAt: now,
+      };
+      expect(isCookieExpired(data)).toBe(false);
+    });
+
+    it("returns true only when every cookie with an expiry is expired", () => {
+      const now = Math.floor(Date.now() / 1000);
+      const data = {
+        domain: "example.com",
+        cookies: [
+          { name: "a", value: "1", domain: "example.com", path: "/", expires: now - 10 },
+          { name: "b", value: "2", domain: "example.com", path: "/", expires: now - 5 },
+        ],
+        capturedAt: now,
+      };
+      expect(isCookieExpired(data)).toBe(true);
+    });
   });
 
   describe("hasValidCookies", () => {
@@ -246,6 +274,31 @@ describe("cookie auth", () => {
       expect(captured.cookies).toHaveLength(1);
       expect(captured.cookies[0].name).toBe("session_id");
       expect(captured.cookies[0].httpOnly).toBe(true);
+
+      await closeCookieSession(sessionId);
+    });
+
+    it("drops cookies already expired at capture time", async () => {
+      mockFetchForStart();
+      const now = Math.floor(Date.now() / 1000);
+      const allCookies = [
+        { name: "live", value: "a", domain: "example.com", path: "/", expires: now + 100000 },
+        { name: "dead", value: "b", domain: "example.com", path: "/", expires: now - 10 },
+        { name: "sess", value: "c", domain: "example.com", path: "/" },
+      ];
+      mockCdpResponses.length = 0;
+      mockCdpResponses.push({ result: { cookies: allCookies } });
+
+      const { sessionId } = await startCookieSession(
+        "user-cap2",
+        "test-integ",
+        "https://example.com/login",
+        "example.com",
+        [".example.com"]
+      );
+
+      const captured = await captureCookies(sessionId);
+      expect(captured.cookies.map((c) => c.name).sort()).toEqual(["live", "sess"]);
 
       await closeCookieSession(sessionId);
     });

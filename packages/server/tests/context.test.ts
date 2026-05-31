@@ -116,6 +116,31 @@ describe("createContext", () => {
       expect(callArgs[1].redirect).toBe("manual");
     });
 
+    it("sends only cookies whose domain matches the target host (browser-like scoping)", async () => {
+      // internal-app repro: capture sweeps in cookies for sibling hosts (sso.*).
+      // Replaying ALL of them to one host bloats the header (nginx 400) and
+      // isn't what a browser does. Only host-matching cookies must be sent.
+      const { getCookies } = await import("../src/auth/cookie");
+      vi.mocked(getCookies).mockReturnValue({
+        domain: "legacy.com",
+        cookies: [
+          { name: "session", value: "abc", domain: "legacy.com", path: "/" },
+          { name: "wide", value: "w", domain: ".legacy.com", path: "/" },
+          { name: "foreign", value: "x", domain: "sso.legacy.com", path: "/" },
+        ],
+        capturedAt: 1,
+      });
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
+
+      const ctx = createContext("user-1", "legacy");
+      await ctx.http("https://legacy.com/api/data");
+
+      const callArgs = (global.fetch as any).mock.calls[0];
+      // `session` (host-only match) + `wide` (.legacy.com suffix) sent;
+      // `foreign` (host-only for sso.legacy.com) excluded.
+      expect(callArgs[1].headers.get("Cookie")).toBe("session=abc; wide=w");
+    });
+
     it("allows subdomain via cookieDomains", async () => {
       const { getCookies } = await import("../src/auth/cookie");
       vi.mocked(getCookies).mockReturnValue({
