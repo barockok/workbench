@@ -47,9 +47,19 @@ Claude: search_tools("jira")
 You: create a ticket
 Claude: execute_tool("jira_create_issue", {project: "PROJ", summary: "Bug"})
 
+You: file three tickets at once
+Claude: execute_tools({executions: [
+          {tool: "jira_create_issue", args: {...}},
+          {tool: "jira_create_issue", args: {...}},
+          {tool: "slack_send_message", args: {...}},
+        ]})
+        → results[] in the same order; one failure doesn't abort the rest
+
 You: connect my jira
-Claude: get_auth_url("jira") → open URL → authorize → done
+Claude: connect("jira") → open URL → authorize → wait_for_connection(id)
 ```
+
+`execute_tools` runs the batch concurrently (bounded pool) and returns a `results` array aligned to the input — each entry has either a `result` or an `error`. Use it to cut round-trips when an agent has several independent calls.
 
 ## Connecting via OAuth (browser login)
 
