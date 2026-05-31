@@ -50,10 +50,14 @@ export const searchFiles = {
   }),
   handler: async (ctx: any, args: any) => {
     const params = new URLSearchParams();
-    params.set("q", `name contains '${args.query}' or fullText contains '${args.query}'`);
+    // Escape backslash + single-quote so user input can't break out of the
+    // Drive `q` string literal (query injection). Drive escapes with a backslash.
+    const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    const term = esc(args.query);
+    params.set("q", `name contains '${term}' or fullText contains '${term}'`);
     params.set("pageSize", String(args.pageSize));
     params.set("fields", "nextPageToken,files(id,name,mimeType,modifiedTime,size)");
-    const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params}`);
+    const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params.toString().replace(/\+/g, "%20")}`);
     return res.json();
   },
 };
