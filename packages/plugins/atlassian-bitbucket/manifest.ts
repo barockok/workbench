@@ -1,6 +1,10 @@
 export default {
   name: "atlassian-bitbucket",
   version: "1.0.0",
+  displayName: "Bitbucket",
+  description: "Git repositories, pull requests, and code review.",
+  logo: "logo.svg",
+  categories: ["dev"],
   auth: {
     type: "oauth2",
     authorizationUrl: "https://bitbucket.org/site/oauth2/authorize",

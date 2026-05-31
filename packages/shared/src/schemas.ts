@@ -20,6 +20,10 @@ export const getAuthUrlSchema = z.object({
 export const integrationSchema = z.object({
   name: z.string(),
   version: z.string(),
+  displayName: z.string().optional(),
+  description: z.string().optional(),
+  logo: z.string().optional(),
+  categories: z.array(z.string()).optional(),
   auth: z.union([
     z.object({
       type: z.literal("oauth2"),
