@@ -43,20 +43,25 @@ function contentType(file: string): string {
   }
 }
 
-async function authenticate(request: { headers: { authorization?: string } }): Promise<{ userId: string } | null> {
-  const auth = request.headers.authorization;
-  if (!auth) return null;
+async function authenticate(request: {
+  headers: { authorization?: string; "x-workbench-api-key"?: string };
+}): Promise<{ userId: string } | null> {
+  // API key auth: a dedicated header (not Authorization), so it never collides
+  // with the portal's session JWT.
+  const apiKey = request.headers["x-workbench-api-key"];
+  if (apiKey) {
+    const userId = verifyApiKey(apiKey);
+    if (userId) return { userId };
+  }
 
-  if (auth.startsWith("Bearer ")) {
-    const token = auth.slice(7);
-    // Try session JWT first
+  // Session JWT (portal) via Authorization: Bearer.
+  const auth = request.headers.authorization;
+  if (auth?.startsWith("Bearer ")) {
     try {
-      const session = await verifySession(token);
+      const session = await verifySession(auth.slice(7));
       return { userId: session.userId };
     } catch {
-      // Fall back to API key
-      const userId = verifyApiKey(token);
-      if (userId) return { userId };
+      /* invalid session token */
     }
   }
   return null;
