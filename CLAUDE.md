@@ -64,3 +64,4 @@ When you learn something non-obvious:
 - [2026-05-30 abandoned cookie session leak](docs/findings/2026-05-30-abandoned-cookie-session-leak.md) — headless chromium + tmpdir leak on abandoned login; resolved by connect reaper
 - [2026-05-30 capture zero cookies marks connected](docs/findings/2026-05-30-capture-zero-cookies-marks-connected.md) — capture with 0 cookies called markConnected, producing hollow CONNECTED state; capture now 400s on zero cookies
 - [2026-05-30 relative PLUGINS_DIR import](docs/findings/2026-05-30-relative-plugins-dir-import.md) — relative PLUGINS_DIR reached import() as a bare specifier → 14 ERR_MODULE_NOT_FOUND on container boot; loader now resolves absolute + skips built-ins
+- [2026-05-31 MCP OAuth 2.1](docs/findings/2026-05-31-mcp-oauth.md) — state-ticket SSO resumption (nonce keyed by full state), httpOnly login-CSRF binding, and the api-key vs OAuth-Bearer two-token model for /mcp
