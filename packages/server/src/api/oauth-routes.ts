@@ -1,6 +1,10 @@
+import crypto from "crypto";
 import { FastifyInstance } from "fastify";
 import { protectedResourceMetadata, authorizationServerMetadata } from "../auth/oauth-server/metadata";
-import { registerClient } from "../auth/oauth-server/clients";
+import { registerClient, getClient } from "../auth/oauth-server/clients";
+import { config } from "../config";
+import { db } from "../db";
+import { buildAuthUrl } from "../auth/google";
 
 export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
   app.get("/.well-known/oauth-protected-resource", async () => protectedResourceMetadata());
@@ -23,5 +27,35 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     });
   });
 
-  // /authorize and /token are added in later tasks.
+  app.get("/authorize", async (request, reply) => {
+    const q = request.query as Record<string, string>;
+    const client = q.client_id ? getClient(q.client_id) : undefined;
+    if (!client) return reply.status(400).send({ error: "invalid_request", error_description: "unknown client_id" });
+    if (q.response_type !== "code") return reply.status(400).send({ error: "unsupported_response_type" });
+    if (!client.redirect_uris.includes(q.redirect_uri)) {
+      return reply.status(400).send({ error: "invalid_request", error_description: "redirect_uri not registered" });
+    }
+    if (!q.code_challenge || q.code_challenge_method !== "S256") {
+      return reply.status(400).send({ error: "invalid_request", error_description: "PKCE S256 required" });
+    }
+
+    // Stash the validated request under a ticket; resume after Google SSO.
+    const ticket = crypto.randomBytes(16).toString("hex");
+    const now = Math.floor(Date.now() / 1000);
+    db.prepare(
+      "INSERT INTO pending_auth (state, user_id, integration, expires_at, session_data) VALUES (?, ?, ?, ?, ?)"
+    ).run(
+      ticket, "", "__oauth_authorize__", now + 600,
+      JSON.stringify({
+        clientId: client.client_id,
+        redirectUri: q.redirect_uri,
+        codeChallenge: q.code_challenge,
+        scope: q.scope || "mcp",
+        state: q.state || "",
+        resource: q.resource || `${config.SERVER_PUBLIC_URL}/mcp`,
+      })
+    );
+
+    return reply.redirect(buildAuthUrl(ticket));
+  });
 }
