@@ -2,6 +2,13 @@ export interface Integration {
   name: string;
   version: string;
   auth: OAuthConfig | ApiKeyConfig | CookieConfig | NoneConfig;
+  // Optional presentation metadata (portal + agent UX). All backward-compatible.
+  displayName?: string;
+  description?: string;
+  // Logo: either an https URL (used as-is) or a filename bundled in the plugin
+  // dir (served via /api/integrations/:name/logo).
+  logo?: string;
+  categories?: string[];
 }
 
 export interface OAuthConfig {

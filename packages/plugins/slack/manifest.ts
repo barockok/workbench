@@ -1,6 +1,10 @@
 export default {
   name: "slack",
   version: "1.0.0",
+  displayName: "Slack",
+  description: "Team chat — messages, channels, and files.",
+  logo: "logo.svg",
+  categories: ["comms"],
   auth: {
     type: "oauth2",
     authorizationUrl: "https://slack.com/oauth/v2/authorize",
