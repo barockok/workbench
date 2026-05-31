@@ -2,11 +2,25 @@ import crypto from "crypto";
 import { FastifyInstance } from "fastify";
 import { protectedResourceMetadata, authorizationServerMetadata } from "../auth/oauth-server/metadata";
 import { registerClient, getClient } from "../auth/oauth-server/clients";
+import { consumeCode } from "../auth/oauth-server/codes";
+import { issueRefreshToken, rotateRefreshToken } from "../auth/oauth-server/refresh";
+import { signAccessToken } from "../auth/oauth-server/tokens";
 import { config } from "../config";
 import { db } from "../db";
 import { buildAuthUrl } from "../auth/google";
 
 export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
+  if (!app.hasContentTypeParser("application/x-www-form-urlencoded")) {
+    app.addContentTypeParser(
+      "application/x-www-form-urlencoded",
+      { parseAs: "string" },
+      (_req, body, done) => {
+        try { done(null, Object.fromEntries(new URLSearchParams(body as string))); }
+        catch (e) { done(e as Error); }
+      }
+    );
+  }
+
   app.get("/.well-known/oauth-protected-resource", async () => protectedResourceMetadata());
   app.get("/.well-known/oauth-authorization-server", async () => authorizationServerMetadata());
 
@@ -57,5 +71,29 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     );
 
     return reply.redirect(buildAuthUrl(ticket));
+  });
+
+  app.post("/token", async (request, reply) => {
+    const b = (request.body ?? {}) as Record<string, string>;
+    const ttl = config.OAUTH_ACCESS_TOKEN_TTL_SECONDS;
+
+    if (b.grant_type === "authorization_code") {
+      const consumed = consumeCode(b.code, {
+        clientId: b.client_id, redirectUri: b.redirect_uri, codeVerifier: b.code_verifier,
+      });
+      if (!consumed) return reply.status(400).send({ error: "invalid_grant" });
+      const access_token = await signAccessToken({ userId: consumed.userId, scope: consumed.scope, clientId: b.client_id });
+      const refresh_token = issueRefreshToken({ clientId: b.client_id, userId: consumed.userId, scope: consumed.scope });
+      return reply.send({ access_token, token_type: "Bearer", expires_in: ttl, refresh_token, scope: consumed.scope });
+    }
+
+    if (b.grant_type === "refresh_token") {
+      const rot = rotateRefreshToken(b.refresh_token, b.client_id);
+      if (!rot) return reply.status(400).send({ error: "invalid_grant" });
+      const access_token = await signAccessToken({ userId: rot.userId, scope: rot.scope, clientId: b.client_id });
+      return reply.send({ access_token, token_type: "Bearer", expires_in: ttl, refresh_token: rot.newToken, scope: rot.scope });
+    }
+
+    return reply.status(400).send({ error: "unsupported_grant_type" });
   });
 }
