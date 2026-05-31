@@ -97,3 +97,9 @@ MCP: success
 - CSRF protection on OAuth (state parameter)
 - API key auth on all endpoints
 - Audit log: sqlite/stdout/kafka
+
+### MCP Authorization (OAuth 2.1)
+
+a-workbench acts as both the resource server and the authorization server for the `/mcp` endpoint, implementing OAuth 2.1 with Dynamic Client Registration (RFC 7591) so MCP clients need no pre-shared credentials. Authorization Code + PKCE (S256 only) is the sole supported grant; user authentication is delegated to the existing Google SSO flow, keeping identity management out of the authorization server. Access tokens are short-lived JWTs scoped to the audience `<SERVER_PUBLIC_URL>/mcp`; refresh tokens are opaque, single-use, and rotated on every redemption.
+
+`/mcp` accepts two authentication modes: `Authorization: Bearer <access-token>` for interactive OAuth clients, and the `x-workbench-api-key` header for headless or non-interactive clients. A request that arrives with no valid credential receives a JSON-RPC 401 with a `WWW-Authenticate` header pointing to the resource metadata document, which is the standard entry-point for client discovery.
