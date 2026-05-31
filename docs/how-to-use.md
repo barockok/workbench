@@ -65,6 +65,93 @@ For a production deployment substitute your `SERVER_PUBLIC_URL` for `http://loca
 
 The `x-workbench-api-key` header remains available for headless or non-interactive clients (CI, scripts, existing configs) and does not require any browser interaction.
 
+## Connecting Claude Code to a remote workbench — step by step
+
+The OAuth handshake itself is one click. In practice the friction is everything *around* it — a malformed config file, a stale plugin cache, or pointing at the wrong server. Follow these steps in order and check each before moving on.
+
+### 1. Pick which auth you want
+
+| Use | Auth | Config needs |
+|---|---|---|
+| Interactive (you, at a terminal) | **OAuth browser login** | server `url` only |
+| Headless / CI / scripts | **API key** | `url` + `x-workbench-api-key` header |
+
+These are two different tokens. `Authorization: Bearer` is **OAuth/session only**; the API key travels in its own `x-workbench-api-key` header. Don't put the API key in a `Bearer` header — it won't authenticate.
+
+### 2. Write a **valid** `.mcp.json`
+
+A single trailing comma makes the entire file invalid JSON, and Claude Code then **silently drops the whole server** — it won't appear in `claude mcp list` at all, with only this in the output:
+
+```
+[Failed to parse] Project config (shared via .mcp.json)
+  └ [Error] MCP config is not a valid JSON
+```
+
+OAuth (browser login) — server URL only:
+
+```json
+{
+  "mcpServers": {
+    "workbench": {
+      "url": "https://your-workbench.example.com/mcp"
+    }
+  }
+}
+```
+
+API key — note the header and **no trailing comma** after it:
+
+```json
+{
+  "mcpServers": {
+    "workbench": {
+      "url": "https://your-workbench.example.com/mcp",
+      "headers": { "x-workbench-api-key": "YOUR_API_KEY" }
+    }
+  }
+}
+```
+
+Validate before continuing:
+
+```bash
+python3 -m json.tool .mcp.json   # prints the file if valid, errors with a line number if not
+```
+
+### 3. Load the config
+
+Claude Code does **not** auto-reload `.mcp.json`. After any edit, run `/reload-plugins` (or restart the session). Then confirm the server is parsed and listed:
+
+```bash
+claude mcp list
+# workbench: https://your-workbench.example.com/mcp (HTTP) - ✓ Connected
+```
+
+If `workbench` is missing here, stop — it's a config problem (step 2), not an auth problem.
+
+### 4. Authorize (OAuth path)
+
+Once the server loads, the `mcp__workbench__authenticate` tool is available. Trigger it (e.g. ask Claude to connect workbench). It returns an `authorize` URL — open it, sign in with Google SSO, done. Tokens refresh automatically afterward; you won't repeat this.
+
+If the redirect page shows a connection error (common on a remote/SSH session where `localhost:<port>/callback` can't reach your machine), copy the **full** `localhost:.../callback?code=...` URL from the browser address bar and pass it to `mcp__workbench__complete_authentication`.
+
+### 5. Verify
+
+```
+You: list my integrations
+Claude: list_integrations()  → real integration list with connection status
+```
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `MCP config is not a valid JSON`; server absent from `claude mcp list` | trailing comma / syntax error in `.mcp.json` | validate with `python3 -m json.tool`, remove the offending comma |
+| Server loads but `mcp__workbench__*` tools missing | config edited but not reloaded | run `/reload-plugins` or restart |
+| `401` / `WWW-Authenticate: Bearer …` on `/mcp` | no/invalid credential | OAuth: complete step 4. API key: confirm the `x-workbench-api-key` header is present and not pasted as `Bearer` |
+| Authorized but tools still 401 | API key sent in `Authorization: Bearer` | move it to the `x-workbench-api-key` header |
+| Connected to the wrong workbench | two similar servers (e.g. a hosted aggregator vs your self-hosted staging) both named similarly | check the exact `url` in `claude mcp list`; each server is independent and authorized separately |
+
 ## Connecting from MCP
 
 Use `connect` (and `wait_for_connection`) to drive the auth flow entirely from within Claude — no manual URL copy-paste needed.
