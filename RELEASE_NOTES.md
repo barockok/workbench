@@ -1,3 +1,35 @@
+# a-workbench v0.4.0
+
+_2026-05-31_
+
+Headline: **cookie-auth actually works in the Docker image** (it was fully broken), plus **batch tool execution** and a **Drive query-injection fix**.
+
+## Features
+- **`execute_tools`** — new MCP meta-tool: run many tools in one call, bounded-concurrent, results returned in input order, a single failure isolated to its slot (parity with Composio's `MULTI_EXECUTE_TOOL`). Cuts per-tool round-trips.
+- **`get_tool_schema` returns portable JSON Schema** (via `zod-to-json-schema`) instead of raw Zod internals — any MCP client can consume it.
+
+## Security
+- **Drive query injection** — user `query` was interpolated unescaped into the Drive `q` parameter (`google-docs` / `google-slides` / `google-drive` search), allowing query manipulation (e.g. reading trashed files). Now backslash-escapes `\` and `'`.
+
+## Fixes
+- **Cookie-auth capture was broken in the image** — chromium's zygote refuses to run as root without `--no-sandbox`, so the CDP endpoint never came up and Connect failed (`fetch failed`). Added `--no-sandbox` + `--disable-dev-shm-usage`.
+- **Cookie replay scoping** — `ctx.http` replayed *all* captured cookies to *every* host; on multi-subdomain logins this bloated the header (upstream `400 Request Header Or Cookie Too Large`) and broke host-specific auth. Now scopes cookies to the target host like a browser.
+- **Cookie liveness** — a connection was marked dead if *any* single cookie expired (short-lived SSO/analytics cookies poisoned otherwise-valid sessions). Now dead only when no live cookie remains; already-expired cookies are dropped at capture.
+- **`google_slides_create_from_markdown`** created blank slides and discarded the text — now adds a text box + `insertText` per slide.
+- **Drive `orderBy`** — `"modifiedTime desc"` 400'd because the space was sent as `+`; now sent as `%20`.
+- **docker-compose** — `env_file: .env` so Google SSO + per-plugin OAuth creds reach the container (`/authorize` previously 500'd with "GOOGLE_CLIENT_ID not configured"); container-specific `PORT`/`NODE_ENV`/`DATABASE_URL` overrides.
+
+## Chores / Docs
+- New dependency: `zod-to-json-schema` (server).
+- CI/release workflows run JavaScript actions on Node 24 (`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`).
+- Docs: `execute_tools` + JSON-Schema in architecture/how-to-use; step-by-step Claude Code connect + troubleshooting; findings `root-chromium-no-sandbox`, `cookie-domain-scoping`.
+- Tests: 259 passing.
+
+## Notes
+- Cookie-auth (incl. multi-subdomain SSO logins) verified end-to-end in-container this cycle. Anyone on ≤ v0.3.0 using cookie integrations in Docker should upgrade — it did not work before.
+
+---
+
 # a-workbench v0.3.0
 
 _2026-05-31_
