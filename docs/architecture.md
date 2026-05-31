@@ -31,15 +31,17 @@
 
 ## Meta-Tools
 
-5 static MCP tools:
+Static MCP meta-tools:
 
 | Tool | Purpose |
 |------|---------|
 | `search_tools` | Keyword search across all plugin tools |
-| `get_tool_schema` | Get input schema for a specific tool |
+| `get_tool_schema` | Get a tool's input schema as portable JSON Schema |
 | `execute_tool` | Execute a tool by slug with args |
+| `execute_tools` | Execute many tools in one call (bounded-concurrent, ordered results, per-item error isolation) |
 | `list_integrations` | List all integrations + connection status |
-| `get_auth_url` | Generate OAuth URL for an integration |
+| `connect` / `wait_for_connection` | Start a connection (OAuth/cookie) and block until it completes |
+| `get_auth_url` | Deprecated alias of `connect` |
 
 ## Plugin SDK
 
