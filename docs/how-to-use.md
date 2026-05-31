@@ -20,7 +20,7 @@ The panel also shows a ready-to-paste MCP client config (see below). The same ke
 ## Connecting Claude Code
 
 ```bash
-claude config set mcpServers.workbench '{"url": "http://localhost:3000/mcp", "headers": {"Authorization": "Bearer YOUR_API_KEY"}}'
+claude config set mcpServers.workbench '{"url": "http://localhost:3000/mcp", "headers": {"x-workbench-api-key": "YOUR_API_KEY"}}'
 ```
 
 Or, for any MCP client, the generic JSON the portal hands you:
@@ -30,11 +30,13 @@ Or, for any MCP client, the generic JSON the portal hands you:
   "mcpServers": {
     "workbench": {
       "url": "http://localhost:3000/mcp",
-      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
+      "headers": { "x-workbench-api-key": "YOUR_API_KEY" }
     }
   }
 }
 ```
+
+> The API key authenticates via the **`x-workbench-api-key`** header. `Authorization: Bearer` is reserved for the portal session JWT.
 
 Then use tools:
 

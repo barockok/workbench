@@ -214,14 +214,24 @@ describe("API routes", () => {
       expect(JSON.parse(res.body)).toEqual({ id: "user-1", email: "test@example.com" });
     });
 
-    it("returns user profile with valid API key", async () => {
+    it("returns user profile with valid API key (x-workbench-api-key header)", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/me",
+        headers: { "x-workbench-api-key": "valid-api-key" },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it("rejects API key sent via Authorization Bearer", async () => {
       const app = await buildApp();
       const res = await app.inject({
         method: "GET",
         url: "/api/auth/me",
         headers: { authorization: "Bearer valid-api-key" },
       });
-      expect(res.statusCode).toBe(200);
+      expect(res.statusCode).toBe(401);
     });
 
     it("returns 401 without auth", async () => {
