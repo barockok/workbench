@@ -1,0 +1,31 @@
+import crypto from "crypto";
+import { db } from "../../db";
+
+export interface OAuthClient {
+  client_id: string;
+  client_name?: string;
+  redirect_uris: string[];
+}
+
+export function registerClient(input: { client_name?: string; redirect_uris: string[] }): OAuthClient {
+  if (!Array.isArray(input.redirect_uris) || input.redirect_uris.length === 0) {
+    throw new Error("redirect_uris must contain at least one URI");
+  }
+  const client_id = crypto.randomBytes(16).toString("hex");
+  db.prepare(
+    "INSERT INTO oauth_clients (client_id, client_name, redirect_uris) VALUES (?, ?, ?)"
+  ).run(client_id, input.client_name ?? null, JSON.stringify(input.redirect_uris));
+  return { client_id, client_name: input.client_name, redirect_uris: input.redirect_uris };
+}
+
+export function getClient(clientId: string): OAuthClient | undefined {
+  const row = db
+    .prepare("SELECT client_id, client_name, redirect_uris FROM oauth_clients WHERE client_id = ?")
+    .get(clientId) as { client_id: string; client_name: string | null; redirect_uris: string } | undefined;
+  if (!row) return undefined;
+  return {
+    client_id: row.client_id,
+    client_name: row.client_name ?? undefined,
+    redirect_uris: JSON.parse(row.redirect_uris),
+  };
+}
