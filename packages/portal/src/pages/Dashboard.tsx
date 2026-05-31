@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchIntegrations, fetchConnections, startIntegrationAuth } from "../api";
+import { fetchIntegrations, fetchConnections, startIntegrationAuth, IntegrationSummary } from "../api";
 import { useAuth } from "../context/AuthContext";
 import CookieAuthPopup from "../components/CookieAuthPopup";
+import ApiKeyPanel from "../components/ApiKeyPanel";
+import IntegrationLogo from "../components/IntegrationLogo";
+import IntegrationDetail from "../components/IntegrationDetail";
 
 interface CookieAuthState {
   integration: string;
@@ -12,7 +15,6 @@ interface CookieAuthState {
   sessionId: string;
 }
 
-type Integration = { name: string; version: string };
 type Filter = "all" | "connected" | "available";
 
 function pad(n: number) {
@@ -32,25 +34,32 @@ export default function Dashboard() {
 
   const [cookieAuth, setCookieAuth] = useState<CookieAuthState | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [category, setCategory] = useState<string>("all");
+  const [detail, setDetail] = useState<string | null>(null);
 
-  const connectionMap = useMemo(
-    () =>
-      new Map(
-        connectionsData?.connections?.map(
-          (c: { name: string; connected: boolean }) => [c.name, c.connected]
-        ) ?? []
-      ),
-    [connectionsData]
-  );
+  const connectionMap = useMemo<Map<string, boolean>>(() => {
+    const entries: [string, boolean][] =
+      connectionsData?.connections?.map(
+        (c: { name: string; connected: boolean }) => [c.name, c.connected]
+      ) ?? [];
+    return new Map(entries);
+  }, [connectionsData]);
 
-  const integrations: Integration[] = data?.integrations ?? [];
+  const integrations: IntegrationSummary[] = data?.integrations ?? [];
   const connectedCount = integrations.filter((i) => connectionMap.get(i.name)).length;
   const availableCount = integrations.length - connectedCount;
 
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    integrations.forEach((i) => i.categories?.forEach((c) => set.add(c)));
+    return Array.from(set).sort();
+  }, [integrations]);
+
   const visible = integrations.filter((i) => {
     const c = connectionMap.get(i.name) ?? false;
-    if (filter === "connected") return c;
-    if (filter === "available") return !c;
+    if (filter === "connected" && !c) return false;
+    if (filter === "available" && c) return false;
+    if (category !== "all" && !i.categories?.includes(category)) return false;
     return true;
   });
 
@@ -113,6 +122,8 @@ export default function Dashboard() {
       </header>
 
       <main className="main">
+        <ApiKeyPanel />
+
         <div className="section-head">
           <div>
             <div className="eyebrow"><span className="dot" /> // registry ── integrations</div>
@@ -155,6 +166,23 @@ export default function Dashboard() {
           >
             Available <span className="count">{availableCount}</span>
           </button>
+
+          {categories.length > 0 && (
+            <div className="cat-select-wrap">
+              <label className="cat-select-label" htmlFor="cat-select">Category</label>
+              <select
+                id="cat-select"
+                className="cat-select"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="all">All categories</option>
+                {categories.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="grid">
@@ -163,8 +191,12 @@ export default function Dashboard() {
             return (
               <article
                 key={i.name}
-                className="card"
+                className="card card-clickable"
                 style={{ animationDelay: `${Math.min(idx * 35, 600)}ms` }}
+                onClick={() => setDetail(i.name)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter") setDetail(i.name); }}
               >
                 <div className="card-top">
                   <span className="card-index">№ {pad(idx + 1)}</span>
@@ -174,10 +206,21 @@ export default function Dashboard() {
                   </span>
                 </div>
 
-                <div>
-                  <h3 className="card-name">{i.name}</h3>
-                  <div className="card-ver">v{i.version}</div>
+                <div className="card-head">
+                  <IntegrationLogo name={i.name} displayName={i.displayName} logo={i.logo} size={28} />
+                  <div>
+                    <h3 className="card-name">{i.displayName || i.name}</h3>
+                    <div className="card-ver">v{i.version} · {i.toolCount} tools</div>
+                  </div>
                 </div>
+
+                {i.description && <p className="card-desc">{i.description}</p>}
+
+                {i.categories && i.categories.length > 0 && (
+                  <div className="integ-tags">
+                    {i.categories.map((c) => <span key={c} className="integ-tag">{c}</span>)}
+                  </div>
+                )}
 
                 <div className="card-bottom">
                   {connected ? (
@@ -185,7 +228,7 @@ export default function Dashboard() {
                       <span className="card-meta">Session active</span>
                       <button
                         className="btn-disconnect"
-                        onClick={() => handleConnect(i.name)}
+                        onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }}
                         title="Re-authorize"
                       >
                         Refresh
@@ -194,7 +237,10 @@ export default function Dashboard() {
                   ) : (
                     <>
                       <span className="card-meta">Not paired</span>
-                      <button className="btn-connect" onClick={() => handleConnect(i.name)}>
+                      <button
+                        className="btn-connect"
+                        onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }}
+                      >
                         Connect →
                       </button>
                     </>
@@ -220,6 +266,15 @@ export default function Dashboard() {
         <span>registry sync · {new Date().toISOString().slice(11, 19)} UTC</span>
         <span>build · <span className="ok">stable</span></span>
       </footer>
+
+      {detail && (
+        <IntegrationDetail
+          name={detail}
+          connected={connectionMap.get(detail) ?? false}
+          onClose={() => setDetail(null)}
+          onConnect={(n) => { setDetail(null); handleConnect(n); }}
+        />
+      )}
 
       {cookieAuth && (
         <CookieAuthPopup

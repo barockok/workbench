@@ -46,6 +46,9 @@ vi.mock("../src/auth/users", () => ({
   getUserById: vi.fn((id: string) =>
     id === "user-1" ? { id: "user-1", email: "test@example.com" } : null
   ),
+  setApiKey: vi.fn(() => ({ apiKey: "minted-key-123" })),
+  clearApiKey: vi.fn(),
+  hasApiKey: vi.fn(() => false),
 }));
 
 vi.mock("../src/auth/tokens", () => ({
@@ -146,6 +149,59 @@ describe("API routes", () => {
     });
   });
 
+  describe("/api/keys", () => {
+    it("mints a key (shown once) with valid JWT", async () => {
+      const { setApiKey } = await import("../src/auth/users");
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/keys",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body)).toEqual({ apiKey: "minted-key-123" });
+      expect(vi.mocked(setApiKey)).toHaveBeenCalledWith("user-1");
+    });
+
+    it("rejects minting without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "POST", url: "/api/keys" });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("reports key status", async () => {
+      const { hasApiKey } = await import("../src/auth/users");
+      vi.mocked(hasApiKey).mockReturnValueOnce(true);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/keys",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body)).toEqual({ hasKey: true });
+    });
+
+    it("revokes the key", async () => {
+      const { clearApiKey } = await import("../src/auth/users");
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "DELETE",
+        url: "/api/keys",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body)).toEqual({ success: true });
+      expect(vi.mocked(clearApiKey)).toHaveBeenCalledWith("user-1");
+    });
+
+    it("rejects revoke without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "DELETE", url: "/api/keys" });
+      expect(res.statusCode).toBe(401);
+    });
+  });
+
   describe("GET /api/auth/me", () => {
     it("returns user profile with valid JWT", async () => {
       const app = await buildApp();
@@ -214,6 +270,75 @@ describe("API routes", () => {
     it("returns 401 without auth", async () => {
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/integrations" });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("includes presentation metadata + tool count + resolved logo", async () => {
+      vi.spyOn(registry, "listIntegrations").mockReturnValue([
+        {
+          name: "slack", version: "1.0.0",
+          displayName: "Slack", description: "Team chat",
+          logo: "logo.svg", categories: ["comms"],
+          auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+        },
+        {
+          name: "acme", version: "2.0.0", logo: "https://cdn.acme.test/l.png",
+          auth: { type: "none" as const },
+        },
+      ]);
+      vi.spyOn(registry, "listToolsByIntegration").mockImplementation((n: string) =>
+        n === "slack" ? ([{ name: "a" }, { name: "b" }] as never) : []
+      );
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET", url: "/api/integrations",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      const list = JSON.parse(res.body).integrations;
+      const slack = list.find((i: { name: string }) => i.name === "slack");
+      const acme = list.find((i: { name: string }) => i.name === "acme");
+      expect(slack).toMatchObject({
+        displayName: "Slack", description: "Team chat", categories: ["comms"], toolCount: 2,
+      });
+      // bundled filename -> served via endpoint; full URL -> passed through.
+      expect(slack.logo).toBe("/api/integrations/slack/logo");
+      expect(acme.logo).toBe("https://cdn.acme.test/l.png");
+    });
+  });
+
+  describe("GET /api/integrations/:integration (detail)", () => {
+    it("returns integration meta + its tools", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "slack", version: "1.0.0", displayName: "Slack",
+        auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+      });
+      vi.spyOn(registry, "listToolsByIntegration").mockReturnValue([
+        { name: "slack_post", description: "Post a message" } as never,
+      ]);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET", url: "/api/integrations/slack",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.name).toBe("slack");
+      expect(body.tools).toEqual([{ name: "slack_post", description: "Post a message" }]);
+    });
+
+    it("404s for unknown integration", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET", url: "/api/integrations/nope",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("401 without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/integrations/slack" });
       expect(res.statusCode).toBe(401);
     });
   });

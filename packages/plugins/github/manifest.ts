@@ -1,6 +1,10 @@
 export default {
   name: "github",
   version: "1.0.0",
+  displayName: "GitHub",
+  description: "Code hosting — repositories, issues, and pull requests.",
+  logo: "logo.svg",
+  categories: ["dev"],
   auth: {
     type: "oauth2",
     authorizationUrl: "https://github.com/login/oauth/authorize",
