@@ -7,8 +7,8 @@ import { registerApiRoutes } from "./api/routes";
 import { registerOAuthRoutes } from "./api/oauth-routes";
 import { registerPortal } from "./portal";
 import { loadPlugins } from "./plugins/loader";
-import { verifyApiKey } from "./auth/users";
 import { verifySession } from "./auth/session";
+import { resolveMcpUser } from "./auth/oauth-server/resolve";
 import { getSessionCdpEndpoint } from "./auth/cookie";
 import { verifyConnectToken } from "./auth/connect-token";
 import "./telemetry/tracing";
@@ -222,29 +222,20 @@ async function main() {
   );
 
   app.post("/mcp", async (request, reply) => {
-    // MCP clients authenticate with the API key via x-workbench-api-key.
-    // Session JWT (Authorization: Bearer) is also accepted.
-    const apiKey = request.headers["x-workbench-api-key"] as string | undefined;
-    const userId = apiKey
-      ? verifyApiKey(apiKey)
-      : await getUserIdFromAuth(request.headers.authorization);
+    // /mcp accepts: x-workbench-api-key (headless), OAuth Bearer (browser flow),
+    // or portal session JWT.
+    const userId = await resolveMcpUser(request.headers as Record<string, string>);
     if (!userId) {
-      const body = request.body as { id?: string | number | null } | undefined;
-      // Machine-readable auth challenge + a JSON-RPC error envelope (echoing the
-      // request id) so MCP clients surface a clear auth failure rather than a
-      // bare HTTP error.
+      const reqBody = request.body as { id?: string | number | null } | undefined;
+      const prm = `${config.SERVER_PUBLIC_URL}/.well-known/oauth-protected-resource`;
       reply.header(
         "WWW-Authenticate",
-        `ApiKey realm="a-workbench", header="x-workbench-api-key"`
+        `Bearer realm="a-workbench", resource_metadata="${prm}"`
       );
       return reply.status(401).send({
         jsonrpc: "2.0",
-        id: body?.id ?? null,
-        error: {
-          code: -32001,
-          message: "Unauthorized: missing or invalid API key",
-          data: { header: "x-workbench-api-key" },
-        },
+        id: reqBody?.id ?? null,
+        error: { code: -32001, message: "Unauthorized", data: { resource_metadata: prm } },
       });
     }
     const body = request.body as Record<string, unknown>;
