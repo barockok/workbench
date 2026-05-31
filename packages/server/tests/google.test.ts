@@ -9,6 +9,7 @@ vi.mock("../src/config", () => ({
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
     PORTAL_URL: "http://localhost:5173",
+    SERVER_PUBLIC_URL: "http://localhost:3000",
     SESSION_SECRET: "test-session-secret-32-chars-long!!",
     ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000",
     NODE_ENV: "test",
@@ -41,7 +42,10 @@ describe("google auth", () => {
     expect(parsed.searchParams.get("state")).toBeTruthy();
     expect(parsed.searchParams.get("nonce")).toBeTruthy();
     expect(parsed.searchParams.get("scope")).toContain("openid");
-    expect(parsed.searchParams.get("redirect_uri")).toContain("/auth/google/callback");
+    // Callback is served by the server, so redirect_uri uses SERVER_PUBLIC_URL.
+    expect(parsed.searchParams.get("redirect_uri")).toBe(
+      "http://localhost:3000/api/auth/google/callback"
+    );
   });
 
   it("rejects invalid state in callback", async () => {
