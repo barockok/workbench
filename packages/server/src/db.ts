@@ -55,6 +55,32 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id, created_at);
   CREATE INDEX IF NOT EXISTS idx_audit_integration ON audit_log(integration, created_at);
+
+  CREATE TABLE IF NOT EXISTS oauth_clients (
+    client_id TEXT PRIMARY KEY,
+    client_name TEXT,
+    redirect_uris TEXT NOT NULL,     -- JSON array
+    created_at INTEGER DEFAULT (unixepoch())
+  );
+
+  CREATE TABLE IF NOT EXISTS oauth_auth_codes (
+    code TEXT PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    redirect_uri TEXT NOT NULL,
+    code_challenge TEXT NOT NULL,
+    scope TEXT,
+    resource TEXT,
+    expires_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
+    token_hash TEXT PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    scope TEXT,
+    expires_at INTEGER NOT NULL
+  );
 `);
 
 // Migrations
