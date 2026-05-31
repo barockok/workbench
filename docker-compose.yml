@@ -4,13 +4,18 @@ services:
     build: .
     ports:
       - "3000:3000"
+    # Pull every var from .env — SSO creds (GOOGLE_CLIENT_ID/_SECRET) AND all
+    # per-plugin OAuth creds (GOOGLE_*_CLIENT_ID, ATLASSIAN_*). Without these,
+    # /authorize and connect(<plugin>) 500 with "<X> not configured".
+    env_file:
+      - .env
+    # Container-specific overrides — these win over env_file, so .env's dev
+    # values (PORT=3001, NODE_ENV=development, relative DB path) don't leak in
+    # and break the 3000:3000 mapping or the mounted data volume.
     environment:
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - DATABASE_URL=/data/tokens.db
+      - PORT=3000
       - NODE_ENV=production
-      - SESSION_SECRET=${SESSION_SECRET}
-      # The server now serves the portal itself, so portal + connect magic-link
-      # URLs point back at the public server origin. Override for a real host.
+      - DATABASE_URL=/data/tokens.db
       - SERVER_PUBLIC_URL=${SERVER_PUBLIC_URL:-http://localhost:3000}
       - PORTAL_URL=${PORTAL_URL:-http://localhost:3000}
     volumes:

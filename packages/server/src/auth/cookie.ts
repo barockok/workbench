@@ -143,6 +143,14 @@ export async function startCookieSession(
       "--no-default-browser-check",
       "--disable-features=TranslateUI",
       "--window-size=1280,800",
+      // The Docker image runs as root; chromium's zygote refuses to start as
+      // root without --no-sandbox ("Running as root without --no-sandbox is
+      // not supported"), so the CDP endpoint never comes up and cookie-auth
+      // connect fails with "Failed to reach .../json/version". Harmless when
+      // not root. --disable-dev-shm-usage avoids crashes from the small
+      // default /dev/shm in containers.
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
       loginUrl,
     ],
     { stdio: "ignore", detached: false }
