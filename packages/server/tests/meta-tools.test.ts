@@ -154,6 +154,44 @@ describe("meta-tools", () => {
     });
   });
 
+  describe("execute_tools (batch)", () => {
+    it("runs multiple tools and returns ordered results", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
+      mockTool.handler.mockImplementation(async (_ctx: unknown, args: any) => ({ echoed: args.x }));
+
+      const tool = findTool("execute_tools");
+      const result = await tool.handler(
+        { userId: "user-1" },
+        { executions: [{ tool: "test_tool", args: { x: 1 } }, { tool: "test_tool", args: { x: 2 } }] }
+      );
+      expect(result.results).toHaveLength(2);
+      expect(result.results[0].result).toEqual({ echoed: 1 });
+      expect(result.results[1].result).toEqual({ echoed: 2 });
+    });
+
+    it("isolates per-item failures without aborting the batch", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.spyOn(registry, "getTool").mockImplementation((name: string) =>
+        name === "test_tool" ? (mockTool as any) : undefined
+      );
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
+      mockTool.handler.mockResolvedValue({ done: true });
+
+      const tool = findTool("execute_tools");
+      const result = await tool.handler(
+        { userId: "user-1" },
+        { executions: [{ tool: "missing", args: {} }, { tool: "test_tool", args: {} }] }
+      );
+      expect(result.results).toHaveLength(2);
+      expect(result.results[0].error).toBe("Tool not found");
+      expect(result.results[1].result).toEqual({ done: true });
+    });
+  });
+
   describe("list_integrations", () => {
     it("lists integrations with connection status", async () => {
       const { getToken } = await import("../src/auth/tokens");
