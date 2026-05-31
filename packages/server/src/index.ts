@@ -4,6 +4,7 @@ import WebSocket from "ws";
 import { config } from "./config";
 import { handleMcpRequest } from "./mcp/server";
 import { registerApiRoutes } from "./api/routes";
+import { registerOAuthRoutes } from "./api/oauth-routes";
 import { registerPortal } from "./portal";
 import { loadPlugins } from "./plugins/loader";
 import { verifyApiKey } from "./auth/users";
@@ -63,6 +64,7 @@ async function main() {
   await app.register(fastifyWebsocket);
   await loadPlugins();
   await registerApiRoutes(app);
+  await registerOAuthRoutes(app);
 
   // Reject the WS upgrade itself when the Origin header doesn't match the
   // portal — blocks Cross-Site WebSocket Hijacking. Applies BEFORE the
