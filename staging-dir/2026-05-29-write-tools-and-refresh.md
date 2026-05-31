@@ -90,7 +90,7 @@ All run as `execute_tool` against `/mcp` with the tester's API key.
 
 | Plugin / tool                            | Result |
 |------------------------------------------|--------|
-| `google_gmail_profile`                   | PASS — `messagesTotal: 115, threadsTotal: 72` |
+| `google_gmail_profile`                   | PASS — `messagesTotal: 100, threadsTotal: 60` |
 | `google_gmail_list` `{maxResults:3}`     | PASS — 3 real message IDs + nextPageToken |
 | `google_gmail_labels`                    | PASS — `INBOX`, `SENT`, `CHAT`, etc. |
 | `google_gmail_threads` `{maxResults:2}`  | PASS |
@@ -99,9 +99,9 @@ All run as `execute_tool` against `/mcp` with the tester's API key.
 | `google_sheets_search` `{query:""}`      | PASS — `{files: []}` |
 | `google_docs_search` `{query:""}`        | PASS |
 | `google_slides_search` `{query:""}`      | PASS |
-| `bitbucket_list_repos` `{workspace:"acme"}` | PASS — `acme/ng-mis` and siblings |
-| `bitbucket_get_repo` `{workspace:"acme", repoSlug:"ng-mis"}` | PASS |
-| `bitbucket_list_prs`  `{workspace:"acme", repoSlug:"ng-mis"}` | PASS — open PR #5746 + others |
+| `bitbucket_list_repos` `{workspace:"acme"}` | PASS — `acme/sample-repo` and siblings |
+| `bitbucket_get_repo` `{workspace:"acme", repoSlug:"sample-repo"}` | PASS |
+| `bitbucket_list_prs`  `{workspace:"acme", repoSlug:"sample-repo"}` | PASS — open PR #1234 + others |
 
 All passed after the refresh fix on tokens that had been minted hours earlier.
 
@@ -174,7 +174,7 @@ Did NOT call `google_gmail_send` — would have actually sent an email. `google_
 
 ## Atlassian (jira + confluence) write coverage — deferred
 
-Decision: deferred to a follow-up. Creating a Jira issue or a Confluence page lands on the live `acme.atlassian.net` / `acme-confluence.atlassian.net` tenants. Without a sandbox project/space, every `create_issue` / `create_page` test would leave real production noise (and `delete_*` tools don't fully undo Jira tickets). Read coverage for both is already PASS in `2026-05-29-atlassian-cloud-tools.md`. If a sandbox project/space gets nominated, write-chain testing for these two plugins is the next obvious item.
+Decision: deferred to a follow-up. Creating a Jira issue or a Confluence page lands on the live `example.atlassian.net` / `example-confluence.atlassian.net` tenants. Without a sandbox project/space, every `create_issue` / `create_page` test would leave real production noise (and `delete_*` tools don't fully undo Jira tickets). Read coverage for both is already PASS in `2026-05-29-atlassian-cloud-tools.md`. If a sandbox project/space gets nominated, write-chain testing for these two plugins is the next obvious item.
 
 Bitbucket `bitbucket_create_pr` is in the same bucket — would open a real PR; skipped.
 
