@@ -3,7 +3,7 @@
 **Date:** 2026-05-29
 **Branch:** `uat/mcp-claude-sdk`
 **Tester (portal SSO):** account on the Atlassian app allowlist (resolved earlier blocker — the app is in dev, only allowlisted users get past consent)
-**Sites:** `acme.atlassian.net` (jira) and `acme-confluence.atlassian.net` (confluence)
+**Sites:** `example.atlassian.net` (jira) and `example-confluence.atlassian.net` (confluence)
 **Verdict:** **PASS** — both Atlassian Cloud plugins now connect end-to-end and answer real `execute_tool` calls. Two unrelated upstream plugin issues called out below.
 
 ---
@@ -12,9 +12,9 @@
 
 | Plugin              | Connect                                | execute_tool sample                                | Result |
 |---------------------|----------------------------------------|----------------------------------------------------|--------|
-| atlassian-jira      | PASS — site picker → `acme.atlassian.net`           | `jira_project_types` `{}`                          | PASS — real project type list (`product_discovery`, …) |
+| atlassian-jira      | PASS — site picker → `example.atlassian.net`           | `jira_project_types` `{}`                          | PASS — real project type list (`product_discovery`, …) |
 | atlassian-jira      |                                        | `jira_search_issues` `{jql:"assignee=currentUser()", maxResults:3}` | UPSTREAM — `The requested API has been removed. Please migrate to /rest/api/3/search/jql` |
-| atlassian-confluence| PASS — site picker → `acme-confluence.atlassian.net` | `confluence_search_pages` `{query:"UAT"}`         | PASS — real Confluence page `UAT` (`id: 6897795134`) |
+| atlassian-confluence| PASS — site picker → `example-confluence.atlassian.net` | `confluence_search_pages` `{query:"UAT"}`         | PASS — real Confluence page `UAT` (`id: 1234567890`) |
 | atlassian-confluence|                                        | `confluence_list_spaces` `{}`                      | UPSTREAM — `Unauthorized; scope does not match` (plugin needs `read:space:confluence` or similar — granted scopes are `read:confluence-content.summary write:confluence-content search:confluence`) |
 
 Dashboard: **11 LIVE** (`google-{gmail,drive,sheets,calendar,gemini,docs,slides}`, `atlassian-{jira,confluence,bitbucket}`, `httpbin-cookie`). Screenshot: `dashboard-11-live.png` (gitignored).
@@ -170,7 +170,7 @@ Tested every jira + confluence tool against the updated app scopes:
 
 | Tool                  | Result |
 |-----------------------|--------|
-| `confluence_search_pages` | PASS — real page `UAT` (`id: 6897795134`) |
+| `confluence_search_pages` | PASS — real page `UAT` (`id: 1234567890`) |
 | `confluence_list_spaces`  | UPSTREAM — `authorized: true, valid: true` (scope OK after the earlier add), but 410 `GoneException: This deprecated endpoint has been removed.` Plugin uses `/wiki/rest/api/space`; should migrate to `/wiki/api/v2/spaces`. Not scope. |
 | `confluence_get_page`     | not tested in this round (needs a page id) |
 | `confluence_create_page`  | not tested in this round (write; needs a space) |
