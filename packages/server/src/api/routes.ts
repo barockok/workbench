@@ -21,6 +21,7 @@ import {
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
+import { resumeAuthorize } from "../auth/oauth-server/resume";
 
 function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
@@ -95,7 +96,6 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       const dot = state.indexOf(".");
       const oauthTicket = dot === -1 ? null : state.slice(dot + 1);
       if (oauthTicket) {
-        const { resumeAuthorize } = await import("../auth/oauth-server/resume");
         const cookie = request.headers.cookie ?? "";
         const m = cookie.match(/(?:^|;\s*)awb_oauth_binding=([^;]+)/);
         const binding = m ? m[1] : undefined;
