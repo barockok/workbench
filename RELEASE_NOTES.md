@@ -1,3 +1,46 @@
+# a-workbench v0.3.0
+
+_2026-05-31_
+
+Headline: **MCP OAuth 2.1 authorization** — MCP clients (Claude Code, etc.) connect to `/mcp` with no pasted key; on first connect a browser opens for Google SSO. Plus first-class **API keys** and a richer **integration registry** (logos, descriptions, tool browser).
+
+## Features
+
+### MCP OAuth 2.1 (browser login)
+- a-workbench is now an OAuth Authorization + Resource Server for `/mcp`.
+- Discovery: `/.well-known/oauth-protected-resource` (RFC 9728) + `/.well-known/oauth-authorization-server` (RFC 8414).
+- Dynamic Client Registration (`POST /register`, public clients, RFC 7591).
+- `GET /authorize` — PKCE S256, validates `redirect_uri`, delegates user auth to the existing Google SSO via a state-ticket round-trip; flow bound to the originating browser (httpOnly cookie).
+- `POST /token` — authorization_code (PKCE) + refresh_token (rotating) grants.
+- `/mcp` accepts an OAuth `Authorization: Bearer` access token; a no-token request returns a JSON-RPC 401 with `WWW-Authenticate: Bearer … resource_metadata=…`.
+
+### MCP API keys
+- Mint/rotate/revoke a long-lived API key from the portal (shown once, masked, bcrypt-hashed at rest).
+- Authenticated via the dedicated **`x-workbench-api-key`** header (for headless clients); `Authorization: Bearer` is reserved for OAuth/session tokens.
+
+### Integration registry UX
+- Plugin manifests gain optional `displayName`, `description`, `logo`, `categories`.
+- Portal cards show brand logos (served from each plugin dir, generic cog fallback), descriptions, a category filter, and a detail view listing each integration's tools.
+- New endpoints: enriched `GET /api/integrations`, `GET /api/integrations/:name`, public `GET /api/integrations/:name/logo`.
+
+## Fixes
+- Google SSO callback uses `SERVER_PUBLIC_URL` (was `PORTAL_URL`) — SSO works when portal/server differ.
+- Bind the OAuth resume ticket to the originating browser (login-CSRF / auth-code injection).
+- Exclude `/.well-known` from the portal SPA fallback so discovery never returns HTML.
+- `/mcp` 401 now a JSON-RPC error envelope, not a bare body.
+
+## Chores / Internal
+- New env: `OAUTH_ACCESS_TOKEN_TTL_SECONDS` (default 3600).
+- Serialized vitest files (shared SQLite) to remove a cross-file race.
+- Docs: OAuth browser flow, plugin presentation metadata + logo convention, finding `2026-05-31-mcp-oauth`.
+- Tests: 247 passing; OAuth core ~98% statement coverage.
+
+## Notes
+- The full browser round-trip needs Google SSO configured (`GOOGLE_CLIENT_ID`/`_SECRET`) + an OAuth-capable MCP client.
+- Known follow-ups: `resource` parameter (RFC 8707) stored but not enforced; DCR is open/unbounded; tests share the dev SQLite DB.
+
+---
+
 # a-workbench v0.2.1
 
 _2026-05-30_
