@@ -129,8 +129,8 @@ export function createContext(userId: string, integration: string): ToolContext 
         //  - scope by domain — a host-only cookie (domain === host) goes only
         //    to that host; a domain cookie (.example.com) goes to the domain
         //    and its subdomains. Capture sweeps in sibling-host cookies (e.g.
-        //    sso.* Keycloak cookies); replaying ALL of them to one host both
-        //    bloats the header past the upstream's limit (nginx "400 Request
+        //    sso.* SSO cookies); replaying ALL of them to one host both
+        //    bloats the header past the upstream's limit (proxy "400 Request
         //    Header Or Cookie Too Large") and breaks auth that expects exactly
         //    the browser's cookie set.
         const nowSec = Math.floor(Date.now() / 1000);
