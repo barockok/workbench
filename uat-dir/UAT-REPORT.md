@@ -3,7 +3,7 @@
 **Date:** 2026-05-28
 **Branch:** feat/plugin-brower-use
 **Test Environment:** Docker Compose (Node.js app on HTTP port 3000)
-**Test User:** [redacted]@amartha.com
+**Test User:** [redacted]@example.com
 
 ---
 
@@ -83,11 +83,11 @@ POST /mcp {"method":"tools/call","params":{"name":"get_tool_schema","arguments":
 
 # Get auth URL
 POST /mcp {"method":"tools/call","params":{"name":"get_auth_url","arguments":{"integration":"google-gmail"}}}
-# Result: "/api/auth/google-gmail?user=[redacted]@amartha.com"
+# Result: "/api/auth/google-gmail?user=[redacted]@example.com"
 
 # Execute tool (Gmail — connected)
 POST /mcp {"method":"tools/call","params":{"name":"execute_tool","arguments":{"tool":"google_gmail_profile"}}}
-# Result: {"emailAddress":"[redacted]@amartha.com","messagesTotal":32159,...}
+# Result: {"emailAddress":"[redacted]@example.com","messagesTotal":12345,...}
 
 # Execute tool (Drive — connected)
 POST /mcp {"method":"tools/call","params":{"name":"execute_tool","arguments":{"tool":"google_drive_list","args":{"pageSize":5}}}}
@@ -164,7 +164,7 @@ POST /mcp {"method":"tools/call","params":{"name":"execute_tool","arguments":{"t
 
 ### Atlassian Confluence OAuth Flow
 - **Status:** PASS
-- **Result:** Consent approved after selecting `amartha-confluence.atlassian.net`, token stored
+- **Result:** Consent approved after selecting `example-confluence.atlassian.net`, token stored
 
 ### Atlassian Jira OAuth URL Generation
 - **Status:** PASS
@@ -174,7 +174,7 @@ POST /mcp {"method":"tools/call","params":{"name":"execute_tool","arguments":{"t
 - **Status:** PASS
 - **Auth URL generated:** `https://auth.atlassian.com/authorize?...`
 - **Redirect URI:** `http://localhost:3000/api/auth/plugin/atlassian-jira/callback`
-- **Result:** Consent approved after selecting `amartha.atlassian.net`, token stored in SQLite, tool execution successful
+- **Result:** Consent approved after selecting `example.atlassian.net`, token stored in SQLite, tool execution successful
 
 ---
 
@@ -182,7 +182,7 @@ POST /mcp {"method":"tools/call","params":{"name":"execute_tool","arguments":{"t
 
 ### Gmail (Connected)
 ```
-google_gmail_profile -> {emailAddress: "[redacted]@amartha.com", messagesTotal: 32159, threadsTotal: 22106}
+google_gmail_profile -> {emailAddress: "[redacted]@example.com", messagesTotal: 12345, threadsTotal: 6789}
 google_gmail_list -> {messages: [...], resultSizeEstimate: 201}
 ```
 
@@ -203,7 +203,7 @@ google_calendar_list_calendars -> {items: [5 calendars including primary]}
 
 ### Bitbucket (Connected)
 ```
-bitbucket_list_repos -> {values: [10 repos from Amartha workspace]}
+bitbucket_list_repos -> {values: [10 repos from acme workspace]}
 ```
 
 ### Confluence (Connected)
@@ -393,7 +393,7 @@ curl -s -X POST http://localhost:3000/mcp \
 ## Test Artifacts
 
 - **Database:** `uat-dir/data/tokens.db`
-- **Test user:** `uat-test-user` (email: `[redacted]@amartha.com`) with API key `[REDACTED]`
+- **Test user:** `uat-test-user` (email: `[redacted]@example.com`) with API key `[REDACTED]`
 - **Container:** `uat-dir-a-workbench-1`
 - **Connected plugins:** google-gmail, google-drive, google-sheets, google-calendar, google-gemini, atlassian-confluence, atlassian-bitbucket
 - **Blocked plugins:** atlassian-jira (missing read:me scope in app config)
