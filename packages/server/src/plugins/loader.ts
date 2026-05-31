@@ -61,6 +61,7 @@ async function loadBuiltin(pluginName: string, basePath: string): Promise<void> 
     registry.register({
       integration: unwrapDefault(manifestMod),
       tools: filterTools(toolsMod),
+      dir: pluginPath,
     });
   } catch (e) {
     console.error(`Failed to load built-in plugin ${pluginName}:`, e);
@@ -99,6 +100,7 @@ export async function loadPlugins(): Promise<void> {
       registry.register({
         integration: unwrapDefault(manifestMod),
         tools: filterTools(toolsMod),
+        dir: pluginPath,
       });
       console.log(`Loaded plugin: ${dir}`);
     } catch (e) {

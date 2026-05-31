@@ -8,6 +8,14 @@ function getHeaders(): HeadersInit {
   };
 }
 
+// Auth header WITHOUT Content-Type — for bodyless requests. Fastify rejects a
+// POST/DELETE that declares application/json but sends no body
+// (FST_ERR_CTP_EMPTY_JSON_BODY).
+function authHeaders(): HeadersInit {
+  const token = localStorage.getItem("awb_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function fetchIntegrations() {
   const res = await fetch(`${API_URL}/api/integrations`, { headers: getHeaders() });
   if (res.status === 401) {
@@ -16,6 +24,32 @@ export async function fetchIntegrations() {
     throw new Error("Unauthorized");
   }
   if (!res.ok) throw new Error("Failed to fetch");
+  return res.json();
+}
+
+export interface IntegrationSummary {
+  name: string;
+  version: string;
+  displayName?: string;
+  description?: string;
+  categories?: string[];
+  logo?: string;
+  toolCount: number;
+}
+
+export interface IntegrationDetail extends IntegrationSummary {
+  authType: string;
+  tools: { name: string; description: string }[];
+}
+
+export async function fetchIntegration(name: string): Promise<IntegrationDetail> {
+  const res = await fetch(`${API_URL}/api/integrations/${name}`, { headers: getHeaders() });
+  if (res.status === 401) {
+    localStorage.removeItem("awb_token");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) throw new Error("Failed to fetch integration");
   return res.json();
 }
 
@@ -106,6 +140,30 @@ export async function connectCapture(jwt: string) {
   });
   if (!res.ok) throw new Error((await res.json()).error ?? "Capture failed");
   return res.json() as Promise<{ success: boolean; cookieCount: number }>;
+}
+
+export async function getApiKeyStatus(): Promise<{ hasKey: boolean }> {
+  const res = await fetch(`${API_URL}/api/keys`, { headers: getHeaders() });
+  if (!res.ok) throw new Error("Failed to read key status");
+  return res.json();
+}
+
+export async function mintApiKey(): Promise<{ apiKey: string }> {
+  const res = await fetch(`${API_URL}/api/keys`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to mint key");
+  return res.json();
+}
+
+export async function revokeApiKey(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_URL}/api/keys`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to revoke key");
+  return res.json();
 }
 
 export async function fetchMe() {
