@@ -90,6 +90,17 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     try {
       const { userId, email } = await handleCallback(code, state);
+
+      // If SSO was started by an OAuth /authorize, state carries ".<ticket>".
+      const dot = state.indexOf(".");
+      const oauthTicket = dot === -1 ? null : state.slice(dot + 1);
+      if (oauthTicket) {
+        const { resumeAuthorize } = await import("../auth/oauth-server/resume");
+        const redirectUrl = resumeAuthorize(oauthTicket, userId);
+        if (redirectUrl) return reply.redirect(redirectUrl);
+        // ticket expired/invalid -> fall through to portal login
+      }
+
       const token = await signSession({ userId, email });
       // Redirect back to portal with token in hash fragment (safer than query)
       const redirect = new URL(config.PORTAL_URL);
