@@ -3,30 +3,30 @@
 **Date:** 2026-05-31
 **Area:** `packages/server/src/auth/cookie.ts` (`captureCookies`, `isCookieExpired`), `packages/server/src/plugins/context.ts` (`ctx.http` cookie path)
 
-A cookie-auth integration whose login spans multiple subdomains (internal-app: app at `internal-app.acme.id`, SSO at `sso.acme.id`, both under `.acme.id`) connected successfully but every tool call failed. Three separate bugs, all in how captured cookies are stored and replayed.
+A cookie-auth integration whose login spans multiple subdomains (app at `app.example.com`, SSO at `sso.example.com`, both under `.example.com`) connected successfully but every tool call failed. Two bugs in how captured cookies are stored and replayed (plus one plugin-side env gotcha).
 
 ## 1. "Any cookie expired → connection dead" was too aggressive
 
-`captureCookies` sweeps **all** cookies under the declared `cookieDomains` (here `.acme.id`), which pulls in unrelated short-lived cookies — a Keycloak `KC_AUTH_SESSION_HASH` that lapses ~10s after login, CleverTap analytics (`WZRK_*`). The old check:
+`captureCookies` sweeps **all** cookies under the declared `cookieDomains` (here `.example.com`), which pulls in unrelated short-lived cookies — an SSO session-hash cookie that lapses ~10s after login, third-party analytics cookies. The old check:
 
 ```ts
 isCookieExpired = cookies.some(c => c.expires && c.expires < now)
 ```
 
-marked the whole integration `NOT_CONNECTED` the moment any of that junk expired, even though the real `__Secure-next-auth.session-token` was valid for a day. Fixes: drop already-expired cookies **at capture time**, and treat the connection dead only when **no live cookie remains**.
+marked the whole integration `NOT_CONNECTED` the moment any of that junk expired, even though the real session-token cookie was valid for a day. Fixes: drop already-expired cookies **at capture time**, and treat the connection dead only when **no live cookie remains**.
 
 ## 2. Replaying ALL cookies to every host (the real blocker)
 
-`ctx.http` sent every captured cookie on every request regardless of the cookie's domain. Sending the `sso.acme.id` Keycloak cookies to `internal-app.acme.id`:
+`ctx.http` sent every captured cookie on every request regardless of the cookie's domain. Sending the `sso.example.com` cookies to `app.example.com`:
 
-- bloated the `Cookie` header to ~8.6 KB → the app's nginx rejected it with **`400 Request Header Or Cookie Too Large`**;
-- when it didn't 400, NextAuth saw a cookie set no browser would send and returned `{}` (unauthenticated).
+- bloated the `Cookie` header (~8.6 KB) → the app's reverse proxy rejected it with **`400 Request Header Or Cookie Too Large`**;
+- when it didn't 400, the app saw a cookie set no browser would send and returned an empty/unauthenticated response.
 
-Fix: scope cookies to the target host like a browser — a host-only cookie (`domain === host`) goes only to that host; a domain cookie (`.example.com`) goes to the domain and its subdomains. Dropping the 3 sibling-host cookies cut the header to ~7.7 KB, NextAuth authenticated, and the token came back.
+Fix: scope cookies to the target host like a browser — a host-only cookie (`domain === host`) goes only to that host; a domain cookie (`.example.com`) goes to the domain and its subdomains. Dropping the sibling-host cookies cut the header to ~7.7 KB and the app authenticated.
 
 ## 3. (plugin-side) gateway environment mismatch
 
-Last mile, not a workbench bug: internal-app defaulted `INTERNAL_APP_API_BASE_URL` to the **staging** KrakenD gateway while the app/token were **PROD** → `401`. Pointing it at the prod gateway returned data. Worth noting because the symptom (`SESSION_DEAD`) was identical to an auth failure — the internal-app lib throws the same message for a `/api/auth/session` miss and a downstream `401`.
+Last mile, not a workbench bug: a plugin defaulted its API base URL to a **non-production** gateway while the captured session/token were for **production** → `401`. Pointing the base URL at the matching environment returned data. Worth noting because the symptom can be identical to an auth failure — a plugin may surface the same "session expired" message for both a session-endpoint miss and a downstream `401`.
 
 ## Takeaway
 

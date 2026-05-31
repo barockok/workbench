@@ -142,14 +142,14 @@ describe("cookie auth", () => {
     });
 
     it("returns false when one cookie expired but a live one remains (don't let junk poison the set)", () => {
-      // Real internal-app repro: a short-lived Keycloak/analytics cookie expires
+      // Multi-subdomain repro: a short-lived SSO/analytics cookie expires
       // seconds after capture, but the long-lived session token is still valid.
       const now = Math.floor(Date.now() / 1000);
       const data = {
-        domain: "acme.id",
+        domain: "example.com",
         cookies: [
-          { name: "KC_AUTH_SESSION_HASH", value: "x", domain: "sso.acme.id", path: "/", expires: now - 10 },
-          { name: "__Secure-next-auth.session-token.0", value: "y", domain: "internal-app.acme.id", path: "/", expires: now + 86400 },
+          { name: "sso_session_hash", value: "x", domain: "sso.example.com", path: "/", expires: now - 10 },
+          { name: "__Secure-session-token.0", value: "y", domain: "app.example.com", path: "/", expires: now + 86400 },
         ],
         capturedAt: now,
       };
