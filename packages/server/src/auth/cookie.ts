@@ -209,8 +209,13 @@ export async function captureCookies(sessionId: string): Promise<CookieData> {
     }>;
   };
   const allowedDomains = new Set(session.cookieDomains.map((d) => d.replace(/^\./, "").toLowerCase()));
+  const now = Math.floor(Date.now() / 1000);
 
   const filtered = result.cookies.filter((c) => {
+    // Drop cookies already expired at capture time — these are dead-on-arrival
+    // junk (e.g. a Keycloak KC_AUTH_SESSION_HASH that lapses seconds after
+    // login) and would otherwise count against the connection's liveness.
+    if (c.expires && c.expires > 0 && c.expires < now) return false;
     const bare = c.domain.replace(/^\./, "").toLowerCase();
     return [...allowedDomains].some((d) => bare === d || bare.endsWith("." + d));
   });
@@ -288,8 +293,16 @@ export function deleteCookies(userId: string, integration: string): void {
 }
 
 export function isCookieExpired(data: CookieData): boolean {
+  // A connection is dead only when NO usable cookie remains — not when *any*
+  // single cookie has lapsed. Capture sweeps in unrelated short-lived cookies
+  // (Keycloak KC_AUTH_SESSION_HASH, analytics) that expire seconds after
+  // capture; the old "some expired → dead" logic let that junk poison an
+  // otherwise-valid session. A cookie with no `expires` is a session cookie
+  // and always counts as live.
   const now = Math.floor(Date.now() / 1000);
-  return data.cookies.some((c) => c.expires && c.expires < now);
+  if (data.cookies.length === 0) return true;
+  const liveCount = data.cookies.filter((c) => !c.expires || c.expires >= now).length;
+  return liveCount === 0;
 }
 
 export function hasValidCookies(userId: string, integration: string): boolean {
