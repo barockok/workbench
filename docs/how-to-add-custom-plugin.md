@@ -81,6 +81,38 @@ export default {
 
 No env vars needed for cookie auth.
 
+### Optional presentation metadata
+
+`name`, `version`, and `auth` are the only required fields. Four optional fields control how the integration is presented in the portal and to agents (all backward-compatible):
+
+```ts
+export default {
+  name: "my-internal-tool",
+  version: "1.0.0",
+  displayName: "My Internal Tool",          // human label (defaults to name)
+  description: "Search and create items.",   // shown on the card + detail view
+  logo: "logo.svg",                           // see below
+  categories: ["internal", "productivity"],   // drives the portal category filter
+  auth: { /* ... */ },
+};
+```
+
+#### Logo
+
+`logo` is a single string resolved two ways:
+
+- **Bundled file** — a bare filename (e.g. `"logo.svg"`) referencing a file in the **same plugin directory**. The server serves it at `GET /api/integrations/<name>/logo` (content-type by extension; `.svg`/`.png`/`.jpg`/`.webp`). Works for built-in (baked into the image) and external (in `PLUGINS_DIR/<name>/`) plugins alike.
+- **Remote URL** — a full `https://…` URL, used as-is by the portal. Easiest for external plugins that don't want to ship a file.
+
+```
+$PLUGINS_DIR/my-internal-tool/
+├── manifest.ts
+├── logo.svg          ← referenced by  logo: "logo.svg"
+└── tools/index.ts
+```
+
+If `logo` is omitted (or the file is missing), the portal renders a generic cog mark — no error. Built-in logos live next to each manifest in `packages/plugins/<name>/logo.svg`.
+
 ### `tools/index.ts`
 
 Each tool is a plain object with `name`, `description`, `integration`, `inputSchema` (Zod), and `handler(ctx, args)`. The loader filters by shape, so you can export as many as you want from this file.
