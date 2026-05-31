@@ -33,7 +33,8 @@ export async function registerPortal(app: FastifyInstance): Promise<void> {
     if (
       request.method === "GET" &&
       !request.url.startsWith("/api") &&
-      !request.url.startsWith("/mcp")
+      !request.url.startsWith("/mcp") &&
+      !request.url.startsWith("/.well-known")
     ) {
       return reply.sendFile("index.html");
     }

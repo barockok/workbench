@@ -24,6 +24,7 @@ const configSchema = z.object({
   PORTAL_URL: z.string().url().default("http://localhost:5173"),
   PORTAL_DIST_DIR: z.string().default("./portal"),
   CONNECT_TTL_SECONDS: z.coerce.number().int().positive().default(600),
+  OAUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
 });
 
 export const config = configSchema.parse(process.env);
