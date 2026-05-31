@@ -84,4 +84,54 @@ describe("POST /token", () => {
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body).access_token).toBeTruthy();
   });
+
+  it("rejects an unknown grant_type", async () => {
+    const a = await app();
+    const res = await a.inject({
+      method: "POST", url: "/token",
+      payload: new URLSearchParams({ grant_type: "client_credentials" }).toString(),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body).error).toBe("unsupported_grant_type");
+  });
+
+  it("rejects a missing grant_type", async () => {
+    const a = await app();
+    const res = await a.inject({
+      method: "POST", url: "/token",
+      payload: new URLSearchParams({}).toString(),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body).error).toBe("unsupported_grant_type");
+  });
+
+  it("rejects an invalid/unknown refresh_token", async () => {
+    const a = await app();
+    const res = await a.inject({
+      method: "POST", url: "/token",
+      payload: new URLSearchParams({
+        grant_type: "refresh_token", refresh_token: "nope", client_id: "c1",
+      }).toString(),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body).error).toBe("invalid_grant");
+  });
+
+  it("rejects an authorization_code grant with an unknown code", async () => {
+    const c = registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
+    const a = await app();
+    const res = await a.inject({
+      method: "POST", url: "/token",
+      payload: new URLSearchParams({
+        grant_type: "authorization_code", code: "bogus", client_id: c.client_id,
+        redirect_uri: "http://127.0.0.1/cb", code_verifier: "v",
+      }).toString(),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body).error).toBe("invalid_grant");
+  });
 });
