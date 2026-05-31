@@ -55,6 +55,121 @@ async function startConnect(
   }
 }
 
+// Core single-tool execution: connection check, schema validation, audit, run.
+// Shared by `execute_tool` (one call) and `execute_tools` (batch), so both
+// behave identically per item. Never throws — failures come back as { error }.
+type ExecResult = { result: unknown } | { error: string; integration?: string; message?: string };
+async function executeSingle(
+  userId: string,
+  toolName: string,
+  rawArgs: Record<string, unknown>
+): Promise<ExecResult> {
+  const targetTool = registry.getTool(toolName);
+  return withSpan(
+    "execute_tool",
+    async () => {
+      const start = Date.now();
+
+      if (!targetTool) {
+        await auditLogger.log({
+          user_id: userId,
+          tool: toolName,
+          action: "EXECUTE",
+          success: false,
+          error: "Tool not found",
+          duration_ms: Date.now() - start,
+        });
+        return { error: "Tool not found" };
+      }
+
+      const integ = registry.getIntegration(targetTool.integration);
+      const isConnected = integ?.auth.type === "cookie"
+        ? hasValidCookies(userId, targetTool.integration)
+        : !!getToken(userId, targetTool.integration);
+
+      if (!isConnected) {
+        await auditLogger.log({
+          user_id: userId,
+          integration: targetTool.integration,
+          tool: toolName,
+          action: "EXECUTE",
+          success: false,
+          error: "NOT_CONNECTED",
+          duration_ms: Date.now() - start,
+        });
+        return {
+          error: "NOT_CONNECTED",
+          integration: targetTool.integration,
+          message: `${targetTool.integration} not connected. Use connect('${targetTool.integration}') to connect.`,
+        };
+      }
+
+      // Validate args against the plugin tool's own schema so that
+      // Zod defaults (e.g. pageSize=10) get applied. Without this,
+      // execute_tool blindly forwards whatever the caller sent and
+      // the plugin sees `undefined` for optional-with-default fields.
+      let parsedArgs: unknown = rawArgs;
+      try {
+        const parsed = targetTool.inputSchema.safeParse(rawArgs ?? {});
+        if (!parsed.success) {
+          await auditLogger.log({
+            user_id: userId,
+            integration: targetTool.integration,
+            tool: toolName,
+            action: "EXECUTE",
+            success: false,
+            error: "INVALID_ARGS",
+            duration_ms: Date.now() - start,
+          });
+          return { error: `Invalid arguments for ${toolName}: ${parsed.error?.message ?? "schema mismatch"}` };
+        }
+        parsedArgs = parsed.data;
+      } catch (e) {
+        // Unexpected throw during schema parsing (e.g. a malformed schema).
+        // Don't swallow silently: record it observably, then fall through
+        // with raw args so execution still proceeds.
+        const err = e instanceof Error ? e.message : String(e);
+        await auditLogger.log({
+          user_id: userId,
+          integration: targetTool.integration,
+          tool: toolName,
+          action: "EXECUTE",
+          success: false,
+          error: `SAFEPARSE_ERROR: ${err}`,
+          duration_ms: Date.now() - start,
+        });
+      }
+
+      try {
+        const toolCtx = createContext(userId, targetTool.integration);
+        const result = await targetTool.handler(toolCtx, parsedArgs as Record<string, unknown>);
+        await auditLogger.log({
+          user_id: userId,
+          integration: targetTool.integration,
+          tool: toolName,
+          action: "EXECUTE",
+          success: true,
+          duration_ms: Date.now() - start,
+        });
+        return { result };
+      } catch (e) {
+        const err = e instanceof Error ? e.message : String(e);
+        await auditLogger.log({
+          user_id: userId,
+          integration: targetTool.integration,
+          tool: toolName,
+          action: "EXECUTE",
+          success: false,
+          error: err,
+          duration_ms: Date.now() - start,
+        });
+        return { error: err };
+      }
+    },
+    { tool: toolName, integration: targetTool?.integration || "unknown" }
+  );
+}
+
 // `satisfies` (not an explicit annotation) keeps each element's `name` as a
 // string literal, so `metaToolSchemas` below can require exactly these keys.
 export const metaTools = [
@@ -90,111 +205,41 @@ export const metaTools = [
       tool: z.string(),
       args: z.record(z.unknown()),
     }),
-    handler: async (ctx: { userId: string }, args: { tool: string; args: Record<string, unknown> }) => {
-      const targetTool = registry.getTool(args.tool);
-      return withSpan(
-        "execute_tool",
-        async () => {
-          const start = Date.now();
-
-          if (!targetTool) {
-            await auditLogger.log({
-              user_id: ctx.userId,
-              tool: args.tool,
-              action: "EXECUTE",
-              success: false,
-              error: "Tool not found",
-              duration_ms: Date.now() - start,
-            });
-            return { error: "Tool not found" };
-          }
-
-          const integ = registry.getIntegration(targetTool.integration);
-          const isConnected = integ?.auth.type === "cookie"
-            ? hasValidCookies(ctx.userId, targetTool.integration)
-            : !!getToken(ctx.userId, targetTool.integration);
-
-          if (!isConnected) {
-            await auditLogger.log({
-              user_id: ctx.userId,
-              integration: targetTool.integration,
-              tool: args.tool,
-              action: "EXECUTE",
-              success: false,
-              error: "NOT_CONNECTED",
-              duration_ms: Date.now() - start,
-            });
-            return {
-              error: "NOT_CONNECTED",
-              integration: targetTool.integration,
-              message: `${targetTool.integration} not connected. Use connect('${targetTool.integration}') to connect.`,
-            };
-          }
-
-          // Validate args against the plugin tool's own schema so that
-          // Zod defaults (e.g. pageSize=10) get applied. Without this,
-          // execute_tool blindly forwards whatever the caller sent and
-          // the plugin sees `undefined` for optional-with-default fields.
-          let parsedArgs: unknown = args.args;
-          try {
-            const parsed = targetTool.inputSchema.safeParse(args.args ?? {});
-            if (!parsed.success) {
-              await auditLogger.log({
-                user_id: ctx.userId,
-                integration: targetTool.integration,
-                tool: args.tool,
-                action: "EXECUTE",
-                success: false,
-                error: "INVALID_ARGS",
-                duration_ms: Date.now() - start,
-              });
-              return { error: `Invalid arguments for ${args.tool}: ${parsed.error?.message ?? "schema mismatch"}` };
-            }
-            parsedArgs = parsed.data;
-          } catch (e) {
-            // Unexpected throw during schema parsing (e.g. a malformed schema).
-            // Don't swallow silently: record it observably, then fall through
-            // with raw args so execution still proceeds.
-            const err = e instanceof Error ? e.message : String(e);
-            await auditLogger.log({
-              user_id: ctx.userId,
-              integration: targetTool.integration,
-              tool: args.tool,
-              action: "EXECUTE",
-              success: false,
-              error: `SAFEPARSE_ERROR: ${err}`,
-              duration_ms: Date.now() - start,
-            });
-          }
-
-          try {
-            const toolCtx = createContext(ctx.userId, targetTool.integration);
-            const result = await targetTool.handler(toolCtx, parsedArgs as Record<string, unknown>);
-            await auditLogger.log({
-              user_id: ctx.userId,
-              integration: targetTool.integration,
-              tool: args.tool,
-              action: "EXECUTE",
-              success: true,
-              duration_ms: Date.now() - start,
-            });
-            return { result };
-          } catch (e) {
-            const err = e instanceof Error ? e.message : String(e);
-            await auditLogger.log({
-              user_id: ctx.userId,
-              integration: targetTool.integration,
-              tool: args.tool,
-              action: "EXECUTE",
-              success: false,
-              error: err,
-              duration_ms: Date.now() - start,
-            });
-            return { error: err };
-          }
-        },
-        { tool: args.tool, integration: targetTool?.integration || "unknown" }
+    handler: (ctx: { userId: string }, args: { tool: string; args: Record<string, unknown> }) =>
+      executeSingle(ctx.userId, args.tool, args.args),
+  },
+  {
+    name: "execute_tools",
+    description:
+      "Execute multiple tools in one call. Runs them concurrently (bounded) and returns a `results` array in the same order as `executions`. A single tool failing does not abort the others — its entry carries an `error` instead of a `result`.",
+    inputSchema: z.object({
+      executions: z
+        .array(z.object({ tool: z.string(), args: z.record(z.unknown()).default({}) }))
+        .min(1),
+    }),
+    handler: async (
+      ctx: { userId: string },
+      args: { executions: { tool: string; args: Record<string, unknown> }[] }
+    ) => {
+      const { executions } = args;
+      const results: ExecResult[] = new Array(executions.length);
+      // Bounded worker pool: cap concurrency so a large batch can't open an
+      // unbounded number of upstream connections at once. Results stay ordered
+      // because each worker writes to its claimed index.
+      const CONCURRENCY = 8;
+      let next = 0;
+      const worker = async (): Promise<void> => {
+        for (;;) {
+          const i = next++;
+          if (i >= executions.length) return;
+          const ex = executions[i];
+          results[i] = await executeSingle(ctx.userId, ex.tool, ex.args ?? {});
+        }
+      };
+      await Promise.all(
+        Array.from({ length: Math.min(CONCURRENCY, executions.length) }, () => worker())
       );
+      return { results };
     },
   },
   {
@@ -268,6 +313,24 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
       args: { type: "object", description: "Arguments for the tool", additionalProperties: true },
     },
     required: ["tool", "args"],
+  },
+  execute_tools: {
+    type: "object",
+    properties: {
+      executions: {
+        type: "array",
+        description: "Tools to run; results are returned in this same order.",
+        items: {
+          type: "object",
+          properties: {
+            tool: { type: "string", description: "Tool name returned by search_tools" },
+            args: { type: "object", description: "Arguments for the tool", additionalProperties: true },
+          },
+          required: ["tool"],
+        },
+      },
+    },
+    required: ["executions"],
   },
   list_integrations: { type: "object", properties: {} },
   connect: {
