@@ -125,8 +125,11 @@ export async function verifyGoogleIdToken(idToken: string, expectedNonce?: strin
 }
 
 export async function handleCallback(code: string, state: string): Promise<{ userId: string; email: string }> {
+  // state may be "<baseState>.<ticket>" when SSO was started by /authorize.
+  // verifyAuthState was stored under the base; the nonce is keyed by the full state.
+  const base = state.includes(".") ? state.slice(0, state.indexOf(".")) : state;
   // Verify state to prevent CSRF
-  const authState = verifyAuthState(state);
+  const authState = verifyAuthState(base);
   if (!authState || authState.integration !== "google-sso") {
     throw new Error("Invalid state");
   }
