@@ -12,14 +12,14 @@ import { getSessionCdpEndpoint } from "./auth/cookie";
 import { verifyConnectToken } from "./auth/connect-token";
 import "./telemetry/tracing";
 
+// Session JWT (Authorization: Bearer) — used by the portal and the CDP WS frame.
 async function getUserIdFromAuth(auth?: string): Promise<string | null> {
   if (!auth?.startsWith("Bearer ")) return null;
-  const token = auth.slice(7);
   try {
-    const session = await verifySession(token);
+    const session = await verifySession(auth.slice(7));
     return session.userId;
   } catch {
-    return verifyApiKey(token);
+    return null;
   }
 }
 
@@ -32,6 +32,7 @@ async function main() {
       redact: {
         paths: [
           "req.headers.authorization",
+          'req.headers["x-workbench-api-key"]',
           "req.url",
           'req.query.token',
           'req.query.cdpToken',
@@ -219,10 +220,30 @@ async function main() {
   );
 
   app.post("/mcp", async (request, reply) => {
-    const auth = request.headers.authorization;
-    const userId = await getUserIdFromAuth(auth);
+    // MCP clients authenticate with the API key via x-workbench-api-key.
+    // Session JWT (Authorization: Bearer) is also accepted.
+    const apiKey = request.headers["x-workbench-api-key"] as string | undefined;
+    const userId = apiKey
+      ? verifyApiKey(apiKey)
+      : await getUserIdFromAuth(request.headers.authorization);
     if (!userId) {
-      return reply.status(401).send({ error: "Unauthorized" });
+      const body = request.body as { id?: string | number | null } | undefined;
+      // Machine-readable auth challenge + a JSON-RPC error envelope (echoing the
+      // request id) so MCP clients surface a clear auth failure rather than a
+      // bare HTTP error.
+      reply.header(
+        "WWW-Authenticate",
+        `ApiKey realm="a-workbench", header="x-workbench-api-key"`
+      );
+      return reply.status(401).send({
+        jsonrpc: "2.0",
+        id: body?.id ?? null,
+        error: {
+          code: -32001,
+          message: "Unauthorized: missing or invalid API key",
+          data: { header: "x-workbench-api-key" },
+        },
+      });
     }
     const body = request.body as Record<string, unknown>;
     const result = await handleMcpRequest(body, userId);
