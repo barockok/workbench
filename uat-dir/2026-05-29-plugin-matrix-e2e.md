@@ -19,7 +19,7 @@
 | 5 | google-gemini       | PASS    | `google_gemini_generate` model=`gemini-2.5-flash` prompt=`Say only OK` → reply `OK` | `gemini-1.5-*` 404; `gemini-2.0-flash` quota 429 |
 | 6 | google-docs         | PASS    | `google_docs_search` query=`UAT` → `{files: []}` | OK |
 | 7 | google-slides       | PASS    | `google_slides_search` query=`UAT` → `{files: []}` | OK |
-| 8 | atlassian-bitbucket | PASS    | `bitbucket_list_repos` workspace=`amartha` → real repo list (e.g. `Amartha/ng-mis`) | own OAuth app, not in dev mode |
+| 8 | atlassian-bitbucket | PASS    | `bitbucket_list_repos` workspace=`acme` → real repo list (e.g. `acme/sample-repo`) | own OAuth app, not in dev mode |
 | 9 | httpbin-cookie      | PASS    | `httpbin_get_cookies` → `{cookies: {session: "test123"}}` | cookie auth, already covered in prior report |
 | – | atlassian-jira      | **BLOCKED** | n/a | Atlassian Cloud app is **in development**; consent UI says *"You don't have access to this app. This application is in development — only the owner of this application may grant it access."* Tester is not the app owner. |
 | – | atlassian-confluence| **BLOCKED** | n/a | Same Atlassian Cloud app as jira — same dev-mode restriction. |
