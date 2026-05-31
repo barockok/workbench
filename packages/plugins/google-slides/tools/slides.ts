@@ -64,14 +64,18 @@ export const searchSlides = {
   }),
   handler: async (ctx: any, args: any) => {
     const params = new URLSearchParams();
+    // Escape backslash + single-quote so user input can't break out of the
+    // Drive `q` string literal (query injection). Drive escapes with a backslash.
+    const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const q = args.query
-      ? `mimeType='application/vnd.google-apps.presentation' and name contains '${args.query}'`
+      ? `mimeType='application/vnd.google-apps.presentation' and name contains '${esc(args.query)}'`
       : "mimeType='application/vnd.google-apps.presentation'";
     params.set("q", q);
     params.set("pageSize", String(args.pageSize));
     params.set("orderBy", args.orderBy);
     params.set("fields", "nextPageToken,files(id,name,modifiedTime,webViewLink)");
-    const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params}`);
+    // Drive's orderBy parser rejects '+' for the space ("Invalid Value"); send %20.
+    const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params.toString().replace(/\+/g, "%20")}`);
     return res.json();
   },
 };
@@ -97,15 +101,38 @@ export const createFromMarkdown = {
     const presentation = await createRes.json();
     const presentationId = presentation.presentationId;
 
-    // Build batchUpdate requests for each slide
+    // Build batchUpdate requests for each slide: create a blank slide, add a
+    // text box covering it, then insert that slide's markdown as the box text.
+    // (BLANK layout has no placeholders, so we must create our own shape — and
+    // insertText must run after the shape exists, hence the ordering here.)
     const requests: any[] = [];
     for (let i = 0; i < slides.length; i++) {
+      const slideId = `slide_${i}`;
+      const boxId = `tb_${i}`;
       requests.push({
         createSlide: {
-          objectId: `slide_${i}`,
+          objectId: slideId,
           insertionIndex: i + 1,
           slideLayoutReference: { predefinedLayout: "BLANK" },
         },
+      });
+      requests.push({
+        createShape: {
+          objectId: boxId,
+          shapeType: "TEXT_BOX",
+          elementProperties: {
+            pageObjectId: slideId,
+            // EMU: ~7.5in wide x ~3.75in tall, inset ~0.5in from top-left.
+            size: {
+              width: { magnitude: 6858000, unit: "EMU" },
+              height: { magnitude: 3429000, unit: "EMU" },
+            },
+            transform: { scaleX: 1, scaleY: 1, translateX: 457200, translateY: 457200, unit: "EMU" },
+          },
+        },
+      });
+      requests.push({
+        insertText: { objectId: boxId, text: slides[i], insertionIndex: 0 },
       });
     }
 

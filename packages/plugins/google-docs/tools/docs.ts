@@ -95,14 +95,18 @@ export const searchDocuments = {
   }),
   handler: async (ctx: any, args: any) => {
     const params = new URLSearchParams();
+    // Escape backslash + single-quote so user input can't break out of the
+    // Drive `q` string literal (query injection). Drive escapes with a backslash.
+    const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
     const q = args.query
-      ? `mimeType='application/vnd.google-apps.document' and name contains '${args.query}'`
+      ? `mimeType='application/vnd.google-apps.document' and name contains '${esc(args.query)}'`
       : "mimeType='application/vnd.google-apps.document'";
     params.set("q", q);
     params.set("pageSize", String(args.pageSize));
     params.set("orderBy", args.orderBy);
     params.set("fields", "nextPageToken,files(id,name,modifiedTime,webViewLink)");
-    const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params}`);
+    // Drive's orderBy parser rejects '+' for the space ("Invalid Value"); send %20.
+    const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params.toString().replace(/\+/g, "%20")}`);
     return res.json();
   },
 };
