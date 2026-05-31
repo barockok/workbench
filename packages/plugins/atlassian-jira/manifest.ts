@@ -1,6 +1,10 @@
 export default {
   name: "atlassian-jira",
   version: "1.0.0",
+  displayName: "Jira",
+  description: "Issue tracking and agile project management.",
+  logo: "logo.svg",
+  categories: ["dev","productivity"],
   auth: {
     type: "oauth2",
     authorizationUrl: "https://auth.atlassian.com/authorize",
