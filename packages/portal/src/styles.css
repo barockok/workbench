@@ -906,3 +906,19 @@ body::before {
 .cat-select option { background: var(--panel); color: var(--ink); }
 
 .apikey-hint { color: var(--mute); font-size: 11px; align-self: center; }
+
+/* --- themed scrollbars (subtle, matches palette) --- */
+* {
+  scrollbar-width: thin;                       /* Firefox */
+  scrollbar-color: var(--line) transparent;    /* thumb / track */
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-edge); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
