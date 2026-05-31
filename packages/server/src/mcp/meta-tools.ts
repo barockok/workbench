@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { registry } from "../plugins/registry";
 import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
@@ -195,7 +196,13 @@ export const metaTools = [
     handler: async (_ctx: unknown, args: { tool: string }) => {
       const t = registry.getTool(args.tool);
       if (!t) return { error: "Tool not found" };
-      return { schema: t.inputSchema };
+      // Return portable JSON Schema, not raw Zod internals, so any MCP client
+      // can consume it without Zod knowledge. Non-Zod schemas pass through.
+      const schema =
+        t.inputSchema instanceof z.ZodType
+          ? zodToJsonSchema(t.inputSchema as z.ZodTypeAny)
+          : t.inputSchema;
+      return { schema };
     },
   },
   {
