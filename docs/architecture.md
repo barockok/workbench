@@ -47,7 +47,8 @@ Each integration is a self-contained plugin:
 
 ```
 plugins/jira/
-├── manifest.ts          # name, version, auth config
+├── manifest.ts          # name, version, auth + optional displayName/description/logo/categories
+├── logo.svg             # optional bundled logo (served at /api/integrations/<name>/logo)
 ├── tools/
 │   ├── create_issue.ts  # schema + handler
 │   └── search_issues.ts # schema + handler
