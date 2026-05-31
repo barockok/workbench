@@ -1,6 +1,10 @@
 export default {
   name: "atlassian-confluence",
   version: "1.0.0",
+  displayName: "Confluence",
+  description: "Team wiki — pages, spaces, and documentation.",
+  logo: "logo.svg",
+  categories: ["docs","productivity"],
   auth: {
     type: "oauth2",
     authorizationUrl: "https://auth.atlassian.com/authorize",
