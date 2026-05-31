@@ -220,7 +220,7 @@ After dropping the plugin in:
 3. **MCP**:
    ```bash
    curl -s -X POST $SERVER_PUBLIC_URL/mcp \
-     -H "Authorization: Bearer $API_KEY" \
+     -H "x-workbench-api-key: $API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"jsonrpc":"2.0","id":1,"method":"tools/call",
           "params":{"name":"search_tools","arguments":{"query":"internal"}}}'
