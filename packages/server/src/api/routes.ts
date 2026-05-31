@@ -21,6 +21,7 @@ import {
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
+import { resumeAuthorize } from "../auth/oauth-server/resume";
 
 function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
@@ -90,6 +91,21 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     try {
       const { userId, email } = await handleCallback(code, state);
+
+      // If SSO was started by an OAuth /authorize, state carries ".<ticket>".
+      const dot = state.indexOf(".");
+      const oauthTicket = dot === -1 ? null : state.slice(dot + 1);
+      if (oauthTicket) {
+        const cookie = request.headers.cookie ?? "";
+        const m = cookie.match(/(?:^|;\s*)awb_oauth_binding=([^;]+)/);
+        const binding = m ? m[1] : undefined;
+        const redirectUrl = resumeAuthorize(oauthTicket, userId, binding);
+        // Clear the one-time binding cookie.
+        reply.header("Set-Cookie", "awb_oauth_binding=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
+        if (redirectUrl) return reply.redirect(redirectUrl);
+        // binding/ticket invalid -> fall through to portal login
+      }
+
       const token = await signSession({ userId, email });
       // Redirect back to portal with token in hash fragment (safer than query)
       const redirect = new URL(config.PORTAL_URL);

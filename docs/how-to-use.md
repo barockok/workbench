@@ -36,7 +36,7 @@ Or, for any MCP client, the generic JSON the portal hands you:
 }
 ```
 
-> The API key authenticates via the **`x-workbench-api-key`** header. `Authorization: Bearer` is reserved for the portal session JWT.
+> The API key authenticates via the **`x-workbench-api-key`** header. `Authorization: Bearer` is reserved for OAuth access tokens and the portal session JWT.
 
 Then use tools:
 
@@ -50,6 +50,20 @@ Claude: execute_tool("jira_create_issue", {project: "PROJ", summary: "Bug"})
 You: connect my jira
 Claude: get_auth_url("jira") → open URL → authorize → done
 ```
+
+## Connecting via OAuth (browser login)
+
+MCP clients that support the [MCP OAuth flow](https://spec.modelcontextprotocol.io/specification/2025-11-05/basic/authorization/) (Claude Code ≥ 0.2, and other spec-compliant clients) need only the server URL — no API key required:
+
+```bash
+claude config set mcpServers.workbench '{"url": "http://localhost:3000/mcp"}'
+```
+
+On the first connection the client discovers the authorization server automatically, registers itself via Dynamic Client Registration, and opens a browser window for Google SSO. After you sign in, the client is authorized and receives tokens that refresh automatically — no further action needed.
+
+For a production deployment substitute your `SERVER_PUBLIC_URL` for `http://localhost:3000`.
+
+The `x-workbench-api-key` header remains available for headless or non-interactive clients (CI, scripts, existing configs) and does not require any browser interaction.
 
 ## Connecting from MCP
 
@@ -89,6 +103,7 @@ Claude: wait_for_connection("abc123")
 | `PORTAL_DIST_DIR` | `./portal` | Built portal dir the server serves (resolved to `/app/portal` in the image) |
 | `SERVER_PUBLIC_URL` | `http://localhost:3000` | Public URL of the server (used in OAuth callbacks) |
 | `CONNECT_TTL_SECONDS` | `600` | TTL (seconds) for pending connections and abandoned cookie login sessions before the reaper closes them |
+| `OAUTH_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Lifetime (seconds) of an issued OAuth access token |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | — | Google Workspace SSO credentials (optional) |
 
 ## Adding a Plugin
