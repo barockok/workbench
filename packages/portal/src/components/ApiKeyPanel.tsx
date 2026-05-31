@@ -17,7 +17,7 @@ function configFor(key: string): string {
       mcpServers: {
         workbench: {
           url: MCP_URL,
-          headers: { Authorization: `Bearer ${key}` },
+          headers: { "x-workbench-api-key": key },
         },
       },
     },
@@ -95,7 +95,7 @@ export default function ApiKeyPanel() {
       </div>
 
       <p className="apikey-blurb">
-        Use this key as the <code>Authorization: Bearer</code> token for{" "}
+        Send this key in the <code>x-workbench-api-key</code> header to{" "}
         <code>{MCP_URL}</code>. Shown once on creation — store it now.
       </p>
 
