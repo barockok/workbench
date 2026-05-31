@@ -1,9 +1,12 @@
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { FastifyInstance } from "fastify";
+import { Integration } from "@a-workbench/shared";
 import { registry } from "../plugins/registry";
 import { createAuthState } from "../auth/oauth";
 import { buildPluginAuthUrl, handlePluginCallback } from "../auth/plugin-oauth";
-import { verifyApiKey, getUserById } from "../auth/users";
+import { verifyApiKey, getUserById, setApiKey, clearApiKey, hasApiKey } from "../auth/users";
 import { buildAuthUrl, handleCallback } from "../auth/google";
 import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
@@ -18,6 +21,27 @@ import {
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
+
+function isUrl(s: string): boolean {
+  return /^https?:\/\//i.test(s);
+}
+
+// A bundled logo filename becomes a server URL; a full URL passes through.
+function resolveLogo(i: Integration): string | undefined {
+  if (!i.logo) return undefined;
+  return isUrl(i.logo) ? i.logo : `/api/integrations/${i.name}/logo`;
+}
+
+function contentType(file: string): string {
+  switch (path.extname(file).toLowerCase()) {
+    case ".svg": return "image/svg+xml";
+    case ".png": return "image/png";
+    case ".jpg":
+    case ".jpeg": return "image/jpeg";
+    case ".webp": return "image/webp";
+    default: return "application/octet-stream";
+  }
+}
 
 async function authenticate(request: { headers: { authorization?: string } }): Promise<{ userId: string } | null> {
   const auth = request.headers.authorization;
@@ -89,6 +113,35 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     return { success: true };
   });
 
+  // --- MCP API key management (session-authenticated) ---
+  // Mint/rotate a long-lived API key for use as the /mcp Bearer. The plaintext
+  // is returned ONCE here and never stored — only its bcrypt hash is kept.
+  app.post("/api/keys", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    return setApiKey(user.userId);
+  });
+
+  // Whether the user currently has a key (the value itself can't be re-shown).
+  app.get("/api/keys", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    return { hasKey: hasApiKey(user.userId) };
+  });
+
+  app.delete("/api/keys", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    clearApiKey(user.userId);
+    return { success: true };
+  });
+
   // --- Protected API routes ---
   app.get("/api/integrations", async (request, reply) => {
     const user = await authenticate(request);
@@ -96,14 +149,69 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(401).send({ error: "Unauthorized" });
     }
 
-    const integrations = registry.listIntegrations();
     return {
-      integrations: integrations.map((i) => ({
+      integrations: registry.listIntegrations().map((i) => ({
         name: i.name,
         version: i.version,
+        displayName: i.displayName,
+        description: i.description,
+        categories: i.categories,
+        logo: resolveLogo(i),
+        toolCount: registry.listToolsByIntegration(i.name).length,
       })),
     };
   });
+
+  // Integration detail: metadata + the tools it exposes.
+  app.get<{ Params: { integration: string } }>(
+    "/api/integrations/:integration",
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+      const integration = request.params.integration;
+      const integ = registry.getIntegration(integration);
+      if (!integ) {
+        return reply.status(404).send({ error: "Integration not found" });
+      }
+      return {
+        name: integ.name,
+        version: integ.version,
+        displayName: integ.displayName,
+        description: integ.description,
+        categories: integ.categories,
+        logo: resolveLogo(integ),
+        authType: integ.auth.type,
+        tools: registry.listToolsByIntegration(integration).map((t) => ({
+          name: t.name,
+          description: t.description,
+        })),
+      };
+    }
+  );
+
+  // Serve a plugin's bundled logo file. Public (no auth) so an <img src> works
+  // without an Authorization header; logos aren't sensitive.
+  app.get<{ Params: { integration: string } }>(
+    "/api/integrations/:integration/logo",
+    async (request, reply) => {
+      const integration = request.params.integration;
+      const integ = registry.getIntegration(integration);
+      const dir = registry.getPluginDir(integration);
+      if (!integ?.logo || isUrl(integ.logo) || !dir) {
+        return reply.status(404).send({ error: "No logo" });
+      }
+      // basename() defuses any path traversal in the manifest's logo field.
+      const file = path.join(dir, path.basename(integ.logo));
+      if (!fs.existsSync(file)) {
+        return reply.status(404).send({ error: "No logo" });
+      }
+      reply.header("Content-Type", contentType(file));
+      reply.header("Cache-Control", "public, max-age=86400");
+      return reply.send(fs.readFileSync(file));
+    }
+  );
 
   app.get("/api/auth/:integration", async (request, reply) => {
     const user = await authenticate(request);

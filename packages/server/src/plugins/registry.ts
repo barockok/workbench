@@ -11,6 +11,8 @@ export interface PluginTool extends ToolDefinition {
 export interface Plugin {
   integration: Integration;
   tools: PluginTool[];
+  // Absolute path to the plugin's own directory — used to serve a bundled logo.
+  dir?: string;
 }
 
 class Registry {
@@ -22,6 +24,14 @@ class Registry {
     for (const tool of plugin.tools) {
       this.tools.set(tool.name, tool);
     }
+  }
+
+  getPluginDir(name: string): string | undefined {
+    return this.plugins.get(name)?.dir;
+  }
+
+  listToolsByIntegration(name: string): PluginTool[] {
+    return this.plugins.get(name)?.tools ?? [];
   }
 
   getTool(name: string): PluginTool | undefined {
