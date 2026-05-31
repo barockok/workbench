@@ -5,7 +5,7 @@
 
 ## Symptom
 
-In the Docker image, clicking **Connect** on any cookie-auth integration (httpbin, and external plugins like internal-app / superset) failed. Server log:
+In the Docker image, clicking **Connect** on any cookie-auth integration (the `httpbin` reference plugin, and external cookie-auth plugins) failed. Server log:
 
 ```
 Failed to reach http://127.0.0.1:<port>/json/version: TypeError: fetch failed
