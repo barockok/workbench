@@ -123,7 +123,23 @@ export function createContext(userId: string, integration: string): ToolContext 
           );
         }
 
+        // Send only the cookies a browser would send to this host:
+        //  - drop cookies that have since expired (a cookie can lapse between
+        //    capture and use);
+        //  - scope by domain — a host-only cookie (domain === host) goes only
+        //    to that host; a domain cookie (.example.com) goes to the domain
+        //    and its subdomains. Capture sweeps in sibling-host cookies (e.g.
+        //    sso.* Keycloak cookies); replaying ALL of them to one host both
+        //    bloats the header past the upstream's limit (nginx "400 Request
+        //    Header Or Cookie Too Large") and breaks auth that expects exactly
+        //    the browser's cookie set.
+        const nowSec = Math.floor(Date.now() / 1000);
         const cookieHeader = cookieData.cookies
+          .filter((c) => !c.expires || c.expires >= nowSec)
+          .filter((c) => {
+            const cd = c.domain.replace(/^\./, "").toLowerCase();
+            return targetHost === cd || targetHost.endsWith("." + cd);
+          })
           .map((c) => `${c.name}=${c.value}`)
           .join("; ");
         headers.set("Cookie", cookieHeader);
