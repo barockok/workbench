@@ -89,6 +89,24 @@ describe("meta-tools", () => {
       expect(result.schema).toEqual({ type: "object" });
     });
 
+    it("returns portable JSON Schema, not raw Zod internals", async () => {
+      const { z } = await import("zod");
+      const zodTool = {
+        name: "z_tool",
+        description: "zod tool",
+        integration: "test-integ",
+        inputSchema: z.object({ query: z.string(), pageSize: z.number().default(10) }),
+        handler: vi.fn(),
+      };
+      vi.spyOn(registry, "getTool").mockReturnValue(zodTool as any);
+      const tool = findTool("get_tool_schema");
+      const result = await tool.handler({ userId: "user-1" }, { tool: "z_tool" });
+      const s = JSON.stringify(result.schema);
+      expect(result.schema.type).toBe("object");
+      expect(result.schema.properties.query.type).toBe("string");
+      expect(s).not.toContain("_def"); // no Zod internals leaked
+    });
+
     it("returns error for missing tool", async () => {
       vi.spyOn(registry, "getTool").mockReturnValue(undefined);
       const tool = findTool("get_tool_schema");
