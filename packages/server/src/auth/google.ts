@@ -49,7 +49,7 @@ async function getJwksUri(): Promise<string> {
   return jwksUri;
 }
 
-export function buildAuthUrl(): string {
+export function buildAuthUrl(returnTicket?: string): string {
   if (!config.GOOGLE_CLIENT_ID) {
     throw new Error("GOOGLE_CLIENT_ID not configured");
   }
@@ -57,8 +57,10 @@ export function buildAuthUrl(): string {
   // Prune expired nonces before inserting a new one
   pruneExpiredNonces();
 
-  // Generate state and store it in pending_auth
-  const state = createAuthState(crypto.randomUUID(), "google-sso");
+  // Encode an optional return ticket (e.g. a pending OAuth /authorize request)
+  // into the state so the callback can resume the right flow.
+  const baseState = createAuthState(crypto.randomUUID(), "google-sso");
+  const state = returnTicket ? `${baseState}.${returnTicket}` : baseState;
 
   // Generate nonce and store it keyed by state
   const nonce = crypto.randomBytes(16).toString("hex");
