@@ -55,6 +55,8 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
 
     // Stash the validated request under a ticket; resume after Google SSO.
     const ticket = crypto.randomBytes(16).toString("hex");
+    // Bind this flow to the initiating browser (prevents login CSRF).
+    const binding = crypto.randomBytes(16).toString("hex");
     const now = Math.floor(Date.now() / 1000);
     db.prepare(
       "INSERT INTO pending_auth (state, user_id, integration, expires_at, session_data) VALUES (?, ?, ?, ?, ?)"
@@ -67,9 +69,17 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
         scope: q.scope || "mcp",
         state: q.state || "",
         resource: q.resource || `${config.SERVER_PUBLIC_URL}/mcp`,
+        binding,
       })
     );
 
+    // Bind this flow to the initiating browser. SameSite=Lax so it's sent on
+    // Google's top-level redirect back to our callback. Secure on https origins.
+    const secure = config.SERVER_PUBLIC_URL.startsWith("https://") ? "; Secure" : "";
+    reply.header(
+      "Set-Cookie",
+      `awb_oauth_binding=${binding}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax${secure}`
+    );
     return reply.redirect(buildAuthUrl(ticket));
   });
 

@@ -96,9 +96,14 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       const oauthTicket = dot === -1 ? null : state.slice(dot + 1);
       if (oauthTicket) {
         const { resumeAuthorize } = await import("../auth/oauth-server/resume");
-        const redirectUrl = resumeAuthorize(oauthTicket, userId);
+        const cookie = request.headers.cookie ?? "";
+        const m = cookie.match(/(?:^|;\s*)awb_oauth_binding=([^;]+)/);
+        const binding = m ? m[1] : undefined;
+        const redirectUrl = resumeAuthorize(oauthTicket, userId, binding);
+        // Clear the one-time binding cookie.
+        reply.header("Set-Cookie", "awb_oauth_binding=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
         if (redirectUrl) return reply.redirect(redirectUrl);
-        // ticket expired/invalid -> fall through to portal login
+        // binding/ticket invalid -> fall through to portal login
       }
 
       const token = await signSession({ userId, email });
