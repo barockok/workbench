@@ -16,8 +16,10 @@ import {
   captureCookies,
   closeCookieSession,
   storeCookies,
+  getCookies,
   hasValidCookies,
   getSessionOwner,
+  CookieData,
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
@@ -335,6 +337,54 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send({ error: message });
     }
   });
+
+  // Export a stored cookie-auth session as a portable bundle. Lets a user
+  // capture on a machine whose egress IP the login provider accepts (e.g. a
+  // residential ISP) and move the live session to a headless/in-cluster
+  // workbench that the provider would otherwise block. Authed — the bundle
+  // contains live session cookies, returned only to its owner.
+  app.get<{ Params: { integration: string } }>(
+    "/api/integrations/:integration/session/export",
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) return reply.status(401).send({ error: "Unauthorized" });
+      const { integration } = request.params;
+      const integ = registry.getIntegration(integration);
+      if (!integ || integ.auth.type !== "cookie") {
+        return reply.status(404).send({ error: "Cookie integration not found" });
+      }
+      const session = getCookies(user.userId, integration);
+      if (!session) return reply.status(404).send({ error: "No session to export. Connect the integration first." });
+      return { integration, session };
+    }
+  );
+
+  // Import a cookie-auth session bundle (from /session/export elsewhere) and
+  // store it under the caller, marking the integration connected.
+  app.post<{ Params: { integration: string }; Body: { session?: CookieData } }>(
+    "/api/integrations/:integration/session/import",
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) return reply.status(401).send({ error: "Unauthorized" });
+      const { integration } = request.params;
+      const integ = registry.getIntegration(integration);
+      if (!integ || integ.auth.type !== "cookie") {
+        return reply.status(404).send({ error: "Cookie integration not found" });
+      }
+      const session = request.body?.session;
+      if (!session || !Array.isArray(session.cookies) || session.cookies.length === 0) {
+        return reply.status(400).send({ error: "Invalid session bundle: expected non-empty { cookies }." });
+      }
+      const data: CookieData = {
+        domain: session.domain ?? integ.auth.targetDomain,
+        cookies: session.cookies,
+        capturedAt: session.capturedAt ?? Math.floor(Date.now() / 1000),
+      };
+      storeCookies(user.userId, integration, data);
+      markConnected(user.userId, integration);
+      return { success: true, cookieCount: data.cookies.length };
+    }
+  );
 
   // Cookie auth cancel
   app.post("/api/auth/cookie/:integration/cancel", async (request, reply) => {
