@@ -66,6 +66,7 @@ import {
   hasValidCookies,
   getSessionOwner,
   getSessionCdpEndpoint,
+  createProxyAuthHandler,
 } from "../src/auth/cookie";
 import { db } from "../src/db";
 
@@ -169,6 +170,46 @@ describe("cookie auth", () => {
         capturedAt: now,
       };
       expect(isCookieExpired(data)).toBe(true);
+    });
+  });
+
+  describe("createProxyAuthHandler", () => {
+    it("enables Fetch with auth handling on each attached target", () => {
+      const sent: any[] = [];
+      const h = createProxyAuthHandler({ username: "u", password: "p" });
+      h({ method: "Target.attachedToTarget", params: { sessionId: "S1" } }, (m) => sent.push(m));
+      expect(sent[0]).toMatchObject({ sessionId: "S1", method: "Fetch.enable", params: { handleAuthRequests: true } });
+    });
+
+    it("answers a PROXY auth challenge with the configured credentials", () => {
+      const sent: any[] = [];
+      const h = createProxyAuthHandler({ username: "u", password: "p" });
+      h(
+        { method: "Fetch.authRequired", sessionId: "S1", params: { requestId: "R1", authChallenge: { source: "Proxy" } } },
+        (m) => sent.push(m)
+      );
+      expect(sent[0]).toMatchObject({
+        sessionId: "S1",
+        method: "Fetch.continueWithAuth",
+        params: { requestId: "R1", authChallengeResponse: { response: "ProvideCredentials", username: "u", password: "p" } },
+      });
+    });
+
+    it("does NOT hand proxy creds to a server (site) auth challenge", () => {
+      const sent: any[] = [];
+      const h = createProxyAuthHandler({ username: "u", password: "p" });
+      h(
+        { method: "Fetch.authRequired", sessionId: "S1", params: { requestId: "R1", authChallenge: { source: "Server" } } },
+        (m) => sent.push(m)
+      );
+      expect(sent[0].params.authChallengeResponse).toEqual({ response: "Default" });
+    });
+
+    it("continues non-auth paused requests", () => {
+      const sent: any[] = [];
+      const h = createProxyAuthHandler({ username: "u", password: "p" });
+      h({ method: "Fetch.requestPaused", sessionId: "S1", params: { requestId: "R2" } }, (m) => sent.push(m));
+      expect(sent[0]).toMatchObject({ sessionId: "S1", method: "Fetch.continueRequest", params: { requestId: "R2" } });
     });
   });
 
