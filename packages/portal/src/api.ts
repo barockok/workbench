@@ -142,6 +142,25 @@ export async function connectCapture(jwt: string) {
   return res.json() as Promise<{ success: boolean; cookieCount: number }>;
 }
 
+// Export a cookie-auth session bundle (to move a working capture to another
+// workbench whose egress IP the provider would block).
+export async function exportSession(integration: string): Promise<{ integration: string; session: unknown }> {
+  const res = await fetch(`${API_URL}/api/integrations/${integration}/session/export`, { headers: getHeaders() });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Export failed");
+  return res.json();
+}
+
+// Import a cookie-auth session bundle captured elsewhere.
+export async function importSession(integration: string, session: unknown): Promise<{ success: boolean; cookieCount: number }> {
+  const res = await fetch(`${API_URL}/api/integrations/${integration}/session/import`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ session }),
+  });
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Import failed");
+  return res.json();
+}
+
 export async function getApiKeyStatus(): Promise<{ hasKey: boolean }> {
   const res = await fetch(`${API_URL}/api/keys`, { headers: getHeaders() });
   if (!res.ok) throw new Error("Failed to read key status");

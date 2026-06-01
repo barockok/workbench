@@ -62,6 +62,7 @@ vi.mock("../src/auth/cookie", () => ({
   ),
   closeCookieSession: vi.fn(() => Promise.resolve()),
   storeCookies: vi.fn(),
+  getCookies: vi.fn(() => null),
   hasValidCookies: vi.fn(() => false),
   getSessionOwner: vi.fn(() => null),
 }));
@@ -779,6 +780,86 @@ describe("API routes", () => {
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/connections" });
       expect(res.statusCode).toBe(401);
+    });
+  });
+
+  describe("session export/import", () => {
+    const cookieInteg = {
+      name: "legacy",
+      version: "1.0.0",
+      auth: { type: "cookie" as const, loginUrl: "https://legacy.com/login", targetDomain: "legacy.com" },
+    };
+    const bundle = { domain: "legacy.com", cookies: [{ name: "s", value: "v", domain: "legacy.com", path: "/" }], capturedAt: 1 };
+    const apiKey = { "x-workbench-api-key": "valid-api-key" };
+
+    it("exports the stored cookie bundle for a cookie integration", async () => {
+      const { getCookies } = await import("../src/auth/cookie");
+      vi.mocked(getCookies).mockReturnValue(bundle as any);
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/integrations/legacy/session/export", headers: apiKey });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.integration).toBe("legacy");
+      expect(body.session.cookies[0].name).toBe("s");
+    });
+
+    it("404s export when no session stored", async () => {
+      const { getCookies } = await import("../src/auth/cookie");
+      vi.mocked(getCookies).mockReturnValue(null);
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/integrations/legacy/session/export", headers: apiKey });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("401s export without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/integrations/legacy/session/export" });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("imports a cookie bundle and stores it", async () => {
+      const { storeCookies } = await import("../src/auth/cookie");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/integrations/legacy/session/import",
+        headers: { ...apiKey, "content-type": "application/json" },
+        payload: { session: bundle },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).cookieCount).toBe(1);
+      expect(vi.mocked(storeCookies)).toHaveBeenCalledWith("user-1", "legacy", expect.objectContaining({ cookies: bundle.cookies }));
+    });
+
+    it("400s import of an empty/invalid bundle", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/integrations/legacy/session/import",
+        headers: { ...apiKey, "content-type": "application/json" },
+        payload: { session: { domain: "legacy.com", cookies: [], capturedAt: 1 } },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("404s import for a non-cookie integration", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "slack",
+        version: "1.0.0",
+        auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/integrations/slack/session/import",
+        headers: { ...apiKey, "content-type": "application/json" },
+        payload: { session: bundle },
+      });
+      expect(res.statusCode).toBe(404);
     });
   });
 });
