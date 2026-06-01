@@ -203,6 +203,7 @@ Claude: wait_for_connection("abc123")
 | `OAUTH_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Lifetime (seconds) of an issued OAuth access token |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | — | Google Workspace SSO credentials (optional) |
 | `CAPTURE_PROXY` | — | Proxy for the cookie-auth capture browser, e.g. `socks5://host:1080` or `http://host:3128`. Set when the host's egress IP is rejected by a login provider — notably **Google SSO 500s interactive sign-in from datacenter IPs**, so an in-cluster capture must exit via a clean (residential/ISP) IP. Unset → direct connection. |
+| `CAPTURE_PROXY_USERNAME` / `_PASSWORD` | — | Credentials for an **authenticated HTTP** capture proxy. Chromium can't take proxy creds on the command line (and can't auth SOCKS5 at all), so these are supplied via the CDP `Fetch.authRequired` challenge. Use an `http://` `CAPTURE_PROXY` with these; for SOCKS5 use IP-authorization instead. |
 
 ## Adding a Plugin
 
