@@ -879,6 +879,23 @@ body::before {
   padding: 16px 20px;
 }
 
+/* session transfer (cookie integrations) */
+.session-transfer { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 14px; }
+.session-transfer-row { display: flex; gap: 10px; margin: 8px 0; }
+.session-transfer-paste {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  resize: vertical;
+}
+.session-transfer-ok { color: var(--mauve, #b794d4); font-size: 12px; margin-top: 8px; }
+
 /* category dropdown */
 .cat-select-wrap { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .cat-select-label {
