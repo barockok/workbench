@@ -143,6 +143,12 @@ export async function startCookieSession(
       "--no-default-browser-check",
       "--disable-features=TranslateUI",
       "--window-size=1280,800",
+      // Route the capture browser's egress through a proxy when CAPTURE_PROXY is
+      // set (e.g. `socks5://host:1080` or `http://host:3128`). Needed where the
+      // host's own egress IP is rejected by the login provider — notably Google
+      // SSO 500s interactive sign-in from datacenter IPs, so an in-cluster
+      // capture must exit via a clean (residential/ISP) IP. Unset → direct.
+      ...(process.env.CAPTURE_PROXY ? [`--proxy-server=${process.env.CAPTURE_PROXY}`] : []),
       // The Docker image runs as root; chromium's zygote refuses to start as
       // root without --no-sandbox ("Running as root without --no-sandbox is
       // not supported"), so the CDP endpoint never comes up and cookie-auth
