@@ -1,3 +1,23 @@
+# a-workbench v0.4.1
+
+_2026-06-01_
+
+Patch: **route the cookie-auth capture browser through a proxy**, so an in-cluster capture can reach login providers that reject the host's egress IP.
+
+## Why
+Some providers reject interactive sign-in from datacenter IPs — notably **Google SSO returns a generic 500 to OAuth sign-in from cloud/datacenter egress** (the same capture works from a residential IP). An in-cluster capture (e.g. GKE) therefore can't complete a Google-SSO login. These two env vars let the capture browser exit via a clean (residential/ISP) IP.
+
+## Features
+- **`CAPTURE_PROXY`** — proxy for the capture chromium, e.g. `socks5://host:1080` or `http://host:3128`. Unset → direct (unchanged).
+- **`CAPTURE_PROXY_USERNAME` / `_PASSWORD`** — credentials for an **authenticated HTTP** proxy. Chromium can't take proxy creds on the CLI (and can't auth SOCKS5 at all), so they're supplied via the CDP `Fetch.authRequired` challenge — answering PROXY challenges only, never the site's own auth.
+
+## Notes
+- For an authed **SOCKS5** proxy, use the provider's **IP-authorization** instead (whitelist the egress IP) — chromium can't do SOCKS5 user/pass auth.
+- Residential rotating proxies: pin a **sticky session** so the whole OAuth flow (app → provider → back) stays on one IP.
+- Tests: 265 passing.
+
+---
+
 # a-workbench v0.4.0
 
 _2026-05-31_
