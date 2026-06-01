@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 
 // Shared mock state so we can drive the CDP responses per-test. Declared
 // here in module scope so the hoisted vi.mock factories can read it.
-const { mockCdpResponses } = vi.hoisted(() => ({
+const { mockCdpResponses, spawnCalls } = vi.hoisted(() => ({
   mockCdpResponses: [] as { result?: Record<string, unknown>; error?: { message: string } }[],
+  spawnCalls: [] as string[][],
 }));
 
 vi.mock("playwright", () => ({
@@ -15,7 +16,8 @@ vi.mock("playwright", () => ({
 vi.mock("node:child_process", async () => {
   const { EventEmitter } = await import("node:events");
   return {
-    spawn: () => {
+    spawn: (_exe: string, args: string[]) => {
+      spawnCalls.push(args);
       const proc = new EventEmitter() as EventEmitter & { kill: () => void; pid: number };
       proc.kill = () => undefined;
       proc.pid = 1234;
@@ -233,6 +235,28 @@ describe("cookie auth", () => {
       expect(cdpToken).toBeDefined();
       expect(cdpToken).not.toEqual(sessionId);
 
+      await closeCookieSession(sessionId);
+    });
+
+    it("adds --proxy-server to the chromium spawn when CAPTURE_PROXY is set", async () => {
+      spawnCalls.length = 0;
+      mockFetchForStart();
+      process.env.CAPTURE_PROXY = "socks5://10.0.0.1:1080";
+      try {
+        const { sessionId } = await startCookieSession("u", "test-integ", "https://example.com/login", "example.com");
+        expect(spawnCalls.at(-1)).toContain("--proxy-server=socks5://10.0.0.1:1080");
+        await closeCookieSession(sessionId);
+      } finally {
+        delete process.env.CAPTURE_PROXY;
+      }
+    });
+
+    it("omits --proxy-server when CAPTURE_PROXY is unset", async () => {
+      delete process.env.CAPTURE_PROXY;
+      spawnCalls.length = 0;
+      mockFetchForStart();
+      const { sessionId } = await startCookieSession("u", "test-integ", "https://example.com/login", "example.com");
+      expect(spawnCalls.at(-1)!.some((a) => a.startsWith("--proxy-server"))).toBe(false);
       await closeCookieSession(sessionId);
     });
 
