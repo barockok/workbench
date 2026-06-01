@@ -39,6 +39,8 @@ interface Session {
   cookieDomains: string[];
   userId: string;
   integration: string;
+  // Persistent CDP socket answering authenticated-proxy challenges, if any.
+  authWs?: WebSocket;
 }
 
 const sessions = new Map<string, Session>();
@@ -116,6 +118,56 @@ async function cdpCall(
   });
 }
 
+// Chromium can't take proxy credentials on the command line (and can't do
+// SOCKS5 user/pass auth at all). For an authenticated HTTP proxy we answer the
+// CDP `Fetch.authRequired` challenge with the configured creds. This factory
+// returns a per-connection message handler: it auto-enables Fetch on every
+// attached target, hands the credentials to PROXY challenges only (never the
+// site's own auth), and lets every other paused request through.
+type CdpSend = (payload: Record<string, unknown>) => void;
+export function createProxyAuthHandler(creds: { username: string; password: string }) {
+  let id = 1000;
+  return function handle(msg: Record<string, any>, send: CdpSend): void {
+    if (msg.method === "Target.attachedToTarget") {
+      send({ sessionId: msg.params.sessionId, id: id++, method: "Fetch.enable", params: { handleAuthRequests: true } });
+    } else if (msg.method === "Fetch.authRequired") {
+      const isProxy = msg.params?.authChallenge?.source === "Proxy";
+      send({
+        sessionId: msg.sessionId,
+        id: id++,
+        method: "Fetch.continueWithAuth",
+        params: {
+          requestId: msg.params.requestId,
+          authChallengeResponse: isProxy
+            ? { response: "ProvideCredentials", username: creds.username, password: creds.password }
+            : { response: "Default" },
+        },
+      });
+    } else if (msg.method === "Fetch.requestPaused") {
+      send({ sessionId: msg.sessionId, id: id++, method: "Fetch.continueRequest", params: { requestId: msg.params.requestId } });
+    }
+  };
+}
+
+// Open a persistent browser-level CDP connection that auto-attaches to every
+// target and feeds proxy-auth challenges through createProxyAuthHandler.
+// Returns the socket so the session can close it on teardown.
+function startProxyAuth(browserWsUrl: string, username: string, password: string): WebSocket {
+  const handler = createProxyAuthHandler({ username, password });
+  const ws = new WebSocket(browserWsUrl, { perMessageDeflate: false, origin: "http://127.0.0.1" });
+  ws.on("open", () => {
+    ws.send(JSON.stringify({ id: 1, method: "Target.setAutoAttach", params: { autoAttach: true, flatten: true, waitForDebuggerOnStart: false } }));
+  });
+  ws.on("message", (raw) => {
+    try {
+      const msg = JSON.parse(raw.toString());
+      handler(msg, (payload) => ws.send(JSON.stringify(payload)));
+    } catch { /* ignore malformed frames */ }
+  });
+  ws.on("error", () => { /* best-effort; capture still works without proxy auth */ });
+  return ws;
+}
+
 export async function startCookieSession(
   userId: string,
   integration: string,
@@ -178,6 +230,15 @@ export async function startCookieSession(
   const sessionId = crypto.randomUUID();
   const cdpToken = crypto.randomUUID();
 
+  // If the capture proxy needs auth, open the persistent CDP socket that
+  // answers proxy-auth challenges (chromium can't take proxy creds otherwise).
+  const proxyUser = process.env.CAPTURE_PROXY_USERNAME;
+  const proxyPass = process.env.CAPTURE_PROXY_PASSWORD;
+  const authWs =
+    process.env.CAPTURE_PROXY && proxyUser && proxyPass
+      ? startProxyAuth(versionInfo.webSocketDebuggerUrl, proxyUser, proxyPass)
+      : undefined;
+
   sessions.set(sessionId, {
     proc,
     userDataDir,
@@ -190,6 +251,7 @@ export async function startCookieSession(
     cookieDomains: [targetDomain, ...cookieDomains],
     userId,
     integration,
+    authWs,
   });
 
   return { sessionId, cdpUrl: target.webSocketDebuggerUrl, cdpToken };
@@ -265,6 +327,7 @@ export function getSessionCdpEndpoint(
 export async function closeCookieSession(sessionId: string): Promise<void> {
   const session = sessions.get(sessionId);
   if (!session) return;
+  try { session.authWs?.close(); } catch { /* noop */ }
   try { session.proc.kill("SIGKILL"); } catch { /* noop */ }
   sessions.delete(sessionId);
   await rm(session.userDataDir, { recursive: true, force: true }).catch(() => undefined);
