@@ -1,3 +1,24 @@
+# a-workbench v0.4.2
+
+_2026-06-02_
+
+Feature: **cookie session export/import** — move a captured cookie-auth session between workbenches.
+
+## Why
+Some login providers reject interactive sign-in from datacenter/cloud IPs (Google SSO 500s or stalls them), so a headless in-cluster workbench can't complete the login — even through residential proxies, which Google also flags. Capture instead on a machine the provider trusts (your own browser / a residential IP), then move the live session to the in-cluster instance.
+
+## Features
+- `GET /api/integrations/:name/session/export` (authed) → returns the stored cookie bundle.
+- `POST /api/integrations/:name/session/import` (authed) → stores a bundle under the caller and marks the integration connected (cookie integrations only; rejects empty/invalid bundles).
+- **Portal:** a *Session transfer* section on cookie integrations' detail view — **Export** downloads the bundle, **Import** takes pasted JSON and connects. Available automatically for any `auth.type: "cookie"` plugin.
+
+## Notes
+- Sessions are short-lived (the upstream's own TTL), so re-export/import when they expire.
+- The export bundle contains live session cookies — handle it as a secret.
+- Tests: 271 passing.
+
+---
+
 # a-workbench v0.4.1
 
 _2026-06-01_
