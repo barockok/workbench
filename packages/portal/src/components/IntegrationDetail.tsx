@@ -117,6 +117,7 @@ export default function IntegrationDetail({
                   {data.categories.map((c) => <span key={c} className="integ-tag">{c}</span>)}
                 </div>
               )}
+              {data.authType === "cookie" && <SessionTransfer name={name} />}
               <div className="integ-tools-head">
                 <span>Tools</span><span className="count">{data.tools.length}</span>
               </div>
@@ -128,7 +129,6 @@ export default function IntegrationDetail({
                   </li>
                 ))}
               </ul>
-              {data.authType === "cookie" && <SessionTransfer name={name} />}
             </>
           )}
         </div>
