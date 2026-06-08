@@ -281,3 +281,13 @@ export async function scroll(s: WarmSession, direction: ScrollDir, amount = 600)
   const deltaY = direction === "up" ? -amount : direction === "down" ? amount : 0;
   await s.cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 640, y: 400, deltaX, deltaY });
 }
+
+export async function readText(s: WarmSession, maxChars = 20000): Promise<{ text: string; truncated: boolean }> {
+  const r = (await s.cdp.send("Runtime.evaluate", {
+    expression: "document.body.innerText",
+    returnByValue: true,
+  })) as { result?: { value?: unknown } };
+  const full = typeof r.result?.value === "string" ? r.result.value : "";
+  const truncated = full.length > maxChars;
+  return { text: truncated ? full.slice(0, maxChars) : full, truncated };
+}

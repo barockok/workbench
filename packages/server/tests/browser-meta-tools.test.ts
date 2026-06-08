@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { ensureMock, touchMock, navMock, shotMock, clickMock, typeMock, keyMock, scrollMock, closeMock } =
+const { ensureMock, touchMock, navMock, shotMock, clickMock, typeMock, keyMock, scrollMock, readMock, closeMock } =
   vi.hoisted(() => ({
     ensureMock: vi.fn(),
     touchMock: vi.fn(),
@@ -10,6 +10,7 @@ const { ensureMock, touchMock, navMock, shotMock, clickMock, typeMock, keyMock, 
     typeMock: vi.fn(),
     keyMock: vi.fn(),
     scrollMock: vi.fn(),
+    readMock: vi.fn(),
     closeMock: vi.fn(),
   }));
 
@@ -22,6 +23,7 @@ vi.mock("../src/auth/browser-session", () => ({
   typeText: typeMock,
   pressKey: keyMock,
   scroll: scrollMock,
+  readText: readMock,
   closeBrowserSession: closeMock,
 }));
 
@@ -64,5 +66,12 @@ describe("browser_* meta-tools", () => {
     const out = await (tool("browser_close").handler as any)({ userId: "u1" }, {});
     expect(closeMock).toHaveBeenCalledWith("u1");
     expect(out).toEqual({ ok: true });
+  });
+
+  it("browser_read_text returns the text result", async () => {
+    readMock.mockResolvedValue({ text: "page text", truncated: false });
+    const out = await (tool("browser_read_text").handler as any)({ userId: "u1" }, { maxChars: 500 });
+    expect(readMock).toHaveBeenCalledWith({ userId: "u1" }, 500);
+    expect(out).toEqual({ text: "page text", truncated: false });
   });
 });

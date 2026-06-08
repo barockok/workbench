@@ -19,6 +19,7 @@ import {
   typeText as browserType,
   pressKey as browserKey,
   scroll as browserScroll,
+  readText as browserReadText,
   closeBrowserSession,
 } from "../auth/browser-session";
 
@@ -383,6 +384,16 @@ export const metaTools = [
     },
   },
   {
+    name: "browser_read_text",
+    description: "Read the visible text of the current page (document.innerText) as plain text — far cheaper than a screenshot for text-heavy pages, forms, and reading. Use this instead of browser_screenshot when you don't need to see layout/pixels.",
+    inputSchema: z.object({ maxChars: z.number().int().positive().optional() }),
+    handler: async (ctx: { userId: string }, args: { maxChars?: number }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      return browserReadText(s, args.maxChars);
+    },
+  },
+  {
     name: "browser_close",
     description: "Close the per-user warm browser session (the persistent profile is kept). Frees the single-writer lock so a cookie capture can run.",
     inputSchema: z.object({}),
@@ -506,6 +517,10 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
       amount: { type: "number", description: "Pixels to scroll (default 600)" },
     },
     required: ["direction"],
+  },
+  browser_read_text: {
+    type: "object",
+    properties: { maxChars: { type: "number", description: "Max characters to return (default 20000)" } },
   },
   browser_close: { type: "object", properties: {} },
   browser_live_url: { type: "object", properties: {} },
