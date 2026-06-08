@@ -1,9 +1,9 @@
 import { chromium } from "playwright";
 import { spawn, ChildProcess } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { config } from "../config";
 import { createServer } from "node:net";
 import WebSocket from "ws";
 import { db } from "../db";
@@ -168,6 +168,17 @@ function startProxyAuth(browserWsUrl: string, username: string, password: string
   return ws;
 }
 
+// Base dir holding one persistent Chromium profile per user. Defaults next to
+// the SQLite DB (on the same persistent volume) when BROWSER_PROFILES_DIR unset.
+function profilesBaseDir(): string {
+  return config.BROWSER_PROFILES_DIR || join(dirname(config.DATABASE_URL), "browser-profiles");
+}
+
+// Per-user persistent profile dir. Keyed by userId only (no path traversal).
+function userProfileDir(userId: string): string {
+  return join(profilesBaseDir(), userId.replace(/[^a-zA-Z0-9_-]/g, "_"));
+}
+
 export async function startCookieSession(
   userId: string,
   integration: string,
@@ -176,7 +187,8 @@ export async function startCookieSession(
   cookieDomains: string[] = []
 ): Promise<{ sessionId: string; cdpUrl: string; cdpToken: string }> {
   const remotePort = await getFreePort();
-  const userDataDir = mkdtempSync(join(tmpdir(), "awb-cookie-"));
+  const userDataDir = userProfileDir(userId);
+  mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
   // Reuse Playwright's chromium binary so we don't need a second install.
   const execPath = chromium.executablePath();
   const proc = spawn(
