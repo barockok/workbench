@@ -63,7 +63,7 @@ curl -X POST http://localhost:3000/api/admin/users \
   -d '{"id": "alice@company.com"}'
 ```
 
-Returns API key (shown once).
+Returns API key. It can be revealed again later from the portal or via `GET /api/keys/reveal`.
 
 ### Audit Log
 

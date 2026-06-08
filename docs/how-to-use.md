@@ -13,7 +13,7 @@ In dev, `npm run dev` runs the API server on `:3000` and the Vite portal on its 
 ## Getting an API key
 
 1. Open the portal (`http://localhost:3000/`) and sign in with Google SSO.
-2. In the **MCP — Access Key** panel at the top, click **Generate key**. The key is shown **once** (masked, with a Show toggle) — copy it now; only its hash is stored. Use **Regenerate** to rotate, **Revoke** to disable.
+2. In the **MCP — Access Key** panel at the top, click **Generate key** (masked, with a Show toggle). The key is stored encrypted, so you can retrieve it later with **Reveal key** instead of copying it immediately. Use **Regenerate** to rotate, **Revoke** to disable.
 
 The panel also shows a ready-to-paste MCP client config (see below). The same key works as the `/mcp` `Authorization: Bearer` token for any MCP client.
 
