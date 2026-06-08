@@ -42,6 +42,9 @@ Static MCP meta-tools:
 | `list_integrations` | List all integrations + connection status |
 | `connect` / `wait_for_connection` | Start a connection (OAuth/cookie) and block until it completes |
 | `get_auth_url` | Deprecated alias of `connect` |
+| `browser_navigate` / `browser_screenshot` / `browser_read_text` | Drive a warm per-user Chromium: navigate, view (downscaled JPEG, change-detected), read page text |
+| `browser_click` / `browser_type` / `browser_key` / `browser_scroll` | Computer-use input into the warm session |
+| `browser_live_url` / `browser_close` | Human watch-and-take-over link; end the session |
 
 ## Plugin SDK
 
