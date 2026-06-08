@@ -68,7 +68,8 @@ connects build on, so prior logins (any site/IdP) carry over instead of a blank
 browser. The MCP client drives it step-by-step:
 
 - `browser_navigate({ url })` — go to a page (opens the warm session if cold); returns `{ url, title }`
-- `browser_screenshot()` — returns a PNG the model can see (use it before clicking)
+- `browser_screenshot({ format?, quality?, maxWidth? })` — downscaled JPEG by default (maxWidth 1000) to keep vision tokens low; returns `{ unchanged: true }` instead of an image when the page is pixel-identical to your last shot
+- `browser_read_text({ maxChars? })` — visible page text as plain text; far cheaper than a screenshot for reading/forms
 - `browser_click({ x, y, button? })`, `browser_type({ text })`, `browser_key({ keys })`, `browser_scroll({ direction, amount? })`
 - `browser_live_url()` — a short-lived link to watch and take over the browser by hand, then hand control back
 - `browser_close()` — end the session (the profile is kept)
@@ -80,6 +81,11 @@ Claude: browser_navigate({url:"https://app.example.com"})
         browser_click({x:320,y:210})   # drill in
         browser_screenshot()            # read it off
 ```
+
+Screenshots cost vision tokens (priced by pixel dimensions), so the model is
+told to shoot only when the page changed, to prefer `browser_read_text` for
+text, and `maxWidth`/downscaling trims the cost further. Identical re-shots come
+back as `{ unchanged: true }` rather than re-billing the pixels.
 
 The session is idle-reaped after `BROWSER_SESSION_TTL_SECONDS` (default 300). A
 warm browser session and a cookie capture can't run at once for one user
