@@ -388,6 +388,20 @@ export const metaTools = [
       return { ok: true };
     },
   },
+  {
+    name: "browser_live_url",
+    description: "Get a short-lived URL to watch and take over the per-user browser session in a web canvas. Open it to drive the same browser by hand, then return control to the model.",
+    inputSchema: z.object({}),
+    handler: async (ctx: { userId: string }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      const jwt = await signConnectToken(
+        { connectionId: ctx.userId, userId: ctx.userId, integration: "__browser__", sessionId: ctx.userId, cdpToken: s.cdpToken },
+        config.CONNECT_TTL_SECONDS
+      );
+      return { url: `${config.PORTAL_URL}/browser?t=${jwt}` };
+    },
+  },
 ] satisfies readonly MetaTool[];
 
 // JSON Schema descriptions for the meta-tools, surfaced via MCP `tools/list`.
@@ -484,4 +498,5 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     required: ["direction"],
   },
   browser_close: { type: "object", properties: {} },
+  browser_live_url: { type: "object", properties: {} },
 };
