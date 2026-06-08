@@ -6,6 +6,7 @@ import {
   typeText,
   pressKey,
   scroll,
+  readText,
   type WarmSession,
 } from "../src/auth/browser-session";
 
@@ -110,5 +111,18 @@ describe("browser actions", () => {
     await scroll(sessionWithCdp(send), "down", 600);
     expect(send).toHaveBeenCalledWith("Input.dispatchMouseEvent",
       expect.objectContaining({ type: "mouseWheel", deltaY: 600 }));
+  });
+
+  it("readText returns innerText", async () => {
+    const send = vi.fn(async () => ({ result: { value: "Hello world" } }));
+    const out = await readText({ cdp: { send } } as any);
+    expect(send).toHaveBeenCalledWith("Runtime.evaluate", expect.objectContaining({ expression: "document.body.innerText", returnByValue: true }));
+    expect(out).toEqual({ text: "Hello world", truncated: false });
+  });
+
+  it("readText truncates past maxChars and flags it", async () => {
+    const send = vi.fn(async () => ({ result: { value: "abcdefghij" } }));
+    const out = await readText({ cdp: { send } } as any, 4);
+    expect(out).toEqual({ text: "abcd", truncated: true });
   });
 });
