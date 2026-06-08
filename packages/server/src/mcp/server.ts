@@ -66,12 +66,18 @@ export async function handleMcpRequest(body: Record<string, unknown>, userId: st
     }
 
     const result = await tool.handler({ userId }, parsed.data as any);
+
+    // A handler may return an image sentinel; surface it as a real MCP image
+    // content block instead of JSON text. Everything else is text-wrapped.
+    const img = (result as { _mcpImage?: { data: string; mimeType: string } } | null)?._mcpImage;
+    const content = img
+      ? [{ type: "image", data: img.data, mimeType: img.mimeType }]
+      : [{ type: "text", text: JSON.stringify(result) }];
+
     return {
       jsonrpc: "2.0",
       id,
-      result: {
-        content: [{ type: "text", text: JSON.stringify(result) }],
-      },
+      result: { content },
     };
   }
 
