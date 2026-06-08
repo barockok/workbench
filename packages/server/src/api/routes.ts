@@ -466,6 +466,28 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
+  // Live-view token exchange for the browser session. The /browser magic-link
+  // page presents its connect JWT and gets back the relative CDP proxy URL +
+  // the token to send in the WS auth frame. Mirrors /api/connect/session.
+  app.get("/api/connect/browser-session", async (request, reply) => {
+    const token = (request.query as { t?: string }).t;
+    if (!token) return reply.status(400).send({ error: "Missing token" });
+    let payload;
+    try {
+      payload = await verifyConnectToken(token);
+    } catch {
+      return reply.status(401).send({ error: "Link invalid or expired" });
+    }
+    if (payload.integration !== "__browser__") {
+      return reply.status(400).send({ error: "Not a browser-session link" });
+    }
+    return {
+      cdpProxyUrl: "/api/browser-session/cdp",
+      sessionId: payload.sessionId,
+      cdpToken: payload.cdpToken,
+    };
+  });
+
   // Connection status per integration
   app.get("/api/connections", async (request, reply) => {
     const user = await authenticate(request);
