@@ -441,6 +441,27 @@ describe("cookie auth", () => {
       await closeCookieSession(sessionId);
     });
 
+    it("rejects a second concurrent capture session for the same user", async () => {
+      mockFetchForStart();
+      const first = await startCookieSession("busy-user", "test-integ", "https://example.com/login", "example.com");
+      await expect(
+        startCookieSession("busy-user", "other-integ", "https://example.com/login", "example.com")
+      ).rejects.toThrow(/BROWSER_SESSION_BUSY/);
+      await closeCookieSession(first.sessionId);
+      const again = await startCookieSession("busy-user", "test-integ", "https://example.com/login", "example.com");
+      expect(again.sessionId).toBeDefined();
+      await closeCookieSession(again.sessionId);
+    });
+
+    it("allows concurrent capture sessions for different users", async () => {
+      mockFetchForStart();
+      const a = await startCookieSession("user-a", "test-integ", "https://example.com/login", "example.com");
+      const b = await startCookieSession("user-b", "test-integ", "https://example.com/login", "example.com");
+      expect(a.sessionId).not.toBe(b.sessionId);
+      await closeCookieSession(a.sessionId);
+      await closeCookieSession(b.sessionId);
+    });
+
     it("filters out off-domain cookies even when targetDomain alone is allowed", async () => {
       mockFetchForStart();
       mockCdpResponses.length = 0;

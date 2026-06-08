@@ -44,6 +44,10 @@ interface Session {
 
 const sessions = new Map<string, Session>();
 
+// Userdata dirs can't be shared by two Chromium processes — one active capture
+// session per user at a time.
+const activeProfiles = new Set<string>();
+
 async function getFreePort(): Promise<number> {
   return await new Promise<number>((resolve, reject) => {
     const srv = createServer();
@@ -185,87 +189,97 @@ export async function startCookieSession(
   targetDomain: string,
   cookieDomains: string[] = []
 ): Promise<{ sessionId: string; cdpUrl: string; cdpToken: string }> {
-  const remotePort = await getFreePort();
-  const userDataDir = userProfileDir(userId);
-  mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
-  // Reuse Playwright's chromium binary so we don't need a second install.
-  const execPath = chromium.executablePath();
-  const proc = spawn(
-    execPath,
-    [
-      // `new` headless renders fully (and emits screencast frames) without
-      // requiring a visible OS window. The portal canvas is what the user
-      // sees — chromium itself never opens a window on the server host.
-      "--headless=new",
-      `--remote-debugging-port=${remotePort}`,
-      `--user-data-dir=${userDataDir}`,
-      // Allow our proxy to connect with origin=http://127.0.0.1. Newer
-      // chromium does not treat `*` as a wildcard.
-      "--remote-allow-origins=http://127.0.0.1",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--disable-features=TranslateUI",
-      "--window-size=1280,800",
-      // Route the capture browser's egress through a proxy when CAPTURE_PROXY is
-      // set (e.g. `socks5://host:1080` or `http://host:3128`). Needed where the
-      // host's own egress IP is rejected by the login provider — notably Google
-      // SSO 500s interactive sign-in from datacenter IPs, so an in-cluster
-      // capture must exit via a clean (residential/ISP) IP. Unset → direct.
-      ...(process.env.CAPTURE_PROXY ? [`--proxy-server=${process.env.CAPTURE_PROXY}`] : []),
-      // The Docker image runs as root; chromium's zygote refuses to start as
-      // root without --no-sandbox ("Running as root without --no-sandbox is
-      // not supported"), so the CDP endpoint never comes up and cookie-auth
-      // connect fails with "Failed to reach .../json/version". Harmless when
-      // not root. --disable-dev-shm-usage avoids crashes from the small
-      // default /dev/shm in containers.
-      "--no-sandbox",
-      "--disable-dev-shm-usage",
-      loginUrl,
-    ],
-    { stdio: "ignore", detached: false }
-  );
-
-  // Wait for the devtools endpoint to come up.
-  await pollJson(`http://127.0.0.1:${remotePort}/json/version`);
-  const versionInfo = (await pollJson(`http://127.0.0.1:${remotePort}/json/version`)) as VersionInfo;
-  // Poll page targets until our login URL is loaded.
-  let target: TargetInfo | undefined;
-  for (let i = 0; i < 30; i++) {
-    const targets = (await pollJson(`http://127.0.0.1:${remotePort}/json`)) as TargetInfo[];
-    target = targets.find((t) => t.type === "page");
-    if (target && target.url && target.url !== "about:blank") break;
-    await new Promise((r) => setTimeout(r, 100));
+  if (activeProfiles.has(userId)) {
+    throw new Error("BROWSER_SESSION_BUSY: a browser session is already active for this user");
   }
-  if (!target) throw new Error("CDP: no page target found");
+  activeProfiles.add(userId);
 
-  const sessionId = crypto.randomUUID();
-  const cdpToken = crypto.randomUUID();
+  try {
+    const remotePort = await getFreePort();
+    const userDataDir = userProfileDir(userId);
+    mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
+    // Reuse Playwright's chromium binary so we don't need a second install.
+    const execPath = chromium.executablePath();
+    const proc = spawn(
+      execPath,
+      [
+        // `new` headless renders fully (and emits screencast frames) without
+        // requiring a visible OS window. The portal canvas is what the user
+        // sees — chromium itself never opens a window on the server host.
+        "--headless=new",
+        `--remote-debugging-port=${remotePort}`,
+        `--user-data-dir=${userDataDir}`,
+        // Allow our proxy to connect with origin=http://127.0.0.1. Newer
+        // chromium does not treat `*` as a wildcard.
+        "--remote-allow-origins=http://127.0.0.1",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-features=TranslateUI",
+        "--window-size=1280,800",
+        // Route the capture browser's egress through a proxy when CAPTURE_PROXY is
+        // set (e.g. `socks5://host:1080` or `http://host:3128`). Needed where the
+        // host's own egress IP is rejected by the login provider — notably Google
+        // SSO 500s interactive sign-in from datacenter IPs, so an in-cluster
+        // capture must exit via a clean (residential/ISP) IP. Unset → direct.
+        ...(process.env.CAPTURE_PROXY ? [`--proxy-server=${process.env.CAPTURE_PROXY}`] : []),
+        // The Docker image runs as root; chromium's zygote refuses to start as
+        // root without --no-sandbox ("Running as root without --no-sandbox is
+        // not supported"), so the CDP endpoint never comes up and cookie-auth
+        // connect fails with "Failed to reach .../json/version". Harmless when
+        // not root. --disable-dev-shm-usage avoids crashes from the small
+        // default /dev/shm in containers.
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        loginUrl,
+      ],
+      { stdio: "ignore", detached: false }
+    );
 
-  // If the capture proxy needs auth, open the persistent CDP socket that
-  // answers proxy-auth challenges (chromium can't take proxy creds otherwise).
-  const proxyUser = process.env.CAPTURE_PROXY_USERNAME;
-  const proxyPass = process.env.CAPTURE_PROXY_PASSWORD;
-  const authWs =
-    process.env.CAPTURE_PROXY && proxyUser && proxyPass
-      ? startProxyAuth(versionInfo.webSocketDebuggerUrl, proxyUser, proxyPass)
-      : undefined;
+    // Wait for the devtools endpoint to come up.
+    await pollJson(`http://127.0.0.1:${remotePort}/json/version`);
+    const versionInfo = (await pollJson(`http://127.0.0.1:${remotePort}/json/version`)) as VersionInfo;
+    // Poll page targets until our login URL is loaded.
+    let target: TargetInfo | undefined;
+    for (let i = 0; i < 30; i++) {
+      const targets = (await pollJson(`http://127.0.0.1:${remotePort}/json`)) as TargetInfo[];
+      target = targets.find((t) => t.type === "page");
+      if (target && target.url && target.url !== "about:blank") break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    if (!target) throw new Error("CDP: no page target found");
 
-  sessions.set(sessionId, {
-    proc,
-    userDataDir,
-    remotePort,
-    cdpPageWsUrl: target.webSocketDebuggerUrl,
-    cdpBrowserWsUrl: versionInfo.webSocketDebuggerUrl,
-    cdpToken,
-    loginUrl,
-    targetDomain,
-    cookieDomains: [targetDomain, ...cookieDomains],
-    userId,
-    integration,
-    authWs,
-  });
+    const sessionId = crypto.randomUUID();
+    const cdpToken = crypto.randomUUID();
 
-  return { sessionId, cdpUrl: target.webSocketDebuggerUrl, cdpToken };
+    // If the capture proxy needs auth, open the persistent CDP socket that
+    // answers proxy-auth challenges (chromium can't take proxy creds otherwise).
+    const proxyUser = process.env.CAPTURE_PROXY_USERNAME;
+    const proxyPass = process.env.CAPTURE_PROXY_PASSWORD;
+    const authWs =
+      process.env.CAPTURE_PROXY && proxyUser && proxyPass
+        ? startProxyAuth(versionInfo.webSocketDebuggerUrl, proxyUser, proxyPass)
+        : undefined;
+
+    sessions.set(sessionId, {
+      proc,
+      userDataDir,
+      remotePort,
+      cdpPageWsUrl: target.webSocketDebuggerUrl,
+      cdpBrowserWsUrl: versionInfo.webSocketDebuggerUrl,
+      cdpToken,
+      loginUrl,
+      targetDomain,
+      cookieDomains: [targetDomain, ...cookieDomains],
+      userId,
+      integration,
+      authWs,
+    });
+
+    return { sessionId, cdpUrl: target.webSocketDebuggerUrl, cdpToken };
+  } catch (e) {
+    activeProfiles.delete(userId);
+    throw e;
+  }
 }
 
 export async function captureCookies(sessionId: string): Promise<CookieData> {
@@ -338,6 +352,7 @@ export function getSessionCdpEndpoint(
 export async function closeCookieSession(sessionId: string): Promise<void> {
   const session = sessions.get(sessionId);
   if (!session) return;
+  activeProfiles.delete(session.userId);
   try { session.authWs?.close(); } catch { /* noop */ }
   try { session.proc.kill("SIGKILL"); } catch { /* noop */ }
   sessions.delete(sessionId);
