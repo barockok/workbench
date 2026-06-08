@@ -35,6 +35,7 @@ export interface IntegrationSummary {
   categories?: string[];
   logo?: string;
   toolCount: number;
+  configured?: boolean;
 }
 
 export interface IntegrationDetail extends IntegrationSummary {
@@ -173,6 +174,12 @@ export async function mintApiKey(): Promise<{ apiKey: string }> {
     headers: authHeaders(),
   });
   if (!res.ok) throw new Error("Failed to mint key");
+  return res.json();
+}
+
+export async function revealApiKey(): Promise<{ apiKey: string }> {
+  const res = await fetch(`${API_URL}/api/keys/reveal`, { headers: getHeaders() });
+  if (!res.ok) throw new Error("Failed to reveal key");
   return res.json();
 }
 
