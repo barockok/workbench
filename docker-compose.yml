@@ -18,8 +18,11 @@ services:
       - DATABASE_URL=/data/tokens.db
       - SERVER_PUBLIC_URL=${SERVER_PUBLIC_URL:-http://localhost:3000}
       - PORTAL_URL=${PORTAL_URL:-http://localhost:3000}
+      # LOCAL ONLY (do not commit): load external plugins from the mounted dir.
+      - PLUGINS_DIR=/app/custom-plugins
     volumes:
       - ./data:/data
+      - ../deploy/plugins:/app/custom-plugins:ro
 
   sample-oauth:
     build:
