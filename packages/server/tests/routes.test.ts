@@ -65,6 +65,7 @@ vi.mock("../src/auth/cookie", () => ({
   getCookies: vi.fn(() => null),
   hasValidCookies: vi.fn(() => false),
   getSessionOwner: vi.fn(() => null),
+  resetBrowserProfile: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../src/auth/oauth", () => ({
@@ -780,6 +781,33 @@ describe("API routes", () => {
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/connections" });
       expect(res.statusCode).toBe(401);
+    });
+  });
+
+  describe("POST /api/browser-session/reset", () => {
+    const apiKey = { "x-workbench-api-key": "valid-api-key" };
+
+    it("resets the caller's browser profile", async () => {
+      const { resetBrowserProfile } = await import("../src/auth/cookie");
+      const app = await buildApp();
+      const res = await app.inject({ method: "POST", url: "/api/browser-session/reset", headers: apiKey });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).success).toBe(true);
+      expect(vi.mocked(resetBrowserProfile)).toHaveBeenCalledWith("user-1");
+    });
+
+    it("401s without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "POST", url: "/api/browser-session/reset" });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("409s when a session is busy", async () => {
+      const { resetBrowserProfile } = await import("../src/auth/cookie");
+      vi.mocked(resetBrowserProfile).mockRejectedValueOnce(new Error("BROWSER_SESSION_BUSY: x"));
+      const app = await buildApp();
+      const res = await app.inject({ method: "POST", url: "/api/browser-session/reset", headers: apiKey });
+      expect(res.statusCode).toBe(409);
     });
   });
 
