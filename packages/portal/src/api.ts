@@ -185,6 +185,18 @@ export async function revokeApiKey(): Promise<{ success: boolean }> {
   return res.json();
 }
 
+export async function resetBrowserSession(): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_URL}/api/browser-session/reset`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const msg = (await res.json().catch(() => ({}))).error || "Reset failed";
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
 export async function fetchMe() {
   const res = await fetch(`${API_URL}/api/auth/me`, { headers: getHeaders() });
   if (!res.ok) return null;
