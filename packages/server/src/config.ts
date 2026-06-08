@@ -25,6 +25,7 @@ const configSchema = z.object({
   PORTAL_DIST_DIR: z.string().default("./portal"),
   CONNECT_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   OAUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
+  BROWSER_PROFILES_DIR: z.string().optional(),
 });
 
 export const config = configSchema.parse(process.env);
