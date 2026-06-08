@@ -28,7 +28,7 @@ vi.mock("node:child_process", async () => {
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
-  return { ...actual, mkdtempSync: () => "/tmp/awb-cookie-test" };
+  return { ...actual, mkdtempSync: () => "/tmp/awb-cookie-test", mkdirSync: () => undefined };
 });
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -418,6 +418,17 @@ describe("cookie auth", () => {
 
     it("closeCookieSession on unknown id is a no-op", async () => {
       await expect(closeCookieSession("nope")).resolves.toBeUndefined();
+    });
+
+    it("launches Chromium with a persistent per-user profile dir (not mkdtemp)", async () => {
+      spawnCalls.length = 0;
+      mockFetchForStart();
+      const { sessionId } = await startCookieSession("user-42", "test-integ", "https://example.com/login", "example.com");
+      const args = spawnCalls.at(-1)!;
+      const udd = args.find((a) => a.startsWith("--user-data-dir="))!;
+      expect(udd).toContain("/user-42");
+      expect(udd).not.toContain("awb-cookie-");
+      await closeCookieSession(sessionId);
     });
 
     it("filters out off-domain cookies even when targetDomain alone is allowed", async () => {
