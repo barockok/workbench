@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getApiKeyStatus, mintApiKey, revokeApiKey } from "../api";
+import { getApiKeyStatus, mintApiKey, revokeApiKey, revealApiKey } from "../api";
 
 // Server serves the portal, so its origin is also the /mcp origin.
 const MCP_URL = `${window.location.origin}/mcp`;
@@ -33,7 +33,7 @@ export default function ApiKeyPanel() {
     queryFn: getApiKeyStatus,
   });
 
-  // Plaintext key, held in memory only after minting. Never refetchable.
+  // Plaintext key. Held after minting; also refetchable via reveal.
   const [revealed, setRevealed] = useState<string | null>(null);
   const [show, setShow] = useState(false); // masked by default
   const [busy, setBusy] = useState(false);
@@ -50,6 +50,20 @@ export default function ApiKeyPanel() {
       setRevealed(apiKey);
       setShow(false);
       queryClient.invalidateQueries({ queryKey: ["api-key-status"] });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleReveal() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { apiKey } = await revealApiKey();
+      setRevealed(apiKey);
+      setShow(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
     } finally {
@@ -96,7 +110,7 @@ export default function ApiKeyPanel() {
 
       <p className="apikey-blurb">
         Send this key in the <code>x-workbench-api-key</code> header to{" "}
-        <code>{MCP_URL}</code>. Shown once on creation — store it now.
+        <code>{MCP_URL}</code>. Reveal it anytime below.
       </p>
 
       {error && <div className="login-error" style={{ marginBottom: 12 }}>ERR — {error}</div>}
@@ -126,7 +140,9 @@ export default function ApiKeyPanel() {
               {copied === "cfg" ? "Copied" : "Copy config"}
             </button>
             {!revealed && (
-              <span className="apikey-hint">Key hidden — regenerate to get a fresh value.</span>
+              <button className="btn-ghost" onClick={handleReveal} disabled={busy}>
+                {busy ? "…" : "Reveal key"}
+              </button>
             )}
           </div>
         </div>

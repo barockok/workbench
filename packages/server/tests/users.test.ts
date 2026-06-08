@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createUser, verifyApiKey, setApiKey, clearApiKey, hasApiKey } from "../src/auth/users";
+import { createUser, verifyApiKey, setApiKey, clearApiKey, hasApiKey, getApiKey } from "../src/auth/users";
 import { db } from "../src/db";
 
 beforeEach(() => {
@@ -58,5 +58,24 @@ describe("api key management for existing users", () => {
     clearApiKey("bob");
     expect(hasApiKey("bob")).toBe(false);
     expect(verifyApiKey(apiKey)).toBeNull();
+  });
+
+  it("reveals the same plaintext key it minted", () => {
+    seedUser("bob");
+    const { apiKey } = setApiKey("bob");
+    expect(getApiKey("bob")).toBe(apiKey);
+  });
+
+  it("reveals the key for createUser too", () => {
+    const { apiKey } = createUser("carol");
+    expect(getApiKey("carol")).toBe(apiKey);
+  });
+
+  it("returns null reveal before minting and after revoke", () => {
+    seedUser("bob");
+    expect(getApiKey("bob")).toBeNull();
+    setApiKey("bob");
+    clearApiKey("bob");
+    expect(getApiKey("bob")).toBeNull();
   });
 });
