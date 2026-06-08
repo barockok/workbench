@@ -144,3 +144,91 @@ export function startBrowserReaper(): void {
     }
   }, 30_000).unref();
 }
+
+// ─── CDP action helpers ───────────────────────────────────────────────────
+// Each takes a WarmSession and speaks CDP through its persistent client.
+
+export async function navigate(
+  s: WarmSession,
+  url: string
+): Promise<{ url: string; title: string; warning?: string }> {
+  let warning: string | undefined;
+  try {
+    await s.cdp.send("Page.navigate", { url });
+    // Give the load a moment; Page.loadEventFired isn't awaited here to keep
+    // the helper simple — a short settle covers most SPAs. (Follow-up: await
+    // the load event.)
+    await new Promise((r) => setTimeout(r, 800));
+  } catch (e) {
+    warning = e instanceof Error ? e.message : String(e);
+  }
+  const title = await pageTitle(s);
+  return warning ? { url, title, warning } : { url, title };
+}
+
+async function pageTitle(s: WarmSession): Promise<string> {
+  try {
+    const r = (await s.cdp.send("Runtime.evaluate", {
+      expression: "document.title",
+      returnByValue: true,
+    })) as { result?: { value?: unknown } };
+    const v = r.result?.value;
+    return typeof v === "string" ? v : "";
+  } catch {
+    return "";
+  }
+}
+
+export async function screenshot(s: WarmSession): Promise<string> {
+  const r = (await s.cdp.send("Page.captureScreenshot", { format: "png" })) as { data?: string };
+  return r.data ?? "";
+}
+
+type MouseButton = "left" | "right" | "middle";
+export async function click(s: WarmSession, x: number, y: number, button: MouseButton = "left"): Promise<void> {
+  await s.cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button, clickCount: 1 });
+  await s.cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button, clickCount: 1 });
+}
+
+export async function typeText(s: WarmSession, text: string): Promise<void> {
+  await s.cdp.send("Input.insertText", { text });
+}
+
+// Minimal key map for the common driving keys. Chords like "ctrl+a" parse the
+// trailing token as the key and the leading tokens as modifiers.
+const MODIFIERS: Record<string, number> = { alt: 1, ctrl: 2, control: 2, meta: 4, cmd: 4, shift: 8 };
+const KEYS: Record<string, { keyCode: number; key: string }> = {
+  enter: { keyCode: 13, key: "Enter" },
+  tab: { keyCode: 9, key: "Tab" },
+  escape: { keyCode: 27, key: "Escape" },
+  esc: { keyCode: 27, key: "Escape" },
+  backspace: { keyCode: 8, key: "Backspace" },
+  delete: { keyCode: 46, key: "Delete" },
+  arrowup: { keyCode: 38, key: "ArrowUp" },
+  arrowdown: { keyCode: 40, key: "ArrowDown" },
+  arrowleft: { keyCode: 37, key: "ArrowLeft" },
+  arrowright: { keyCode: 39, key: "ArrowRight" },
+};
+
+export async function pressKey(s: WarmSession, keys: string): Promise<void> {
+  const parts = keys.split("+").map((p) => p.trim().toLowerCase()).filter(Boolean);
+  let modifiers = 0;
+  let last = "";
+  for (const p of parts) {
+    if (MODIFIERS[p] !== undefined) modifiers |= MODIFIERS[p];
+    else last = p;
+  }
+  const mapped = KEYS[last];
+  const base: Record<string, unknown> = mapped
+    ? { windowsVirtualKeyCode: mapped.keyCode, key: mapped.key, modifiers }
+    : { key: last, text: last.length === 1 ? last : undefined, modifiers };
+  await s.cdp.send("Input.dispatchKeyEvent", { type: "rawKeyDown", ...base });
+  await s.cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
+}
+
+type ScrollDir = "up" | "down" | "left" | "right";
+export async function scroll(s: WarmSession, direction: ScrollDir, amount = 600): Promise<void> {
+  const deltaX = direction === "left" ? -amount : direction === "right" ? amount : 0;
+  const deltaY = direction === "up" ? -amount : direction === "down" ? amount : 0;
+  await s.cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: 640, y: 400, deltaX, deltaY });
+}
