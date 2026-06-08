@@ -56,13 +56,22 @@ export default function Dashboard() {
     return Array.from(set).sort();
   }, [integrations]);
 
-  const visible = integrations.filter((i) => {
-    const c = connectionMap.get(i.name) ?? false;
-    if (filter === "connected" && !c) return false;
-    if (filter === "available" && c) return false;
-    if (category !== "all" && !i.categories?.includes(category)) return false;
-    return true;
-  });
+  // Rank for sort: live (connected) → available (configured) → not configured.
+  function rank(i: IntegrationSummary): number {
+    if (connectionMap.get(i.name)) return 0;
+    if (i.configured !== false) return 1;
+    return 2;
+  }
+
+  const visible = integrations
+    .filter((i) => {
+      const c = connectionMap.get(i.name) ?? false;
+      if (filter === "connected" && !c) return false;
+      if (filter === "available" && c) return false;
+      if (category !== "all" && !i.categories?.includes(category)) return false;
+      return true;
+    })
+    .sort((a, b) => rank(a) - rank(b));
 
   const [connectError, setConnectError] = useState<string | null>(null);
 
@@ -190,21 +199,25 @@ export default function Dashboard() {
         <div className="grid">
           {visible.map((i, idx) => {
             const connected = connectionMap.get(i.name) ?? false;
+            const configured = i.configured !== false;
+            // Not configured (no creds/manual auth) → not connectable, unclickable.
+            const clickable = configured;
             return (
               <article
                 key={i.name}
-                className="card card-clickable"
+                className={`card ${clickable ? "card-clickable" : "card-disabled"}`}
                 style={{ animationDelay: `${Math.min(idx * 35, 600)}ms` }}
-                onClick={() => setDetail(i.name)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === "Enter") setDetail(i.name); }}
+                onClick={clickable ? () => setDetail(i.name) : undefined}
+                role={clickable ? "button" : undefined}
+                aria-disabled={clickable ? undefined : true}
+                tabIndex={clickable ? 0 : -1}
+                onKeyDown={clickable ? (e) => { if (e.key === "Enter") setDetail(i.name); } : undefined}
               >
                 <div className="card-top">
                   <span className="card-index">№ {pad(idx + 1)}</span>
                   <span className={`card-status ${connected ? "live" : ""}`}>
                     <span className="led" />
-                    {connected ? "Live" : "Standby"}
+                    {connected ? "Live" : configured ? "Standby" : "Not configured"}
                   </span>
                 </div>
 
@@ -236,7 +249,7 @@ export default function Dashboard() {
                         Refresh
                       </button>
                     </>
-                  ) : (
+                  ) : configured ? (
                     <>
                       <span className="card-meta">Not paired</span>
                       <button
@@ -246,6 +259,8 @@ export default function Dashboard() {
                         Connect →
                       </button>
                     </>
+                  ) : (
+                    <span className="card-meta">Auth not configured</span>
                   )}
                 </div>
               </article>
