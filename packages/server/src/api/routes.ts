@@ -19,6 +19,7 @@ import {
   getCookies,
   hasValidCookies,
   getSessionOwner,
+  resetBrowserProfile,
   CookieData,
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
@@ -385,6 +386,23 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return { success: true, cookieCount: data.cookies.length };
     }
   );
+
+  // Reset (wipe) the caller's persistent browser profile — logs them out of all
+  // sites in the capture browser. Per-user, not per-integration.
+  app.post("/api/browser-session/reset", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) return reply.status(401).send({ error: "Unauthorized" });
+    try {
+      await resetBrowserProfile(user.userId);
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("BROWSER_SESSION_BUSY")) {
+        return reply.status(409).send({ error: "A browser session is active. Finish or cancel it first." });
+      }
+      return reply.status(400).send({ error: message });
+    }
+  });
 
   // Cookie auth cancel
   app.post("/api/auth/cookie/:integration/cancel", async (request, reply) => {
