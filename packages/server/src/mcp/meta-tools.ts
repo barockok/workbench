@@ -10,6 +10,17 @@ import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
+import {
+  ensureSession,
+  touch,
+  navigate as browserNavigate,
+  screenshot as browserScreenshot,
+  click as browserClick,
+  typeText as browserType,
+  pressKey as browserKey,
+  scroll as browserScroll,
+  closeBrowserSession,
+} from "../auth/browser-session";
 
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
 // can call `.safeParse` directly without hand-rolled casts. `handler` is kept
@@ -296,6 +307,87 @@ export const metaTools = [
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
+  {
+    name: "browser_navigate",
+    description: "Navigate the per-user browser session to a URL. Opens a warm session if none is active. Returns the final url and page title.",
+    inputSchema: z.object({ url: z.string().url() }),
+    handler: async (ctx: { userId: string }, args: { url: string }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      return browserNavigate(s, args.url);
+    },
+  },
+  {
+    name: "browser_screenshot",
+    description: "Capture a PNG screenshot of the current viewport. Returns an image the model can view. Use it to see the page before clicking.",
+    inputSchema: z.object({}),
+    handler: async (ctx: { userId: string }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      const data = await browserScreenshot(s);
+      return { _mcpImage: { data, mimeType: "image/png" } };
+    },
+  },
+  {
+    name: "browser_click",
+    description: "Click at viewport coordinates (x, y) in the per-user browser session.",
+    inputSchema: z.object({
+      x: z.number(),
+      y: z.number(),
+      button: z.enum(["left", "right", "middle"]).default("left"),
+    }),
+    handler: async (ctx: { userId: string }, args: { x: number; y: number; button: "left" | "right" | "middle" }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      await browserClick(s, args.x, args.y, args.button);
+      return { ok: true };
+    },
+  },
+  {
+    name: "browser_type",
+    description: "Type text into the currently focused element. Click the field first.",
+    inputSchema: z.object({ text: z.string() }),
+    handler: async (ctx: { userId: string }, args: { text: string }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      await browserType(s, args.text);
+      return { ok: true };
+    },
+  },
+  {
+    name: "browser_key",
+    description: "Press a key or chord, e.g. 'Enter', 'Tab', 'ctrl+a', 'ArrowDown'.",
+    inputSchema: z.object({ keys: z.string() }),
+    handler: async (ctx: { userId: string }, args: { keys: string }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      await browserKey(s, args.keys);
+      return { ok: true };
+    },
+  },
+  {
+    name: "browser_scroll",
+    description: "Scroll the viewport up/down/left/right by an optional pixel amount (default 600).",
+    inputSchema: z.object({
+      direction: z.enum(["up", "down", "left", "right"]),
+      amount: z.number().int().positive().default(600),
+    }),
+    handler: async (ctx: { userId: string }, args: { direction: "up" | "down" | "left" | "right"; amount: number }) => {
+      const s = await ensureSession(ctx.userId);
+      touch(ctx.userId);
+      await browserScroll(s, args.direction, args.amount);
+      return { ok: true };
+    },
+  },
+  {
+    name: "browser_close",
+    description: "Close the per-user warm browser session (the persistent profile is kept). Frees the single-writer lock so a cookie capture can run.",
+    inputSchema: z.object({}),
+    handler: async (ctx: { userId: string }) => {
+      await closeBrowserSession(ctx.userId);
+      return { ok: true };
+    },
+  },
 ] satisfies readonly MetaTool[];
 
 // JSON Schema descriptions for the meta-tools, surfaced via MCP `tools/list`.
@@ -358,4 +450,38 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     properties: { integration: { type: "string", description: "Integration name" } },
     required: ["integration"],
   },
+  browser_navigate: {
+    type: "object",
+    properties: { url: { type: "string", description: "URL to navigate to" } },
+    required: ["url"],
+  },
+  browser_screenshot: { type: "object", properties: {} },
+  browser_click: {
+    type: "object",
+    properties: {
+      x: { type: "number", description: "Viewport x coordinate" },
+      y: { type: "number", description: "Viewport y coordinate" },
+      button: { type: "string", enum: ["left", "right", "middle"], description: "Mouse button (default left)" },
+    },
+    required: ["x", "y"],
+  },
+  browser_type: {
+    type: "object",
+    properties: { text: { type: "string", description: "Text to type into the focused element" } },
+    required: ["text"],
+  },
+  browser_key: {
+    type: "object",
+    properties: { keys: { type: "string", description: "Key or chord, e.g. Enter, ctrl+a" } },
+    required: ["keys"],
+  },
+  browser_scroll: {
+    type: "object",
+    properties: {
+      direction: { type: "string", enum: ["up", "down", "left", "right"], description: "Scroll direction" },
+      amount: { type: "number", description: "Pixels to scroll (default 600)" },
+    },
+    required: ["direction"],
+  },
+  browser_close: { type: "object", properties: {} },
 };
