@@ -35,6 +35,7 @@ import {
   getWarmSession,
   getWarmCdpEndpoint,
   closeBrowserSession,
+  reapIdleSessions,
 } from "../src/auth/browser-session";
 import { activeProfiles } from "../src/auth/profile-chromium";
 
@@ -54,6 +55,17 @@ beforeEach(() => {
     cdpPageWsUrl: "ws://127.0.0.1:9999/page",
   });
   activeProfiles.clear();
+});
+
+describe("reapIdleSessions", () => {
+  it("reapIdleSessions closes a session idle past the TTL", async () => {
+    await ensureSession("user-r");
+    expect(getWarmSession("user-r")).toBeDefined();
+    // far-future now → any session is past the TTL cutoff
+    reapIdleSessions(Date.now() + 10_000_000);
+    expect(getWarmSession("user-r")).toBeUndefined();
+    expect(activeProfiles.has("user-r")).toBe(false);
+  });
 });
 
 describe("ensureSession", () => {

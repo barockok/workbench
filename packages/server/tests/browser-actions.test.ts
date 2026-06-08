@@ -55,6 +55,13 @@ describe("browser actions", () => {
       expect.objectContaining({ type: "keyUp", modifiers: 2 }));
   });
 
+  it("pressKey types a bare printable char via keyDown+text", async () => {
+    const send = vi.fn(async () => ({}));
+    await pressKey(sessionWithCdp(send), "a");
+    expect(send).toHaveBeenNthCalledWith(1, "Input.dispatchKeyEvent",
+      expect.objectContaining({ type: "keyDown", text: "a" }));
+  });
+
   it("scroll sends a mouseWheel with downward delta", async () => {
     const send = vi.fn(async () => ({}));
     await scroll(sessionWithCdp(send), "down", 600);
