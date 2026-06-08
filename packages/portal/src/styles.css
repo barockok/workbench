@@ -823,6 +823,7 @@ body::before {
   font-weight: 600;
   letter-spacing: 0.5px;
 }
+.card-disabled { cursor: not-allowed; opacity: 0.55; }
 .card-clickable { cursor: pointer; }
 .card-clickable:hover { border-color: var(--accent-edge); }
 .card-clickable:focus-visible { outline: 1px solid var(--accent-edge); outline-offset: 2px; }
