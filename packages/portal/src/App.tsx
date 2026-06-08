@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Connect from "./pages/Connect";
+import BrowserView from "./pages/BrowserView";
 
 function Boot({ label = "INIT" }: { label?: string }) {
   return (
@@ -24,6 +25,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/connect/:integration" element={<Connect />} />
+      <Route path="/browser" element={<BrowserView />} />
       <Route
         path="/*"
         element={
