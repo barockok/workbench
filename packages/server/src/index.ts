@@ -10,6 +10,7 @@ import { loadPlugins } from "./plugins/loader";
 import { verifySession } from "./auth/session";
 import { resolveMcpUser } from "./auth/oauth-server/resolve";
 import { getSessionCdpEndpoint } from "./auth/cookie";
+import { getWarmCdpEndpoint, startBrowserReaper } from "./auth/browser-session";
 import { verifyConnectToken } from "./auth/connect-token";
 import "./telemetry/tracing";
 
@@ -65,12 +66,15 @@ async function main() {
   await loadPlugins();
   await registerApiRoutes(app);
   await registerOAuthRoutes(app);
+  startBrowserReaper();
 
   // Reject the WS upgrade itself when the Origin header doesn't match the
   // portal — blocks Cross-Site WebSocket Hijacking. Applies BEFORE the
   // websocket handshake completes.
   app.addHook("preValidation", async (request, reply) => {
-    if (request.url.startsWith("/api/auth/cookie/") && request.url.includes("/cdp")) {
+    const isCookieCdp = request.url.startsWith("/api/auth/cookie/") && request.url.includes("/cdp");
+    const isBrowserCdp = request.url.startsWith("/api/browser-session/cdp");
+    if (isCookieCdp || isBrowserCdp) {
       const origin = request.headers.origin;
       if (!isOriginAllowed(origin)) {
         return reply.code(403).send({ error: "Origin not allowed" });
@@ -220,6 +224,92 @@ async function main() {
       });
     }
   );
+
+  // Browser-session live-view: same auth-framed CDP proxy as cookie capture,
+  // but the target is the user's warm browser page resolved via cdpToken.
+  app.get("/api/browser-session/cdp", { websocket: true }, (conn, request) => {
+    const browserWs = conn as unknown as WebSocket;
+    if (!isOriginAllowed(request.headers.origin)) {
+      try { browserWs.close(4403, "Origin not allowed"); } catch { /* noop */ }
+      return;
+    }
+    const toText = (data: WebSocket.RawData): string => {
+      if (typeof data === "string") return data;
+      if (Buffer.isBuffer(data)) return data.toString("utf8");
+      if (Array.isArray(data)) return Buffer.concat(data).toString("utf8");
+      return Buffer.from(data as ArrayBuffer).toString("utf8");
+    };
+
+    let upstream: WebSocket | null = null;
+    let upstreamReady = false;
+    const pending: string[] = [];
+    const authTimeout = setTimeout(() => {
+      try { browserWs.close(4408, "auth timeout"); } catch { /* noop */ }
+    }, 5000);
+
+    function startProxy(target: string) {
+      upstream = new WebSocket(target, { perMessageDeflate: false, origin: "http://127.0.0.1" });
+      upstream.on("open", () => {
+        upstreamReady = true;
+        for (const msg of pending) upstream!.send(msg);
+        pending.length = 0;
+      });
+      upstream.on("message", (data: WebSocket.RawData) => {
+        if (browserWs.readyState === WebSocket.OPEN) browserWs.send(toText(data));
+      });
+      const upstreamClosed = () => { try { browserWs.close(); } catch { /* noop */ } };
+      upstream.on("close", upstreamClosed);
+      upstream.on("error", upstreamClosed);
+    }
+
+    browserWs.on("message", async (data: WebSocket.RawData) => {
+      const text = toText(data);
+      if (!upstream) {
+        let msg: { type?: string; sessionId?: string; cdpToken?: string; bearer?: string };
+        try { msg = JSON.parse(text); } catch {
+          try { browserWs.close(4400, "Bad auth frame"); } catch { /* noop */ }
+          return;
+        }
+        if (msg.type !== "auth" || !msg.sessionId || !msg.cdpToken || !msg.bearer) {
+          try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
+          return;
+        }
+        let authedUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
+        if (!authedUserId) {
+          try {
+            const payload = await verifyConnectToken(msg.bearer);
+            if (
+              payload.integration === "__browser__" &&
+              payload.sessionId === msg.sessionId &&
+              payload.cdpToken === msg.cdpToken
+            ) {
+              authedUserId = payload.userId;
+            }
+          } catch { /* not a valid connect JWT */ }
+        }
+        // The warm session is keyed by userId; the link's sessionId IS the
+        // userId. Require they match so a token can't target another user.
+        if (!authedUserId || authedUserId !== msg.sessionId) {
+          try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
+          return;
+        }
+        const target = getWarmCdpEndpoint(authedUserId, msg.cdpToken);
+        if (!target) {
+          try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
+          return;
+        }
+        clearTimeout(authTimeout);
+        startProxy(target);
+        try { browserWs.send(JSON.stringify({ type: "ready" })); } catch { /* noop */ }
+        return;
+      }
+      if (upstreamReady && upstream.readyState === WebSocket.OPEN) upstream.send(text);
+      else pending.push(text);
+    });
+
+    browserWs.on("close", () => { clearTimeout(authTimeout); try { upstream?.close(); } catch { /* noop */ } });
+    browserWs.on("error", () => { clearTimeout(authTimeout); try { upstream?.close(); } catch { /* noop */ } });
+  });
 
   app.post("/mcp", async (request, reply) => {
     // /mcp accepts: x-workbench-api-key (headless), OAuth Bearer (browser flow),
