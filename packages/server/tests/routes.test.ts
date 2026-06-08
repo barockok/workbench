@@ -744,6 +744,45 @@ describe("API routes", () => {
     });
   });
 
+  describe("GET /api/connect/browser-session", () => {
+    it("returns 400 when token is missing", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/connect/browser-session" });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("returns 401 for an invalid token", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/connect/browser-session?t=garbage" });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it("returns 400 when the token is not a browser-session link", async () => {
+      const jwt = await signConnectToken(
+        { connectionId: "c1", userId: "u1", integration: "slack", sessionId: "s1", cdpToken: "t1" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: `/api/connect/browser-session?t=${jwt}` });
+      expect(res.statusCode).toBe(400);
+      expect(res.json().error).toContain("Not a browser-session link");
+    });
+
+    it("returns CDP proxy URL and token for a valid browser-session JWT", async () => {
+      const jwt = await signConnectToken(
+        { connectionId: "u1", userId: "u1", integration: "__browser__", sessionId: "u1", cdpToken: "ctok" },
+        600
+      );
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: `/api/connect/browser-session?t=${jwt}` });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.cdpProxyUrl).toBe("/api/browser-session/cdp");
+      expect(body.sessionId).toBe("u1");
+      expect(body.cdpToken).toBe("ctok");
+    });
+  });
+
   describe("GET /api/connections", () => {
     it("returns connection status for oauth2 integrations", async () => {
       const { getToken } = await import("../src/auth/tokens");
