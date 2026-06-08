@@ -1,3 +1,25 @@
+# a-workbench v0.5.0
+
+_2026-06-08_
+
+Headline: **persistent per-user browser session** — the cookie-auth capture browser now reuses each user's profile across plugin connects, so prior logins (any site/IdP) carry over instead of starting from a blank browser every time.
+
+## Features
+- **Persistent per-user capture profile.** `startCookieSession` launches Chromium against a persistent `<BROWSER_PROFILES_DIR>/<userId>/` profile (`0700`, default next to the SQLite DB) instead of a throwaway dir, and keeps it on close. Connect plugin A (log into a shared IdP), later connect plugin B that uses the same IdP → B's login is already satisfied, no re-prompt. Capture, `ctx.http` replay, and the per-integration cookie store are unchanged.
+- **Reset browser session.** `POST /api/browser-session/reset` + an account-level portal control wipe a user's profile (logout-everywhere / repair).
+- New env: `BROWSER_PROFILES_DIR`.
+
+## Fixes / hardening
+- One active capture session per user (`BROWSER_SESSION_BUSY`) — two Chromium processes can't share a profile dir. Guard auto-releases on close, on a partial-start failure, **and** if the browser process dies out-of-band (no permanent lock).
+- Profile dir mode `0700` enforced even when it already exists; `userId` sanitized into the path (no traversal).
+
+## Notes
+- This persists/reuses the user's own session — it does **not** bypass a provider's IP/bot defenses. The first login still has to happen from an accepted IP; pairs with `CAPTURE_PROXY` and cookie session import for in-cluster.
+- Spec + plan: `docs/superpowers/specs/2026-06-08-per-user-browser-profile-design.md`, `docs/superpowers/plans/2026-06-08-per-user-browser-profile.md`.
+- Tests: 282 passing.
+
+---
+
 # a-workbench v0.4.2
 
 _2026-06-02_
