@@ -185,6 +185,12 @@ export async function revokeApiKey(): Promise<{ success: boolean }> {
   return res.json();
 }
 
+export async function connectBrowserSession(jwt: string) {
+  const res = await fetch(`${API_URL}/api/connect/browser-session?t=${encodeURIComponent(jwt)}`);
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Link invalid");
+  return res.json() as Promise<{ cdpProxyUrl: string; sessionId: string; cdpToken: string }>;
+}
+
 export async function resetBrowserSession(): Promise<{ success: boolean }> {
   const res = await fetch(`${API_URL}/api/browser-session/reset`, {
     method: "POST",
