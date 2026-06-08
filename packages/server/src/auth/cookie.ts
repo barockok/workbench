@@ -1,7 +1,6 @@
 import { chromium } from "playwright";
 import { spawn, ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
-import { rm } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { config } from "../config";
 import { createServer } from "node:net";
@@ -342,7 +341,6 @@ export async function closeCookieSession(sessionId: string): Promise<void> {
   try { session.authWs?.close(); } catch { /* noop */ }
   try { session.proc.kill("SIGKILL"); } catch { /* noop */ }
   sessions.delete(sessionId);
-  await rm(session.userDataDir, { recursive: true, force: true }).catch(() => undefined);
 }
 
 export function storeCookies(userId: string, integration: string, data: CookieData): void {
