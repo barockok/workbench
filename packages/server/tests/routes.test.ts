@@ -31,6 +31,7 @@ vi.mock("../src/auth/google", () => ({
 vi.mock("../src/auth/plugin-oauth", () => ({
   buildPluginAuthUrl: vi.fn(() => "https://example.com/oauth?plugin=1"),
   handlePluginCallback: vi.fn(),
+  getPluginOAuthCreds: vi.fn(() => ({ clientId: "id", clientSecret: "secret" })),
 }));
 
 vi.mock("../src/auth/session", () => ({
