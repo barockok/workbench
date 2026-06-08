@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import { spawn, ChildProcess } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, chmodSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { config } from "../config";
@@ -199,6 +199,9 @@ export async function startCookieSession(
     const remotePort = await getFreePort();
     const userDataDir = userProfileDir(userId);
     mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
+    // mkdirSync mode is only applied when creating; if the dir already existed
+    // the mode is a no-op. chmod is idempotent and enforces 0700 either way.
+    chmodSync(userDataDir, 0o700);
     // Reuse Playwright's chromium binary so we don't need a second install.
     const execPath = chromium.executablePath();
     const proc = spawn(
@@ -261,7 +264,7 @@ export async function startCookieSession(
         ? startProxyAuth(versionInfo.webSocketDebuggerUrl, proxyUser, proxyPass)
         : undefined;
 
-    sessions.set(sessionId, {
+    const session: Session = {
       proc,
       userDataDir,
       remotePort,
@@ -274,6 +277,16 @@ export async function startCookieSession(
       userId,
       integration,
       authWs,
+    };
+    sessions.set(sessionId, session);
+
+    // Release the per-user lock if the browser crashes or is killed externally.
+    // Set.delete and Map.delete are idempotent so this is safe even if
+    // closeCookieSession already ran.
+    proc.on("exit", () => {
+      activeProfiles.delete(userId);
+      sessions.delete(sessionId);
+      try { session.authWs?.close(); } catch { /* noop */ }
     });
 
     return { sessionId, cdpUrl: target.webSocketDebuggerUrl, cdpToken };

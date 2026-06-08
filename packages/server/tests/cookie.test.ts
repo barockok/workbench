@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 
 // Shared mock state so we can drive the CDP responses per-test. Declared
 // here in module scope so the hoisted vi.mock factories can read it.
-const { mockCdpResponses, spawnCalls } = vi.hoisted(() => ({
+const { mockCdpResponses, spawnCalls, fsChmodCalls, spawnedProcs } = vi.hoisted(() => ({
   mockCdpResponses: [] as { result?: Record<string, unknown>; error?: { message: string } }[],
   spawnCalls: [] as string[][],
+  fsChmodCalls: [] as [string, number][],
+  spawnedProcs: [] as any[],
 }));
 
 vi.mock("playwright", () => ({
@@ -21,6 +23,7 @@ vi.mock("node:child_process", async () => {
       const proc = new EventEmitter() as EventEmitter & { kill: () => void; pid: number };
       proc.kill = () => undefined;
       proc.pid = 1234;
+      spawnedProcs.push(proc);
       return proc;
     },
   };
@@ -28,7 +31,12 @@ vi.mock("node:child_process", async () => {
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
-  return { ...actual, mkdtempSync: () => "/tmp/awb-cookie-test", mkdirSync: () => undefined };
+  return {
+    ...actual,
+    mkdtempSync: () => "/tmp/awb-cookie-test",
+    mkdirSync: () => undefined,
+    chmodSync: (path: string, mode: number) => { fsChmodCalls.push([path, mode]); },
+  };
 });
 
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -468,6 +476,25 @@ describe("cookie auth", () => {
       const s = await startCookieSession("active-reset", "test-integ", "https://example.com/login", "example.com");
       await expect(resetBrowserProfile("active-reset")).rejects.toThrow(/BROWSER_SESSION_BUSY/);
       await closeCookieSession(s.sessionId);
+    });
+
+    it("chmod 0700 is called on the profile dir (even if it already exists)", async () => {
+      fsChmodCalls.length = 0;
+      mockFetchForStart();
+      const { sessionId } = await startCookieSession("chmod-user", "test-integ", "https://example.com/login", "example.com");
+      const chmodEntry = fsChmodCalls.find(([p, m]) => p.includes("chmod-user") && m === 0o700);
+      expect(chmodEntry).toBeDefined();
+      await closeCookieSession(sessionId);
+    });
+
+    it("releases the per-user lock when the browser process exits on its own", async () => {
+      mockFetchForStart();
+      const s = await startCookieSession("crash-user", "test-integ", "https://example.com/login", "example.com");
+      spawnedProcs.at(-1)!.emit("exit", 1, null);
+      // lock released → can start again for same user without BROWSER_SESSION_BUSY
+      const again = await startCookieSession("crash-user", "test-integ", "https://example.com/login", "example.com");
+      expect(again.sessionId).toBeDefined();
+      await closeCookieSession(again.sessionId);
     });
 
     it("filters out off-domain cookies even when targetDomain alone is allowed", async () => {
