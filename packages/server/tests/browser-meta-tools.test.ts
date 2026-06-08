@@ -47,10 +47,11 @@ describe("browser_* meta-tools", () => {
     expect(out).toEqual({ url: "https://e.com", title: "E" });
   });
 
-  it("browser_screenshot returns an _mcpImage sentinel", async () => {
-    shotMock.mockResolvedValue("BASE64PNG");
-    const out = await (tool("browser_screenshot").handler as any)({ userId: "u1" }, {});
-    expect(out).toEqual({ _mcpImage: { data: "BASE64PNG", mimeType: "image/png" } });
+  it("browser_screenshot forwards opts and returns the helper result", async () => {
+    shotMock.mockResolvedValue({ _mcpImage: { data: "B64", mimeType: "image/jpeg" } });
+    const out = await (tool("browser_screenshot").handler as any)({ userId: "u1" }, { maxWidth: 800 });
+    expect(shotMock).toHaveBeenCalledWith({ userId: "u1" }, { maxWidth: 800 });
+    expect(out).toEqual({ _mcpImage: { data: "B64", mimeType: "image/jpeg" } });
   });
 
   it("browser_click returns ok", async () => {
