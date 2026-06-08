@@ -5,8 +5,8 @@ import { FastifyInstance } from "fastify";
 import { Integration } from "@a-workbench/shared";
 import { registry } from "../plugins/registry";
 import { createAuthState } from "../auth/oauth";
-import { buildPluginAuthUrl, handlePluginCallback } from "../auth/plugin-oauth";
-import { verifyApiKey, getUserById, setApiKey, clearApiKey, hasApiKey } from "../auth/users";
+import { buildPluginAuthUrl, handlePluginCallback, getPluginOAuthCreds } from "../auth/plugin-oauth";
+import { verifyApiKey, getUserById, setApiKey, clearApiKey, hasApiKey, getApiKey } from "../auth/users";
 import { buildAuthUrl, handleCallback } from "../auth/google";
 import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
@@ -28,6 +28,15 @@ import { resumeAuthorize } from "../auth/oauth-server/resume";
 
 function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
+}
+
+// Whether an integration can actually be connected right now: cookie auth is
+// always ready (user just logs in); oauth2 needs client creds present in env;
+// anything else (manual) is not connectable from the UI.
+function isConfigured(i: Integration): boolean {
+  if (i.auth.type === "cookie") return true;
+  if (i.auth.type === "oauth2") return getPluginOAuthCreds(i.name) !== null;
+  return false;
 }
 
 // A bundled logo filename becomes a server URL; a full URL passes through.
@@ -139,7 +148,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
   // --- MCP API key management (session-authenticated) ---
   // Mint/rotate a long-lived API key for use as the /mcp Bearer. The plaintext
-  // is returned ONCE here and never stored — only its bcrypt hash is kept.
+  // is returned here and also kept encrypted so the owner can reveal it again.
   app.post("/api/keys", async (request, reply) => {
     const user = await authenticate(request);
     if (!user) {
@@ -148,13 +157,26 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     return setApiKey(user.userId);
   });
 
-  // Whether the user currently has a key (the value itself can't be re-shown).
+  // Whether the user currently has a key.
   app.get("/api/keys", async (request, reply) => {
     const user = await authenticate(request);
     if (!user) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
     return { hasKey: hasApiKey(user.userId) };
+  });
+
+  // Reveal the existing plaintext key (decrypted). Session-auth only.
+  app.get("/api/keys/reveal", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    const apiKey = getApiKey(user.userId);
+    if (!apiKey) {
+      return reply.status(404).send({ error: "No key set." });
+    }
+    return { apiKey };
   });
 
   app.delete("/api/keys", async (request, reply) => {
@@ -182,6 +204,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         categories: i.categories,
         logo: resolveLogo(i),
         toolCount: registry.listToolsByIntegration(i.name).length,
+        configured: isConfigured(i),
       })),
     };
   });
@@ -362,7 +385,10 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
   // Import a cookie-auth session bundle (from /session/export elsewhere) and
   // store it under the caller, marking the integration connected.
-  app.post<{ Params: { integration: string }; Body: { session?: CookieData } }>(
+  app.post<{
+    Params: { integration: string };
+    Body: { session?: CookieData | CookieData["cookies"] } | CookieData["cookies"];
+  }>(
     "/api/integrations/:integration/session/import",
     async (request, reply) => {
       const user = await authenticate(request);
@@ -372,9 +398,13 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       if (!integ || integ.auth.type !== "cookie") {
         return reply.status(404).send({ error: "Cookie integration not found" });
       }
-      const session = request.body?.session;
+      // Accept a bare cookie array (no { cookies } wrapper) at either the body
+      // root or under `session`, and normalize it into a CookieData bundle.
+      const body = request.body;
+      const raw = Array.isArray(body) ? body : body?.session;
+      const session: Partial<CookieData> | undefined = Array.isArray(raw) ? { cookies: raw } : raw;
       if (!session || !Array.isArray(session.cookies) || session.cookies.length === 0) {
-        return reply.status(400).send({ error: "Invalid session bundle: expected non-empty { cookies }." });
+        return reply.status(400).send({ error: "Invalid session bundle: expected non-empty { cookies } or a cookie array." });
       }
       const data: CookieData = {
         domain: session.domain ?? integ.auth.targetDomain,

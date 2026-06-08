@@ -104,3 +104,10 @@ try {
 } catch (e: any) {
   if (!e.message?.includes("duplicate column name")) throw e;
 }
+// Encrypted plaintext API key, so the key can be revealed again after minting
+// (not just shown once). Hash stays for cheap verification.
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN api_key_enc BLOB`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}

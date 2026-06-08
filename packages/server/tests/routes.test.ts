@@ -31,6 +31,7 @@ vi.mock("../src/auth/google", () => ({
 vi.mock("../src/auth/plugin-oauth", () => ({
   buildPluginAuthUrl: vi.fn(() => "https://example.com/oauth?plugin=1"),
   handlePluginCallback: vi.fn(),
+  getPluginOAuthCreds: vi.fn(() => ({ clientId: "id", clientSecret: "secret" })),
 }));
 
 vi.mock("../src/auth/session", () => ({
@@ -47,6 +48,7 @@ vi.mock("../src/auth/users", () => ({
     id === "user-1" ? { id: "user-1", email: "test@example.com" } : null
   ),
   setApiKey: vi.fn(() => ({ apiKey: "minted-key-123" })),
+  getApiKey: vi.fn(() => "revealed-key-123"),
   clearApiKey: vi.fn(),
   hasApiKey: vi.fn(() => false),
 }));
@@ -184,6 +186,35 @@ describe("API routes", () => {
       expect(JSON.parse(res.body)).toEqual({ hasKey: true });
     });
 
+    it("reveals the stored key", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/keys/reveal",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body)).toEqual({ apiKey: "revealed-key-123" });
+    });
+
+    it("404s reveal when no key set", async () => {
+      const { getApiKey } = await import("../src/auth/users");
+      vi.mocked(getApiKey).mockReturnValueOnce(null);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/keys/reveal",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("rejects reveal without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/keys/reveal" });
+      expect(res.statusCode).toBe(401);
+    });
+
     it("revokes the key", async () => {
       const { clearApiKey } = await import("../src/auth/users");
       const app = await buildApp();
@@ -283,6 +314,31 @@ describe("API routes", () => {
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/integrations" });
       expect(res.statusCode).toBe(401);
+    });
+
+    it("reports configured flag per auth type", async () => {
+      const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
+      // cookie -> always; oauth2 -> only when creds present; none -> false.
+      vi.mocked(getPluginOAuthCreds).mockImplementation((n: string) =>
+        n === "oauth-ready" ? { clientId: "id", clientSecret: "secret" } : null
+      );
+      vi.spyOn(registry, "listIntegrations").mockReturnValue([
+        { name: "cookie-x", version: "1.0.0", auth: { type: "cookie" as const, targetDomain: "x.test", cookieDomains: ["x.test"] } },
+        { name: "oauth-ready", version: "1.0.0", auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] } },
+        { name: "oauth-bare", version: "1.0.0", auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] } },
+        { name: "manual", version: "1.0.0", auth: { type: "none" as const } },
+      ] as never);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET", url: "/api/integrations",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      const list = JSON.parse(res.body).integrations as { name: string; configured: boolean }[];
+      const by = (n: string) => list.find((i) => i.name === n)?.configured;
+      expect(by("cookie-x")).toBe(true);
+      expect(by("oauth-ready")).toBe(true);
+      expect(by("oauth-bare")).toBe(false);
+      expect(by("manual")).toBe(false);
     });
 
     it("includes presentation metadata + tool count + resolved logo", async () => {
@@ -899,6 +955,48 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(200);
       expect(JSON.parse(res.body).cookieCount).toBe(1);
       expect(vi.mocked(storeCookies)).toHaveBeenCalledWith("user-1", "legacy", expect.objectContaining({ cookies: bundle.cookies }));
+    });
+
+    it("imports a bare cookie array under session (auto-wrapped)", async () => {
+      const { storeCookies } = await import("../src/auth/cookie");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/integrations/legacy/session/import",
+        headers: { ...apiKey, "content-type": "application/json" },
+        payload: { session: bundle.cookies },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).cookieCount).toBe(1);
+      expect(vi.mocked(storeCookies)).toHaveBeenCalledWith("user-1", "legacy", expect.objectContaining({ cookies: bundle.cookies }));
+    });
+
+    it("imports a bare cookie array at the body root (auto-wrapped)", async () => {
+      const { storeCookies } = await import("../src/auth/cookie");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/integrations/legacy/session/import",
+        headers: { ...apiKey, "content-type": "application/json" },
+        payload: bundle.cookies,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).cookieCount).toBe(1);
+      expect(vi.mocked(storeCookies)).toHaveBeenCalledWith("user-1", "legacy", expect.objectContaining({ cookies: bundle.cookies }));
+    });
+
+    it("400s import of an empty array", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/integrations/legacy/session/import",
+        headers: { ...apiKey, "content-type": "application/json" },
+        payload: [],
+      });
+      expect(res.statusCode).toBe(400);
     });
 
     it("400s import of an empty/invalid bundle", async () => {
