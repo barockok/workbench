@@ -1,13 +1,15 @@
-import { chromium } from "playwright";
 import { spawn, ChildProcess } from "node:child_process";
-import { mkdirSync, chmodSync } from "node:fs";
 import { rm } from "node:fs/promises";
-import { join, dirname } from "node:path";
 import { config } from "../config";
-import { createServer } from "node:net";
 import WebSocket from "ws";
 import { db } from "../db";
 import { encrypt, decrypt } from "./encryption";
+import {
+  activeProfiles,
+  userProfileDir,
+  cdpCall,
+  spawnProfileChromium,
+} from "./profile-chromium";
 
 export interface CookieData {
   domain: string;
@@ -44,83 +46,6 @@ interface Session {
 }
 
 const sessions = new Map<string, Session>();
-
-// Userdata dirs can't be shared by two Chromium processes — one active capture
-// session per user at a time.
-const activeProfiles = new Set<string>();
-
-async function getFreePort(): Promise<number> {
-  return await new Promise<number>((resolve, reject) => {
-    const srv = createServer();
-    srv.unref();
-    srv.on("error", reject);
-    srv.listen(0, "127.0.0.1", () => {
-      const addr = srv.address();
-      if (typeof addr !== "object" || !addr) {
-        srv.close();
-        reject(new Error("getFreePort: no address"));
-        return;
-      }
-      const port = addr.port;
-      srv.close(() => resolve(port));
-    });
-  });
-}
-
-async function pollJson(url: string, attempts = 40, intervalMs = 100): Promise<unknown> {
-  let lastErr: unknown = null;
-  for (let i = 0; i < attempts; i++) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      lastErr = e;
-    }
-    await new Promise((r) => setTimeout(r, intervalMs));
-  }
-  throw new Error(`Failed to reach ${url}: ${String(lastErr)}`);
-}
-
-interface TargetInfo {
-  id: string;
-  type: string;
-  url: string;
-  webSocketDebuggerUrl: string;
-}
-
-interface VersionInfo {
-  webSocketDebuggerUrl: string;
-}
-
-async function cdpCall(
-  wsUrl: string,
-  method: string,
-  params: Record<string, unknown> = {}
-): Promise<Record<string, unknown>> {
-  return await new Promise((resolve, reject) => {
-    const ws = new WebSocket(wsUrl, { perMessageDeflate: false, origin: "http://127.0.0.1" });
-    const timeout = setTimeout(() => {
-      try { ws.close(); } catch { /* noop */ }
-      reject(new Error(`cdpCall ${method} timed out`));
-    }, 10000);
-    ws.on("open", () => ws.send(JSON.stringify({ id: 1, method, params })));
-    ws.on("message", (raw) => {
-      try {
-        const msg = JSON.parse(raw.toString());
-        if (msg.id === 1) {
-          clearTimeout(timeout);
-          ws.close();
-          if (msg.error) reject(new Error(`cdp ${method}: ${msg.error.message}`));
-          else resolve(msg.result ?? {});
-        }
-      } catch (e) {
-        clearTimeout(timeout);
-        reject(e instanceof Error ? e : new Error(String(e)));
-      }
-    });
-    ws.on("error", (e) => { clearTimeout(timeout); reject(e); });
-  });
-}
 
 // Chromium can't take proxy credentials on the command line (and can't do
 // SOCKS5 user/pass auth at all). For an authenticated HTTP proxy we answer the
@@ -172,17 +97,6 @@ function startProxyAuth(browserWsUrl: string, username: string, password: string
   return ws;
 }
 
-// Base dir holding one persistent Chromium profile per user. Defaults next to
-// the SQLite DB (on the same persistent volume) when BROWSER_PROFILES_DIR unset.
-function profilesBaseDir(): string {
-  return config.BROWSER_PROFILES_DIR || join(dirname(config.DATABASE_URL), "browser-profiles");
-}
-
-// Per-user persistent profile dir. Keyed by userId only (no path traversal).
-function userProfileDir(userId: string): string {
-  return join(profilesBaseDir(), userId.replace(/[^a-zA-Z0-9_-]/g, "_"));
-}
-
 export async function startCookieSession(
   userId: string,
   integration: string,
@@ -196,61 +110,8 @@ export async function startCookieSession(
   activeProfiles.add(userId);
 
   try {
-    const remotePort = await getFreePort();
-    const userDataDir = userProfileDir(userId);
-    mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
-    // mkdirSync mode is only applied when creating; if the dir already existed
-    // the mode is a no-op. chmod is idempotent and enforces 0700 either way.
-    chmodSync(userDataDir, 0o700);
-    // Reuse Playwright's chromium binary so we don't need a second install.
-    const execPath = chromium.executablePath();
-    const proc = spawn(
-      execPath,
-      [
-        // `new` headless renders fully (and emits screencast frames) without
-        // requiring a visible OS window. The portal canvas is what the user
-        // sees — chromium itself never opens a window on the server host.
-        "--headless=new",
-        `--remote-debugging-port=${remotePort}`,
-        `--user-data-dir=${userDataDir}`,
-        // Allow our proxy to connect with origin=http://127.0.0.1. Newer
-        // chromium does not treat `*` as a wildcard.
-        "--remote-allow-origins=http://127.0.0.1",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-features=TranslateUI",
-        "--window-size=1280,800",
-        // Route the capture browser's egress through a proxy when CAPTURE_PROXY is
-        // set (e.g. `socks5://host:1080` or `http://host:3128`). Needed where the
-        // host's own egress IP is rejected by the login provider — notably Google
-        // SSO 500s interactive sign-in from datacenter IPs, so an in-cluster
-        // capture must exit via a clean (residential/ISP) IP. Unset → direct.
-        ...(process.env.CAPTURE_PROXY ? [`--proxy-server=${process.env.CAPTURE_PROXY}`] : []),
-        // The Docker image runs as root; chromium's zygote refuses to start as
-        // root without --no-sandbox ("Running as root without --no-sandbox is
-        // not supported"), so the CDP endpoint never comes up and cookie-auth
-        // connect fails with "Failed to reach .../json/version". Harmless when
-        // not root. --disable-dev-shm-usage avoids crashes from the small
-        // default /dev/shm in containers.
-        "--no-sandbox",
-        "--disable-dev-shm-usage",
-        loginUrl,
-      ],
-      { stdio: "ignore", detached: false }
-    );
-
-    // Wait for the devtools endpoint to come up.
-    await pollJson(`http://127.0.0.1:${remotePort}/json/version`);
-    const versionInfo = (await pollJson(`http://127.0.0.1:${remotePort}/json/version`)) as VersionInfo;
-    // Poll page targets until our login URL is loaded.
-    let target: TargetInfo | undefined;
-    for (let i = 0; i < 30; i++) {
-      const targets = (await pollJson(`http://127.0.0.1:${remotePort}/json`)) as TargetInfo[];
-      target = targets.find((t) => t.type === "page");
-      if (target && target.url && target.url !== "about:blank") break;
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    if (!target) throw new Error("CDP: no page target found");
+    const { proc, remotePort, cdpBrowserWsUrl, cdpPageWsUrl } =
+      await spawnProfileChromium(userId, { startUrl: loginUrl });
 
     const sessionId = crypto.randomUUID();
     const cdpToken = crypto.randomUUID();
@@ -261,15 +122,15 @@ export async function startCookieSession(
     const proxyPass = process.env.CAPTURE_PROXY_PASSWORD;
     const authWs =
       process.env.CAPTURE_PROXY && proxyUser && proxyPass
-        ? startProxyAuth(versionInfo.webSocketDebuggerUrl, proxyUser, proxyPass)
+        ? startProxyAuth(cdpBrowserWsUrl, proxyUser, proxyPass)
         : undefined;
 
     const session: Session = {
       proc,
-      userDataDir,
+      userDataDir: userProfileDir(userId),
       remotePort,
-      cdpPageWsUrl: target.webSocketDebuggerUrl,
-      cdpBrowserWsUrl: versionInfo.webSocketDebuggerUrl,
+      cdpPageWsUrl,
+      cdpBrowserWsUrl,
       cdpToken,
       loginUrl,
       targetDomain,
@@ -289,7 +150,7 @@ export async function startCookieSession(
       try { session.authWs?.close(); } catch { /* noop */ }
     });
 
-    return { sessionId, cdpUrl: target.webSocketDebuggerUrl, cdpToken };
+    return { sessionId, cdpUrl: cdpPageWsUrl, cdpToken };
   } catch (e) {
     activeProfiles.delete(userId);
     throw e;
