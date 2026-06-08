@@ -202,6 +202,15 @@ describe("handleMcpRequest", () => {
     expect(parsed.integrations[0].name).toBe("slack");
   });
 
+  it("wraps a normal result as text", async () => {
+    const res = await handleMcpRequest(
+      { jsonrpc: "2.0", id: 11, method: "tools/call", params: { name: "search_tools", arguments: { query: "x" } } },
+      "user-1"
+    );
+    const r = res?.result as { content: { type: string }[] };
+    expect(r.content[0].type).toBe("text");
+  });
+
   it("returns cookie magic-link via mcp call (get_auth_url alias)", async () => {
     vi.spyOn(registry, "getIntegration").mockReturnValue({
       name: "legacy",
