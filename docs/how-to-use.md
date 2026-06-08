@@ -61,6 +61,30 @@ Claude: connect("jira") → open URL → authorize → wait_for_connection(id)
 
 `execute_tools` runs the batch concurrently (bounded pool) and returns a `results` array aligned to the input — each entry has either a `result` or an `error`. Use it to cut round-trips when an agent has several independent calls.
 
+### Browser tools (computer-use)
+
+Workbench hosts one warm Chromium per user — the same persistent profile cookie
+connects build on, so prior logins (any site/IdP) carry over instead of a blank
+browser. The MCP client drives it step-by-step:
+
+- `browser_navigate({ url })` — go to a page (opens the warm session if cold); returns `{ url, title }`
+- `browser_screenshot()` — returns a PNG the model can see (use it before clicking)
+- `browser_click({ x, y, button? })`, `browser_type({ text })`, `browser_key({ keys })`, `browser_scroll({ direction, amount? })`
+- `browser_live_url()` — a short-lived link to watch and take over the browser by hand, then hand control back
+- `browser_close()` — end the session (the profile is kept)
+
+```
+You: open my dashboard and read the latest figure
+Claude: browser_navigate({url:"https://app.example.com"})
+        browser_screenshot()           # look
+        browser_click({x:320,y:210})   # drill in
+        browser_screenshot()            # read it off
+```
+
+The session is idle-reaped after `BROWSER_SESSION_TTL_SECONDS` (default 300). A
+warm browser session and a cookie capture can't run at once for one user
+(`BROWSER_SESSION_BUSY`) — `browser_close()` one before starting the other.
+
 ## Connecting via OAuth (browser login)
 
 MCP clients that support the [MCP OAuth flow](https://spec.modelcontextprotocol.io/specification/2025-11-05/basic/authorization/) (Claude Code ≥ 0.2, and other spec-compliant clients) need only the server URL — no API key required:
@@ -205,6 +229,7 @@ Claude: wait_for_connection("abc123")
 | `CAPTURE_PROXY` | — | Proxy for the cookie-auth capture browser, e.g. `socks5://host:1080` or `http://host:3128`. Set when the host's egress IP is rejected by a login provider — notably **Google SSO 500s interactive sign-in from datacenter IPs**, so an in-cluster capture must exit via a clean (residential/ISP) IP. Unset → direct connection. |
 | `CAPTURE_PROXY_USERNAME` / `_PASSWORD` | — | Credentials for an **authenticated HTTP** capture proxy. Chromium can't take proxy creds on the command line (and can't auth SOCKS5 at all), so these are supplied via the CDP `Fetch.authRequired` challenge. Use an `http://` `CAPTURE_PROXY` with these; for SOCKS5 use IP-authorization instead. |
 | `BROWSER_PROFILES_DIR` | `<data dir>/browser-profiles` | Where per-user persistent capture-browser profiles are stored. Each user gets one Chromium profile reused across cookie-auth connects, so prior logins (any site/IdP) carry over instead of starting from a blank browser. Defaults next to the SQLite DB. |
+| `BROWSER_SESSION_TTL_SECONDS` | `300` | Idle seconds before a warm per-user browser session (driven by the `browser_*` computer-use tools) is reaped. The persistent profile is kept; only the live Chromium process is closed. |
 
 ## Adding a Plugin
 
