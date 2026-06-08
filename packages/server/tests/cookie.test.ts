@@ -67,6 +67,7 @@ import {
   getSessionOwner,
   getSessionCdpEndpoint,
   createProxyAuthHandler,
+  resetBrowserProfile,
 } from "../src/auth/cookie";
 import { db } from "../src/db";
 
@@ -462,6 +463,13 @@ describe("cookie auth", () => {
       await closeCookieSession(b.sessionId);
     });
 
+    it("resetBrowserProfile refuses to reset while a capture session is active", async () => {
+      mockFetchForStart();
+      const s = await startCookieSession("active-reset", "test-integ", "https://example.com/login", "example.com");
+      await expect(resetBrowserProfile("active-reset")).rejects.toThrow(/BROWSER_SESSION_BUSY/);
+      await closeCookieSession(s.sessionId);
+    });
+
     it("filters out off-domain cookies even when targetDomain alone is allowed", async () => {
       mockFetchForStart();
       mockCdpResponses.length = 0;
@@ -490,6 +498,16 @@ describe("cookie auth", () => {
       expect(captured.cookies.map((c) => c.name).sort()).toEqual(["evil", "exact", "ok"]);
 
       await closeCookieSession(sessionId);
+    });
+  });
+
+  describe("resetBrowserProfile", () => {
+    it("wipes the user's profile dir", async () => {
+      const rmMod = await import("node:fs/promises");
+      const rmSpy = vi.spyOn(rmMod, "rm").mockResolvedValue(undefined as any);
+      await resetBrowserProfile("reset-me");
+      const wiped = rmSpy.mock.calls.some((c) => String(c[0]).includes("/reset-me"));
+      expect(wiped).toBe(true);
     });
   });
 });
