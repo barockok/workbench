@@ -420,6 +420,16 @@ describe("cookie auth", () => {
       await expect(closeCookieSession("nope")).resolves.toBeUndefined();
     });
 
+    it("closeCookieSession keeps the persistent profile (does not delete the dir)", async () => {
+      const rmMod = await import("node:fs/promises");
+      const rmSpy = vi.spyOn(rmMod, "rm");
+      mockFetchForStart();
+      const { sessionId } = await startCookieSession("user-keep", "test-integ", "https://example.com/login", "example.com");
+      await closeCookieSession(sessionId);
+      const removedProfile = rmSpy.mock.calls.some((c) => String(c[0]).includes("/user-keep"));
+      expect(removedProfile).toBe(false);
+    });
+
     it("launches Chromium with a persistent per-user profile dir (not mkdtemp)", async () => {
       spawnCalls.length = 0;
       mockFetchForStart();
