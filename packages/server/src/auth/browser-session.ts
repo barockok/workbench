@@ -9,9 +9,12 @@ class CdpClient {
   private ws: WebSocket;
   private id = 0;
   private pending = new Map<number, { resolve: (v: Record<string, unknown>) => void; reject: (e: Error) => void; timer: ReturnType<typeof setTimeout> }>();
+  private gone = false;
+  private onGone?: () => void;
   readonly ready: Promise<void>;
 
-  constructor(wsUrl: string) {
+  constructor(wsUrl: string, onGone?: () => void) {
+    this.onGone = onGone;
     this.ws = new WebSocket(wsUrl, { perMessageDeflate: false, origin: "http://127.0.0.1" });
     this.ready = new Promise((resolve, reject) => {
       this.ws.on("open", () => {
@@ -33,11 +36,26 @@ class CdpClient {
       if (msg.error) p.reject(new Error(`cdp: ${msg.error.message}`));
       else p.resolve(msg.result ?? {});
     });
+    this.ws.on("error", () => this.handleGone());
+    this.ws.on("close", () => this.handleGone());
   }
 
   private fire(method: string, params: Record<string, unknown> = {}): void {
     const id = ++this.id;
     try { this.ws.send(JSON.stringify({ id, method, params })); } catch { /* noop */ }
+  }
+
+  private drainPending(err: Error): void {
+    for (const p of this.pending.values()) { clearTimeout(p.timer); p.reject(err); }
+    this.pending.clear();
+  }
+
+  private handleGone(): void {
+    if (this.gone) return;
+    this.gone = true;
+    this.drainPending(new Error("cdp socket closed"));
+    try { this.ws.close(); } catch { /* noop */ }
+    this.onGone?.();
   }
 
   send(method: string, params: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
@@ -53,8 +71,9 @@ class CdpClient {
   }
 
   close(): void {
-    for (const p of this.pending.values()) { clearTimeout(p.timer); }
-    this.pending.clear();
+    if (this.gone) return;
+    this.gone = true;
+    this.drainPending(new Error("cdp client closed"));
     try { this.ws.close(); } catch { /* noop */ }
   }
 }
@@ -82,7 +101,7 @@ export async function ensureSession(userId: string): Promise<WarmSession> {
   activeProfiles.add(userId);
   try {
     const spawned = await spawnProfileChromium(userId, {});
-    const cdp = new CdpClient(spawned.cdpPageWsUrl);
+    const cdp = new CdpClient(spawned.cdpPageWsUrl, () => { void closeBrowserSession(userId); });
     await cdp.ready;
     const session: WarmSession = {
       proc: spawned.proc,
@@ -133,16 +152,18 @@ export async function closeBrowserSession(userId: string): Promise<void> {
   try { s.proc.kill("SIGKILL"); } catch { /* noop */ }
 }
 
+export function reapIdleSessions(now = Date.now()): void {
+  const cutoff = now - config.BROWSER_SESSION_TTL_SECONDS * 1000;
+  for (const [userId, s] of warmSessions) {
+    if (s.lastActivity < cutoff) void closeBrowserSession(userId);
+  }
+}
+
 let reaperStarted = false;
 export function startBrowserReaper(): void {
   if (reaperStarted) return;
   reaperStarted = true;
-  setInterval(() => {
-    const cutoff = Date.now() - config.BROWSER_SESSION_TTL_SECONDS * 1000;
-    for (const [userId, s] of warmSessions) {
-      if (s.lastActivity < cutoff) void closeBrowserSession(userId);
-    }
-  }, 30_000).unref();
+  setInterval(() => reapIdleSessions(), 30_000).unref();
 }
 
 // ─── CDP action helpers ───────────────────────────────────────────────────
@@ -151,19 +172,14 @@ export function startBrowserReaper(): void {
 export async function navigate(
   s: WarmSession,
   url: string
-): Promise<{ url: string; title: string; warning?: string }> {
-  let warning: string | undefined;
-  try {
-    await s.cdp.send("Page.navigate", { url });
-    // Give the load a moment; Page.loadEventFired isn't awaited here to keep
-    // the helper simple — a short settle covers most SPAs. (Follow-up: await
-    // the load event.)
-    await new Promise((r) => setTimeout(r, 800));
-  } catch (e) {
-    warning = e instanceof Error ? e.message : String(e);
-  }
+): Promise<{ url: string; title: string }> {
+  await s.cdp.send("Page.navigate", { url });
+  // Give the load a moment; Page.loadEventFired isn't awaited here to keep
+  // the helper simple — a short settle covers most SPAs. (Follow-up: await
+  // the load event.)
+  await new Promise((r) => setTimeout(r, 800));
   const title = await pageTitle(s);
-  return warning ? { url, title, warning } : { url, title };
+  return { url, title };
 }
 
 async function pageTitle(s: WarmSession): Promise<string> {
@@ -219,9 +235,15 @@ export async function pressKey(s: WarmSession, keys: string): Promise<void> {
     else last = p;
   }
   const mapped = KEYS[last];
+  if (!mapped && last.length === 1 && modifiers === 0) {
+    // Printable char: keyDown with text actually inserts it.
+    await s.cdp.send("Input.dispatchKeyEvent", { type: "keyDown", key: last, text: last, modifiers });
+    await s.cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key: last, modifiers });
+    return;
+  }
   const base: Record<string, unknown> = mapped
     ? { windowsVirtualKeyCode: mapped.keyCode, key: mapped.key, modifiers }
-    : { key: last, text: last.length === 1 ? last : undefined, modifiers };
+    : { key: last, modifiers };
   await s.cdp.send("Input.dispatchKeyEvent", { type: "rawKeyDown", ...base });
   await s.cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
 }
