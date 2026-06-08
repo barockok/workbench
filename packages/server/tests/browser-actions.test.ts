@@ -24,11 +24,54 @@ describe("browser actions", () => {
     expect(out).toEqual({ url: "https://example.com", title: "Example" });
   });
 
-  it("screenshot returns base64 png data", async () => {
-    const send = vi.fn(async () => ({ data: "iVBORw0KGgo=" }));
-    const out = await screenshot(sessionWithCdp(send));
-    expect(send).toHaveBeenCalledWith("Page.captureScreenshot", { format: "png" });
-    expect(out).toBe("iVBORw0KGgo=");
+  it("screenshot downscales via clip.scale and returns a jpeg image", async () => {
+    const send = vi.fn(async (m: string) => {
+      if (m === "Page.getLayoutMetrics") return { cssLayoutViewport: { clientWidth: 2000, clientHeight: 1000 } };
+      return { data: "JPEGDATA" };
+    });
+    const s = { cdp: { send } } as any;
+    const out = await screenshot(s, { maxWidth: 1000 });
+    expect(send).toHaveBeenCalledWith(
+      "Page.captureScreenshot",
+      expect.objectContaining({
+        format: "jpeg",
+        quality: 60,
+        clip: expect.objectContaining({ x: 0, y: 0, width: 2000, height: 1000, scale: 0.5 }),
+      })
+    );
+    expect(out).toEqual({ _mcpImage: { data: "JPEGDATA", mimeType: "image/jpeg" } });
+  });
+
+  it("screenshot returns { unchanged: true } when bytes are identical", async () => {
+    const send = vi.fn(async (m: string) =>
+      m === "Page.getLayoutMetrics" ? { cssLayoutViewport: { clientWidth: 1000, clientHeight: 800 } } : { data: "SAME" }
+    );
+    const s = { cdp: { send } } as any;
+    const a = await screenshot(s);
+    const b = await screenshot(s);
+    expect(a).toHaveProperty("_mcpImage");
+    expect(b).toEqual({ unchanged: true });
+  });
+
+  it("screenshot never upscales (scale capped at 1)", async () => {
+    const send = vi.fn(async (m: string) =>
+      m === "Page.getLayoutMetrics" ? { cssLayoutViewport: { clientWidth: 800, clientHeight: 600 } } : { data: "X" }
+    );
+    const s = { cdp: { send } } as any;
+    await screenshot(s, { maxWidth: 1000 });
+    expect(send).toHaveBeenCalledWith("Page.captureScreenshot", expect.objectContaining({ clip: expect.objectContaining({ scale: 1 }) }));
+  });
+
+  it("screenshot honors format:png (no quality, png mime)", async () => {
+    const send = vi.fn(async (m: string) =>
+      m === "Page.getLayoutMetrics" ? { cssLayoutViewport: { clientWidth: 1000, clientHeight: 800 } } : { data: "PNGDATA" }
+    );
+    const s = { cdp: { send } } as any;
+    const out = await screenshot(s, { format: "png" });
+    const call = send.mock.calls.find((c: any[]) => c[0] === "Page.captureScreenshot")!;
+    expect(call[1].format).toBe("png");
+    expect(call[1].quality).toBeUndefined();
+    expect(out).toEqual({ _mcpImage: { data: "PNGDATA", mimeType: "image/png" } });
   });
 
   it("click dispatches press + release at coords", async () => {

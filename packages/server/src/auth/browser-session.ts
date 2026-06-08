@@ -1,4 +1,5 @@
 import { ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import WebSocket from "ws";
 import { config } from "../config";
 import { activeProfiles, spawnProfileChromium } from "./profile-chromium";
@@ -86,6 +87,7 @@ export interface WarmSession {
   cdpToken: string;
   userId: string;
   lastActivity: number;
+  lastShotHash?: string;
   cdp: CdpClient;
 }
 
@@ -195,9 +197,34 @@ async function pageTitle(s: WarmSession): Promise<string> {
   }
 }
 
-export async function screenshot(s: WarmSession): Promise<string> {
-  const r = (await s.cdp.send("Page.captureScreenshot", { format: "png" })) as { data?: string };
-  return r.data ?? "";
+export interface ShotOpts { format?: "jpeg" | "png"; quality?: number; maxWidth?: number }
+
+export async function screenshot(
+  s: WarmSession,
+  opts: ShotOpts = {}
+): Promise<{ _mcpImage: { data: string; mimeType: string } } | { unchanged: true }> {
+  const format = opts.format ?? "jpeg";
+  const quality = opts.quality ?? 60;
+  const maxWidth = opts.maxWidth ?? 1000;
+
+  const metrics = (await s.cdp.send("Page.getLayoutMetrics")) as {
+    cssLayoutViewport?: { clientWidth?: number; clientHeight?: number };
+    layoutViewport?: { clientWidth?: number; clientHeight?: number };
+  };
+  const vp = metrics.cssLayoutViewport ?? metrics.layoutViewport ?? {};
+  const vw = vp.clientWidth ?? 1280;
+  const vh = vp.clientHeight ?? 800;
+  const scale = Math.min(1, maxWidth / vw);
+
+  const params: Record<string, unknown> = { format, clip: { x: 0, y: 0, width: vw, height: vh, scale } };
+  if (format === "jpeg") params.quality = quality;
+
+  const r = (await s.cdp.send("Page.captureScreenshot", params)) as { data?: string };
+  const data = r.data ?? "";
+  const hash = createHash("sha256").update(data).digest("hex");
+  if (hash === s.lastShotHash) return { unchanged: true };
+  s.lastShotHash = hash;
+  return { _mcpImage: { data, mimeType: format === "jpeg" ? "image/jpeg" : "image/png" } };
 }
 
 type MouseButton = "left" | "right" | "middle";
