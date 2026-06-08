@@ -319,13 +319,16 @@ export const metaTools = [
   },
   {
     name: "browser_screenshot",
-    description: "Capture a PNG screenshot of the current viewport. Returns an image the model can view. Use it to see the page before clicking.",
-    inputSchema: z.object({}),
-    handler: async (ctx: { userId: string }) => {
+    description: "Capture a screenshot of the current viewport so you can see the page. Costs vision tokens — call it only when the page likely changed and you need to look; after a click/type, act on what you already saw unless the result is uncertain. Downscaled JPEG by default (maxWidth 1000). If the pixels are identical to your last shot it returns { unchanged: true } instead of an image. For text-heavy pages prefer browser_read_text.",
+    inputSchema: z.object({
+      format: z.enum(["jpeg", "png"]).optional(),
+      quality: z.number().int().min(1).max(100).optional(),
+      maxWidth: z.number().int().positive().optional(),
+    }),
+    handler: async (ctx: { userId: string }, args: { format?: "jpeg" | "png"; quality?: number; maxWidth?: number }) => {
       const s = await ensureSession(ctx.userId);
       touch(ctx.userId);
-      const data = await browserScreenshot(s);
-      return { _mcpImage: { data, mimeType: "image/png" } };
+      return browserScreenshot(s, args);
     },
   },
   {
@@ -469,7 +472,14 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     properties: { url: { type: "string", description: "URL to navigate to" } },
     required: ["url"],
   },
-  browser_screenshot: { type: "object", properties: {} },
+  browser_screenshot: {
+    type: "object",
+    properties: {
+      format: { type: "string", enum: ["jpeg", "png"], description: "Image format (default jpeg)" },
+      quality: { type: "number", description: "JPEG quality 1-100 (default 60)" },
+      maxWidth: { type: "number", description: "Downscale so width ≤ this many px (default 1000). Lower = fewer tokens." },
+    },
+  },
   browser_click: {
     type: "object",
     properties: {
