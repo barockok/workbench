@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 import { spawn, ChildProcess } from "node:child_process";
 import { mkdirSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { config } from "../config";
 import { createServer } from "node:net";
@@ -356,6 +357,15 @@ export async function closeCookieSession(sessionId: string): Promise<void> {
   try { session.authWs?.close(); } catch { /* noop */ }
   try { session.proc.kill("SIGKILL"); } catch { /* noop */ }
   sessions.delete(sessionId);
+}
+
+// Wipe a user's persistent browser profile (logout-everywhere / repair).
+// Refuses while a capture session is active — would delete an in-use dir.
+export async function resetBrowserProfile(userId: string): Promise<void> {
+  if (activeProfiles.has(userId)) {
+    throw new Error("BROWSER_SESSION_BUSY: finish or cancel the active browser session first");
+  }
+  await rm(userProfileDir(userId), { recursive: true, force: true }).catch(() => undefined);
 }
 
 export function storeCookies(userId: string, integration: string, data: CookieData): void {
