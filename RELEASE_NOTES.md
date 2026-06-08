@@ -1,3 +1,30 @@
+# a-workbench v0.6.0
+
+_2026-06-08_
+
+Headline: **remote browser tools (computer-use)** — the warm per-user Chromium is now drivable from the MCP client. The model navigates, sees, reads, and clicks; a human can watch and take over the same browser live. Built on the v0.5.0 persistent profile, so prior logins carry over.
+
+## Features
+- **`browser_*` computer-use meta-tools.** `browser_navigate(url)`, `browser_screenshot()`, `browser_read_text()`, `browser_click(x,y)`, `browser_type(text)`, `browser_key(keys)`, `browser_scroll(direction)`, `browser_live_url()`, `browser_close()`. The MCP client's own LLM drives step-by-step — no server-side agent loop, no extra API key. Runs against each user's persistent profile (logins from cookie connects carry over).
+- **Warm session.** One headless Chromium per user, kept hot across tool calls over a persistent CDP client; idle-reaped after `BROWSER_SESSION_TTL_SECONDS` (default 300). New env: `BROWSER_SESSION_TTL_SECONDS`.
+- **Human live-view + take-over.** `browser_live_url()` mints a short-lived link to a `/browser` portal canvas (CDP screencast) where a person watches *and* drives the same session — zero model tokens. Reuses the cookie-capture CDP-WS-proxy + connect-JWT pattern.
+- **Screenshots as real MCP image content.** `browser_screenshot` returns an `image` content block the model can view, not base64 text.
+- **Token economy.** Screenshots default to downscaled JPEG (`maxWidth` 1000 — resolution is the token lever) and are **change-detected**: an identical re-shot returns `{ unchanged: true }` instead of re-billing the pixels. `browser_read_text` returns plain page text as a far cheaper alternative for reading/forms.
+
+## Architecture / internals
+- Extracted a shared Chromium launcher (`profile-chromium.ts`) from `cookie.ts` so cookie-capture and the warm browser session share **one** single-writer lock — they're mutually exclusive per user (`BROWSER_SESSION_BUSY`).
+- New WS proxy `/api/browser-session/cdp` + exchange `GET /api/connect/browser-session`, origin-allowlisted and auth-framed; a connect-JWT is bound to `(userId, cdpToken)` and `integration="__browser__"` so it can't attach to another user's session.
+
+## Hardening
+- Persistent CDP socket teardown (no unhandled-`error` crash; pending CDP calls reject on close), navigation errors propagate (dead session relaunches), printable-key typing fixed.
+
+## Notes
+- Security review: 0 high-confidence findings (cross-user attach, `Runtime.evaluate` injection, path traversal, token exchange all verified safe).
+- Specs/plans: `docs/superpowers/specs/2026-06-08-remote-browser-tools-design.md`, `2026-06-08-screenshot-token-economy-design.md` (+ matching plans).
+- Tests: 315 passing.
+
+---
+
 # a-workbench v0.5.0
 
 _2026-06-08_
