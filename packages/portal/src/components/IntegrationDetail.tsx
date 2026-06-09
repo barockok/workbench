@@ -1,7 +1,69 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchIntegration, exportSession, importSession } from "../api";
+import { fetchIntegration, exportSession, importSession, openBrowserLiveUrl, resetBrowserSession } from "../api";
 import IntegrationLogo from "./IntegrationLogo";
+
+// Built-in browser controls: open a live view (optionally at a URL) and clear
+// the persistent profile. Replaces the old standalone BrowserSessionPanel.
+function BrowserControls() {
+  const [url, setUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const qc = useQueryClient();
+
+  async function onOpen() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await openBrowserLiveUrl(url.trim() || undefined);
+      window.open(r.url, "_blank", "noopener");
+      setMsg({ ok: true, text: "Live view opened in a new tab." });
+    } catch (e) {
+      setMsg({ ok: false, text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onClear() {
+    if (!window.confirm("Clear browser session? This logs you out of all sites in the browser.")) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await resetBrowserSession();
+      setMsg({ ok: true, text: "Browser session cleared." });
+      qc.invalidateQueries({ queryKey: ["connections"] });
+    } catch (e) {
+      setMsg({ ok: false, text: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="session-transfer">
+      <div className="integ-tools-head"><span>Browser controls</span></div>
+      <p className="integ-detail-desc">
+        Open a live view to drive the browser by hand. Leave the URL blank to view the current page, or enter a URL to
+        navigate there first.
+      </p>
+      <div className="session-transfer-row">
+        <input
+          className="session-transfer-paste"
+          style={{ flex: 1 }}
+          placeholder="https://example.com (optional)"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+        />
+        <button className="btn-connect" onClick={onOpen} disabled={busy}>Open live view →</button>
+      </div>
+      <div className="session-transfer-row">
+        <button className="btn-disconnect" onClick={onClear} disabled={busy}>Clear session</button>
+      </div>
+      {msg && <div className={msg.ok ? "session-transfer-ok" : "login-error"}>{msg.text}</div>}
+    </div>
+  );
+}
 
 // Move a captured cookie session between workbenches. Capture on a machine the
 // login provider trusts (e.g. a residential IP), export, then import into a
@@ -118,6 +180,7 @@ export default function IntegrationDetail({
                 </div>
               )}
               {data.authType === "cookie" && <SessionTransfer name={name} />}
+              {name === "browser" && <BrowserControls />}
               <div className="integ-tools-head">
                 <span>Tools</span><span className="count">{data.tools.length}</span>
               </div>
@@ -133,11 +196,13 @@ export default function IntegrationDetail({
           )}
         </div>
 
-        <div className="modal-foot">
-          <button className={connected ? "btn-disconnect" : "btn-connect"} onClick={() => onConnect(name)}>
-            {connected ? "Re-authorize" : "Connect →"}
-          </button>
-        </div>
+        {name !== "browser" && (
+          <div className="modal-foot">
+            <button className={connected ? "btn-disconnect" : "btn-connect"} onClick={() => onConnect(name)}>
+              {connected ? "Re-authorize" : "Connect →"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
