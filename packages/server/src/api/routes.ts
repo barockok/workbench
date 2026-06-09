@@ -12,13 +12,10 @@ import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
 import { getToken, deleteToken } from "../auth/tokens";
 import {
-  captureCookies,
-  closeCookieSession,
   storeCookies,
   getCookies,
   hasValidCookies,
   deleteCookies,
-  getSessionOwner,
   resetBrowserProfile,
   isCookieExpired,
   CookieData,
@@ -503,7 +500,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       integration: payload.integration,
       loginUrl: integ.auth.loginUrl,
       cdpProxyUrl: `/api/auth/cookie/${payload.integration}/cdp`,
-      sessionId: payload.sessionId,
+      sessionId: payload.userId,
       cdpToken: payload.cdpToken,
     };
   });
@@ -514,19 +511,18 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     let payload;
     try { payload = await verifyConnectToken(auth.slice(7)); }
     catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
-    const owner = getSessionOwner(payload.sessionId);
-    if (!owner || owner.userId !== payload.userId || owner.integration !== payload.integration) {
-      return reply.status(403).send({ error: "Forbidden" });
+    const integ = registry.getIntegration(payload.integration);
+    if (!integ || integ.auth.type !== "cookie") {
+      return reply.status(404).send({ error: "Cookie integration not found" });
     }
     try {
-      const cookies = await captureCookies(payload.sessionId);
-      if (cookies.cookies.length === 0) {
+      const data = await captureLiveCookies(payload.userId, integ.auth.targetDomain, integ.auth.cookieDomains);
+      if (data.cookies.length === 0) {
         return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
       }
-      storeCookies(payload.userId, payload.integration, cookies);
-      await closeCookieSession(payload.sessionId);
+      storeCookies(payload.userId, payload.integration, data);
       markConnected(payload.userId, payload.integration);
-      return { success: true, cookieCount: cookies.cookies.length };
+      return { success: true, cookieCount: data.cookies.length };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });

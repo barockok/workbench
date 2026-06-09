@@ -786,7 +786,7 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(body.integration).toBe("legacy");
-      expect(body.sessionId).toBe("s1");
+      expect(body.sessionId).toBe("u1");
       expect(body.cdpToken).toBe("t1");
       expect(body.cdpProxyUrl).toBe("/api/auth/cookie/legacy/cdp");
     });
@@ -816,17 +816,18 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(404);
     });
 
-    it("POST /api/connect/capture captures cookies for the token owner", async () => {
-      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+    it("POST /api/connect/capture captures live cookies from the user's shared session", async () => {
+      const { captureLiveCookies } = await import("../src/auth/browser-session");
+      const { storeCookies } = await import("../src/auth/cookie");
       const { markConnected } = await import("../src/auth/connections");
-      vi.mocked(getSessionOwner).mockReturnValue({ userId: "u1", integration: "legacy" });
-      vi.mocked(captureCookies).mockResolvedValue({
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegForConnect);
+      vi.mocked(captureLiveCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "x", value: "y" }],
-        capturedAt: 1,
+        capturedAt: Math.floor(Date.now() / 1000),
       });
       const jwt = await signConnectToken(
-        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "u1", cdpToken: "t1" },
         600
       );
       const app = await buildApp();
@@ -839,26 +840,9 @@ describe("API routes", () => {
       const body = res.json();
       expect(body.success).toBe(true);
       expect(body.cookieCount).toBe(1);
-      expect(storeCookies).toHaveBeenCalled();
-      expect(closeCookieSession).toHaveBeenCalledWith("s1");
+      expect(captureLiveCookies).toHaveBeenCalledWith("u1", "legacy.com", undefined);
+      expect(storeCookies).toHaveBeenCalledWith("u1", "legacy", expect.objectContaining({ cookies: [{ name: "x", value: "y" }] }));
       expect(markConnected).toHaveBeenCalledWith("u1", "legacy");
-      expect(captureCookies).toHaveBeenCalledWith("s1");
-    });
-
-    it("POST /api/connect/capture 403s on ownership mismatch", async () => {
-      const { getSessionOwner } = await import("../src/auth/cookie");
-      vi.mocked(getSessionOwner).mockReturnValue({ userId: "other", integration: "legacy" });
-      const jwt = await signConnectToken(
-        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
-        600
-      );
-      const app = await buildApp();
-      const res = await app.inject({
-        method: "POST",
-        url: "/api/connect/capture",
-        headers: { authorization: `Bearer ${jwt}` },
-      });
-      expect(res.statusCode).toBe(403);
     });
 
     it("POST /api/connect/capture 401s on a bad token", async () => {
@@ -871,17 +855,18 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(401);
     });
 
-    it("POST /api/connect/capture 400s on zero cookies and does not store/close/markConnected", async () => {
-      const { getSessionOwner, captureCookies, storeCookies, closeCookieSession } = await import("../src/auth/cookie");
+    it("POST /api/connect/capture 400s on zero cookies and does not store/markConnected", async () => {
+      const { captureLiveCookies } = await import("../src/auth/browser-session");
+      const { storeCookies } = await import("../src/auth/cookie");
       const { markConnected } = await import("../src/auth/connections");
-      vi.mocked(getSessionOwner).mockReturnValue({ userId: "u1", integration: "legacy" });
-      vi.mocked(captureCookies).mockResolvedValue({
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegForConnect);
+      vi.mocked(captureLiveCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [],
         capturedAt: 1,
       });
       const jwt = await signConnectToken(
-        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "s1", cdpToken: "t1" },
+        { connectionId: "c1", userId: "u1", integration: "legacy", sessionId: "u1", cdpToken: "t1" },
         600
       );
       const app = await buildApp();
@@ -893,7 +878,6 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(400);
       expect(res.json().error).toContain("No cookies");
       expect(storeCookies).not.toHaveBeenCalled();
-      expect(closeCookieSession).not.toHaveBeenCalled();
       expect(markConnected).not.toHaveBeenCalled();
     });
   });
