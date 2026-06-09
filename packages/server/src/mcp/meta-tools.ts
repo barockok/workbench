@@ -5,8 +5,10 @@ import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
 import { getToken } from "../auth/tokens";
 import { getUserById } from "../auth/users";
-import { deployJot, listJots, deleteJot } from "../jots/store";
+import { listJots, deleteJot, readManifest } from "../jots/store";
 import { hashPassword } from "../jots/auth";
+import { isValidJotName } from "../jots/paths";
+import { mint } from "../jots/pending";
 import { hasValidCookies, startCookieSession, closeCookieSession } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { config } from "../config";
@@ -267,39 +269,33 @@ export const metaTools = [
   {
     name: "deploy_jot",
     description:
-      "Deploy a static web artifact as a shareable site at /j/<name>/. `access` is 'public' or 'password' (password jots require `password`). `files` is the full file tree to publish; a re-deploy replaces it wholesale. Names are global and creator-locked: deploying a name owned by another user returns JOT_NAME_TAKEN. Note: jot pages are sandboxed (opaque origin) and must be self-contained — a jot cannot fetch its own data files.",
+      "Begin deploying a static web artifact to /j/<name>/. Returns an upload URL and a single-use token (valid ~5 min). Package your site directory as a gzip tarball and upload it, e.g.: `tar czf - -C <dir> . | curl --data-binary @- -H 'Content-Type: application/gzip' <uploadUrl>`. The archive is extracted server-side and published wholesale, replacing any previous deploy. `access` is 'public' or 'password' (password jots require `password`). Names are global and creator-locked: a name owned by another user returns JOT_NAME_TAKEN. Limits: <=5 MiB decompressed, <=1000 files. Jot pages are sandboxed (opaque origin) and must be self-contained.",
     inputSchema: z.object({
       name: z.string(),
       access: z.enum(["public", "password"]),
       password: z.string().optional(),
-      files: z
-        .array(
-          z.object({
-            path: z.string(),
-            content: z.string(),
-            encoding: z.enum(["utf8", "base64"]).optional(),
-          })
-        )
-        .min(1),
     }),
     handler: async (
       ctx: { userId: string },
-      args: {
-        name: string;
-        access: "public" | "password";
-        password?: string;
-        files: { path: string; content: string; encoding?: "utf8" | "base64" }[];
-      }
+      args: { name: string; access: "public" | "password"; password?: string }
     ) => {
+      if (!isValidJotName(args.name)) return { error: "INVALID_NAME" };
       if (args.access === "password" && !args.password) return { error: "PASSWORD_REQUIRED" };
+      const existing = readManifest(args.name);
+      if (existing && existing.owner !== ctx.userId) return { error: "JOT_NAME_TAKEN" };
       const passwordHash = args.access === "password" ? hashPassword(args.password as string) : undefined;
-      return deployJot({
-        name: args.name,
+      const { token, expiresAt } = mint({
         owner: ctx.userId,
+        name: args.name,
         access: args.access,
         passwordHash,
-        files: args.files,
       });
+      return {
+        uploadUrl: `${config.SERVER_PUBLIC_URL}/j/upload/${token}`,
+        token,
+        expiresAt,
+        maxBytes: config.JOTS_MAX_BYTES,
+      };
     },
   },
   {
@@ -528,21 +524,8 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
       name: { type: "string", description: "Jot name; [a-z0-9-], ≤64 chars" },
       access: { type: "string", enum: ["public", "password"], description: "Gate type" },
       password: { type: "string", description: "Required when access=password" },
-      files: {
-        type: "array",
-        description: "File tree to publish; a re-deploy replaces it wholesale",
-        items: {
-          type: "object",
-          properties: {
-            path: { type: "string", description: "Relative path, e.g. index.html or assets/app.js" },
-            content: { type: "string", description: "File content (utf8 text, or base64 when encoding=base64)" },
-            encoding: { type: "string", enum: ["utf8", "base64"], description: "Defaults to utf8" },
-          },
-          required: ["path", "content"],
-        },
-      },
     },
-    required: ["name", "access", "files"],
+    required: ["name", "access"],
   },
   list_jots: { type: "object", properties: {} },
   delete_jot: {
