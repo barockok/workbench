@@ -347,7 +347,7 @@ export const metaTools = [
   },
   {
     name: "connect",
-    description: "Begin connecting an integration. Returns an openable URL (OAuth consent for oauth2, a browser login link for cookie auth) and a connectionId. Then call wait_for_connection.",
+    description: "Begin connecting an integration. For oauth2, returns a URL (OAuth consent page) and a connectionId; call wait_for_connection afterward. For cookie integrations, if the user is already logged into the shared browser session, returns { connected: true } immediately — no URL and no need to call wait_for_connection. Otherwise returns a portal login URL and a connectionId; call wait_for_connection afterward.",
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },

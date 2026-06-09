@@ -19,7 +19,7 @@ const mockOauthInteg = {
 const mockCookieInteg = {
   name: "legacy",
   version: "1.0.0",
-  auth: { type: "cookie" as const, loginUrl: "https://legacy.com/login", targetDomain: "legacy.com" },
+  auth: { type: "cookie" as const, loginUrl: "https://legacy.com/login", targetDomain: "legacy.com", cookieDomains: [] },
 };
 
 vi.mock("../src/plugins/context", () => ({
@@ -293,11 +293,9 @@ describe("meta-tools", () => {
     });
 
     it("connects instantly when live cookies already exist (cookie)", async () => {
-      const { captureLiveCookies, storeCookies, markConnected } = {
-        ...(await import("../src/auth/browser-session")),
-        ...(await import("../src/auth/connections")),
-        ...(await import("../src/auth/cookie")),
-      } as any;
+      const { captureLiveCookies } = await import("../src/auth/browser-session");
+      const { storeCookies } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
       vi.mocked(captureLiveCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "sid", value: "abc", domain: "legacy.com", path: "/" }],
