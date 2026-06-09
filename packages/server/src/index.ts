@@ -173,10 +173,16 @@ async function main() {
             // it presents its connect JWT here instead. Accept it only when
             // it verifies AND is bound to exactly this session — the
             // sessionId + cdpToken equality prevents reusing a connect JWT
-            // to attach to a different session.
+            // to attach to a different session. Unlike the browser-session
+            // proxy (which pins integration to the "__browser__" literal),
+            // this cookie proxy scopes the connect JWT to the route's
+            // :integration so a token minted for another integration can't
+            // be replayed against the shared warm-session map.
             try {
+              const routeIntegration = (request.params as { integration: string }).integration;
               const payload = await verifyConnectToken(msg.bearer);
               if (
+                payload.integration === routeIntegration &&
                 payload.sessionId === msg.sessionId &&
                 payload.cdpToken === msg.cdpToken
               ) {
