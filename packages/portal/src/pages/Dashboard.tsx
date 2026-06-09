@@ -94,14 +94,8 @@ export default function Dashboard() {
     try {
       const result = await startIntegrationAuth(integration);
       if (result.type === "cookie") {
-        if (result.status === "connected") {
-          // Already logged into the shared browser session — cookies were
-          // captured + the connection marked CONNECTED server-side. No live
-          // view needed; just refetch so the card flips to connected.
-          await refetchConnections();
-          return;
-        }
-        // login_required: open the live view. The WS auth frame's sessionId is
+        // Cookie connect always returns login_required: open the live view so
+        // the user logs in and clicks Capture. The WS auth frame's sessionId is
         // the portal user's id (the server keys the warm session by userId and
         // requires sessionId === userId).
         setCookieAuth({
