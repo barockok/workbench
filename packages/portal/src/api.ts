@@ -84,9 +84,10 @@ export async function disconnectIntegration(integration: string): Promise<{ succ
 }
 
 export type StartAuthResult =
+  | { type: "cookie"; status: "connected" }
   | {
       type: "cookie";
-      sessionId: string;
+      status: "login_required";
       cdpProxyUrl: string;
       cdpToken: string;
       loginUrl: string;
