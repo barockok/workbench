@@ -157,6 +157,44 @@ export async function startCookieSession(
   }
 }
 
+type RawCookie = {
+  name: string;
+  value: string;
+  domain: string;
+  path: string;
+  expires?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: string;
+};
+
+// Pure: scope raw CDP cookies to the allowed domains (host-or-subdomain match,
+// browser-like), drop cookies already expired at `now`, and normalize into the
+// stored CookieData cookie shape. No process, no session — unit-testable.
+export function filterCookies(
+  raw: RawCookie[],
+  domains: string[],
+  now: number = Math.floor(Date.now() / 1000)
+): CookieData["cookies"] {
+  const allowed = new Set(domains.map((d) => d.replace(/^\./, "").toLowerCase()));
+  return raw
+    .filter((c) => {
+      if (c.expires && c.expires > 0 && c.expires < now) return false;
+      const bare = c.domain.replace(/^\./, "").toLowerCase();
+      return [...allowed].some((d) => bare === d || bare.endsWith("." + d));
+    })
+    .map((c) => ({
+      name: c.name,
+      value: c.value,
+      domain: c.domain,
+      path: c.path,
+      expires: c.expires && c.expires > 0 ? Math.floor(c.expires) : undefined,
+      httpOnly: c.httpOnly,
+      secure: c.secure,
+      sameSite: c.sameSite as "Strict" | "Lax" | "None" | undefined,
+    }));
+}
+
 export async function captureCookies(sessionId: string): Promise<CookieData> {
   const session = sessions.get(sessionId);
   if (!session) throw new Error("Session not found");
@@ -176,30 +214,10 @@ export async function captureCookies(sessionId: string): Promise<CookieData> {
       sameSite?: string;
     }>;
   };
-  const allowedDomains = new Set(session.cookieDomains.map((d) => d.replace(/^\./, "").toLowerCase()));
-  const now = Math.floor(Date.now() / 1000);
-
-  const filtered = result.cookies.filter((c) => {
-    // Drop cookies already expired at capture time — these are dead-on-arrival
-    // junk (e.g. a short-lived SSO session-hash cookie that lapses seconds
-    // after login) and would otherwise count against the connection's liveness.
-    if (c.expires && c.expires > 0 && c.expires < now) return false;
-    const bare = c.domain.replace(/^\./, "").toLowerCase();
-    return [...allowedDomains].some((d) => bare === d || bare.endsWith("." + d));
-  });
-
+  const cookies = filterCookies(result.cookies, session.cookieDomains);
   return {
     domain: session.targetDomain,
-    cookies: filtered.map((c) => ({
-      name: c.name,
-      value: c.value,
-      domain: c.domain,
-      path: c.path,
-      expires: c.expires && c.expires > 0 ? Math.floor(c.expires) : undefined,
-      httpOnly: c.httpOnly,
-      secure: c.secure,
-      sameSite: c.sameSite as "Strict" | "Lax" | "None" | undefined,
-    })),
+    cookies,
     capturedAt: Math.floor(Date.now() / 1000),
   };
 }

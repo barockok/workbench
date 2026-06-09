@@ -76,6 +76,7 @@ import {
   getSessionCdpEndpoint,
   createProxyAuthHandler,
   resetBrowserProfile,
+  filterCookies,
 } from "../src/auth/cookie";
 import { db } from "../src/db";
 
@@ -535,6 +536,37 @@ describe("cookie auth", () => {
       await resetBrowserProfile("reset-me");
       const wiped = rmSpy.mock.calls.some((c) => String(c[0]).includes("/reset-me"));
       expect(wiped).toBe(true);
+    });
+  });
+
+  describe("filterCookies", () => {
+    const now = Math.floor(Date.now() / 1000);
+    const raw = [
+      { name: "live", value: "1", domain: ".example.com", path: "/", expires: now + 86400 },
+      { name: "dead", value: "2", domain: "example.com", path: "/", expires: now - 10 },
+      { name: "session", value: "3", domain: "app.example.com", path: "/" },
+      { name: "sibling", value: "4", domain: "other.com", path: "/", expires: now + 86400 },
+    ];
+
+    it("keeps cookies on the target domain and its subdomains", () => {
+      const out = filterCookies(raw, ["example.com"], now);
+      const names = out.map((c) => c.name).sort();
+      expect(names).toEqual(["live", "session"]);
+    });
+
+    it("drops cookies already expired at capture time", () => {
+      const out = filterCookies(raw, ["example.com"], now);
+      expect(out.find((c) => c.name === "dead")).toBeUndefined();
+    });
+
+    it("excludes sibling/unrelated hosts", () => {
+      const out = filterCookies(raw, ["example.com"], now);
+      expect(out.find((c) => c.name === "sibling")).toBeUndefined();
+    });
+
+    it("normalizes expires: 0/absent becomes undefined", () => {
+      const out = filterCookies(raw, ["example.com"], now);
+      expect(out.find((c) => c.name === "session")?.expires).toBeUndefined();
     });
   });
 });
