@@ -99,13 +99,22 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
     if (!manifest) return reply.code(404).send("Not found");
     if (manifest.access !== "password") return reply.redirect(`/j/${name}/`, 302);
 
-    const params = new URLSearchParams(typeof req.body === "string" ? req.body : "");
-    const pw = params.get("password") || "";
+    // Body shape depends on which urlencoded parser won registration: the jot
+    // parser yields the raw string, but if the OAuth route group registered
+    // first (boot order) it's already parsed into an object. Handle both, or
+    // password jots never unlock under the real server.
+    let pw = "";
+    if (typeof req.body === "string") {
+      pw = new URLSearchParams(req.body).get("password") || "";
+    } else if (req.body && typeof req.body === "object") {
+      const v = (req.body as Record<string, unknown>).password;
+      pw = typeof v === "string" ? v : "";
+    }
     if (!manifest.hash || !verifyPassword(pw, manifest.hash)) {
       setJotSecurityHeaders(reply);
       return reply.code(401).type("text/html; charset=utf-8").send(unlockPage(name, true));
     }
-    const token = makeToken(secret(), name);
+    const token = makeToken(secret(), name, manifest.hash);
     const attrs = [
       `${cookieName(name)}=${token}`,
       `Path=/j/${name}/`,
@@ -127,7 +136,7 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
 
     if (manifest.access === "password") {
       const cookies = parseCookies(req.headers["cookie"]);
-      const ok = verifyToken(secret(), name, cookies[cookieName(name)]);
+      const ok = verifyToken(secret(), name, manifest.hash ?? "", cookies[cookieName(name)]);
       if (!ok) {
         if (wantsHtml(req)) {
           setJotSecurityHeaders(reply);
