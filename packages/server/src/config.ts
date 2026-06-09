@@ -27,6 +27,8 @@ const configSchema = z.object({
   OAUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
   BROWSER_PROFILES_DIR: z.string().optional(),
   BROWSER_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  JOTS_DIR: z.string().optional(),
+  JOTS_MAX_BYTES: z.coerce.number().int().positive().default(5_242_880),
 });
 
 export const config = configSchema.parse(process.env);
