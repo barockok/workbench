@@ -1,12 +1,18 @@
-# a-workbench v0.8.2
+# a-workbench v0.9.0
 
 _2026-06-09_
 
-Headline: **Cookie-capture failures now say why** — when the capture Chromium can't start, the error names the real cause instead of an opaque DevTools timeout.
+Headline: **`deploy_jot` is now a tar.gz upload** — deploy a jot by uploading a gzip tarball to a returned URL instead of stuffing the whole file tree through the MCP call.
 
-## Fixes
-- **Surface the real reason a capture Chromium fails to launch.** Cookie-auth capture spawns a headless Chromium and polls its DevTools port; if Chromium died on startup the request previously failed with a generic `Failed to reach http://127.0.0.1:<port>/json/version: fetch failed` after a 4s timeout, with the cause discarded (`stdio: "ignore"`). The spawner now captures Chromium's stderr (last 4 KB), detects an early process `exit` (code/signal) and `spawn` errors, and fails fast with a concrete message — e.g. `chromium exited (signal SIGKILL) before DevTools came up. stderr: …` (OOM), namespace/seccomp errors, missing libs, or an unwritable profile dir. A failed launch also SIGKILLs the process so a half-alive Chromium can't leak.
+## ⚠️ Breaking change
+- **`deploy_jot` no longer accepts `files[]`.** It now takes `{ name, access, password? }`, validates up front, and returns `{ uploadUrl, token, expiresAt, maxBytes }`. Package your site directory and upload it as a gzip tarball: `tar czf - -C <dir> . | curl --data-binary @- -H 'Content-Type: application/gzip' <uploadUrl>`. Agents/clients still using the inline-`files[]` shape must switch to the two-step flow. The MCP wire schema is updated accordingly.
+
+## Features
+- **Two-phase jot deploy via tar.gz upload.** `deploy_jot` mints a single-use upload token (~5 min TTL, 256-bit, owner-bound server-side) and returns its URL. `POST /j/upload/:token` streams the archive through `gunzip → tar-stream` into a staging dir and publishes it atomically. This keeps large/binary/multi-file artifacts out of the MCP JSON-RPC channel.
+- **Hardened extraction.** Each entry is validated: path-traversal/absolute/NUL/manifest names rejected (`safeRelPath`), only regular files and directories allowed (symlinks/hardlinks/devices rejected — no tar-slip escape), decompressed size capped mid-stream (≤5 MiB, zip-bomb-safe), and a ≤1000-file cap. A failed upload leaves any existing jot untouched.
 
 ## Notes
-- Diagnostics only — no behavior change on the success path. This does not itself fix an environment that can't run Chromium (e.g. a too-tight pod memory limit, restrictive seccomp/`readOnlyRootFilesystem`, or an unwritable `BROWSER_PROFILES_DIR`); it makes that cause visible in the logs so it can be fixed in the deployment.
-- Tests: 383 passing (380 server + 3 shared).
+- New config: `JOTS_MAX_FILES` (default 1000), `JOTS_UPLOAD_TTL_SECONDS` (default 300). `JOTS_MAX_BYTES` unchanged (5 MiB decompressed). New dependency: `tar-stream`.
+- Ownership/access/password are bound at `deploy_jot` time and cannot be overridden by the upload body. Serving is unchanged (sandboxed opaque-origin CSP; password-cookie binding from v0.8.1).
+- Security review: clean (no findings). Tests: 409 passing (406 server + 3 shared).
+- Docs updated: `architecture.md` (meta-tools row), `how-to-use.md` (Deploying a jot).
