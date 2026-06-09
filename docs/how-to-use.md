@@ -192,6 +192,22 @@ Claude: list_integrations()  → real integration list with connection status
 | Authorized but tools still 401 | API key sent in `Authorization: Bearer` | move it to the `x-workbench-api-key` header |
 | Connected to the wrong workbench | two similar servers (e.g. a hosted aggregator vs your self-hosted UAT) both named similarly | check the exact `url` in `claude mcp list`; each server is independent and authorized separately |
 
+## Deploying a jot
+
+`deploy_jot` is two steps. Call it with `{ name, access, password? }` — it validates the
+name and returns `{ uploadUrl, token, expiresAt, maxBytes }`. Then package your site
+directory and upload it as a gzip tarball:
+
+```bash
+tar czf - -C ./my-site . | curl --data-binary @- -H 'Content-Type: application/gzip' "<uploadUrl>"
+```
+
+The server extracts the archive and publishes it at `/j/<name>/`, replacing any prior
+deploy. Limits: ≤5 MiB decompressed, ≤1000 files; symlinks and path-traversal entries
+are rejected. The upload token is single-use and expires after ~5 minutes — re-call
+`deploy_jot` for a fresh one if it lapses. Jot pages are sandboxed (opaque origin), so
+they must be self-contained (a jot can't fetch its own data files).
+
 ## Connecting from MCP
 
 Use `connect` (and `wait_for_connection`) to drive the auth flow entirely from within Claude — no manual URL copy-paste needed.
