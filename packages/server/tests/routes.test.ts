@@ -56,6 +56,7 @@ vi.mock("../src/auth/users", () => ({
 
 vi.mock("../src/auth/tokens", () => ({
   getToken: vi.fn(() => null),
+  deleteToken: vi.fn(),
 }));
 
 vi.mock("../src/auth/cookie", () => ({
@@ -67,6 +68,7 @@ vi.mock("../src/auth/cookie", () => ({
   storeCookies: vi.fn(),
   getCookies: vi.fn(() => null),
   hasValidCookies: vi.fn(() => false),
+  deleteCookies: vi.fn(),
   getSessionOwner: vi.fn(() => null),
   resetBrowserProfile: vi.fn(() => Promise.resolve()),
 }));
@@ -960,6 +962,70 @@ describe("API routes", () => {
     it("returns 401 without auth", async () => {
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/connections" });
+      expect(res.statusCode).toBe(401);
+    });
+  });
+
+  describe("DELETE /api/connections/:integration", () => {
+    it("deletes the OAuth token for an oauth2 integration", async () => {
+      const { deleteToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "slack",
+        version: "1.0.0",
+        auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
+      } as any);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "DELETE",
+        url: "/api/connections/slack",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).success).toBe(true);
+      expect(vi.mocked(deleteToken)).toHaveBeenCalledWith("user-1", "slack");
+    });
+
+    it("deletes cookies for a cookie integration", async () => {
+      const { deleteCookies } = await import("../src/auth/cookie");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "legacy",
+        version: "1.0.0",
+        auth: { type: "cookie" as const, loginUrl: "", targetDomain: "" },
+      } as any);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "DELETE",
+        url: "/api/connections/legacy",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(vi.mocked(deleteCookies)).toHaveBeenCalledWith("user-1", "legacy");
+    });
+
+    it("returns 400 for the built-in browser", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "DELETE",
+        url: "/api/connections/browser",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("returns 404 for an unknown integration", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "DELETE",
+        url: "/api/connections/nope",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("returns 401 without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "DELETE", url: "/api/connections/slack" });
       expect(res.statusCode).toBe(401);
     });
   });

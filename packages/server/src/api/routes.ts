@@ -10,7 +10,7 @@ import { verifyApiKey, getUserById, setApiKey, clearApiKey, hasApiKey, getApiKey
 import { buildAuthUrl, handleCallback } from "../auth/google";
 import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
-import { getToken } from "../auth/tokens";
+import { getToken, deleteToken } from "../auth/tokens";
 import {
   startCookieSession,
   captureCookies,
@@ -18,6 +18,7 @@ import {
   storeCookies,
   getCookies,
   hasValidCookies,
+  deleteCookies,
   getSessionOwner,
   resetBrowserProfile,
   CookieData,
@@ -590,4 +591,30 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       ],
     };
   });
+
+  // Disconnect: drop stored creds (OAuth tokens or cookies) for one integration.
+  app.delete<{ Params: { integration: string } }>(
+    "/api/connections/:integration",
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+      const { integration } = request.params;
+      if (integration === BROWSER_INTEGRATION_NAME) {
+        return reply.status(400).send({ error: "Built-in browser cannot be disconnected" });
+      }
+      const integ = registry.getIntegration(integration);
+      if (!integ) {
+        return reply.status(404).send({ error: "Integration not found" });
+      }
+      // Both delete the same connections row; branch by auth type for clarity.
+      if (integ.auth.type === "cookie") {
+        deleteCookies(user.userId, integration);
+      } else {
+        deleteToken(user.userId, integration);
+      }
+      return { success: true };
+    }
+  );
 }
