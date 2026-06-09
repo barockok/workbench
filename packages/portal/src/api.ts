@@ -71,6 +71,18 @@ export async function fetchConnections() {
   return res.json();
 }
 
+export async function disconnectIntegration(integration: string): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_URL}/api/connections/${integration}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.error || "Failed to disconnect");
+  }
+  return res.json();
+}
+
 export type StartAuthResult =
   | {
       type: "cookie";
