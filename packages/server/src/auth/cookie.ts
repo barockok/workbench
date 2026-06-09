@@ -1,15 +1,8 @@
-import { spawn, ChildProcess } from "node:child_process";
 import { rm } from "node:fs/promises";
-import { config } from "../config";
 import WebSocket from "ws";
 import { db } from "../db";
 import { encrypt, decrypt } from "./encryption";
-import {
-  activeProfiles,
-  userProfileDir,
-  cdpCall,
-  spawnProfileChromium,
-} from "./profile-chromium";
+import { activeProfiles, userProfileDir } from "./profile-chromium";
 
 export interface CookieData {
   domain: string;
@@ -25,27 +18,6 @@ export interface CookieData {
   }>;
   capturedAt: number;
 }
-
-interface Session {
-  proc: ChildProcess;
-  userDataDir: string;
-  remotePort: number;
-  // Raw Chromium DevTools Protocol page WS URL — what the portal proxies onto.
-  cdpPageWsUrl: string;
-  // Browser-level CDP WS URL, used for cookie capture.
-  cdpBrowserWsUrl: string;
-  // Short-lived random token gating the WS proxy for this session.
-  cdpToken: string;
-  loginUrl: string;
-  targetDomain: string;
-  cookieDomains: string[];
-  userId: string;
-  integration: string;
-  // Persistent CDP socket answering authenticated-proxy challenges, if any.
-  authWs?: WebSocket;
-}
-
-const sessions = new Map<string, Session>();
 
 // Chromium can't take proxy credentials on the command line (and can't do
 // SOCKS5 user/pass auth at all). For an authenticated HTTP proxy we answer the
@@ -97,66 +69,6 @@ export function startProxyAuth(browserWsUrl: string, username: string, password:
   return ws;
 }
 
-export async function startCookieSession(
-  userId: string,
-  integration: string,
-  loginUrl: string,
-  targetDomain: string,
-  cookieDomains: string[] = []
-): Promise<{ sessionId: string; cdpUrl: string; cdpToken: string }> {
-  if (activeProfiles.has(userId)) {
-    throw new Error("BROWSER_SESSION_BUSY: a browser session is already active for this user");
-  }
-  activeProfiles.add(userId);
-
-  try {
-    const { proc, remotePort, cdpBrowserWsUrl, cdpPageWsUrl } =
-      await spawnProfileChromium(userId, { startUrl: loginUrl });
-
-    const sessionId = crypto.randomUUID();
-    const cdpToken = crypto.randomUUID();
-
-    // If the capture proxy needs auth, open the persistent CDP socket that
-    // answers proxy-auth challenges (chromium can't take proxy creds otherwise).
-    const proxyUser = process.env.CAPTURE_PROXY_USERNAME;
-    const proxyPass = process.env.CAPTURE_PROXY_PASSWORD;
-    const authWs =
-      process.env.CAPTURE_PROXY && proxyUser && proxyPass
-        ? startProxyAuth(cdpBrowserWsUrl, proxyUser, proxyPass)
-        : undefined;
-
-    const session: Session = {
-      proc,
-      userDataDir: userProfileDir(userId),
-      remotePort,
-      cdpPageWsUrl,
-      cdpBrowserWsUrl,
-      cdpToken,
-      loginUrl,
-      targetDomain,
-      cookieDomains: [targetDomain, ...cookieDomains],
-      userId,
-      integration,
-      authWs,
-    };
-    sessions.set(sessionId, session);
-
-    // Release the per-user lock if the browser crashes or is killed externally.
-    // Set.delete and Map.delete are idempotent so this is safe even if
-    // closeCookieSession already ran.
-    proc.on("exit", () => {
-      activeProfiles.delete(userId);
-      sessions.delete(sessionId);
-      try { session.authWs?.close(); } catch { /* noop */ }
-    });
-
-    return { sessionId, cdpUrl: cdpPageWsUrl, cdpToken };
-  } catch (e) {
-    activeProfiles.delete(userId);
-    throw e;
-  }
-}
-
 export type RawCookie = {
   name: string;
   value: string;
@@ -194,62 +106,6 @@ export function filterCookies(
       secure: c.secure,
       sameSite: c.sameSite as "Strict" | "Lax" | "None" | undefined,
     }));
-}
-
-export async function captureCookies(sessionId: string): Promise<CookieData> {
-  const session = sessions.get(sessionId);
-  if (!session) throw new Error("Session not found");
-
-  // Storage.getCookies on the browser endpoint returns every cookie chromium
-  // is aware of (no per-page filtering), which is exactly what we want for a
-  // login flow that may pivot across subdomains.
-  const result = (await cdpCall(session.cdpBrowserWsUrl, "Storage.getCookies", {})) as {
-    cookies: Array<{
-      name: string;
-      value: string;
-      domain: string;
-      path: string;
-      expires?: number;
-      httpOnly?: boolean;
-      secure?: boolean;
-      sameSite?: string;
-    }>;
-  };
-  const cookies = filterCookies(result.cookies, session.cookieDomains);
-  return {
-    domain: session.targetDomain,
-    cookies,
-    capturedAt: Math.floor(Date.now() / 1000),
-  };
-}
-
-export function getSessionOwner(
-  sessionId: string
-): { userId: string; integration: string } | null {
-  const session = sessions.get(sessionId);
-  if (!session) return null;
-  return { userId: session.userId, integration: session.integration };
-}
-
-export function getSessionCdpEndpoint(
-  sessionId: string,
-  userId: string,
-  cdpToken: string
-): string | null {
-  const session = sessions.get(sessionId);
-  if (!session) return null;
-  if (session.userId !== userId) return null;
-  if (session.cdpToken !== cdpToken) return null;
-  return session.cdpPageWsUrl;
-}
-
-export async function closeCookieSession(sessionId: string): Promise<void> {
-  const session = sessions.get(sessionId);
-  if (!session) return;
-  activeProfiles.delete(session.userId);
-  try { session.authWs?.close(); } catch { /* noop */ }
-  try { session.proc.kill("SIGKILL"); } catch { /* noop */ }
-  sessions.delete(sessionId);
 }
 
 // Wipe a user's persistent browser profile (logout-everywhere / repair).

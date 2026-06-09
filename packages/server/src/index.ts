@@ -84,7 +84,7 @@ async function main() {
   });
 
   // Proxy raw Chrome DevTools Protocol WebSocket from the browser to the
-  // headed Chromium spawned by startCookieSession.
+  // per-user Chromium owned by browser-session.ts.
   //
   // Auth is intentionally NOT in the URL. The client must send a single
   // JSON auth frame as its first message:
