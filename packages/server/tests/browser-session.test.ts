@@ -76,10 +76,13 @@ describe("reapIdleSessions", () => {
 
 describe("ensureSession proxy-auth wiring", () => {
   beforeEach(() => { proxyAuthMock.mockClear(); });
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.CAPTURE_PROXY;
     delete process.env.CAPTURE_PROXY_USERNAME;
     delete process.env.CAPTURE_PROXY_PASSWORD;
+    await closeBrowserSession("user-proxy");
+    await closeBrowserSession("user-noproxy");
+    await closeBrowserSession("user-proxy-close");
   });
 
   it("opens a proxy-auth socket when CAPTURE_PROXY + creds are set", async () => {
@@ -93,6 +96,16 @@ describe("ensureSession proxy-auth wiring", () => {
   it("does not open a proxy-auth socket without proxy env", async () => {
     await ensureSession("user-noproxy");
     expect(proxyAuthMock).not.toHaveBeenCalled();
+  });
+
+  it("closes the proxy-auth socket when closeBrowserSession is called", async () => {
+    process.env.CAPTURE_PROXY = "http://proxy:8080";
+    process.env.CAPTURE_PROXY_USERNAME = "u";
+    process.env.CAPTURE_PROXY_PASSWORD = "p";
+    await ensureSession("user-proxy-close");
+    const mockWs = proxyAuthMock.mock.results[0].value;
+    await closeBrowserSession("user-proxy-close");
+    expect(mockWs.close).toHaveBeenCalled();
   });
 });
 
