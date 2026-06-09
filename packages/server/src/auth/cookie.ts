@@ -157,7 +157,7 @@ export async function startCookieSession(
   }
 }
 
-type RawCookie = {
+export type RawCookie = {
   name: string;
   value: string;
   domain: string;
@@ -170,18 +170,19 @@ type RawCookie = {
 
 // Pure: scope raw CDP cookies to the allowed domains (host-or-subdomain match,
 // browser-like), drop cookies already expired at `now`, and normalize into the
-// stored CookieData cookie shape. No process, no session — unit-testable.
+// stored CookieData cookie shape. No I/O, no session — unit-testable.
 export function filterCookies(
   raw: RawCookie[],
   domains: string[],
   now: number = Math.floor(Date.now() / 1000)
 ): CookieData["cookies"] {
   const allowed = new Set(domains.map((d) => d.replace(/^\./, "").toLowerCase()));
+  const allowedArr = Array.from(allowed);
   return raw
     .filter((c) => {
       if (c.expires && c.expires > 0 && c.expires < now) return false;
       const bare = c.domain.replace(/^\./, "").toLowerCase();
-      return [...allowed].some((d) => bare === d || bare.endsWith("." + d));
+      return allowedArr.some((d) => bare === d || bare.endsWith("." + d));
     })
     .map((c) => ({
       name: c.name,
