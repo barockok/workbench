@@ -4,7 +4,6 @@ import { fetchIntegrations, fetchConnections, startIntegrationAuth, IntegrationS
 import { useAuth } from "../context/AuthContext";
 import CookieAuthPopup from "../components/CookieAuthPopup";
 import ApiKeyPanel from "../components/ApiKeyPanel";
-import BrowserSessionPanel from "../components/BrowserSessionPanel";
 import IntegrationLogo from "../components/IntegrationLogo";
 import IntegrationDetail from "../components/IntegrationDetail";
 
@@ -133,7 +132,6 @@ export default function Dashboard() {
 
       <main className="main">
         <ApiKeyPanel />
-        <BrowserSessionPanel />
 
         <div className="section-head">
           <div>
@@ -238,7 +236,9 @@ export default function Dashboard() {
                 )}
 
                 <div className="card-bottom">
-                  {connected ? (
+                  {i.name === "browser" ? (
+                    <span className="card-meta">Built-in · always on</span>
+                  ) : connected ? (
                     <>
                       <span className="card-meta">Session active</span>
                       <button

@@ -210,6 +210,21 @@ export async function resetBrowserSession(): Promise<{ success: boolean }> {
   return res.json();
 }
 
+// User-initiated browser live view. Optional url navigates the warm session
+// there first. Returns a short-lived /browser?t= link to open in a new tab.
+export async function openBrowserLiveUrl(url?: string): Promise<{ url: string }> {
+  const res = await fetch(`${API_URL}/api/browser-session/live-url`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(url ? { url } : {}),
+  });
+  if (!res.ok) {
+    const msg = (await res.json().catch(() => ({}))).error || "Failed to open live view";
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
 export async function fetchMe() {
   const res = await fetch(`${API_URL}/api/auth/me`, { headers: getHeaders() });
   if (!res.ok) return null;
