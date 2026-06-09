@@ -1,9 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-const { closeCookieSession } = vi.hoisted(() => ({
-  closeCookieSession: vi.fn(async () => undefined),
-}));
-vi.mock("../src/auth/cookie", () => ({ closeCookieSession }));
+import { describe, it, expect, beforeEach } from "vitest";
 
 import {
   createPending,
@@ -16,7 +11,6 @@ import {
 describe("pending-connection store", () => {
   beforeEach(() => {
     _clearAll();
-    closeCookieSession.mockClear();
   });
 
   it("creates a PENDING record and reads it back", () => {
@@ -25,11 +19,9 @@ describe("pending-connection store", () => {
       integration: "jira",
       type: "cookie",
       ttlSeconds: 600,
-      cookieSessionId: "sess-1",
     });
     expect(rec.status).toBe("PENDING");
     expect(rec.connectionId).toBeDefined();
-    expect(getPending(rec.connectionId)?.cookieSessionId).toBe("sess-1");
   });
 
   it("marks a record CONNECTED by (userId, integration)", () => {
@@ -38,23 +30,26 @@ describe("pending-connection store", () => {
     expect(getPending(rec.connectionId)?.status).toBe("CONNECTED");
   });
 
-  it("reaps an expired cookie record: closes session + marks EXPIRED", async () => {
+  it("expires a pending cookie connection without tearing down any browser session", async () => {
+    const rec = createPending({ userId: "u1", integration: "jira", type: "cookie", ttlSeconds: 0 });
+    await reapExpired();
+    expect(getPending(rec.connectionId)?.status).toBe("EXPIRED");
+  });
+
+  it("reaps an expired record and marks it EXPIRED", async () => {
     const rec = createPending({
       userId: "u1",
       integration: "jira",
       type: "cookie",
       ttlSeconds: -1, // already expired
-      cookieSessionId: "sess-1",
     });
     await reapExpired();
-    expect(closeCookieSession).toHaveBeenCalledWith("sess-1");
     expect(getPending(rec.connectionId)?.status).toBe("EXPIRED");
   });
 
   it("does not reap a still-valid record", async () => {
-    const rec = createPending({ userId: "u1", integration: "jira", type: "cookie", ttlSeconds: 600, cookieSessionId: "s" });
+    const rec = createPending({ userId: "u1", integration: "jira", type: "cookie", ttlSeconds: 600 });
     await reapExpired();
-    expect(closeCookieSession).not.toHaveBeenCalled();
     expect(getPending(rec.connectionId)?.status).toBe("PENDING");
   });
 
@@ -77,7 +72,6 @@ describe("pending-connection store", () => {
       integration: "jira",
       type: "cookie",
       ttlSeconds: -1, // expiresAt ~now, within 1h grace
-      cookieSessionId: "sess-1",
     });
     await reapExpired(); // PENDING → EXPIRED, but not pruned (within grace)
     expect(getPending(rec.connectionId)?.status).toBe("EXPIRED");

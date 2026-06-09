@@ -20,7 +20,7 @@ export default function CookieAuthPopup({ integration, cdpProxyUrl, cdpToken, se
     setCapturing(true);
     setError(null);
     try {
-      await captureCookies(integration, sessionId);
+      await captureCookies(integration);
       onSuccess();
       onClose();
     } catch (e) {
@@ -31,7 +31,7 @@ export default function CookieAuthPopup({ integration, cdpProxyUrl, cdpToken, se
   }
 
   async function handleCancel() {
-    await cancelCookieAuth(integration, sessionId);
+    await cancelCookieAuth(integration);
     onClose();
   }
 
