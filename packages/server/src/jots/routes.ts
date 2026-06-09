@@ -1,12 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { config } from "../config";
 import { jotsRoot } from "./dir";
 import { isValidJotName, resolveInside, MANIFEST } from "./paths";
-import { readManifest } from "./store";
+import { readManifest, commitJotDir } from "./store";
 import { contentType } from "./mime";
 import { verifyPassword, makeToken, verifyToken, cookieName } from "./auth";
+import { consume } from "./pending";
+import { extractTarGzToDir, JotExtractError } from "./extract";
 
 function secret(): string {
   return config.SESSION_SECRET;
@@ -86,6 +89,15 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
     );
   }
 
+  // Hand the raw request stream to the upload handler (no buffering) for the
+  // gzip content types. This enables streaming extraction and bypasses the
+  // default 1 MB bodyLimit. Guarded so a re-register is a no-op.
+  for (const ct of ["application/gzip", "application/x-gzip"]) {
+    if (!app.hasContentTypeParser(ct)) {
+      app.addContentTypeParser(ct, (_req, payload, done) => done(null, payload));
+    }
+  }
+
   // Bare /j/:name -> canonical trailing slash.
   app.get<{ Params: { name: string } }>("/j/:name", async (req, reply) => {
     if (!isValidJotName(req.params.name)) return reply.code(404).send("Not found");
@@ -124,6 +136,41 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
     ];
     if (secureCookie()) attrs.push("Secure");
     return reply.header("set-cookie", attrs.join("; ")).redirect(`/j/${name}/`, 302);
+  });
+
+  app.post<{ Params: { token: string } }>("/j/upload/:token", async (req, reply) => {
+    const pending = consume(req.params.token);
+    if (!pending) return reply.code(404).send("Not found");
+
+    fs.mkdirSync(jotsRoot(), { recursive: true });
+    const tmpDir = path.join(jotsRoot(), `${pending.name}.up-${crypto.randomBytes(4).toString("hex")}`);
+    fs.mkdirSync(tmpDir, { recursive: true });
+
+    try {
+      await extractTarGzToDir(req.raw, tmpDir);
+    } catch (e) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      if (e instanceof JotExtractError) {
+        const status = e.code === "TOO_LARGE" || e.code === "TOO_MANY_FILES" ? 413 : 400;
+        return reply.code(status).send({ error: e.code });
+      }
+      return reply.code(400).send({ error: "BAD_ARCHIVE" });
+    }
+
+    const result = commitJotDir({
+      name: pending.name,
+      owner: pending.owner,
+      access: pending.access,
+      passwordHash: pending.passwordHash,
+      srcDir: tmpDir,
+    });
+    if ("error" in result) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      // name/access were validated at mint (deploy_jot); only DEPLOY_FAILED is expected here.
+      const status = result.error === "JOT_NAME_TAKEN" ? 409 : 500;
+      return reply.code(status).send(result);
+    }
+    return reply.code(200).send(result);
   });
 
   app.get<{ Params: { name: string; "*": string } }>("/j/:name/*", async (req, reply) => {
