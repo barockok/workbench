@@ -144,7 +144,8 @@ export function listJots(owner: string): JotSummary[] {
   const out: JotSummary[] = [];
   for (const e of entries) {
     if (!e.isDirectory()) continue;
-    if (e.name.includes(".tmp-")) continue;
+    // Skip in-flight staging dirs: `.tmp-` (deployJot wrapper) and `.up-` (upload route).
+    if (e.name.includes(".tmp-") || e.name.includes(".up-")) continue;
     const m = readManifest(e.name);
     if (!m || m.owner !== owner) continue;
     out.push({ name: e.name, access: m.access, url: jotUrl(e.name), updatedAt: m.updatedAt });
