@@ -69,7 +69,7 @@ export function markConnected(userId: string, integration: string): void {
 const PRUNE_GRACE_SECONDS = 3600;
 
 /**
- * Sweep: any PENDING record past expiry → close its cookie session + mark EXPIRED.
+ * Sweep: any PENDING record past expiry → mark EXPIRED.
  * Then prune terminal records (CONNECTED/EXPIRED) whose expiry is older than the
  * grace window, so the store doesn't grow unbounded in a long-running server.
  * The grace (1h) sits well beyond any wait_for_connection timeout (max 900s), so

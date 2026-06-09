@@ -11,8 +11,8 @@ import { startUploadReaper } from "./jots/pending";
 import { loadPlugins } from "./plugins/loader";
 import { verifySession } from "./auth/session";
 import { resolveMcpUser } from "./auth/oauth-server/resolve";
-import { getWarmCdpEndpoint, startBrowserReaper } from "./auth/browser-session";
-import { verifyConnectToken } from "./auth/connect-token";
+import { startBrowserReaper } from "./auth/browser-session";
+import { authorizeCdpFrame } from "./auth/cdp-authz";
 import "./telemetry/tracing";
 
 // Session JWT (Authorization: Bearer) — used by the portal and the CDP WS frame.
@@ -166,43 +166,16 @@ async function main() {
           }
           // Verify the caller is the same portal user who started the
           // cookie session. The browser can't set Authorization on a WS,
-          // but it can include its bearer in the first auth frame.
-          let authedUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
-          if (!authedUserId) {
-            // The public magic-link /connect page has no portal session, so
-            // it presents its connect JWT here instead. Accept it only when
-            // it verifies AND is bound to exactly this session — the
-            // sessionId + cdpToken equality prevents reusing a connect JWT
-            // to attach to a different session. Unlike the browser-session
-            // proxy (which pins integration to the "__browser__" literal),
-            // this cookie proxy scopes the connect JWT to the route's
-            // :integration so a token minted for another integration can't
-            // be replayed against the shared warm-session map.
-            try {
-              const routeIntegration = (request.params as { integration: string }).integration;
-              const payload = await verifyConnectToken(msg.bearer);
-              if (
-                payload.integration === routeIntegration &&
-                payload.sessionId === msg.sessionId &&
-                payload.cdpToken === msg.cdpToken
-              ) {
-                authedUserId = payload.userId;
-              }
-            } catch {
-              // Not a valid connect JWT — treat as not authed.
-            }
-          }
-          if (!authedUserId) {
-            try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
-            return;
-          }
-          // The warm session is keyed by userId; the link's sessionId IS the
-          // userId. Require they match so a token can't target another user.
-          if (!authedUserId || authedUserId !== msg.sessionId) {
-            try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
-            return;
-          }
-          const target = getWarmCdpEndpoint(authedUserId, msg.cdpToken);
+          // but it can include its bearer in the first auth frame. The
+          // public magic-link /connect page has no portal session, so it
+          // presents its connect JWT here instead; authorizeCdpFrame accepts
+          // it only when it verifies AND is bound to exactly this session
+          // (integration + sessionId + cdpToken), scoping the connect JWT to
+          // the route's :integration so a token minted for another
+          // integration can't be replayed against the shared warm-session map.
+          const portalUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
+          const routeIntegration = (request.params as { integration: string }).integration;
+          const target = await authorizeCdpFrame(msg, portalUserId, routeIntegration);
           if (!target) {
             try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
             return;
@@ -280,26 +253,10 @@ async function main() {
           try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
           return;
         }
-        let authedUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
-        if (!authedUserId) {
-          try {
-            const payload = await verifyConnectToken(msg.bearer);
-            if (
-              payload.integration === "__browser__" &&
-              payload.sessionId === msg.sessionId &&
-              payload.cdpToken === msg.cdpToken
-            ) {
-              authedUserId = payload.userId;
-            }
-          } catch { /* not a valid connect JWT */ }
-        }
-        // The warm session is keyed by userId; the link's sessionId IS the
-        // userId. Require they match so a token can't target another user.
-        if (!authedUserId || authedUserId !== msg.sessionId) {
-          try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
-          return;
-        }
-        const target = getWarmCdpEndpoint(authedUserId, msg.cdpToken);
+        const portalUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
+        // This proxy pins the connect JWT to the "__browser__" literal so a
+        // token minted for a cookie proxy can't be replayed here.
+        const target = await authorizeCdpFrame(msg, portalUserId, "__browser__");
         if (!target) {
           try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
           return;
