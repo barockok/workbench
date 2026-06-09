@@ -23,8 +23,15 @@ import {
   CookieData,
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
+import { signConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
 import { resumeAuthorize } from "../auth/oauth-server/resume";
+import { ensureSession, navigate } from "../auth/browser-session";
+import {
+  BROWSER_INTEGRATION_NAME,
+  browserSummary,
+  browserDetail,
+} from "../auth/browser-integration";
 
 function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
@@ -196,16 +203,19 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
 
     return {
-      integrations: registry.listIntegrations().map((i) => ({
-        name: i.name,
-        version: i.version,
-        displayName: i.displayName,
-        description: i.description,
-        categories: i.categories,
-        logo: resolveLogo(i),
-        toolCount: registry.listToolsByIntegration(i.name).length,
-        configured: isConfigured(i),
-      })),
+      integrations: [
+        ...registry.listIntegrations().map((i) => ({
+          name: i.name,
+          version: i.version,
+          displayName: i.displayName,
+          description: i.description,
+          categories: i.categories,
+          logo: resolveLogo(i),
+          toolCount: registry.listToolsByIntegration(i.name).length,
+          configured: isConfigured(i),
+        })),
+        browserSummary(),
+      ],
     };
   });
 
@@ -218,6 +228,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(401).send({ error: "Unauthorized" });
       }
       const integration = request.params.integration;
+      if (integration === BROWSER_INTEGRATION_NAME) {
+        return browserDetail();
+      }
       const integ = registry.getIntegration(integration);
       if (!integ) {
         return reply.status(404).send({ error: "Integration not found" });
@@ -434,6 +447,43 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
+  // Mint a user-initiated live-view link for the per-user browser session.
+  // Mirrors the browser_live_url meta-tool (the agent path) but is driven from
+  // the portal: ensures a warm session, optionally navigates to a URL, and
+  // returns a short-lived /browser?t= link the user opens to take over by hand.
+  app.post("/api/browser-session/live-url", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) return reply.status(401).send({ error: "Unauthorized" });
+    const { url } = (request.body ?? {}) as { url?: string };
+    if (url !== undefined && typeof url !== "string") {
+      return reply.status(400).send({ error: "url must be a string" });
+    }
+    if (url && !isUrl(url)) {
+      return reply.status(400).send({ error: "url must be http(s)" });
+    }
+    try {
+      const s = await ensureSession(user.userId);
+      if (url) await navigate(s, url);
+      const token = await signConnectToken(
+        {
+          connectionId: user.userId,
+          userId: user.userId,
+          integration: "__browser__",
+          sessionId: user.userId,
+          cdpToken: s.cdpToken,
+        },
+        config.CONNECT_TTL_SECONDS
+      );
+      return { url: `${config.PORTAL_URL}/browser?t=${token}` };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("BROWSER_SESSION_BUSY")) {
+        return reply.status(409).send({ error: "A cookie capture is in progress. Finish or cancel it first." });
+      }
+      return reply.status(400).send({ error: message });
+    }
+  });
+
   // Cookie auth cancel
   app.post("/api/auth/cookie/:integration/cancel", async (request, reply) => {
     const user = await authenticate(request);
@@ -527,13 +577,17 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     const integrations = registry.listIntegrations();
     return {
-      connections: integrations.map((i) => ({
-        name: i.name,
-        connected:
-          i.auth.type === "cookie"
-            ? hasValidCookies(user.userId, i.name)
-            : !!getToken(user.userId, i.name),
-      })),
+      connections: [
+        ...integrations.map((i) => ({
+          name: i.name,
+          connected:
+            i.auth.type === "cookie"
+              ? hasValidCookies(user.userId, i.name)
+              : !!getToken(user.userId, i.name),
+        })),
+        // Built-in browser: always usable.
+        { name: BROWSER_INTEGRATION_NAME, connected: true },
+      ],
     };
   });
 }
