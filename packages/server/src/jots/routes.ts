@@ -92,7 +92,7 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
   // Hand the raw request stream to the upload handler (no buffering) for the
   // gzip content types. This enables streaming extraction and bypasses the
   // default 1 MB bodyLimit. Guarded so a re-register is a no-op.
-  for (const ct of ["application/gzip", "application/x-gzip", "application/octet-stream"]) {
+  for (const ct of ["application/gzip", "application/x-gzip"]) {
     if (!app.hasContentTypeParser(ct)) {
       app.addContentTypeParser(ct, (_req, payload, done) => done(null, payload));
     }
@@ -166,6 +166,7 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
     });
     if ("error" in result) {
       fs.rmSync(tmpDir, { recursive: true, force: true });
+      // name/access were validated at mint (deploy_jot); only DEPLOY_FAILED is expected here.
       const status = result.error === "JOT_NAME_TAKEN" ? 409 : 500;
       return reply.code(status).send(result);
     }

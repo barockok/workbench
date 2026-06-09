@@ -227,4 +227,21 @@ describe("jots/routes upload", () => {
     const res = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
     expect(res.statusCode).toBe(400);
   });
+
+  it("413s an oversized archive", async () => {
+    const { token } = mint({ owner: "u1", name: "toobig", access: "public" });
+    const body = await tarGz([{ name: "big.bin", content: "x".repeat(1_000_001) }]);
+    const res = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(res.statusCode).toBe(413);
+  });
+
+  it("publishes a password jot via upload (locked until unlocked)", async () => {
+    const { token } = mint({ owner: "u1", name: "locked", access: "password", passwordHash: hashPassword("pw") });
+    const body = await tarGz([{ name: "index.html", content: "<h1>SECRET</h1>" }]);
+    const up = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(up.statusCode).toBe(200);
+    // No cookie → locked (non-HTML request gets 401).
+    const locked = await app.inject({ method: "GET", url: "/j/locked/", headers: { accept: "application/json" } });
+    expect(locked.statusCode).toBe(401);
+  });
 });
