@@ -157,6 +157,13 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: "BAD_ARCHIVE" });
     }
 
+    // A jot is a site: the root must have an index.html, or `/j/<name>/` 404s.
+    // Reject loudly here instead of publishing a jot that serves nothing.
+    if (!fs.existsSync(path.join(tmpDir, "index.html"))) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return reply.code(400).send({ error: "NO_INDEX" });
+    }
+
     const result = commitJotDir({
       name: pending.name,
       owner: pending.owner,
