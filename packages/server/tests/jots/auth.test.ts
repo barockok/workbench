@@ -14,12 +14,15 @@ describe("jots/auth", () => {
     expect(verifyPassword("x", "")).toBe(false);
   });
 
-  it("makes and verifies a per-jot token", () => {
-    const t = makeToken("secret", "report");
-    expect(verifyToken("secret", "report", t)).toBe(true);
-    expect(verifyToken("secret", "other", t)).toBe(false);
-    expect(verifyToken("other", "report", t)).toBe(false);
-    expect(verifyToken("secret", "report", "tampered")).toBe(false);
+  it("makes and verifies a per-jot, per-password token", () => {
+    const h = "scrypt$aa$bb";
+    const t = makeToken("secret", "report", h);
+    expect(verifyToken("secret", "report", h, t)).toBe(true);
+    expect(verifyToken("secret", "other", h, t)).toBe(false);
+    expect(verifyToken("other", "report", h, t)).toBe(false);
+    expect(verifyToken("secret", "report", h, "tampered")).toBe(false);
+    // Rotating the password (new hash) invalidates a token minted for the old one.
+    expect(verifyToken("secret", "report", "scrypt$cc$dd", t)).toBe(false);
   });
 
   it("namespaces the cookie name", () => {
