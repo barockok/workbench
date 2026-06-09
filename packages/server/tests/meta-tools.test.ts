@@ -34,6 +34,10 @@ vi.mock("../src/auth/tokens", () => ({
   getToken: vi.fn(),
 }));
 
+vi.mock("../src/auth/users", () => ({
+  getUserById: vi.fn(),
+}));
+
 vi.mock("../src/auth/cookie", () => ({
   hasValidCookies: vi.fn(() => false),
   startCookieSession: vi.fn(async () => ({ sessionId: "sess-1", cdpUrl: "ws://x", cdpToken: "cdp-1" })),
@@ -220,6 +224,24 @@ describe("meta-tools", () => {
       const result = await tool.handler({ userId: "user-1" }, {});
       expect(result.integrations).toHaveLength(2);
       expect(result.integrations[0].connected).toBe(true);
+    });
+  });
+
+  describe("whoami", () => {
+    it("returns current user id and email", async () => {
+      const { getUserById } = await import("../src/auth/users");
+      vi.mocked(getUserById).mockReturnValue({ id: "user-1", email: "a@b.com" });
+      const tool = findTool("whoami");
+      const result = await tool.handler({ userId: "user-1" }, {});
+      expect(result).toEqual({ id: "user-1", email: "a@b.com" });
+    });
+
+    it("returns error when user not found", async () => {
+      const { getUserById } = await import("../src/auth/users");
+      vi.mocked(getUserById).mockReturnValue(null);
+      const tool = findTool("whoami");
+      const result = await tool.handler({ userId: "ghost" }, {});
+      expect(result).toEqual({ error: "User not found" });
     });
   });
 
