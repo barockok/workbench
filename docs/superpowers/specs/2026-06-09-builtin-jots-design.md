@@ -136,6 +136,18 @@ Cookie `Secure` flag derives from `NODE_ENV === "production"`. Secret reuses
 - **Disk abuse:** per-jot total size cap; empty deploys rejected.
 - **No account leak via viewing:** the public serve path never reads workbench user
   state.
+- **Same-origin untrusted content (added during implementation):** jots serve
+  user-uploaded HTML/JS on the **same origin** as the authenticated portal / `/api` /
+  `/mcp`, so without isolation a malicious jot's script could reach app cookies and
+  call app APIs as the viewer. Mitigation: every jot/unlock response carries
+  `Content-Security-Policy: sandbox allow-scripts allow-forms` (forces a unique opaque
+  origin — jot JS can't read app cookies/storage or make credentialed same-origin
+  requests), plus `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`,
+  `Cross-Origin-Resource-Policy: same-origin`. **Trade-off:** an opaque-origin jot
+  cannot `fetch()` its own data files, so jots must be self-contained (inline JS/CSS;
+  `<script>`/`<link>`/`<img>` to its own files still load). A future upgrade for
+  data-fetching jots is to serve them from a separate cookie-less origin
+  (`*.jots.<host>`) with app cookies scoped to the app host — left out of scope here.
 
 ## Testing
 
