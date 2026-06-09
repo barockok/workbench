@@ -5,6 +5,8 @@ import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
 import { getToken } from "../auth/tokens";
 import { getUserById } from "../auth/users";
+import { deployJot, listJots, deleteJot } from "../jots/store";
+import { hashPassword } from "../jots/auth";
 import { hasValidCookies, startCookieSession, closeCookieSession } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { config } from "../config";
@@ -263,6 +265,56 @@ export const metaTools = [
     },
   },
   {
+    name: "deploy_jot",
+    description:
+      "Deploy a static web artifact as a shareable site at /j/<name>/. `access` is 'public' or 'password' (password jots require `password`). `files` is the full file tree to publish; a re-deploy replaces it wholesale. Names are global and creator-locked: deploying a name owned by another user returns JOT_NAME_TAKEN. Note: jot pages are sandboxed (opaque origin) and must be self-contained — a jot cannot fetch its own data files.",
+    inputSchema: z.object({
+      name: z.string(),
+      access: z.enum(["public", "password"]),
+      password: z.string().optional(),
+      files: z
+        .array(
+          z.object({
+            path: z.string(),
+            content: z.string(),
+            encoding: z.enum(["utf8", "base64"]).optional(),
+          })
+        )
+        .min(1),
+    }),
+    handler: async (
+      ctx: { userId: string },
+      args: {
+        name: string;
+        access: "public" | "password";
+        password?: string;
+        files: { path: string; content: string; encoding?: "utf8" | "base64" }[];
+      }
+    ) => {
+      if (args.access === "password" && !args.password) return { error: "PASSWORD_REQUIRED" };
+      const passwordHash = args.access === "password" ? hashPassword(args.password as string) : undefined;
+      return deployJot({
+        name: args.name,
+        owner: ctx.userId,
+        access: args.access,
+        passwordHash,
+        files: args.files,
+      });
+    },
+  },
+  {
+    name: "list_jots",
+    description: "List the jots you have deployed (name, access, url, updatedAt). Only your own jots are returned.",
+    inputSchema: z.object({}),
+    handler: async (ctx: { userId: string }) => ({ jots: listJots(ctx.userId) }),
+  },
+  {
+    name: "delete_jot",
+    description: "Delete a jot you own by name. Returns FORBIDDEN if another user owns it, NOT_FOUND if it doesn't exist.",
+    inputSchema: z.object({ name: z.string() }),
+    handler: async (ctx: { userId: string }, args: { name: string }) => deleteJot(args.name, ctx.userId),
+  },
+  {
     name: "whoami",
     description: "Return the current authenticated workbench user (id + email). Like /me — identity only, not connected integrations.",
     inputSchema: z.object({}),
@@ -469,6 +521,34 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
       },
     },
     required: ["executions"],
+  },
+  deploy_jot: {
+    type: "object",
+    properties: {
+      name: { type: "string", description: "Jot name; [a-z0-9-], ≤64 chars" },
+      access: { type: "string", enum: ["public", "password"], description: "Gate type" },
+      password: { type: "string", description: "Required when access=password" },
+      files: {
+        type: "array",
+        description: "File tree to publish; a re-deploy replaces it wholesale",
+        items: {
+          type: "object",
+          properties: {
+            path: { type: "string", description: "Relative path, e.g. index.html or assets/app.js" },
+            content: { type: "string", description: "File content (utf8 text, or base64 when encoding=base64)" },
+            encoding: { type: "string", enum: ["utf8", "base64"], description: "Defaults to utf8" },
+          },
+          required: ["path", "content"],
+        },
+      },
+    },
+    required: ["name", "access", "files"],
+  },
+  list_jots: { type: "object", properties: {} },
+  delete_jot: {
+    type: "object",
+    properties: { name: { type: "string", description: "Name of the jot to delete" } },
+    required: ["name"],
   },
   whoami: { type: "object", properties: {} },
   list_integrations: { type: "object", properties: {} },
