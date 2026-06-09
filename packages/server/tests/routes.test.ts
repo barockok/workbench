@@ -521,6 +521,54 @@ describe("API routes", () => {
       expect(navigate).toHaveBeenCalled();
     });
 
+    it("all-expired cookies → login_required (isCookieExpired branch)", async () => {
+      const { captureLiveCookies, navigate } = await import("../src/auth/browser-session");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg);
+      vi.mocked(captureLiveCookies).mockResolvedValueOnce({
+        domain: "legacy.com",
+        cookies: [
+          { name: "s", value: "v", expires: Math.floor(Date.now() / 1000) - 10 },
+          { name: "t", value: "w", expires: Math.floor(Date.now() / 1000) - 5 },
+        ],
+        capturedAt: Math.floor(Date.now() / 1000),
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/legacy",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body).toMatchObject({ type: "cookie", status: "login_required" });
+      expect(navigate).toHaveBeenCalled();
+    });
+
+    it("at-least-one-live cookie → connected (isCookieExpired branch)", async () => {
+      const { captureLiveCookies } = await import("../src/auth/browser-session");
+      const { storeCookies } = await import("../src/auth/cookie");
+      const { markConnected } = await import("../src/auth/connections");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg);
+      vi.mocked(captureLiveCookies).mockResolvedValueOnce({
+        domain: "legacy.com",
+        cookies: [
+          { name: "s", value: "v", expires: Math.floor(Date.now() / 1000) - 10 },
+          { name: "t", value: "w", expires: Math.floor(Date.now() / 1000) + 86400 },
+        ],
+        capturedAt: Math.floor(Date.now() / 1000),
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/legacy",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body)).toEqual({ type: "cookie", status: "connected" });
+      expect(storeCookies).toHaveBeenCalled();
+      expect(markConnected).toHaveBeenCalledWith("user-1", "legacy");
+    });
+
     it("returns state for unknown auth type", async () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "none",
