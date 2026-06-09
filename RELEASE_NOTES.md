@@ -1,12 +1,22 @@
-# a-workbench v0.9.2
+# a-workbench v0.10.0
 
-_2026-06-09_
+_2026-06-10_
 
-Headline: **Browser capture survives pod rollouts** — a stale Chromium profile lock left by a dead pod no longer blocks the next one.
+Headline: **One per-user browser session** — browser-use driving and cookie capture now share a single Chromium, so connecting a cookie integration after logging in via the live view just works.
+
+## Features
+- **Unified browser session.** Previously cookie capture and the browser-use live view each spawned their own Chromium on the user's one profile dir; whichever started first held the `activeProfiles` lock and the other failed with `BROWSER_SESSION_BUSY`. Now `browser-session.ts` owns a single per-user Chromium that both flows operate on.
+- **Smart capture.** Connecting a cookie integration reads cookies from the shared session: if you're already logged into the target site (e.g. via `browser_live_url`), it captures them instantly and marks the integration connected — no second login. Otherwise it opens a login live view; you log in and click **Capture**. The portal honors the new `status: "connected" | "login_required"` contract.
+- **Capture is a pure read.** Cookie capture is now `Storage.getCookies` over the shared session's CDP endpoint, filtered to the integration's domains. It never spawns a second browser and never tears the session down — the idle reaper owns Chromium lifecycle.
 
 ## Fixes
-- **Clear stale Chromium `Singleton*` locks before launch.** Chromium guards a `--user-data-dir` with `SingletonLock` (a `<host>-<pid>` symlink), `SingletonSocket`, and `SingletonCookie`. When the profile lives on a persistent/shared volume and a pod dies uncleanly (OOM, SIGKILL, rolling deploy), those files survive and name a host that no longer exists — so the next pod's Chromium exits with code 21 (`profile appears to be in use … on another computer`) before DevTools comes up, surfacing as a 500 on capture / warm-browser launch. `spawnProfileChromium` now removes the three `Singleton*` files immediately before spawn; since same-process sessions are already serialized via `activeProfiles`, any lock present is stale by definition.
+- **Proxy-auth for browser-use sessions.** Proxy `Fetch.authRequired` challenges were only answered on the old cookie-capture path, so browser-use through an authenticated `CAPTURE_PROXY` couldn't authenticate. `ensureSession` now wires proxy-auth for the shared session.
+
+## Security
+- **Cookie CDP proxy connect-JWT is scoped to its route integration.** With both proxies sharing one per-user session map, the cookie proxy now requires a connect JWT's `integration` to match the route's `:integration` (the browser proxy already pins `__browser__`), blocking cross-proxy / `__browser__` token replay. The auth-frame validation is extracted into `authorizeCdpFrame` with unit tests covering the accept and reject paths (including cross-proxy replay in both directions).
+
+## Chores
+- Removed ~489 lines of dead per-capture session code from `cookie.ts`; it is now storage + a pure, unit-tested `filterCookies` + proxy-auth helpers. The `sessionId` identifier collapses to `userId` across connect JWTs, both CDP proxies, and the portal WS auth frame.
 
 ## Notes
-- This fixes the stale-after-death case only. It does **not** make two *live* replicas driving one user's profile concurrently safe — clearing a lock held by a running peer can corrupt the profile. If `a-workbench` scales past one replica, partition the profile volume per pod (or sticky-route per user). See `docs/findings/2026-06-09-chromium-singleton-lock-stale.md`.
-- Tests: 412 passing (409 server + 3 shared).
+- Tests: 414 passing. Three suite failures are pre-existing and unrelated to this release: `loader.test.ts` ×2 (fail at the prior tag) and `users.test.ts` ×2 (the shared-SQLite race documented in `vitest.config`; passes in isolation, non-deterministic across runs).
