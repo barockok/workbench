@@ -203,8 +203,9 @@ tar czf - -C ./my-site . | curl --data-binary @- -H 'Content-Type: application/g
 ```
 
 The server extracts the archive and publishes it at `/j/<name>/`, replacing any prior
-deploy. Limits: ≤5 MiB decompressed, ≤1000 files; symlinks and path-traversal entries
-are rejected. The upload token is single-use and expires after ~5 minutes — re-call
+deploy. The archive's **root must contain an `index.html`** — an upload without one is
+rejected (`NO_INDEX`). Limits: ≤5 MiB decompressed, ≤1000 files; symlinks and
+path-traversal entries are rejected. The upload token is single-use and expires after ~5 minutes — re-call
 `deploy_jot` for a fresh one if it lapses. Jot pages are sandboxed (opaque origin), so
 they must be self-contained (a jot can't fetch its own data files).
 

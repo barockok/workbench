@@ -244,4 +244,14 @@ describe("jots/routes upload", () => {
     const locked = await app.inject({ method: "GET", url: "/j/locked/", headers: { accept: "application/json" } });
     expect(locked.statusCode).toBe(401);
   });
+
+  it("400s an upload with no root index.html", async () => {
+    const { token } = mint({ owner: "u1", name: "noindex", access: "public" });
+    const body = await tarGz([{ name: "about.html", content: "x" }]);
+    const res = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body)).toMatchObject({ error: "NO_INDEX" });
+    // nothing was published
+    expect((await app.inject({ method: "GET", url: "/j/noindex/" })).statusCode).toBe(404);
+  });
 });
