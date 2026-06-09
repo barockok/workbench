@@ -1,15 +1,16 @@
-# a-workbench v0.7.0
+# a-workbench v0.8.0
 
-_2026-06-08_
+_2026-06-09_
 
-Headline: **API keys are retrievable again** — minted keys are no longer shown only once. Plus friendlier cookie import and a clearer integration registry.
+Headline: **Disconnect what you connect** — drop an integration's stored credentials straight from the portal. Plus a browser-use integration card, built-in jot scratchpad deploys, and a `whoami` MCP tool.
 
 ## Features
-- **Revealable API keys.** The MCP access key is now stored encrypted (reversibly) alongside its bcrypt hash, so it can be retrieved after minting instead of shown once. New `GET /api/keys/reveal` (session-auth) and a **Reveal key** button in the portal.
-- **Bare-array cookie import.** `POST /api/integrations/:integration/session/import` now accepts a raw cookie array — at the body root (`[...]`) or under `session` — and auto-wraps it into a `{ cookies }` bundle. The existing `{ session: { cookies } }` shape still works.
-- **Integration registry sort + gating.** The list reports a `configured` flag per integration (cookie → always; oauth2 → only when client creds are present; otherwise false). The dashboard sorts **live > available > not configured**, and not-configured cards are dimmed and unclickable.
+- **Disconnect connected apps.** New `DELETE /api/connections/:integration` (session-auth, scoped to your own user) removes stored credentials — the OAuth token for oauth2 integrations, the captured cookies for cookie integrations. The portal exposes a **Disconnect** button on each connected card and in the integration detail modal, with a confirm dialog. The built-in browser is guarded (400) and unknown integrations 404. Cookie integrations keep their warm browser profile — clear that separately with **Clear session**.
+- **Browser-use as an integration card.** The built-in warm-Chromium browser now surfaces in the registry as a first-class, always-on integration card instead of a separate panel.
+- **Jot scratchpad deploys.** `deploy_jot` / `list_jots` / `delete_jot` publish a static web artifact as a public/password-gated site at `/j/<name>/`. Global namespace, creator-locked writes, account-less viewing; jot pages are sandboxed (CSP opaque origin) so they can't reach app cookies/APIs.
+- **`whoami` MCP tool.** Returns the current authenticated user (id + email) — identity only, not connected integrations.
 
 ## Notes
-- Security tradeoff: the API key is now recoverable from the DB if `ENCRYPTION_KEY` leaks. Consistent with how cookies and OAuth tokens are already stored for this self-hosted, owner-only tool.
-- Docs updated: `how-to-use.md` (Reveal key), `how-to-onboard.md` (key retrievable).
-- Tests: 325 passing.
+- Docs updated: `how-to-use.md` (Disconnecting an integration; browser tools), `architecture.md` (meta-tools: `whoami`, jot tools).
+- Disconnect is per-user and scoped server-side to the authenticated session — a user cannot drop another user's connection.
+- Tests: 380 passing (377 server + 3 shared).
