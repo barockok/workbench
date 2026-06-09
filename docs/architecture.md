@@ -39,6 +39,7 @@ Static MCP meta-tools:
 | `get_tool_schema` | Get a tool's input schema as portable JSON Schema |
 | `execute_tool` | Execute a tool by slug with args |
 | `execute_tools` | Execute many tools in one call (bounded-concurrent, ordered results, per-item error isolation) |
+| `whoami` | Return the current authenticated user (id + email); identity only, not connected integrations |
 | `list_integrations` | List all integrations + connection status |
 | `connect` / `wait_for_connection` | Start a connection (OAuth/cookie) and block until it completes |
 | `get_auth_url` | Deprecated alias of `connect` |
