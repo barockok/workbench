@@ -11,7 +11,6 @@ import { startUploadReaper } from "./jots/pending";
 import { loadPlugins } from "./plugins/loader";
 import { verifySession } from "./auth/session";
 import { resolveMcpUser } from "./auth/oauth-server/resolve";
-import { getSessionCdpEndpoint } from "./auth/cookie";
 import { getWarmCdpEndpoint, startBrowserReaper } from "./auth/browser-session";
 import { verifyConnectToken } from "./auth/connect-token";
 import "./telemetry/tracing";
@@ -191,14 +190,13 @@ async function main() {
             try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
             return;
           }
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          const { getSessionOwner } = require("./auth/cookie") as typeof import("./auth/cookie");
-          const owner = getSessionOwner(msg.sessionId);
-          if (!owner || owner.userId !== authedUserId) {
+          // The warm session is keyed by userId; the link's sessionId IS the
+          // userId. Require they match so a token can't target another user.
+          if (!authedUserId || authedUserId !== msg.sessionId) {
             try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
             return;
           }
-          const target = getSessionCdpEndpoint(msg.sessionId, authedUserId, msg.cdpToken);
+          const target = getWarmCdpEndpoint(authedUserId, msg.cdpToken);
           if (!target) {
             try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
             return;
