@@ -11,6 +11,7 @@ vi.mock("../src/config", () => ({
     GOOGLE_CLIENT_ID: "test-google-client-id",
     GOOGLE_CLIENT_SECRET: "test-google-client-secret",
     PORTAL_URL: "http://localhost:5173",
+    CONNECT_TTL_SECONDS: 600,
     SESSION_SECRET: "test-session-secret-32-chars-long!!",
     ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000",
     NODE_ENV: "test",
@@ -72,6 +73,11 @@ vi.mock("../src/auth/cookie", () => ({
 
 vi.mock("../src/auth/oauth", () => ({
   createAuthState: vi.fn(() => "test-state"),
+}));
+
+vi.mock("../src/auth/browser-session", () => ({
+  ensureSession: vi.fn(() => Promise.resolve({ cdpToken: "cdp-tok" })),
+  navigate: vi.fn(() => Promise.resolve({ url: "https://x.test", title: "X" })),
 }));
 
 vi.mock("../src/auth/connections", async (importOriginal) => {
@@ -307,7 +313,12 @@ describe("API routes", () => {
         headers: { authorization: "Bearer valid-jwt" },
       });
       expect(res.statusCode).toBe(200);
-      expect(JSON.parse(res.body).integrations).toHaveLength(1);
+      const list = JSON.parse(res.body).integrations;
+      // Registered plugins + the built-in synthetic browser integration.
+      expect(list).toHaveLength(2);
+      expect(list.map((i: { name: string }) => i.name)).toContain("slack");
+      const browser = list.find((i: { name: string }) => i.name === "browser");
+      expect(browser).toMatchObject({ name: "browser", configured: true });
     });
 
     it("returns 401 without auth", async () => {
@@ -392,6 +403,21 @@ describe("API routes", () => {
       const body = JSON.parse(res.body);
       expect(body.name).toBe("slack");
       expect(body.tools).toEqual([{ name: "slack_post", description: "Post a message" }]);
+    });
+
+    it("returns the synthetic browser integration (no registry lookup)", async () => {
+      const spy = vi.spyOn(registry, "getIntegration");
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET", url: "/api/integrations/browser",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.name).toBe("browser");
+      expect(body.authType).toBe("none");
+      expect(body.tools.every((t: { name: string }) => t.name.startsWith("browser_"))).toBe(true);
+      expect(spy).not.toHaveBeenCalled();
     });
 
     it("404s for unknown integration", async () => {
@@ -839,7 +865,66 @@ describe("API routes", () => {
     });
   });
 
+  describe("POST /api/browser-session/live-url", () => {
+    it("mints a /browser link, navigating when a url is given", async () => {
+      const { navigate } = await import("../src/auth/browser-session");
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/browser-session/live-url",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { url: "https://x.test" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).url).toMatch(/\/browser\?t=/);
+      expect(navigate).toHaveBeenCalled();
+    });
+
+    it("skips navigation when no url is given", async () => {
+      const { navigate } = await import("../src/auth/browser-session");
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/browser-session/live-url",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: {},
+      });
+      expect(res.statusCode).toBe(200);
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it("rejects a non-http url", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/browser-session/live-url",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { url: "ftp://x.test" },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("401 without auth", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "POST", url: "/api/browser-session/live-url", payload: {} });
+      expect(res.statusCode).toBe(401);
+    });
+  });
+
   describe("GET /api/connections", () => {
+    it("reports the built-in browser as always connected", async () => {
+      vi.spyOn(registry, "listIntegrations").mockReturnValue([]);
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/connections",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      const conns = JSON.parse(res.body).connections;
+      expect(conns).toContainEqual({ name: "browser", connected: true });
+    });
+
     it("returns connection status for oauth2 integrations", async () => {
       const { getToken } = await import("../src/auth/tokens");
       vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
