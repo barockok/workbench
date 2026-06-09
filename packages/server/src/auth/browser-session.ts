@@ -2,8 +2,9 @@ import { ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import WebSocket from "ws";
 import { config } from "../config";
-import { activeProfiles, spawnProfileChromium } from "./profile-chromium";
-import { startProxyAuth } from "./cookie";
+import { activeProfiles, spawnProfileChromium, cdpCall } from "./profile-chromium";
+import { startProxyAuth, filterCookies } from "./cookie";
+import type { CookieData } from "./cookie";
 
 // Persistent CDP client: one long-lived socket to a page target, many
 // request/response commands multiplexed by auto-incrementing id.
@@ -145,6 +146,26 @@ export function touch(userId: string): void {
 
 export function getWarmSession(userId: string): WarmSession | undefined {
   return warmSessions.get(userId);
+}
+
+// Read the user's live browser cookies, scoped to an integration's domains.
+// A pure read over the existing session's browser-level CDP endpoint — does not
+// store and does not tear the session down. Throws if the user has no session.
+export async function captureLiveCookies(
+  userId: string,
+  targetDomain: string,
+  cookieDomains: string[] = []
+): Promise<CookieData> {
+  const session = warmSessions.get(userId);
+  if (!session) throw new Error("No browser session for user");
+  const result = (await cdpCall(session.cdpBrowserWsUrl, "Storage.getCookies", {})) as {
+    cookies: Parameters<typeof filterCookies>[0];
+  };
+  return {
+    domain: targetDomain,
+    cookies: filterCookies(result.cookies, [targetDomain, ...cookieDomains]),
+    capturedAt: Math.floor(Date.now() / 1000),
+  };
 }
 
 // Live-view proxy auth: page WS endpoint, gated on the session's cdpToken.

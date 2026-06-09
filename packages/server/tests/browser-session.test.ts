@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }));
+const { spawnMock, cdpCallMock } = vi.hoisted(() => ({
+  spawnMock: vi.fn(),
+  cdpCallMock: vi.fn(),
+}));
 const { proxyAuthMock } = vi.hoisted(() => ({ proxyAuthMock: vi.fn(() => ({ close: vi.fn() })) }));
 
 vi.mock("../src/auth/profile-chromium", async () => {
@@ -11,6 +14,7 @@ vi.mock("../src/auth/profile-chromium", async () => {
     ...real,
     activeProfiles: new Set<string>(),
     spawnProfileChromium: spawnMock,
+    cdpCall: cdpCallMock,
   };
 });
 
@@ -42,6 +46,7 @@ import {
   getWarmCdpEndpoint,
   closeBrowserSession,
   reapIdleSessions,
+  captureLiveCookies,
 } from "../src/auth/browser-session";
 import { activeProfiles } from "../src/auth/profile-chromium";
 
@@ -137,5 +142,29 @@ describe("ensureSession", () => {
     expect(getWarmCdpEndpoint("nobody", s.cdpToken)).toBeNull();
     await closeBrowserSession("user-t");
     expect(getWarmSession("user-t")).toBeUndefined();
+  });
+});
+
+describe("captureLiveCookies", () => {
+  const now = Math.floor(Date.now() / 1000);
+  beforeEach(() => { cdpCallMock.mockReset(); });
+  afterEach(async () => { await closeBrowserSession("user-cap"); });
+
+  it("filters live CDP cookies to the integration's domains", async () => {
+    await ensureSession("user-cap");
+    cdpCallMock.mockResolvedValue({
+      cookies: [
+        { name: "live", value: "1", domain: ".jira.com", path: "/", expires: now + 86400 },
+        { name: "other", value: "2", domain: "evil.com", path: "/", expires: now + 86400 },
+      ],
+    });
+    const data = await captureLiveCookies("user-cap", "jira.com", []);
+    expect(data.domain).toBe("jira.com");
+    expect(data.cookies.map((c) => c.name)).toEqual(["live"]);
+    expect(cdpCallMock).toHaveBeenCalledWith("ws://127.0.0.1:9999/browser", "Storage.getCookies", {});
+  });
+
+  it("throws when no session exists for the user", async () => {
+    await expect(captureLiveCookies("nobody", "jira.com", [])).rejects.toThrow(/no browser session/i);
   });
 });
