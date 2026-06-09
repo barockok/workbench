@@ -1,14 +1,12 @@
-# a-workbench v0.8.1
+# a-workbench v0.8.2
 
 _2026-06-09_
 
-Headline: **Password jots actually unlock now** — fixes a v0.8.0 bug where every password was rejected, and hardens per-jot authorization.
+Headline: **Cookie-capture failures now say why** — when the capture Chromium can't start, the error names the real cause instead of an opaque DevTools timeout.
 
 ## Fixes
-- **Password jots were impossible to unlock.** A content-type-parser collision (boot order: the OAuth route group registers the `application/x-www-form-urlencoded` parser first, yielding an object) meant the jot unlock handler read `req.body` as a string that was never there, so the submitted password was always empty and every attempt returned "Wrong password". The `__auth` handler now reads the password from either body shape (raw string or parsed object).
-
-## Security
-- **Unlock cookies are now bound to the jot's current password.** The per-jot cookie token is `HMAC(secret, name + passwordHash)` instead of `HMAC(secret, name)`. Rotating a jot's password (re-deploy with a new password) immediately invalidates every previously issued unlock cookie. Per-jot isolation is unchanged and reaffirmed: opening multiple password jots in one browser keeps each authorized only by its own password (distinct `Path`-scoped, name+hash-bound cookies).
+- **Surface the real reason a capture Chromium fails to launch.** Cookie-auth capture spawns a headless Chromium and polls its DevTools port; if Chromium died on startup the request previously failed with a generic `Failed to reach http://127.0.0.1:<port>/json/version: fetch failed` after a 4s timeout, with the cause discarded (`stdio: "ignore"`). The spawner now captures Chromium's stderr (last 4 KB), detects an early process `exit` (code/signal) and `spawn` errors, and fails fast with a concrete message — e.g. `chromium exited (signal SIGKILL) before DevTools came up. stderr: …` (OOM), namespace/seccomp errors, missing libs, or an unwritable profile dir. A failed launch also SIGKILLs the process so a half-alive Chromium can't leak.
 
 ## Notes
-- Tests: 383 passing (380 server + 3 shared). New coverage: object-body unlock (regression), password-rotation invalidation, two-jots-one-session independence.
+- Diagnostics only — no behavior change on the success path. This does not itself fix an environment that can't run Chromium (e.g. a too-tight pod memory limit, restrictive seccomp/`readOnlyRootFilesystem`, or an unwritable `BROWSER_PROFILES_DIR`); it makes that cause visible in the logs so it can be fixed in the deployment.
+- Tests: 383 passing (380 server + 3 shared).

@@ -37,9 +37,16 @@ async function getFreePort(): Promise<number> {
   });
 }
 
-async function pollJson(url: string, attempts = 40, intervalMs = 100): Promise<unknown> {
+async function pollJson(
+  url: string,
+  attempts = 40,
+  intervalMs = 100,
+  abort?: () => Error | null
+): Promise<unknown> {
   let lastErr: unknown = null;
   for (let i = 0; i < attempts; i++) {
+    const stop = abort?.();
+    if (stop) throw stop;
     try {
       const res = await fetch(url);
       if (res.ok) return await res.json();
@@ -125,23 +132,52 @@ export async function spawnProfileChromium(
     "--disable-dev-shm-usage",
   ];
   if (opts.startUrl) args.push(opts.startUrl);
-  const proc = spawn(execPath, args, { stdio: "ignore", detached: false });
+  // Capture stderr so a launch failure (missing lib, crashed renderer, unwritable
+  // profile dir, OOM) surfaces as a real reason instead of an opaque CDP timeout.
+  const proc = spawn(execPath, args, { stdio: ["ignore", "ignore", "pipe"], detached: false });
 
-  await pollJson(`http://127.0.0.1:${remotePort}/json/version`);
-  const versionInfo = (await pollJson(`http://127.0.0.1:${remotePort}/json/version`)) as VersionInfo;
-  let target: TargetInfo | undefined;
-  for (let i = 0; i < 30; i++) {
-    const targets = (await pollJson(`http://127.0.0.1:${remotePort}/json`)) as TargetInfo[];
-    target = targets.find((t) => t.type === "page");
-    if (target && target.url && (opts.startUrl ? target.url !== "about:blank" : true)) break;
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  if (!target) throw new Error("CDP: no page target found");
+  let stderrTail = "";
+  proc.stderr?.on("data", (chunk: Buffer) => {
+    stderrTail = (stderrTail + chunk.toString()).slice(-4000);
+  });
+  let exit: { code: number | null; signal: NodeJS.Signals | null } | null = null;
+  let spawnErr: Error | null = null;
+  proc.on("error", (e) => { spawnErr = e; });
+  proc.on("exit", (code, signal) => { exit = { code, signal }; });
 
-  return {
-    proc,
-    remotePort,
-    cdpBrowserWsUrl: versionInfo.webSocketDebuggerUrl,
-    cdpPageWsUrl: target.webSocketDebuggerUrl,
+  // If chromium died before/while we poll, fail fast with the captured reason
+  // rather than burning the full poll budget on a process that's already gone.
+  const launchFailure = (): Error | null => {
+    if (spawnErr) return new Error(`chromium failed to spawn (${execPath}): ${spawnErr.message}`);
+    if (exit) {
+      const how = exit.signal ? `signal ${exit.signal}` : `code ${exit.code}`;
+      return new Error(`chromium exited (${how}) before DevTools came up. stderr: ${stderrTail.trim() || "(empty)"}`);
+    }
+    return null;
   };
+
+  try {
+    await pollJson(`http://127.0.0.1:${remotePort}/json/version`, 40, 100, launchFailure);
+    const versionInfo = (await pollJson(`http://127.0.0.1:${remotePort}/json/version`)) as VersionInfo;
+    let target: TargetInfo | undefined;
+    for (let i = 0; i < 30; i++) {
+      const targets = (await pollJson(`http://127.0.0.1:${remotePort}/json`)) as TargetInfo[];
+      target = targets.find((t) => t.type === "page");
+      if (target && target.url && (opts.startUrl ? target.url !== "about:blank" : true)) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    if (!target) throw new Error("CDP: no page target found");
+
+    return {
+      proc,
+      remotePort,
+      cdpBrowserWsUrl: versionInfo.webSocketDebuggerUrl,
+      cdpPageWsUrl: target.webSocketDebuggerUrl,
+    };
+  } catch (e) {
+    // Don't leak a half-alive chromium when startup fails. Prefer the concrete
+    // launch failure (exit code + stderr) over the generic poll-timeout error.
+    try { proc.kill("SIGKILL"); } catch { /* already gone */ }
+    throw launchFailure() ?? e;
+  }
 }
