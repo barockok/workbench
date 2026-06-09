@@ -143,11 +143,13 @@ export default function IntegrationDetail({
   connected,
   onClose,
   onConnect,
+  onDisconnect,
 }: {
   name: string;
   connected: boolean;
   onClose: () => void;
   onConnect: (name: string) => void;
+  onDisconnect: (name: string) => void;
 }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["integration", name],
@@ -198,7 +200,12 @@ export default function IntegrationDetail({
 
         {name !== "browser" && (
           <div className="modal-foot">
-            <button className={connected ? "btn-disconnect" : "btn-connect"} onClick={() => onConnect(name)}>
+            {connected && (
+              <button className="btn-disconnect" onClick={() => onDisconnect(name)}>
+                Disconnect
+              </button>
+            )}
+            <button className={connected ? "btn-ghost" : "btn-connect"} onClick={() => onConnect(name)}>
               {connected ? "Re-authorize" : "Connect →"}
             </button>
           </div>
