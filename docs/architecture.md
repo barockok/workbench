@@ -46,7 +46,7 @@ Static MCP meta-tools:
 | `browser_navigate` / `browser_screenshot` / `browser_read_text` | Drive a warm per-user Chromium: navigate, view (downscaled JPEG, change-detected), read page text |
 | `browser_click` / `browser_type` / `browser_key` / `browser_scroll` | Computer-use input into the warm session |
 | `browser_live_url` / `browser_close` | Human watch-and-take-over link; end the session |
-| `deploy_jot` / `list_jots` / `delete_jot` | Publish a static web artifact as a public/password site at `/j/<name>/`; list/delete your own. Global namespace, creator-locked writes, account-less viewing. Jot pages are sandboxed (CSP opaque origin) so they can't reach app cookies/APIs — keep them self-contained |
+| `deploy_jot` / `list_jots` / `delete_jot` | `deploy_jot` returns a single-use upload URL (~5 min TTL); the client uploads the site as a gzip tarball (`tar czf - -C dir . \| curl --data-binary @- <uploadUrl>`), extracted + published at `/j/<name>/` (≤5 MiB decompressed, ≤1000 files; symlinks/traversal entries rejected). `list_jots`/`delete_jot` operate on your own. Global namespace, creator-locked writes, account-less viewing. Jot pages are sandboxed (CSP opaque origin) so they can't reach app cookies/APIs — keep them self-contained |
 
 ## Plugin SDK
 

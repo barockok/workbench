@@ -3,17 +3,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import Fastify, { FastifyInstance } from "fastify";
+import { createGzip } from "node:zlib";
+import { pack as tarPack } from "tar-stream";
 
 let tmp: string;
 
 vi.mock("../../src/jots/dir", () => ({ jotsRoot: () => tmp }));
 vi.mock("../../src/config", () => ({
-  config: { JOTS_MAX_BYTES: 1_000_000, SERVER_PUBLIC_URL: "https://wb.test", SESSION_SECRET: "test-secret-32-chars-long-xxxxxx", NODE_ENV: "test" },
+  config: { JOTS_MAX_BYTES: 1_000_000, JOTS_MAX_FILES: 1000, JOTS_UPLOAD_TTL_SECONDS: 300, SERVER_PUBLIC_URL: "https://wb.test", SESSION_SECRET: "test-secret-32-chars-long-xxxxxx", NODE_ENV: "test" },
 }));
 
 import { registerJotRoutes } from "../../src/jots/routes";
 import { deployJot, readManifest } from "../../src/jots/store";
 import { hashPassword, makeToken, cookieName } from "../../src/jots/auth";
+import { mint } from "../../src/jots/pending";
 
 let app: FastifyInstance;
 
@@ -171,5 +174,74 @@ describe("jots/routes", () => {
     expect(ok.statusCode).toBe(302);
     expect(String(ok.headers["set-cookie"])).toContain("jot_sec=");
     await a.close();
+  });
+});
+
+function tarGz(files: { name: string; content: string }[]): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const pack = tarPack();
+    const gzip = createGzip();
+    const chunks: Buffer[] = [];
+    gzip.on("data", (c: Buffer) => chunks.push(c));
+    gzip.on("end", () => resolve(Buffer.concat(chunks)));
+    gzip.on("error", reject);
+    pack.pipe(gzip);
+    (function next(i: number) {
+      if (i >= files.length) { pack.finalize(); return; }
+      pack.entry({ name: files[i].name }, files[i].content, () => next(i + 1));
+    })(0);
+  });
+}
+
+describe("jots/routes upload", () => {
+  it("publishes an uploaded tarball and then serves it", async () => {
+    const { token } = mint({ owner: "u1", name: "uploaded", access: "public" });
+    const body = await tarGz([{ name: "index.html", content: "<h1>UP</h1>" }]);
+    const up = await app.inject({
+      method: "POST",
+      url: `/j/upload/${token}`,
+      payload: body,
+      headers: { "content-type": "application/gzip" },
+    });
+    expect(up.statusCode).toBe(200);
+    expect(JSON.parse(up.body)).toMatchObject({ name: "uploaded", access: "public" });
+    const served = await app.inject({ method: "GET", url: "/j/uploaded/" });
+    expect(served.statusCode).toBe(200);
+    expect(served.body).toContain("UP");
+  });
+
+  it("404s an unknown or already-used token", async () => {
+    const { token } = mint({ owner: "u1", name: "once", access: "public" });
+    const body = await tarGz([{ name: "index.html", content: "x" }]);
+    const first = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(first.statusCode).toBe(200);
+    const replay = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(replay.statusCode).toBe(404);
+    const unknown = await app.inject({ method: "POST", url: "/j/upload/deadbeef", payload: body, headers: { "content-type": "application/gzip" } });
+    expect(unknown.statusCode).toBe(404);
+  });
+
+  it("400s a traversal entry in the tarball", async () => {
+    const { token } = mint({ owner: "u1", name: "evil", access: "public" });
+    const body = await tarGz([{ name: "../escape", content: "x" }]);
+    const res = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("413s an oversized archive", async () => {
+    const { token } = mint({ owner: "u1", name: "toobig", access: "public" });
+    const body = await tarGz([{ name: "big.bin", content: "x".repeat(1_000_001) }]);
+    const res = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(res.statusCode).toBe(413);
+  });
+
+  it("publishes a password jot via upload (locked until unlocked)", async () => {
+    const { token } = mint({ owner: "u1", name: "locked", access: "password", passwordHash: hashPassword("pw") });
+    const body = await tarGz([{ name: "index.html", content: "<h1>SECRET</h1>" }]);
+    const up = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: { "content-type": "application/gzip" } });
+    expect(up.statusCode).toBe(200);
+    // No cookie → locked (non-HTML request gets 401).
+    const locked = await app.inject({ method: "GET", url: "/j/locked/", headers: { accept: "application/json" } });
+    expect(locked.statusCode).toBe(401);
   });
 });

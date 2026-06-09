@@ -7,6 +7,7 @@ import { registerApiRoutes } from "./api/routes";
 import { registerOAuthRoutes } from "./api/oauth-routes";
 import { registerPortal } from "./portal";
 import { registerJotRoutes } from "./jots/routes";
+import { startUploadReaper } from "./jots/pending";
 import { loadPlugins } from "./plugins/loader";
 import { verifySession } from "./auth/session";
 import { resolveMcpUser } from "./auth/oauth-server/resolve";
@@ -340,6 +341,7 @@ async function main() {
   });
 
   await registerJotRoutes(app);
+  startUploadReaper();
 
   // Serve the built portal (static + SPA fallback). Registered last so API,
   // MCP, and the CDP WS routes take precedence and the SPA fallback only
