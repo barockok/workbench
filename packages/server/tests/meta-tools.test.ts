@@ -40,14 +40,19 @@ vi.mock("../src/auth/users", () => ({
 
 vi.mock("../src/auth/cookie", () => ({
   hasValidCookies: vi.fn(() => false),
-  startCookieSession: vi.fn(async () => ({ sessionId: "sess-1", cdpUrl: "ws://x", cdpToken: "cdp-1" })),
-  closeCookieSession: vi.fn(async () => undefined),
+  storeCookies: vi.fn(),
+}));
+
+vi.mock("../src/auth/browser-session", () => ({
+  ensureSession: vi.fn(async () => ({ cdpToken: "tok-123" })),
+  captureLiveCookies: vi.fn(async () => ({ domain: "legacy.com", cookies: [], capturedAt: 1 })),
 }));
 
 vi.mock("../src/auth/connections", () => ({
   createPending: vi.fn(() => ({ connectionId: "conn-1", status: "PENDING" })),
   getPending: vi.fn(),
   reapOne: vi.fn(async () => undefined),
+  markConnected: vi.fn(),
 }));
 
 vi.mock("../src/auth/connect-token", () => ({
@@ -285,6 +290,45 @@ describe("meta-tools", () => {
       expect(result.connectionId).toBe("conn-1");
       expect(result.type).toBe("cookie");
       expect(result.url).toContain("/connect/legacy?t=jwt-123");
+    });
+
+    it("connects instantly when live cookies already exist (cookie)", async () => {
+      const { captureLiveCookies, storeCookies, markConnected } = {
+        ...(await import("../src/auth/browser-session")),
+        ...(await import("../src/auth/connections")),
+        ...(await import("../src/auth/cookie")),
+      } as any;
+      vi.mocked(captureLiveCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [{ name: "sid", value: "abc", domain: "legacy.com", path: "/" }],
+        capturedAt: 123,
+      });
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
+
+      const tool = findTool("connect");
+      const result = await tool.handler({ userId: "user-1" }, { integration: "legacy" });
+      expect(result.connectionId).toBe("conn-1");
+      expect(result.type).toBe("cookie");
+      expect(result.connected).toBe(true);
+      expect(result.url).toBeUndefined();
+      expect(storeCookies).toHaveBeenCalled();
+      expect(markConnected).toHaveBeenCalledWith("user-1", "legacy");
+    });
+
+    it("returns a login link when no live cookies exist (cookie)", async () => {
+      const { captureLiveCookies } = await import("../src/auth/browser-session");
+      vi.mocked(captureLiveCookies).mockResolvedValue({
+        domain: "legacy.com",
+        cookies: [],
+        capturedAt: 123,
+      });
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
+
+      const tool = findTool("connect");
+      const result = await tool.handler({ userId: "user-1" }, { integration: "legacy" });
+      expect(result.type).toBe("cookie");
+      expect(result.url).toContain("/connect/legacy?t=");
+      expect(result.connected).toBeUndefined();
     });
 
     it("returns error for unknown integration", async () => {
