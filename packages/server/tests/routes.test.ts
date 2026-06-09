@@ -62,16 +62,11 @@ vi.mock("../src/auth/tokens", () => ({
 vi.mock("../src/auth/cookie", async () => {
   const real = await vi.importActual<typeof import("../src/auth/cookie")>("../src/auth/cookie");
   return {
-    startCookieSession: vi.fn(() => Promise.resolve({ sessionId: "sess-1", cdpUrl: "ws://cdp" })),
-    captureCookies: vi.fn(() =>
-      Promise.resolve({ domain: "example.com", cookies: [{ name: "x", value: "y" }], capturedAt: 1 })
-    ),
     closeCookieSession: vi.fn(() => Promise.resolve()),
     storeCookies: vi.fn(),
     getCookies: vi.fn(() => null),
     hasValidCookies: vi.fn(() => false),
     deleteCookies: vi.fn(),
-    getSessionOwner: vi.fn(() => null),
     resetBrowserProfile: vi.fn(() => Promise.resolve()),
     // Real expiry logic: drives the smart-capture "already logged in?" branch.
     isCookieExpired: real.isCookieExpired,
@@ -768,6 +763,7 @@ describe("API routes", () => {
         type: "cookie" as const,
         loginUrl: "https://legacy.com/login",
         targetDomain: "legacy.com",
+        cookieDomains: [],
       },
     };
 
@@ -840,7 +836,7 @@ describe("API routes", () => {
       const body = res.json();
       expect(body.success).toBe(true);
       expect(body.cookieCount).toBe(1);
-      expect(captureLiveCookies).toHaveBeenCalledWith("u1", "legacy.com", undefined);
+      expect(captureLiveCookies).toHaveBeenCalledWith("u1", "legacy.com", []);
       expect(storeCookies).toHaveBeenCalledWith("u1", "legacy", expect.objectContaining({ cookies: [{ name: "x", value: "y" }] }));
       expect(markConnected).toHaveBeenCalledWith("u1", "legacy");
     });
