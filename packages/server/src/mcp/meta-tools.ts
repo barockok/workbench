@@ -4,6 +4,7 @@ import { registry } from "../plugins/registry";
 import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
 import { getToken } from "../auth/tokens";
+import { getUserById } from "../auth/users";
 import { hasValidCookies, startCookieSession, closeCookieSession } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { config } from "../config";
@@ -262,6 +263,16 @@ export const metaTools = [
     },
   },
   {
+    name: "whoami",
+    description: "Return the current authenticated workbench user (id + email). Like /me — identity only, not connected integrations.",
+    inputSchema: z.object({}),
+    handler: async (ctx: { userId: string }) => {
+      const user = getUserById(ctx.userId);
+      if (!user) return { error: "User not found" };
+      return { id: user.id, email: user.email };
+    },
+  },
+  {
     name: "list_integrations",
     description: "List all available integrations and connection status",
     inputSchema: z.object({}),
@@ -459,6 +470,7 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     },
     required: ["executions"],
   },
+  whoami: { type: "object", properties: {} },
   list_integrations: { type: "object", properties: {} },
   connect: {
     type: "object",
