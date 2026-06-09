@@ -81,7 +81,7 @@ export function createProxyAuthHandler(creds: { username: string; password: stri
 // Open a persistent browser-level CDP connection that auto-attaches to every
 // target and feeds proxy-auth challenges through createProxyAuthHandler.
 // Returns the socket so the session can close it on teardown.
-function startProxyAuth(browserWsUrl: string, username: string, password: string): WebSocket {
+export function startProxyAuth(browserWsUrl: string, username: string, password: string): WebSocket {
   const handler = createProxyAuthHandler({ username, password });
   const ws = new WebSocket(browserWsUrl, { perMessageDeflate: false, origin: "http://127.0.0.1" });
   ws.on("open", () => {

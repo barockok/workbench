@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }));
+const { proxyAuthMock } = vi.hoisted(() => ({ proxyAuthMock: vi.fn(() => ({ close: vi.fn() })) }));
 
 vi.mock("../src/auth/profile-chromium", async () => {
   const real = await vi.importActual<typeof import("../src/auth/profile-chromium")>(
@@ -11,6 +12,11 @@ vi.mock("../src/auth/profile-chromium", async () => {
     activeProfiles: new Set<string>(),
     spawnProfileChromium: spawnMock,
   };
+});
+
+vi.mock("../src/auth/cookie", async () => {
+  const real = await vi.importActual<typeof import("../src/auth/cookie")>("../src/auth/cookie");
+  return { ...real, startProxyAuth: proxyAuthMock };
 });
 
 // CdpClient opens a `ws`; emit "open" so its `ready` promise resolves. Enables
@@ -65,6 +71,28 @@ describe("reapIdleSessions", () => {
     reapIdleSessions(Date.now() + 10_000_000);
     expect(getWarmSession("user-r")).toBeUndefined();
     expect(activeProfiles.has("user-r")).toBe(false);
+  });
+});
+
+describe("ensureSession proxy-auth wiring", () => {
+  beforeEach(() => { proxyAuthMock.mockClear(); });
+  afterEach(() => {
+    delete process.env.CAPTURE_PROXY;
+    delete process.env.CAPTURE_PROXY_USERNAME;
+    delete process.env.CAPTURE_PROXY_PASSWORD;
+  });
+
+  it("opens a proxy-auth socket when CAPTURE_PROXY + creds are set", async () => {
+    process.env.CAPTURE_PROXY = "http://proxy:8080";
+    process.env.CAPTURE_PROXY_USERNAME = "u";
+    process.env.CAPTURE_PROXY_PASSWORD = "p";
+    await ensureSession("user-proxy");
+    expect(proxyAuthMock).toHaveBeenCalledWith("ws://127.0.0.1:9999/browser", "u", "p");
+  });
+
+  it("does not open a proxy-auth socket without proxy env", async () => {
+    await ensureSession("user-noproxy");
+    expect(proxyAuthMock).not.toHaveBeenCalled();
   });
 });
 

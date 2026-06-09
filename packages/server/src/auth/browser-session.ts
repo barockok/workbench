@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import WebSocket from "ws";
 import { config } from "../config";
 import { activeProfiles, spawnProfileChromium } from "./profile-chromium";
+import { startProxyAuth } from "./cookie";
 
 // Persistent CDP client: one long-lived socket to a page target, many
 // request/response commands multiplexed by auto-incrementing id.
@@ -89,6 +90,7 @@ export interface WarmSession {
   lastActivity: number;
   lastShotHash?: string;
   cdp: CdpClient;
+  authWs?: WebSocket;
 }
 
 const warmSessions = new Map<string, WarmSession>();
@@ -105,6 +107,12 @@ export async function ensureSession(userId: string): Promise<WarmSession> {
     const spawned = await spawnProfileChromium(userId, {});
     const cdp = new CdpClient(spawned.cdpPageWsUrl, () => { void closeBrowserSession(userId); });
     await cdp.ready;
+    const proxyUser = process.env.CAPTURE_PROXY_USERNAME;
+    const proxyPass = process.env.CAPTURE_PROXY_PASSWORD;
+    const authWs =
+      process.env.CAPTURE_PROXY && proxyUser && proxyPass
+        ? startProxyAuth(spawned.cdpBrowserWsUrl, proxyUser, proxyPass)
+        : undefined;
     const session: WarmSession = {
       proc: spawned.proc,
       remotePort: spawned.remotePort,
@@ -114,12 +122,14 @@ export async function ensureSession(userId: string): Promise<WarmSession> {
       userId,
       lastActivity: Date.now(),
       cdp,
+      authWs,
     };
     warmSessions.set(userId, session);
     spawned.proc.on("exit", () => {
       activeProfiles.delete(userId);
       warmSessions.delete(userId);
       try { session.cdp.close(); } catch { /* noop */ }
+      try { session.authWs?.close(); } catch { /* noop */ }
     });
     return session;
   } catch (e) {
@@ -151,6 +161,7 @@ export async function closeBrowserSession(userId: string): Promise<void> {
   warmSessions.delete(userId);
   activeProfiles.delete(userId);
   try { s.cdp.close(); } catch { /* noop */ }
+  try { s.authWs?.close(); } catch { /* noop */ }
   try { s.proc.kill("SIGKILL"); } catch { /* noop */ }
 }
 
