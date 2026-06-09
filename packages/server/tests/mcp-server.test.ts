@@ -12,13 +12,28 @@ vi.mock("../src/auth/tokens", () => ({
 
 vi.mock("../src/auth/cookie", () => ({
   hasValidCookies: vi.fn(() => false),
-  startCookieSession: vi.fn(async () => ({ sessionId: "sess-1", cdpUrl: "ws://x", cdpToken: "cdp-1" })),
+  storeCookies: vi.fn(),
+}));
+
+vi.mock("../src/auth/browser-session", () => ({
+  ensureSession: vi.fn(async () => ({ cdpToken: "cdp-1" })),
+  captureLiveCookies: vi.fn(async () => ({ domain: "legacy.com", cookies: [], capturedAt: 1 })),
+  touch: vi.fn(),
+  navigate: vi.fn(),
+  screenshot: vi.fn(),
+  click: vi.fn(),
+  typeText: vi.fn(),
+  pressKey: vi.fn(),
+  scroll: vi.fn(),
+  readText: vi.fn(),
+  closeBrowserSession: vi.fn(),
 }));
 
 vi.mock("../src/auth/connections", () => ({
   createPending: vi.fn(() => ({ connectionId: "conn-1", status: "PENDING" })),
   getPending: vi.fn(),
   reapOne: vi.fn(async () => undefined),
+  markConnected: vi.fn(),
 }));
 
 vi.mock("../src/auth/connect-token", () => ({
@@ -215,7 +230,7 @@ describe("handleMcpRequest", () => {
     vi.spyOn(registry, "getIntegration").mockReturnValue({
       name: "legacy",
       version: "1.0.0",
-      auth: { type: "cookie" as const, loginUrl: "https://legacy.com/login", targetDomain: "legacy.com" },
+      auth: { type: "cookie" as const, loginUrl: "https://legacy.com/login", targetDomain: "legacy.com", cookieDomains: [] },
     } as any);
 
     const res = await handleMcpRequest(
