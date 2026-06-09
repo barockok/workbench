@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import { spawn, ChildProcess } from "node:child_process";
-import { mkdirSync, chmodSync } from "node:fs";
+import { mkdirSync, chmodSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { createServer } from "node:net";
 import WebSocket from "ws";
@@ -17,6 +17,24 @@ export function profilesBaseDir(): string {
 
 export function userProfileDir(userId: string): string {
   return join(profilesBaseDir(), userId.replace(/[^a-zA-Z0-9_-]/g, "_"));
+}
+
+// Chromium writes SingletonLock/Socket/Cookie into the profile to stop two
+// processes sharing one user-data-dir. The lock is a symlink encoding
+// "<hostname>-<pid>". On a persistent/shared volume (e.g. a k8s PVC) a pod that
+// dies uncleanly — OOM, SIGKILL, a rolling deploy — leaves these behind. The
+// next pod sees a lock naming a host that no longer exists and refuses to start
+// ("profile appears to be in use by another Chromium process … on another
+// computer"), exiting code 21 before DevTools ever comes up.
+//
+// We already serialize same-process sessions via activeProfiles, so any lock we
+// find here is stale by definition: no live session we know of owns it. Clear
+// it so chromium can recreate its own. rmSync swallows ENOENT, so a clean
+// profile is a no-op.
+export function clearStaleSingletonLocks(userDataDir: string): void {
+  for (const name of ["SingletonLock", "SingletonSocket", "SingletonCookie"]) {
+    rmSync(join(userDataDir, name), { force: true });
+  }
 }
 
 async function getFreePort(): Promise<number> {
@@ -117,6 +135,7 @@ export async function spawnProfileChromium(
   const userDataDir = userProfileDir(userId);
   mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
   chmodSync(userDataDir, 0o700);
+  clearStaleSingletonLocks(userDataDir);
   const execPath = chromium.executablePath();
   const args = [
     "--headless=new",
