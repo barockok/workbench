@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchIntegrations, fetchConnections, startIntegrationAuth, IntegrationSummary } from "../api";
+import { fetchIntegrations, fetchConnections, startIntegrationAuth, disconnectIntegration, IntegrationSummary } from "../api";
 import { useAuth } from "../context/AuthContext";
 import CookieAuthPopup from "../components/CookieAuthPopup";
 import ApiKeyPanel from "../components/ApiKeyPanel";
@@ -73,6 +73,21 @@ export default function Dashboard() {
     .sort((a, b) => rank(a) - rank(b));
 
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
+
+  async function handleDisconnect(integration: string) {
+    if (!window.confirm(`Disconnect ${integration}? Stored credentials will be removed.`)) return;
+    setConnectError(null);
+    setDisconnecting(integration);
+    try {
+      await disconnectIntegration(integration);
+      await refetchConnections();
+    } catch (e) {
+      setConnectError(e instanceof Error ? e.message : "Disconnect failed");
+    } finally {
+      setDisconnecting(null);
+    }
+  }
 
   async function handleConnect(integration: string) {
     setConnectError(null);
@@ -241,13 +256,23 @@ export default function Dashboard() {
                   ) : connected ? (
                     <>
                       <span className="card-meta">Session active</span>
-                      <button
-                        className="btn-disconnect"
-                        onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }}
-                        title="Re-authorize"
-                      >
-                        Refresh
-                      </button>
+                      <div className="card-actions">
+                        <button
+                          className="btn-ghost"
+                          onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }}
+                          title="Re-authorize"
+                        >
+                          Refresh
+                        </button>
+                        <button
+                          className="btn-disconnect"
+                          onClick={(e) => { e.stopPropagation(); handleDisconnect(i.name); }}
+                          disabled={disconnecting === i.name}
+                          title="Disconnect"
+                        >
+                          {disconnecting === i.name ? "…" : "Disconnect"}
+                        </button>
+                      </div>
                     </>
                   ) : configured ? (
                     <>
@@ -290,6 +315,7 @@ export default function Dashboard() {
           connected={connectionMap.get(detail) ?? false}
           onClose={() => setDetail(null)}
           onConnect={(n) => { setDetail(null); handleConnect(n); }}
+          onDisconnect={(n) => { setDetail(null); handleDisconnect(n); }}
         />
       )}
 
