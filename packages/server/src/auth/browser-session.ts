@@ -2,7 +2,9 @@ import { ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import WebSocket from "ws";
 import { config } from "../config";
-import { activeProfiles, spawnProfileChromium } from "./profile-chromium";
+import { activeProfiles, spawnProfileChromium, cdpCall } from "./profile-chromium";
+import { startProxyAuth, filterCookies } from "./cookie";
+import type { CookieData, RawCookie } from "./cookie";
 
 // Persistent CDP client: one long-lived socket to a page target, many
 // request/response commands multiplexed by auto-incrementing id.
@@ -89,6 +91,7 @@ export interface WarmSession {
   lastActivity: number;
   lastShotHash?: string;
   cdp: CdpClient;
+  authWs?: WebSocket;
 }
 
 const warmSessions = new Map<string, WarmSession>();
@@ -105,6 +108,12 @@ export async function ensureSession(userId: string): Promise<WarmSession> {
     const spawned = await spawnProfileChromium(userId, {});
     const cdp = new CdpClient(spawned.cdpPageWsUrl, () => { void closeBrowserSession(userId); });
     await cdp.ready;
+    const proxyUser = process.env.CAPTURE_PROXY_USERNAME;
+    const proxyPass = process.env.CAPTURE_PROXY_PASSWORD;
+    const authWs =
+      process.env.CAPTURE_PROXY && proxyUser && proxyPass
+        ? startProxyAuth(spawned.cdpBrowserWsUrl, proxyUser, proxyPass)
+        : undefined;
     const session: WarmSession = {
       proc: spawned.proc,
       remotePort: spawned.remotePort,
@@ -114,12 +123,14 @@ export async function ensureSession(userId: string): Promise<WarmSession> {
       userId,
       lastActivity: Date.now(),
       cdp,
+      authWs,
     };
     warmSessions.set(userId, session);
     spawned.proc.on("exit", () => {
       activeProfiles.delete(userId);
       warmSessions.delete(userId);
       try { session.cdp.close(); } catch { /* noop */ }
+      try { session.authWs?.close(); } catch { /* noop */ }
     });
     return session;
   } catch (e) {
@@ -137,6 +148,26 @@ export function getWarmSession(userId: string): WarmSession | undefined {
   return warmSessions.get(userId);
 }
 
+// Read the user's live browser cookies, scoped to an integration's domains.
+// A pure read over the existing session's browser-level CDP endpoint — does not
+// store and does not tear the session down. Throws if the user has no session.
+export async function captureLiveCookies(
+  userId: string,
+  targetDomain: string,
+  cookieDomains: string[] = []
+): Promise<CookieData> {
+  const session = warmSessions.get(userId);
+  if (!session) throw new Error("No browser session for user");
+  const result = (await cdpCall(session.cdpBrowserWsUrl, "Storage.getCookies", {})) as {
+    cookies: RawCookie[];
+  };
+  return {
+    domain: targetDomain,
+    cookies: filterCookies(result.cookies, [targetDomain, ...cookieDomains]),
+    capturedAt: Math.floor(Date.now() / 1000),
+  };
+}
+
 // Live-view proxy auth: page WS endpoint, gated on the session's cdpToken.
 export function getWarmCdpEndpoint(userId: string, cdpToken: string): string | null {
   const s = warmSessions.get(userId);
@@ -151,6 +182,7 @@ export async function closeBrowserSession(userId: string): Promise<void> {
   warmSessions.delete(userId);
   activeProfiles.delete(userId);
   try { s.cdp.close(); } catch { /* noop */ }
+  try { s.authWs?.close(); } catch { /* noop */ }
   try { s.proc.kill("SIGKILL"); } catch { /* noop */ }
 }
 

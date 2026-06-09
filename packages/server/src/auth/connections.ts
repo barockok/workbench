@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { closeCookieSession } from "./cookie";
 
 export type ConnectionType = "oauth2" | "cookie";
 export type ConnectionStatus = "PENDING" | "CONNECTED" | "EXPIRED";
@@ -12,7 +11,6 @@ export interface PendingConnection {
   status: ConnectionStatus;
   createdAt: number; // unix seconds
   expiresAt: number; // unix seconds
-  cookieSessionId?: string;
 }
 
 const store = new Map<string, PendingConnection>();
@@ -26,7 +24,6 @@ export function createPending(args: {
   integration: string;
   type: ConnectionType;
   ttlSeconds: number;
-  cookieSessionId?: string;
 }): PendingConnection {
   const createdAt = nowSec();
   const rec: PendingConnection = {
@@ -37,7 +34,6 @@ export function createPending(args: {
     status: "PENDING",
     createdAt,
     expiresAt: createdAt + args.ttlSeconds,
-    cookieSessionId: args.cookieSessionId,
   };
   store.set(rec.connectionId, rec);
   return rec;
@@ -73,7 +69,7 @@ export function markConnected(userId: string, integration: string): void {
 const PRUNE_GRACE_SECONDS = 3600;
 
 /**
- * Sweep: any PENDING record past expiry → close its cookie session + mark EXPIRED.
+ * Sweep: any PENDING record past expiry → mark EXPIRED.
  * Then prune terminal records (CONNECTED/EXPIRED) whose expiry is older than the
  * grace window, so the store doesn't grow unbounded in a long-running server.
  * The grace (1h) sits well beyond any wait_for_connection timeout (max 900s), so
@@ -85,9 +81,6 @@ export async function reapExpired(): Promise<void> {
   const toDelete: string[] = [];
   for (const rec of store.values()) {
     if (rec.status === "PENDING" && rec.expiresAt <= t) {
-      if (rec.cookieSessionId) {
-        await closeCookieSession(rec.cookieSessionId).catch(() => undefined);
-      }
       rec.status = "EXPIRED";
     }
     if (
@@ -106,9 +99,6 @@ export async function reapExpired(): Promise<void> {
 export async function reapOne(connectionId: string): Promise<void> {
   const rec = store.get(connectionId);
   if (!rec || rec.status !== "PENDING") return;
-  if (rec.cookieSessionId) {
-    await closeCookieSession(rec.cookieSessionId).catch(() => undefined);
-  }
   rec.status = "EXPIRED";
 }
 
