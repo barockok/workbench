@@ -12,22 +12,19 @@ import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
 import { getToken, deleteToken } from "../auth/tokens";
 import {
-  startCookieSession,
-  captureCookies,
-  closeCookieSession,
   storeCookies,
   getCookies,
   hasValidCookies,
   deleteCookies,
-  getSessionOwner,
   resetBrowserProfile,
+  isCookieExpired,
   CookieData,
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { signConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
 import { resumeAuthorize } from "../auth/oauth-server/resume";
-import { ensureSession, navigate } from "../auth/browser-session";
+import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
 import {
   BROWSER_INTEGRATION_NAME,
   browserSummary,
@@ -286,21 +283,22 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
 
     if (integ.auth.type === "cookie") {
-      const { sessionId, cdpToken } = await startCookieSession(
+      const session = await ensureSession(user.userId);
+      const live = await captureLiveCookies(
         user.userId,
-        integration,
-        integ.auth.loginUrl,
         integ.auth.targetDomain,
         integ.auth.cookieDomains
       );
+      if (!isCookieExpired(live)) {
+        storeCookies(user.userId, integration, live);
+        markConnected(user.userId, integration);
+        return { type: "cookie", status: "connected" };
+      }
+      await navigate(session, integ.auth.loginUrl);
       return {
         type: "cookie",
-        sessionId,
-        cdpToken,
-        // Portal opens this relative WS URL — no secrets in the URL, so it
-        // is safe to land in access logs / history. The client sends
-        // {type:"auth",sessionId,cdpToken} as its first ws frame; the
-        // server validates and only then dials chromium.
+        status: "login_required",
+        cdpToken: session.cdpToken,
         cdpProxyUrl: `/api/auth/cookie/${integration}/cdp`,
         loginUrl: integ.auth.loginUrl,
       };
@@ -349,27 +347,22 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   // Cookie auth capture
   app.post("/api/auth/cookie/:integration/capture", async (request, reply) => {
     const user = await authenticate(request);
-    if (!user) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
+    if (!user) return reply.status(401).send({ error: "Unauthorized" });
 
     const { integration } = request.params as { integration: string };
-    const { sessionId } = request.body as { sessionId: string };
-
-    const owner = getSessionOwner(sessionId);
-    if (!owner || owner.userId !== user.userId || owner.integration !== integration) {
-      return reply.status(403).send({ error: "Forbidden" });
+    const integ = registry.getIntegration(integration);
+    if (!integ || integ.auth.type !== "cookie") {
+      return reply.status(404).send({ error: "Cookie integration not found" });
     }
 
     try {
-      const cookies = await captureCookies(sessionId);
-      if (cookies.cookies.length === 0) {
+      const data = await captureLiveCookies(user.userId, integ.auth.targetDomain, integ.auth.cookieDomains);
+      if (data.cookies.length === 0) {
         return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
       }
-      storeCookies(user.userId, integration, cookies);
-      await closeCookieSession(sessionId);
+      storeCookies(user.userId, integration, data);
       markConnected(user.userId, integration);
-      return { success: true, cookieCount: cookies.cookies.length };
+      return { success: true, cookieCount: data.cookies.length };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });
@@ -488,19 +481,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   // Cookie auth cancel
   app.post("/api/auth/cookie/:integration/cancel", async (request, reply) => {
     const user = await authenticate(request);
-    if (!user) {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-
-    const { integration } = request.params as { integration: string };
-    const { sessionId } = request.body as { sessionId: string };
-
-    const owner = getSessionOwner(sessionId);
-    if (!owner || owner.userId !== user.userId || owner.integration !== integration) {
-      return reply.status(403).send({ error: "Forbidden" });
-    }
-
-    await closeCookieSession(sessionId);
+    if (!user) return reply.status(401).send({ error: "Unauthorized" });
+    // Capture shares the per-user browser session, which browser-use may also be
+    // driving — do not kill it here. The idle reaper reclaims it on its own.
     return { success: true };
   });
 
@@ -517,7 +500,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       integration: payload.integration,
       loginUrl: integ.auth.loginUrl,
       cdpProxyUrl: `/api/auth/cookie/${payload.integration}/cdp`,
-      sessionId: payload.sessionId,
+      sessionId: payload.userId,
       cdpToken: payload.cdpToken,
     };
   });
@@ -528,19 +511,18 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     let payload;
     try { payload = await verifyConnectToken(auth.slice(7)); }
     catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
-    const owner = getSessionOwner(payload.sessionId);
-    if (!owner || owner.userId !== payload.userId || owner.integration !== payload.integration) {
-      return reply.status(403).send({ error: "Forbidden" });
+    const integ = registry.getIntegration(payload.integration);
+    if (!integ || integ.auth.type !== "cookie") {
+      return reply.status(404).send({ error: "Cookie integration not found" });
     }
     try {
-      const cookies = await captureCookies(payload.sessionId);
-      if (cookies.cookies.length === 0) {
+      const data = await captureLiveCookies(payload.userId, integ.auth.targetDomain, integ.auth.cookieDomains);
+      if (data.cookies.length === 0) {
         return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
       }
-      storeCookies(payload.userId, payload.integration, cookies);
-      await closeCookieSession(payload.sessionId);
+      storeCookies(payload.userId, payload.integration, data);
       markConnected(payload.userId, payload.integration);
-      return { success: true, cookieCount: cookies.cookies.length };
+      return { success: true, cookieCount: data.cookies.length };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });

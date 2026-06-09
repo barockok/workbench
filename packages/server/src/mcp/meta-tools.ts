@@ -9,14 +9,15 @@ import { listJots, deleteJot, readManifest } from "../jots/store";
 import { hashPassword } from "../jots/auth";
 import { isValidJotName } from "../jots/paths";
 import { mint } from "../jots/pending";
-import { hasValidCookies, startCookieSession, closeCookieSession } from "../auth/cookie";
+import { hasValidCookies, storeCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
-import { createPending, getPending, reapOne } from "../auth/connections";
+import { createPending, getPending, reapOne, markConnected } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
 import {
   ensureSession,
+  captureLiveCookies,
   touch,
   navigate as browserNavigate,
   screenshot as browserScreenshot,
@@ -41,25 +42,31 @@ interface MetaTool {
 async function startConnect(
   userId: string,
   integration: string
-): Promise<{ connectionId: string; type: "oauth2" | "cookie"; url: string } | { error: string }> {
+): Promise<
+  | { connectionId: string; type: "oauth2" | "cookie"; url: string }
+  | { connectionId: string; type: "cookie"; connected: true }
+  | { error: string }
+> {
   const integ = registry.getIntegration(integration);
   if (!integ) return { error: "Integration not found" };
   const ttl = config.CONNECT_TTL_SECONDS;
 
   if (integ.auth.type === "cookie") {
-    let sessionId: string | undefined;
     try {
-      const session = await startCookieSession(
-        userId, integration, integ.auth.loginUrl, integ.auth.targetDomain, integ.auth.cookieDomains
-      );
-      sessionId = session.sessionId;
-      const rec = createPending({ userId, integration, type: "cookie", ttlSeconds: ttl, cookieSessionId: sessionId });
+      const session = await ensureSession(userId);
+      const live = await captureLiveCookies(userId, integ.auth.targetDomain, integ.auth.cookieDomains);
+      const rec = createPending({ userId, integration, type: "cookie", ttlSeconds: ttl });
+      if (live.cookies.length > 0) {
+        storeCookies(userId, integration, live);
+        markConnected(userId, integration);
+        return { connectionId: rec.connectionId, type: "cookie", connected: true };
+      }
       const jwt = await signConnectToken(
-        { connectionId: rec.connectionId, userId, integration, sessionId, cdpToken: session.cdpToken }, ttl
+        { connectionId: rec.connectionId, userId, integration, sessionId: userId, cdpToken: session.cdpToken },
+        ttl
       );
       return { connectionId: rec.connectionId, type: "cookie", url: `${config.PORTAL_URL}/connect/${integration}?t=${jwt}` };
     } catch (err) {
-      if (sessionId) await closeCookieSession(sessionId).catch(() => undefined);
       return { error: err instanceof Error ? err.message : String(err) };
     }
   }
@@ -340,7 +347,7 @@ export const metaTools = [
   },
   {
     name: "connect",
-    description: "Begin connecting an integration. Returns an openable URL (OAuth consent for oauth2, a browser login link for cookie auth) and a connectionId. Then call wait_for_connection.",
+    description: "Begin connecting an integration. For oauth2, returns a URL (OAuth consent page) and a connectionId; call wait_for_connection afterward. For cookie integrations, if the user is already logged into the shared browser session, returns { connected: true } immediately — no URL and no need to call wait_for_connection. Otherwise returns a portal login URL and a connectionId; call wait_for_connection afterward.",
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },

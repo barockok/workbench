@@ -84,9 +84,10 @@ export async function disconnectIntegration(integration: string): Promise<{ succ
 }
 
 export type StartAuthResult =
+  | { type: "cookie"; status: "connected" }
   | {
       type: "cookie";
-      sessionId: string;
+      status: "login_required";
       cdpProxyUrl: string;
       cdpToken: string;
       loginUrl: string;
@@ -114,21 +115,19 @@ export async function startIntegrationAuth(integration: string): Promise<StartAu
 /** @deprecated use startIntegrationAuth */
 export const startCookieAuth = startIntegrationAuth;
 
-export async function captureCookies(integration: string, sessionId: string): Promise<{ success: boolean; cookieCount: number }> {
+export async function captureCookies(integration: string): Promise<{ success: boolean; cookieCount: number }> {
   const res = await fetch(`${API_URL}/api/auth/cookie/${integration}/capture`, {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({ sessionId }),
   });
   if (!res.ok) throw new Error("Failed to capture cookies");
   return res.json();
 }
 
-export async function cancelCookieAuth(integration: string, sessionId: string): Promise<void> {
+export async function cancelCookieAuth(integration: string): Promise<void> {
   await fetch(`${API_URL}/api/auth/cookie/${integration}/cancel`, {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({ sessionId }),
   });
 }
 
