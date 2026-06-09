@@ -148,7 +148,10 @@ describe("ensureSession", () => {
 describe("captureLiveCookies", () => {
   const now = Math.floor(Date.now() / 1000);
   beforeEach(() => { cdpCallMock.mockReset(); });
-  afterEach(async () => { await closeBrowserSession("user-cap"); });
+  afterEach(async () => {
+    await closeBrowserSession("user-cap");
+    await closeBrowserSession("user-cap2");
+  });;
 
   it("filters live CDP cookies to the integration's domains", async () => {
     await ensureSession("user-cap");
@@ -166,5 +169,18 @@ describe("captureLiveCookies", () => {
 
   it("throws when no session exists for the user", async () => {
     await expect(captureLiveCookies("nobody", "jira.com", [])).rejects.toThrow(/no browser session/i);
+  });
+
+  it("includes cookies on a secondary cookieDomain", async () => {
+    await ensureSession("user-cap2");
+    cdpCallMock.mockResolvedValue({
+      cookies: [
+        { name: "primary", value: "1", domain: "jira.com", path: "/", expires: now + 86400 },
+        { name: "secondary", value: "2", domain: ".atlassian.net", path: "/", expires: now + 86400 },
+        { name: "unrelated", value: "3", domain: "evil.com", path: "/", expires: now + 86400 },
+      ],
+    });
+    const data = await captureLiveCookies("user-cap2", "jira.com", ["atlassian.net"]);
+    expect(data.cookies.map((c) => c.name).sort()).toEqual(["primary", "secondary"]);
   });
 });

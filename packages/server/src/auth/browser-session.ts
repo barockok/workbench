@@ -4,7 +4,7 @@ import WebSocket from "ws";
 import { config } from "../config";
 import { activeProfiles, spawnProfileChromium, cdpCall } from "./profile-chromium";
 import { startProxyAuth, filterCookies } from "./cookie";
-import type { CookieData } from "./cookie";
+import type { CookieData, RawCookie } from "./cookie";
 
 // Persistent CDP client: one long-lived socket to a page target, many
 // request/response commands multiplexed by auto-incrementing id.
@@ -159,7 +159,7 @@ export async function captureLiveCookies(
   const session = warmSessions.get(userId);
   if (!session) throw new Error("No browser session for user");
   const result = (await cdpCall(session.cdpBrowserWsUrl, "Storage.getCookies", {})) as {
-    cookies: Parameters<typeof filterCookies>[0];
+    cookies: RawCookie[];
   };
   return {
     domain: targetDomain,
