@@ -87,9 +87,7 @@ told to shoot only when the page changed, to prefer `browser_read_text` for
 text, and `maxWidth`/downscaling trims the cost further. Identical re-shots come
 back as `{ unchanged: true }` rather than re-billing the pixels.
 
-The session is idle-reaped after `BROWSER_SESSION_TTL_SECONDS` (default 300). A
-warm browser session and a cookie capture can't run at once for one user
-(`BROWSER_SESSION_BUSY`) — `browser_close()` one before starting the other.
+The session is idle-reaped after `BROWSER_SESSION_TTL_SECONDS` (default 300).
 
 ## Connecting via OAuth (browser login)
 
@@ -215,7 +213,7 @@ Use `connect` (and `wait_for_connection`) to drive the auth flow entirely from w
 
 1. Call `connect(integration)`. Returns `{ connectionId, type, url }`.
    - **oauth2**: `url` is the provider's consent screen. Open it in any browser and complete the OAuth grant.
-   - **cookie**: `url` is a magic-link (`/connect/<integration>?t=...`). Open it in a browser to start a headless session, log in on the remote browser page, and click **Capture session**.
+   - **cookie**: `url` is a magic-link (`/connect/<integration>?t=...`). Open it in a browser. If you've already logged into the target site in the warm browser session (e.g. via `browser_live_url`), cookies are captured instantly and no second login is needed. Otherwise a login live view opens — log in there and click **Capture session**.
 2. Open the `url` in a browser and complete login.
 3. Call `wait_for_connection(connectionId)` — it blocks until the status is `CONNECTED`, or returns `TIMEOUT` / `EXPIRED` if the deadline passes.
 
