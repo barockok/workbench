@@ -23,7 +23,8 @@ export class JotExtractError extends Error {
 
 // Stream an uploaded gzip tarball into destDir, applying safety guards. Only
 // regular files are written; directory entries are ignored (parents are created
-// from file paths). Rejects with a JotExtractError on any violation.
+// from file paths). Rejects with a JotExtractError on any violation. On failure,
+// destDir may contain partial output; the caller is responsible for discarding it.
 export function extractTarGzToDir(
   src: Readable,
   destDir: string
@@ -34,12 +35,14 @@ export function extractTarGzToDir(
     let bytes = 0;
     let fileCount = 0;
     let settled = false;
+    let activeWs: import("node:fs").WriteStream | null = null;
 
     const fail = (code: JotExtractCode) => {
       if (settled) return;
       settled = true;
       ex.destroy();
       gunzip.destroy();
+      try { activeWs?.destroy(); } catch { /* noop */ }
       reject(new JotExtractError(code));
     };
 
@@ -58,22 +61,20 @@ export function extractTarGzToDir(
         return;
       }
       if (header.type !== "file") {
-        stream.resume();
         return fail("UNSUPPORTED_ENTRY");
       }
       const rel = safeRelPath(header.name);
       if (!rel) {
-        stream.resume();
         return fail("INVALID_PATH");
       }
       if (fileCount + 1 > config.JOTS_MAX_FILES) {
-        stream.resume();
         return fail("TOO_MANY_FILES");
       }
       fileCount++;
       const dest = join(destDir, rel);
       mkdirSync(dirname(dest), { recursive: true });
       const ws = createWriteStream(dest);
+      activeWs = ws;
       ws.on("error", () => fail("BAD_ARCHIVE"));
       stream.on("error", () => fail("BAD_ARCHIVE"));
       stream.on("data", (chunk: Buffer) => {
@@ -84,6 +85,7 @@ export function extractTarGzToDir(
         }
       });
       ws.on("close", () => {
+        activeWs = null;
         if (!settled) next();
       });
       stream.pipe(ws);
@@ -92,8 +94,7 @@ export function extractTarGzToDir(
     ex.on("finish", () => {
       if (settled) return;
       if (fileCount === 0) {
-        settled = true;
-        return reject(new JotExtractError("NO_FILES"));
+        return fail("NO_FILES");
       }
       settled = true;
       resolve({ fileCount, bytes });
