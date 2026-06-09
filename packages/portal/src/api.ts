@@ -118,7 +118,7 @@ export const startCookieAuth = startIntegrationAuth;
 export async function captureCookies(integration: string): Promise<{ success: boolean; cookieCount: number }> {
   const res = await fetch(`${API_URL}/api/auth/cookie/${integration}/capture`, {
     method: "POST",
-    headers: getHeaders(),
+    headers: authHeaders(),
   });
   if (!res.ok) throw new Error("Failed to capture cookies");
   return res.json();
@@ -127,7 +127,7 @@ export async function captureCookies(integration: string): Promise<{ success: bo
 export async function cancelCookieAuth(integration: string): Promise<void> {
   await fetch(`${API_URL}/api/auth/cookie/${integration}/cancel`, {
     method: "POST",
-    headers: getHeaders(),
+    headers: authHeaders(),
   });
 }
 
