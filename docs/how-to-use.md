@@ -216,6 +216,12 @@ Claude: wait_for_connection("abc123")
 
 > `get_auth_url` is a **deprecated alias** of `connect` — it still works but returns only the URL without a `connectionId`. Prefer `connect` for new code.
 
+## Disconnecting an integration
+
+A connected integration can be dropped from the portal: open its card (or the detail modal) and click **Disconnect**. This removes the stored credentials — the OAuth token for oauth2 integrations, the captured cookies for cookie integrations — via `DELETE /api/connections/:integration` (session-auth, scoped to your own user). The built-in browser can't be disconnected; clear its profile with **Clear session** instead.
+
+For cookie integrations, Disconnect removes the stored capture only — the warm browser profile (prior logins carried across connects) is untouched. Use the browser **Clear session** control to wipe that.
+
 ## Environment Variables
 
 | Variable | Default | Description |
