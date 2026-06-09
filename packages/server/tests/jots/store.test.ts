@@ -10,7 +10,7 @@ vi.mock("../../src/config", () => ({
   config: { JOTS_MAX_BYTES: 1000, SERVER_PUBLIC_URL: "https://wb.test", NODE_ENV: "test" },
 }));
 
-import { deployJot, listJots, deleteJot, readManifest } from "../../src/jots/store";
+import { deployJot, commitJotDir, listJots, deleteJot, readManifest } from "../../src/jots/store";
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "jots-"));
@@ -96,5 +96,21 @@ describe("jots/store", () => {
     fs.writeFileSync(mPath, JSON.stringify(m, null, 2));
     const names = listJots("u1").map((j) => j.name);
     expect(names[0]).toBe("newer");
+  });
+
+  it("commitJotDir publishes a prepared directory", () => {
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), "jot-src-"));
+    fs.writeFileSync(path.join(src, "index.html"), "<h1>committed</h1>");
+    const res = commitJotDir({ name: "fromdir", owner: "u1", access: "public", srcDir: src });
+    expect(res).toMatchObject({ name: "fromdir", access: "public" });
+    expect(readManifest("fromdir")).toMatchObject({ owner: "u1", access: "public" });
+  });
+
+  it("commitJotDir refuses a name owned by another user", () => {
+    deployJot({ name: "owned", owner: "u1", access: "public", files: [{ path: "index.html", content: "x" }] });
+    const src = fs.mkdtempSync(path.join(os.tmpdir(), "jot-src-"));
+    fs.writeFileSync(path.join(src, "index.html"), "x");
+    const res = commitJotDir({ name: "owned", owner: "u2", access: "public", srcDir: src });
+    expect(res).toEqual({ error: "JOT_NAME_TAKEN" });
   });
 });

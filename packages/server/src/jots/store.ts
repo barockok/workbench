@@ -48,28 +48,23 @@ export function readManifest(name: string): Manifest | null {
   return null;
 }
 
-export function deployJot(input: DeployInput): DeployResult {
-  const { name, owner, access, passwordHash, files } = input;
+// Publish an already-prepared directory: write the manifest into it, then
+// atomically swap it into place as /jots/<name>/. The directory becomes the
+// live jot (renamed, not copied), so it must be on the same filesystem as
+// jotsRoot() — callers create it under jotsRoot().
+export function commitJotDir(input: {
+  name: string;
+  owner: string;
+  access: "public" | "password";
+  passwordHash?: string;
+  srcDir: string;
+}): DeployResult {
+  const { name, owner, access, passwordHash, srcDir } = input;
   if (!isValidJotName(name)) return { error: "INVALID_NAME" };
   if (access === "password" && !passwordHash) return { error: "PASSWORD_REQUIRED" };
-  if (!Array.isArray(files) || files.length === 0) return { error: "NO_FILES" };
 
-  // Ownership: an existing jot owned by someone else is off-limits. Check before the
-  // decode/size loop so an unowned name short-circuits without forcing that work.
   const existing = readManifest(name);
   if (existing && existing.owner !== owner) return { error: "JOT_NAME_TAKEN" };
-
-  // Decode + validate all files before touching disk.
-  const decoded: { rel: string; buf: Buffer }[] = [];
-  let total = 0;
-  for (const f of files) {
-    const rel = safeRelPath(f.path);
-    if (!rel) return { error: "INVALID_PATH" };
-    const buf = Buffer.from(f.content ?? "", f.encoding === "base64" ? "base64" : "utf8");
-    total += buf.length;
-    if (total > config.JOTS_MAX_BYTES) return { error: "TOO_LARGE" };
-    decoded.push({ rel, buf });
-  }
 
   const now = new Date().toISOString();
   const manifest: Manifest = {
@@ -80,28 +75,55 @@ export function deployJot(input: DeployInput): DeployResult {
     ...(access === "password" ? { hash: passwordHash } : {}),
   };
 
-  fs.mkdirSync(jotsRoot(), { recursive: true });
   const finalDir = jotDir(name);
-  const tmpDir = `${finalDir}.tmp-${crypto.randomBytes(4).toString("hex")}`;
-  fs.rmSync(tmpDir, { recursive: true, force: true });
   try {
-    for (const { rel, buf } of decoded) {
-      const dest = path.join(tmpDir, rel);
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.writeFileSync(dest, buf);
-    }
-    fs.writeFileSync(path.join(tmpDir, MANIFEST), JSON.stringify(manifest, null, 2));
-    // Non-atomic on macOS (rename can't replace a non-empty dir → ENOTEMPTY), so we
-    // drop the old tree first. Brief window where finalDir is absent; acceptable here.
+    fs.writeFileSync(path.join(srcDir, MANIFEST), JSON.stringify(manifest, null, 2));
+    // Non-atomic on macOS (rename can't replace a non-empty dir → ENOTEMPTY), so
+    // drop the old tree first. Brief window where finalDir is absent; acceptable.
     fs.rmSync(finalDir, { recursive: true, force: true });
-    fs.renameSync(tmpDir, finalDir);
+    fs.renameSync(srcDir, finalDir);
   } catch (e) {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    console.error("[deployJot] unexpected error:", e);
+    fs.rmSync(srcDir, { recursive: true, force: true });
+    console.error("[commitJotDir] unexpected error:", e);
     return { error: "DEPLOY_FAILED" };
   }
-
   return { name, access, url: jotUrl(name) };
+}
+
+// Decode an inline file array into a tmp dir, then commit it. Retained as a
+// test/seed helper; the deploy_jot MCP tool now uses the upload flow instead.
+export function deployJot(input: DeployInput): DeployResult {
+  const { name, owner, access, passwordHash, files } = input;
+  if (!isValidJotName(name)) return { error: "INVALID_NAME" };
+  if (access === "password" && !passwordHash) return { error: "PASSWORD_REQUIRED" };
+  if (!Array.isArray(files) || files.length === 0) return { error: "NO_FILES" };
+
+  const existing = readManifest(name);
+  if (existing && existing.owner !== owner) return { error: "JOT_NAME_TAKEN" };
+
+  fs.mkdirSync(jotsRoot(), { recursive: true });
+  const tmpDir = `${jotDir(name)}.tmp-${crypto.randomBytes(4).toString("hex")}`;
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  fs.mkdirSync(tmpDir, { recursive: true });
+
+  let total = 0;
+  for (const f of files) {
+    const rel = safeRelPath(f.path);
+    if (!rel) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return { error: "INVALID_PATH" };
+    }
+    const buf = Buffer.from(f.content ?? "", f.encoding === "base64" ? "base64" : "utf8");
+    total += buf.length;
+    if (total > config.JOTS_MAX_BYTES) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      return { error: "TOO_LARGE" };
+    }
+    const dest = path.join(tmpDir, rel);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, buf);
+  }
+  return commitJotDir({ name, owner, access, passwordHash, srcDir: tmpDir });
 }
 
 export interface JotSummary {
