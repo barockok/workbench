@@ -4,7 +4,7 @@ vi.mock("../../src/config", () => ({
   config: { JOTS_UPLOAD_TTL_SECONDS: 300 },
 }));
 
-import { mint, consume, reapExpired, _setNowForTest } from "../../src/jots/pending";
+import { mint, consume, reapExpired, _setNowForTest, startUploadReaper, stopUploadReaper } from "../../src/jots/pending";
 
 describe("jots/pending", () => {
   let t = 1_000_000;
@@ -47,5 +47,14 @@ describe("jots/pending", () => {
   it("carries the password hash for password jots", () => {
     const { token } = mint({ owner: "u1", name: "s", access: "password", passwordHash: "scrypt$x$y" });
     expect(consume(token)).toMatchObject({ access: "password", passwordHash: "scrypt$x$y" });
+  });
+
+  it("the reaper starts idempotently and stops cleanly", () => {
+    expect(() => {
+      startUploadReaper(60_000);
+      startUploadReaper(60_000); // second call is a no-op (timer already set)
+      stopUploadReaper();
+      stopUploadReaper(); // safe to call when no timer is running
+    }).not.toThrow();
   });
 });

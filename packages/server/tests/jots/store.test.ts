@@ -113,4 +113,15 @@ describe("jots/store", () => {
     const res = commitJotDir({ name: "owned", owner: "u2", access: "public", srcDir: src });
     expect(res).toEqual({ error: "JOT_NAME_TAKEN" });
   });
+
+  it("commitJotDir returns DEPLOY_FAILED when the source dir is missing", () => {
+    const missing = path.join(tmp, "does-not-exist");
+    const res = commitJotDir({ name: "ghost", owner: "u1", access: "public", srcDir: missing });
+    expect(res).toEqual({ error: "DEPLOY_FAILED" });
+  });
+
+  it("listJots returns [] when the jots root does not exist", () => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+    expect(listJots("u1")).toEqual([]);
+  });
 });

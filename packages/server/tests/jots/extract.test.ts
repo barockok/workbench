@@ -90,4 +90,14 @@ describe("jots/extract", () => {
     const err = await run([{ name: "../x", content: "y" }]).catch((e) => e);
     expect(err).toBeInstanceOf(JotExtractError);
   });
+
+  it("skips explicit directory entries and writes the files", async () => {
+    const dest = path.join(tmp, "out");
+    const res = await run([
+      { name: "assets/", type: "directory" },
+      { name: "assets/app.js", content: "ok" },
+    ], dest);
+    expect(res.fileCount).toBe(1);
+    expect(fs.readFileSync(path.join(dest, "assets/app.js"), "utf8")).toBe("ok");
+  });
 });
