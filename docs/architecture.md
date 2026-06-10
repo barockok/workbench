@@ -50,7 +50,7 @@ Static MCP meta-tools:
 
 ### Shared Browser Session
 
-There is **one** per-user Chromium process, owned by `browser-session.ts`. Both browser-use driving (the `browser_*` tools above) and cookie capture (`connect` for cookie-auth integrations) operate on that single warm session. Cookie capture is a read — it calls `Storage.getCookies` over the shared session's CDP endpoint, filtered to the integration's target domains — and does not spawn a second browser or tear the session down. The idle reaper (controlled by `BROWSER_SESSION_TTL_SECONDS`) owns the Chromium lifecycle.
+There is **one** per-user Chromium process, owned by `browser-session.ts`. Both browser-use driving (the `browser_*` tools above) and cookie-auth connect operate on that single warm session. Connecting a cookie integration always opens the login live view (it never auto-connects from existing session cookies — re-login re-verifies the session); the actual capture happens when the user clicks **Capture**, which reads live cookies via `Storage.getCookies` over the shared session's CDP endpoint, filtered to the integration's target domains. Capture does not spawn a second browser or tear the session down. The idle reaper (controlled by `BROWSER_SESSION_TTL_SECONDS`) owns the Chromium lifecycle.
 
 ## Plugin SDK
 
