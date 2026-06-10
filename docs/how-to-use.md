@@ -211,9 +211,9 @@ they must be self-contained (a jot can't fetch its own data files).
 
 Use `connect` (and `wait_for_connection`) to drive the auth flow entirely from within Claude — no manual URL copy-paste needed.
 
-1. Call `connect(integration)`. Returns `{ connectionId, type, url }` — or, for a cookie integration where you're already logged into the warm browser session, the instant-connect variant `{ connectionId, type: "cookie", connected: true }` (no `url`, already CONNECTED).
+1. Call `connect(integration)`. Returns `{ connectionId, type, url }`.
    - **oauth2**: `url` is the provider's consent screen. Open it in any browser and complete the OAuth grant.
-   - **cookie**: `url` is a magic-link (`/connect/<integration>?t=...`). Open it in a browser. If you've already logged into the target site in the warm browser session (e.g. via `browser_live_url`), cookies are captured instantly and no second login is needed. Otherwise a login live view opens — log in there and click **Capture session**.
+   - **cookie**: `url` is a magic-link (`/connect/<integration>?t=...`). Open it in a browser — a login live view always opens. Log in there and click **Capture session** (even if the warm browser session already has cookies, connect always re-prompts login to re-verify the session).
 2. Open the `url` in a browser and complete login.
 3. Call `wait_for_connection(connectionId)` — it blocks until the status is `CONNECTED`, or returns `TIMEOUT` / `EXPIRED` if the deadline passes.
 
