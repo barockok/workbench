@@ -292,10 +292,11 @@ describe("meta-tools", () => {
       expect(result.url).toContain("/connect/legacy?t=jwt-123");
     });
 
-    it("connects instantly when live cookies already exist (cookie)", async () => {
+    it("always returns a login link, even when live cookies already exist (cookie)", async () => {
       const { captureLiveCookies } = await import("../src/auth/browser-session");
       const { storeCookies } = await import("../src/auth/cookie");
       const { markConnected } = await import("../src/auth/connections");
+      // Live cookies present, but connect must never auto-connect from them.
       vi.mocked(captureLiveCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "sid", value: "abc", domain: "legacy.com", path: "/" }],
@@ -307,26 +308,10 @@ describe("meta-tools", () => {
       const result = await tool.handler({ userId: "user-1" }, { integration: "legacy" });
       expect(result.connectionId).toBe("conn-1");
       expect(result.type).toBe("cookie");
-      expect(result.connected).toBe(true);
-      expect(result.url).toBeUndefined();
-      expect(storeCookies).toHaveBeenCalled();
-      expect(markConnected).toHaveBeenCalledWith("user-1", "legacy");
-    });
-
-    it("returns a login link when no live cookies exist (cookie)", async () => {
-      const { captureLiveCookies } = await import("../src/auth/browser-session");
-      vi.mocked(captureLiveCookies).mockResolvedValue({
-        domain: "legacy.com",
-        cookies: [],
-        capturedAt: 123,
-      });
-      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
-
-      const tool = findTool("connect");
-      const result = await tool.handler({ userId: "user-1" }, { integration: "legacy" });
-      expect(result.type).toBe("cookie");
       expect(result.url).toContain("/connect/legacy?t=");
       expect(result.connected).toBeUndefined();
+      expect(storeCookies).not.toHaveBeenCalled();
+      expect(markConnected).not.toHaveBeenCalled();
     });
 
     it("returns error for unknown integration", async () => {
