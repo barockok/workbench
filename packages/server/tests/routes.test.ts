@@ -470,34 +470,15 @@ describe("API routes", () => {
       expect(JSON.parse(res.body).url).toBeDefined();
     });
 
-    it("connects instantly when live cookies are already present", async () => {
-      const { captureLiveCookies } = await import("../src/auth/browser-session");
+    it("always returns login_required + live-view info, even when live cookies exist", async () => {
+      const { captureLiveCookies, navigate } = await import("../src/auth/browser-session");
       const { storeCookies } = await import("../src/auth/cookie");
       const { markConnected } = await import("../src/auth/connections");
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg);
+      // Even with plenty of live cookies present, connect must NOT auto-connect.
       vi.mocked(captureLiveCookies).mockResolvedValue({
         domain: "legacy.com",
-        cookies: [{ name: "s", value: "v" }],
-        capturedAt: Math.floor(Date.now() / 1000),
-      });
-      const app = await buildApp();
-      const res = await app.inject({
-        method: "GET",
-        url: "/api/auth/legacy",
-        headers: { authorization: "Bearer valid-jwt" },
-      });
-      expect(res.statusCode).toBe(200);
-      expect(JSON.parse(res.body)).toEqual({ type: "cookie", status: "connected" });
-      expect(storeCookies).toHaveBeenCalled();
-      expect(markConnected).toHaveBeenCalledWith("user-1", "legacy");
-    });
-
-    it("returns login_required + live-view info when no live cookies", async () => {
-      const { captureLiveCookies, navigate } = await import("../src/auth/browser-session");
-      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg);
-      vi.mocked(captureLiveCookies).mockResolvedValue({
-        domain: "legacy.com",
-        cookies: [],
+        cookies: [{ name: "s", value: "v", expires: Math.floor(Date.now() / 1000) + 86400 }],
         capturedAt: Math.floor(Date.now() / 1000),
       });
       const app = await buildApp();
@@ -514,19 +495,14 @@ describe("API routes", () => {
       expect(body.cdpProxyUrl).toBe("/api/auth/cookie/legacy/cdp");
       expect(body.loginUrl).toBe("https://legacy.com/login");
       expect(navigate).toHaveBeenCalled();
+      // No auto-connect on the connect path.
+      expect(storeCookies).not.toHaveBeenCalled();
+      expect(markConnected).not.toHaveBeenCalled();
     });
 
-    it("all-expired cookies → login_required (isCookieExpired branch)", async () => {
-      const { captureLiveCookies, navigate } = await import("../src/auth/browser-session");
+    it("returns login_required + live-view info when no live cookies", async () => {
+      const { navigate } = await import("../src/auth/browser-session");
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg);
-      vi.mocked(captureLiveCookies).mockResolvedValueOnce({
-        domain: "legacy.com",
-        cookies: [
-          { name: "s", value: "v", expires: Math.floor(Date.now() / 1000) - 10 },
-          { name: "t", value: "w", expires: Math.floor(Date.now() / 1000) - 5 },
-        ],
-        capturedAt: Math.floor(Date.now() / 1000),
-      });
       const app = await buildApp();
       const res = await app.inject({
         method: "GET",
@@ -535,33 +511,12 @@ describe("API routes", () => {
       });
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.body);
-      expect(body).toMatchObject({ type: "cookie", status: "login_required" });
+      expect(body.type).toBe("cookie");
+      expect(body.status).toBe("login_required");
+      expect(body.cdpToken).toBe("tok-123");
+      expect(body.cdpProxyUrl).toBe("/api/auth/cookie/legacy/cdp");
+      expect(body.loginUrl).toBe("https://legacy.com/login");
       expect(navigate).toHaveBeenCalled();
-    });
-
-    it("at-least-one-live cookie → connected (isCookieExpired branch)", async () => {
-      const { captureLiveCookies } = await import("../src/auth/browser-session");
-      const { storeCookies } = await import("../src/auth/cookie");
-      const { markConnected } = await import("../src/auth/connections");
-      vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg);
-      vi.mocked(captureLiveCookies).mockResolvedValueOnce({
-        domain: "legacy.com",
-        cookies: [
-          { name: "s", value: "v", expires: Math.floor(Date.now() / 1000) - 10 },
-          { name: "t", value: "w", expires: Math.floor(Date.now() / 1000) + 86400 },
-        ],
-        capturedAt: Math.floor(Date.now() / 1000),
-      });
-      const app = await buildApp();
-      const res = await app.inject({
-        method: "GET",
-        url: "/api/auth/legacy",
-        headers: { authorization: "Bearer valid-jwt" },
-      });
-      expect(res.statusCode).toBe(200);
-      expect(JSON.parse(res.body)).toEqual({ type: "cookie", status: "connected" });
-      expect(storeCookies).toHaveBeenCalled();
-      expect(markConnected).toHaveBeenCalledWith("user-1", "legacy");
     });
 
     it("returns state for unknown auth type", async () => {
