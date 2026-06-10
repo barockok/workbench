@@ -17,7 +17,6 @@ import {
   hasValidCookies,
   deleteCookies,
   resetBrowserProfile,
-  isCookieExpired,
   CookieData,
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
@@ -284,16 +283,6 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     if (integ.auth.type === "cookie") {
       const session = await ensureSession(user.userId);
-      const live = await captureLiveCookies(
-        user.userId,
-        integ.auth.targetDomain,
-        integ.auth.cookieDomains
-      );
-      if (!isCookieExpired(live)) {
-        storeCookies(user.userId, integration, live);
-        markConnected(user.userId, integration);
-        return { type: "cookie", status: "connected" };
-      }
       await navigate(session, integ.auth.loginUrl);
       return {
         type: "cookie",

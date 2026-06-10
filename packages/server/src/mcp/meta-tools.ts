@@ -9,15 +9,14 @@ import { listJots, deleteJot, readManifest } from "../jots/store";
 import { hashPassword } from "../jots/auth";
 import { isValidJotName } from "../jots/paths";
 import { mint } from "../jots/pending";
-import { hasValidCookies, storeCookies } from "../auth/cookie";
+import { hasValidCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
-import { createPending, getPending, reapOne, markConnected } from "../auth/connections";
+import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
 import {
   ensureSession,
-  captureLiveCookies,
   touch,
   navigate as browserNavigate,
   screenshot as browserScreenshot,
@@ -44,7 +43,6 @@ async function startConnect(
   integration: string
 ): Promise<
   | { connectionId: string; type: "oauth2" | "cookie"; url: string }
-  | { connectionId: string; type: "cookie"; connected: true }
   | { error: string }
 > {
   const integ = registry.getIntegration(integration);
@@ -54,13 +52,7 @@ async function startConnect(
   if (integ.auth.type === "cookie") {
     try {
       const session = await ensureSession(userId);
-      const live = await captureLiveCookies(userId, integ.auth.targetDomain, integ.auth.cookieDomains);
       const rec = createPending({ userId, integration, type: "cookie", ttlSeconds: ttl });
-      if (live.cookies.length > 0) {
-        storeCookies(userId, integration, live);
-        markConnected(userId, integration);
-        return { connectionId: rec.connectionId, type: "cookie", connected: true };
-      }
       const jwt = await signConnectToken(
         { connectionId: rec.connectionId, userId, integration, sessionId: userId, cdpToken: session.cdpToken },
         ttl
@@ -347,7 +339,7 @@ export const metaTools = [
   },
   {
     name: "connect",
-    description: "Begin connecting an integration. For oauth2, returns a URL (OAuth consent page) and a connectionId; call wait_for_connection afterward. For cookie integrations, if the user is already logged into the shared browser session, returns { connected: true } immediately — no URL and no need to call wait_for_connection. Otherwise returns a portal login URL and a connectionId; call wait_for_connection afterward.",
+    description: "Begin connecting an integration. For oauth2, returns a URL (OAuth consent page) and a connectionId; call wait_for_connection afterward. For cookie integrations, always returns a portal login URL and a connectionId — the user opens it to log in live and click Capture; call wait_for_connection afterward.",
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
