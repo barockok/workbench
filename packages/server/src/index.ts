@@ -5,6 +5,7 @@ import { config } from "./config";
 import { handleMcpRequest } from "./mcp/server";
 import { registerApiRoutes } from "./api/routes";
 import { registerOAuthRoutes } from "./api/oauth-routes";
+import { registerOAuthRedirectRoute } from "./api/oauth-redirect";
 import { registerPortal } from "./portal";
 import { registerJotRoutes } from "./jots/routes";
 import { startUploadReaper } from "./jots/pending";
@@ -67,6 +68,7 @@ async function main() {
   await loadPlugins();
   await registerApiRoutes(app);
   await registerOAuthRoutes(app);
+  await registerOAuthRedirectRoute(app);
   startBrowserReaper();
 
   // Reject the WS upgrade itself when the Origin header doesn't match the
