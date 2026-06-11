@@ -43,6 +43,17 @@ const mockIntegration = {
   },
 };
 
+const mockSlackIntegration = {
+  name: "slack",
+  version: "1.0.0",
+  auth: {
+    type: "oauth2" as const,
+    authorizationUrl: "https://slack.com/oauth/v2/authorize",
+    tokenUrl: "https://slack.com/api/oauth.v2.access",
+    scopes: ["chat:write", "channels:read"],
+  },
+};
+
 const mockCookieIntegration = {
   name: "legacy-app",
   version: "1.0.0",
@@ -144,6 +155,16 @@ describe("buildPluginAuthUrl", () => {
     expect(() => buildPluginAuthUrl("user-1", "google-gmail")).toThrow(
       "OAuth client not configured for google-gmail"
     );
+  });
+
+  it("sends slack scopes as user_scope so tokens act as the user, not a bot", () => {
+    process.env.SLACK_CLIENT_ID = "slack-id";
+    process.env.SLACK_CLIENT_SECRET = "slack-secret";
+    vi.spyOn(registry, "getIntegration").mockReturnValue(mockSlackIntegration);
+    const url = buildPluginAuthUrl("user-1", "slack");
+    const parsed = new URL(url);
+    expect(parsed.searchParams.get("user_scope")).toBe("chat:write channels:read");
+    expect(parsed.searchParams.get("scope")).toBeNull();
   });
 
   it("does not add extra params for non-google plugins", () => {
@@ -260,6 +281,78 @@ describe("handlePluginCallback", () => {
     await expect(handlePluginCallback("google-gmail", "code", "state")).rejects.toThrow(
       "OAuth client not configured for google-gmail"
     );
+  });
+
+  describe("slack user-token extraction", () => {
+    beforeEach(() => {
+      process.env.SLACK_CLIENT_ID = "slack-id";
+      process.env.SLACK_CLIENT_SECRET = "slack-secret";
+      vi.spyOn(registry, "getIntegration").mockReturnValue(mockSlackIntegration);
+      vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+        userId: "user-1",
+        integration: "slack",
+      });
+    });
+
+    it("stores the authed_user token, not the top-level bot token", async () => {
+      vi.spyOn(oauth, "exchangeCode").mockResolvedValue({
+        ok: true,
+        access_token: "xoxb-bot-token",
+        authed_user: {
+          id: "U123",
+          access_token: "xoxp-user-token",
+          token_type: "user",
+        },
+      } as any);
+      await handlePluginCallback("slack", "code", "state");
+      expect(tokens.storeToken).toHaveBeenCalledWith(
+        "user-1",
+        "slack",
+        expect.objectContaining({
+          accessToken: "xoxp-user-token",
+          refreshToken: undefined,
+          expiresAt: undefined,
+        })
+      );
+    });
+
+    it("uses authed_user refresh_token and expires_in when token rotation is on", async () => {
+      vi.spyOn(oauth, "exchangeCode").mockResolvedValue({
+        ok: true,
+        authed_user: {
+          id: "U123",
+          access_token: "xoxe.xoxp-user-token",
+          refresh_token: "xoxe-refresh",
+          expires_in: 43200,
+        },
+      } as any);
+      const before = Math.floor(Date.now() / 1000);
+      await handlePluginCallback("slack", "code", "state");
+      const callArgs = (tokens.storeToken as any).mock.calls[0][2];
+      expect(callArgs.accessToken).toBe("xoxe.xoxp-user-token");
+      expect(callArgs.refreshToken).toBe("xoxe-refresh");
+      expect(callArgs.expiresAt).toBeGreaterThanOrEqual(before + 43200);
+    });
+
+    it("throws when slack responds ok:false", async () => {
+      vi.spyOn(oauth, "exchangeCode").mockResolvedValue({
+        ok: false,
+        error: "invalid_code",
+      } as any);
+      await expect(handlePluginCallback("slack", "code", "state")).rejects.toThrow(
+        "invalid_code"
+      );
+    });
+
+    it("throws when authed_user token is missing", async () => {
+      vi.spyOn(oauth, "exchangeCode").mockResolvedValue({
+        ok: true,
+        access_token: "xoxb-bot-only",
+      } as any);
+      await expect(handlePluginCallback("slack", "code", "state")).rejects.toThrow(
+        /user token/i
+      );
+    });
   });
 
   it("handles tokens without expires_in", async () => {
