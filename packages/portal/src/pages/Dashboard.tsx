@@ -255,7 +255,7 @@ export default function Dashboard() {
                 )}
 
                 <div className="card-bottom">
-                  {i.name === "browser" ? (
+                  {i.authType === "none" ? (
                     <span className="card-meta">Built-in · always on</span>
                   ) : connected ? (
                     <>

@@ -5,28 +5,13 @@ import { createContext } from "../plugins/context";
 import { auditLogger } from "../audit/logger";
 import { getToken } from "../auth/tokens";
 import { getUserById } from "../auth/users";
-import { listJots, deleteJot, readManifest } from "../jots/store";
-import { hashPassword } from "../jots/auth";
-import { isValidJotName } from "../jots/paths";
-import { mint } from "../jots/pending";
 import { hasValidCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
-import {
-  ensureSession,
-  touch,
-  navigate as browserNavigate,
-  screenshot as browserScreenshot,
-  click as browserClick,
-  typeText as browserType,
-  pressKey as browserKey,
-  scroll as browserScroll,
-  readText as browserReadText,
-  closeBrowserSession,
-} from "../auth/browser-session";
+import { ensureSession } from "../auth/browser-session";
 
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
 // can call `.safeParse` directly without hand-rolled casts. `handler` is kept
@@ -47,6 +32,9 @@ async function startConnect(
 > {
   const integ = registry.getIntegration(integration);
   if (!integ) return { error: "Integration not found" };
+  if (integ.auth.type === "none") {
+    return { error: `${integration} is built-in and always connected — no connect needed.` };
+  }
   const ttl = config.CONNECT_TTL_SECONDS;
 
   if (integ.auth.type === "cookie") {
@@ -100,9 +88,12 @@ async function executeSingle(
       }
 
       const integ = registry.getIntegration(targetTool.integration);
-      const isConnected = integ?.auth.type === "cookie"
-        ? hasValidCookies(userId, targetTool.integration)
-        : !!getToken(userId, targetTool.integration);
+      const isConnected =
+        integ?.auth.type === "none"
+          ? true
+          : integ?.auth.type === "cookie"
+            ? hasValidCookies(userId, targetTool.integration)
+            : !!getToken(userId, targetTool.integration);
 
       if (!isConnected) {
         await auditLogger.log({
@@ -266,50 +257,6 @@ export const metaTools = [
     },
   },
   {
-    name: "deploy_jot",
-    description:
-      "Begin deploying a static web artifact to /j/<name>/. Returns an upload URL and a single-use token (valid ~5 min). Package your site directory as a gzip tarball and upload it, e.g.: `tar czf - -C <dir> . | curl --data-binary @- -H 'Content-Type: application/gzip' <uploadUrl>`. The archive's root must contain an index.html (served at /j/<name>/) — an upload without one is rejected (NO_INDEX). The archive is extracted server-side and published wholesale, replacing any previous deploy. `access` is 'public' or 'password' (password jots require `password`). Names are global and creator-locked: a name owned by another user returns JOT_NAME_TAKEN. Limits: <=5 MiB decompressed, <=1000 files. Jot pages are sandboxed (opaque origin) and must be self-contained.",
-    inputSchema: z.object({
-      name: z.string(),
-      access: z.enum(["public", "password"]),
-      password: z.string().optional(),
-    }),
-    handler: async (
-      ctx: { userId: string },
-      args: { name: string; access: "public" | "password"; password?: string }
-    ) => {
-      if (!isValidJotName(args.name)) return { error: "INVALID_NAME" };
-      if (args.access === "password" && !args.password) return { error: "PASSWORD_REQUIRED" };
-      const existing = readManifest(args.name);
-      if (existing && existing.owner !== ctx.userId) return { error: "JOT_NAME_TAKEN" };
-      const passwordHash = args.access === "password" ? hashPassword(args.password as string) : undefined;
-      const { token, expiresAt } = mint({
-        owner: ctx.userId,
-        name: args.name,
-        access: args.access,
-        passwordHash,
-      });
-      return {
-        uploadUrl: `${config.SERVER_PUBLIC_URL}/j/upload/${token}`,
-        token,
-        expiresAt,
-        maxBytes: config.JOTS_MAX_BYTES,
-      };
-    },
-  },
-  {
-    name: "list_jots",
-    description: "List the jots you have deployed (name, access, url, updatedAt). Only your own jots are returned.",
-    inputSchema: z.object({}),
-    handler: async (ctx: { userId: string }) => ({ jots: listJots(ctx.userId) }),
-  },
-  {
-    name: "delete_jot",
-    description: "Delete a jot you own by name. Returns FORBIDDEN if another user owns it, NOT_FOUND if it doesn't exist.",
-    inputSchema: z.object({ name: z.string() }),
-    handler: async (ctx: { userId: string }, args: { name: string }) => deleteJot(args.name, ctx.userId),
-  },
-  {
     name: "whoami",
     description: "Return the current authenticated workbench user (id + email). Like /me — identity only, not connected integrations.",
     inputSchema: z.object({}),
@@ -330,9 +277,11 @@ export const metaTools = [
           name: i.name,
           version: i.version,
           connected:
-            i.auth.type === "cookie"
-              ? hasValidCookies(ctx.userId, i.name)
-              : !!getToken(ctx.userId, i.name),
+            i.auth.type === "none"
+              ? true
+              : i.auth.type === "cookie"
+                ? hasValidCookies(ctx.userId, i.name)
+                : !!getToken(ctx.userId, i.name),
         })),
       };
     },
@@ -365,114 +314,6 @@ export const metaTools = [
     description: "Deprecated alias of connect(). Get a URL to connect an integration.",
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
-  },
-  {
-    name: "browser_navigate",
-    description: "Navigate the per-user browser session to a URL. Opens a warm session if none is active. Returns the final url and page title.",
-    inputSchema: z.object({ url: z.string().url() }),
-    handler: async (ctx: { userId: string }, args: { url: string }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      return browserNavigate(s, args.url);
-    },
-  },
-  {
-    name: "browser_screenshot",
-    description: "Capture a screenshot of the current viewport so you can see the page. Costs vision tokens — call it only when the page likely changed and you need to look; after a click/type, act on what you already saw unless the result is uncertain. Downscaled JPEG by default (maxWidth 1000). If the pixels are identical to your last shot it returns { unchanged: true } instead of an image. For text-heavy pages prefer browser_read_text.",
-    inputSchema: z.object({
-      format: z.enum(["jpeg", "png"]).optional(),
-      quality: z.number().int().min(1).max(100).optional(),
-      maxWidth: z.number().int().positive().optional(),
-    }),
-    handler: async (ctx: { userId: string }, args: { format?: "jpeg" | "png"; quality?: number; maxWidth?: number }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      return browserScreenshot(s, args);
-    },
-  },
-  {
-    name: "browser_click",
-    description: "Click at viewport coordinates (x, y) in the per-user browser session.",
-    inputSchema: z.object({
-      x: z.number(),
-      y: z.number(),
-      button: z.enum(["left", "right", "middle"]).default("left"),
-    }),
-    handler: async (ctx: { userId: string }, args: { x: number; y: number; button: "left" | "right" | "middle" }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      await browserClick(s, args.x, args.y, args.button);
-      return { ok: true };
-    },
-  },
-  {
-    name: "browser_type",
-    description: "Type text into the currently focused element. Click the field first.",
-    inputSchema: z.object({ text: z.string() }),
-    handler: async (ctx: { userId: string }, args: { text: string }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      await browserType(s, args.text);
-      return { ok: true };
-    },
-  },
-  {
-    name: "browser_key",
-    description: "Press a key or chord, e.g. 'Enter', 'Tab', 'ctrl+a', 'ArrowDown'.",
-    inputSchema: z.object({ keys: z.string() }),
-    handler: async (ctx: { userId: string }, args: { keys: string }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      await browserKey(s, args.keys);
-      return { ok: true };
-    },
-  },
-  {
-    name: "browser_scroll",
-    description: "Scroll the viewport up/down/left/right by an optional pixel amount (default 600).",
-    inputSchema: z.object({
-      direction: z.enum(["up", "down", "left", "right"]),
-      amount: z.number().int().positive().default(600),
-    }),
-    handler: async (ctx: { userId: string }, args: { direction: "up" | "down" | "left" | "right"; amount: number }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      await browserScroll(s, args.direction, args.amount);
-      return { ok: true };
-    },
-  },
-  {
-    name: "browser_read_text",
-    description: "Read the visible text of the current page (document.innerText) as plain text — far cheaper than a screenshot for text-heavy pages, forms, and reading. Use this instead of browser_screenshot when you don't need to see layout/pixels.",
-    inputSchema: z.object({ maxChars: z.number().int().positive().optional() }),
-    handler: async (ctx: { userId: string }, args: { maxChars?: number }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      return browserReadText(s, args.maxChars);
-    },
-  },
-  {
-    name: "browser_close",
-    description: "Close the per-user warm browser session (the persistent profile is kept). Frees the single-writer lock so a cookie capture can run.",
-    inputSchema: z.object({}),
-    handler: async (ctx: { userId: string }) => {
-      await closeBrowserSession(ctx.userId);
-      return { ok: true };
-    },
-  },
-  {
-    name: "browser_live_url",
-    description: "Get a short-lived URL to watch and take over the per-user browser session in a web canvas. Open it to drive the same browser by hand, then return control to the model.",
-    inputSchema: z.object({}),
-    handler: async (ctx: { userId: string }) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
-      const jwt = await signConnectToken(
-        { connectionId: ctx.userId, userId: ctx.userId, integration: "__browser__", sessionId: ctx.userId, cdpToken: s.cdpToken },
-        config.CONNECT_TTL_SECONDS
-      );
-      return { url: `${config.PORTAL_URL}/browser?t=${jwt}` };
-    },
   },
 ] satisfies readonly MetaTool[];
 
@@ -517,21 +358,6 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     },
     required: ["executions"],
   },
-  deploy_jot: {
-    type: "object",
-    properties: {
-      name: { type: "string", description: "Jot name; [a-z0-9-], ≤64 chars" },
-      access: { type: "string", enum: ["public", "password"], description: "Gate type" },
-      password: { type: "string", description: "Required when access=password" },
-    },
-    required: ["name", "access"],
-  },
-  list_jots: { type: "object", properties: {} },
-  delete_jot: {
-    type: "object",
-    properties: { name: { type: "string", description: "Name of the jot to delete" } },
-    required: ["name"],
-  },
   whoami: { type: "object", properties: {} },
   list_integrations: { type: "object", properties: {} },
   connect: {
@@ -552,50 +378,4 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     properties: { integration: { type: "string", description: "Integration name" } },
     required: ["integration"],
   },
-  browser_navigate: {
-    type: "object",
-    properties: { url: { type: "string", description: "URL to navigate to" } },
-    required: ["url"],
-  },
-  browser_screenshot: {
-    type: "object",
-    properties: {
-      format: { type: "string", enum: ["jpeg", "png"], description: "Image format (default jpeg)" },
-      quality: { type: "number", description: "JPEG quality 1-100 (default 60)" },
-      maxWidth: { type: "number", description: "Downscale so width ≤ this many px (default 1000). Lower = fewer tokens." },
-    },
-  },
-  browser_click: {
-    type: "object",
-    properties: {
-      x: { type: "number", description: "Viewport x coordinate" },
-      y: { type: "number", description: "Viewport y coordinate" },
-      button: { type: "string", enum: ["left", "right", "middle"], description: "Mouse button (default left)" },
-    },
-    required: ["x", "y"],
-  },
-  browser_type: {
-    type: "object",
-    properties: { text: { type: "string", description: "Text to type into the focused element" } },
-    required: ["text"],
-  },
-  browser_key: {
-    type: "object",
-    properties: { keys: { type: "string", description: "Key or chord, e.g. Enter, ctrl+a" } },
-    required: ["keys"],
-  },
-  browser_scroll: {
-    type: "object",
-    properties: {
-      direction: { type: "string", enum: ["up", "down", "left", "right"], description: "Scroll direction" },
-      amount: { type: "number", description: "Pixels to scroll (default 600)" },
-    },
-    required: ["direction"],
-  },
-  browser_read_text: {
-    type: "object",
-    properties: { maxChars: { type: "number", description: "Max characters to return (default 20000)" } },
-  },
-  browser_close: { type: "object", properties: {} },
-  browser_live_url: { type: "object", properties: {} },
 };
