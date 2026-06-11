@@ -69,7 +69,13 @@ export async function handleMcpRequest(body: Record<string, unknown>, userId: st
 
     // A handler may return an image sentinel; surface it as a real MCP image
     // content block instead of JSON text. Everything else is text-wrapped.
-    const img = (result as { _mcpImage?: { data: string; mimeType: string } } | null)?._mcpImage;
+    // Also check one level down: execute_tool wraps the plugin result in
+    // { result }, and browser_screenshot (a plugin tool now) returns the
+    // sentinel there.
+    type ImageSentinel = { _mcpImage?: { data: string; mimeType: string } };
+    const img =
+      (result as ImageSentinel | null)?._mcpImage ??
+      ((result as { result?: ImageSentinel } | null)?.result?._mcpImage);
     const content = img
       ? [{ type: "image", data: img.data, mimeType: img.mimeType }]
       : [{ type: "text", text: JSON.stringify(result) }];

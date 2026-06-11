@@ -13,17 +13,17 @@ vi.mock("../src/jots/auth", () => ({
   hashPassword: vi.fn(() => "scrypt$salt$hash"),
 }));
 
-import { metaTools } from "../src/mcp/meta-tools";
+import { jotsPlugin } from "../src/plugins/internal/jots";
 import * as store from "../src/jots/store";
 import { hashPassword } from "../src/jots/auth";
 import { mint } from "../src/jots/pending";
 import { readManifest } from "../src/jots/store";
 
 function findTool(name: string) {
-  return metaTools.find((t) => t.name === name)!;
+  return jotsPlugin.tools.find((t) => t.name === name)!;
 }
 
-describe("meta-tools jots", () => {
+describe("jots plugin tools", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("deploy_jot mints a token and returns the upload URL for a public jot", async () => {

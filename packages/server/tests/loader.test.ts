@@ -17,6 +17,16 @@ vi.mock("../src/config", () => ({
   config: { PLUGINS_DIR: "./plugins" },
 }));
 
+
+// Stub the internal plugins: their real handlers import browser-session →
+// cookie → db, which needs full config these tests don't mock.
+vi.mock("../src/plugins/internal/browser", () => ({
+  browserPlugin: { integration: { name: "browser", version: "1.0.0", auth: { type: "none" } }, tools: [] },
+}));
+vi.mock("../src/plugins/internal/jots", () => ({
+  jotsPlugin: { integration: { name: "jots", version: "1.0.0", auth: { type: "none" } }, tools: [] },
+}));
+
 vi.mock("../src/plugins/registry", () => ({
   registry: {
     register: vi.fn(),
