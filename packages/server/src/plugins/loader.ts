@@ -3,6 +3,8 @@ import path from "path";
 import { z } from "zod";
 import { config } from "../config";
 import { registry, PluginTool } from "./registry";
+import { browserPlugin } from "./internal/browser";
+import { jotsPlugin } from "./internal/jots";
 
 const builtinPlugins = [
   "google-gmail",
@@ -69,6 +71,8 @@ async function loadBuiltin(pluginName: string, basePath: string): Promise<void> 
 }
 
 export async function loadPlugins(): Promise<void> {
+  registerInternalPlugins();
+
   const basePath = findPluginsBasePath();
   if (basePath) {
     for (const name of builtinPlugins) {
@@ -93,6 +97,12 @@ export async function loadPlugins(): Promise<void> {
     // directory, so every built-in dir would be re-imported here. The built-in
     // loop already registered them; skip to avoid redundant loads.
     if (builtinPlugins.includes(dir)) continue;
+    // register() overwrites by name — never let a disk plugin shadow an
+    // internal capability.
+    if (internalNames.includes(dir)) {
+      console.error(`Skipping plugin dir "${dir}": name reserved for internal plugin`);
+      continue;
+    }
     const pluginPath = path.join(pluginsDir, dir);
     try {
       const manifestMod = await import(path.join(pluginPath, "manifest.ts"));
@@ -107,4 +117,16 @@ export async function loadPlugins(): Promise<void> {
       console.error(`Failed to load plugin ${dir}:`, e);
     }
   }
+
+}
+
+const internalNames = [browserPlugin.integration.name, jotsPlugin.integration.name];
+
+// Internal capabilities (auth type "none") whose handlers reach into server
+// modules (browser-session, jots store) — deliberately NOT part of the plugin
+// ToolContext, so third-party plugins can never drive the user's browser or
+// touch the jots filesystem.
+export function registerInternalPlugins(): void {
+  registry.register(browserPlugin);
+  registry.register(jotsPlugin);
 }
