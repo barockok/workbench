@@ -69,18 +69,36 @@ export const uploadFile = {
     filename: z.string(),
     title: z.string().optional(),
   }),
+  // files.upload is dead for apps created after May 2025 (method_deprecated);
+  // Slack requires the 3-step external flow: get a pre-signed URL, POST the
+  // bytes to it, then complete to share into the channel.
   handler: async (ctx: any, args: any) => {
-    const formData = new FormData();
-    formData.append("channels", args.channel);
-    formData.append("content", args.content);
-    formData.append("filename", args.filename);
-    if (args.title) formData.append("title", args.title);
+    const bytes = Buffer.from(args.content, "utf-8");
 
-    const res = await ctx.http("https://slack.com/api/files.upload", {
+    const params = new URLSearchParams();
+    params.set("filename", args.filename);
+    params.set("length", String(bytes.byteLength));
+    const urlRes = await ctx.http(`https://slack.com/api/files.getUploadURLExternal?${params}`);
+    const urlData = await urlRes.json();
+    if (!urlData.ok) return urlData;
+
+    const uploadRes = await ctx.http(urlData.upload_url, {
       method: "POST",
-      body: formData,
+      body: bytes,
     });
-    return res.json();
+    if (!uploadRes.ok) {
+      throw new Error(`Slack file upload failed: ${uploadRes.status} ${await uploadRes.text()}`);
+    }
+
+    const completeRes = await ctx.http("https://slack.com/api/files.completeUploadExternal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        files: [{ id: urlData.file_id, title: args.title ?? args.filename }],
+        channel_id: args.channel,
+      }),
+    });
+    return completeRes.json();
   },
 };
 
@@ -206,24 +224,29 @@ export const findUsers = {
     query: z.string(),
   }),
   handler: async (ctx: any, args: any) => {
-    const params = new URLSearchParams();
-    params.set("query", args.query);
-    const res = await ctx.http(`https://slack.com/api/users.lookupByEmail?${params}`);
-    if (!res.ok) {
-      // Fallback to search if lookupByEmail fails
-      const searchParams = new URLSearchParams();
-      searchParams.set("query", args.query);
-      const searchRes = await ctx.http(`https://slack.com/api/users.list?${searchParams}`);
-      const data = await searchRes.json();
-      if (data.members) {
-        const filtered = data.members.filter((u: any) =>
-          u.name?.toLowerCase().includes(args.query.toLowerCase()) ||
-          u.real_name?.toLowerCase().includes(args.query.toLowerCase())
-        );
-        return { ok: true, members: filtered };
-      }
-      return data;
+    const q = args.query.toLowerCase();
+
+    // Email-shaped query: exact lookup first. Slack reports users_not_found
+    // as 200 {ok:false}, so check the body, then fall through to name search.
+    if (q.includes("@")) {
+      const params = new URLSearchParams();
+      params.set("email", args.query);
+      const res = await ctx.http(`https://slack.com/api/users.lookupByEmail?${params}`);
+      const data = await res.json();
+      if (data.ok) return data;
     }
-    return res.json();
+
+    const params = new URLSearchParams();
+    params.set("limit", "200");
+    const res = await ctx.http(`https://slack.com/api/users.list?${params}`);
+    const data = await res.json();
+    if (!data.ok || !data.members) return data;
+    const filtered = data.members.filter(
+      (u: any) =>
+        u.name?.toLowerCase().includes(q) ||
+        u.real_name?.toLowerCase().includes(q) ||
+        u.profile?.email?.toLowerCase() === q
+    );
+    return { ok: true, members: filtered };
   },
 };

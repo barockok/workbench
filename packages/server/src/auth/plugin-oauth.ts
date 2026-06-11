@@ -76,7 +76,10 @@ export function buildPluginAuthUrl(userId: string, integration: string): string 
   url.searchParams.set("client_id", creds.clientId);
   url.searchParams.set("redirect_uri", getPluginCallbackUrl(integration));
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", integ.auth.scopes.join(" "));
+  // Slack splits scopes: `scope` issues a bot token, `user_scope` a user
+  // token acting as the authorizing user. We always want the user token.
+  const scopeParam = integration === "slack" ? "user_scope" : "scope";
+  url.searchParams.set(scopeParam, integ.auth.scopes.join(" "));
   url.searchParams.set("state", state);
   for (const [k, v] of Object.entries(providerExtraParams(integration))) {
     url.searchParams.set(k, v);
@@ -112,13 +115,30 @@ export async function handlePluginCallback(
     getPluginCallbackUrl(integration)
   );
 
-  const expiresAt = tokens.expires_in
-    ? Math.floor(Date.now() / 1000) + tokens.expires_in
+  // Slack wraps errors in a 200 {ok:false} envelope and nests the user
+  // token under authed_user (top-level access_token is the bot token).
+  let accessToken = tokens.access_token;
+  let refreshToken = tokens.refresh_token;
+  let expiresIn = tokens.expires_in;
+  if (integration === "slack") {
+    if (tokens.ok === false) {
+      throw new Error(`Slack token exchange failed: ${tokens.error}`);
+    }
+    if (!tokens.authed_user?.access_token) {
+      throw new Error("Slack response missing user token (authed_user.access_token)");
+    }
+    accessToken = tokens.authed_user.access_token;
+    refreshToken = tokens.authed_user.refresh_token;
+    expiresIn = tokens.authed_user.expires_in;
+  }
+
+  const expiresAt = expiresIn
+    ? Math.floor(Date.now() / 1000) + expiresIn
     : undefined;
 
   storeToken(authState.userId, integration, {
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
+    accessToken,
+    refreshToken,
     expiresAt,
     scopes: integ.auth.scopes.join(" "),
   });
