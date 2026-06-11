@@ -90,9 +90,21 @@ describe("getPluginOAuthCreds", () => {
     expect(getPluginOAuthCreds("google-gmail")).toBeNull();
   });
 
-  it("returns null when client secret is missing", () => {
+  it("returns public-client creds (no secret) when client secret is missing", () => {
     process.env.GOOGLE_GMAIL_CLIENT_ID = "gmail-id";
-    expect(getPluginOAuthCreds("google-gmail")).toBeNull();
+    expect(getPluginOAuthCreds("google-gmail")).toEqual({
+      clientId: "gmail-id",
+      clientSecret: undefined,
+    });
+  });
+
+  it("treats an empty-string secret as a public client", () => {
+    process.env.GOOGLE_GMAIL_CLIENT_ID = "gmail-id";
+    process.env.GOOGLE_GMAIL_CLIENT_SECRET = "";
+    expect(getPluginOAuthCreds("google-gmail")).toEqual({
+      clientId: "gmail-id",
+      clientSecret: undefined,
+    });
   });
 
   it("returns null when both are missing", () => {
@@ -127,6 +139,17 @@ describe("buildPluginAuthUrl", () => {
     expect(parsed.searchParams.get("response_type")).toBe("code");
     expect(parsed.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/gmail.modify");
     expect(parsed.searchParams.get("state")).toBe("test-state");
+  });
+
+  it("includes an S256 PKCE challenge derived from the stored verifier", () => {
+    const url = buildPluginAuthUrl("user-1", "google-gmail");
+    const parsed = new URL(url);
+    expect(parsed.searchParams.get("code_challenge_method")).toBe("S256");
+    const verifier = vi.mocked(oauth.createAuthState).mock.calls[0][2];
+    expect(verifier).toBeTruthy();
+    expect(parsed.searchParams.get("code_challenge")).toBe(
+      oauth.codeChallengeS256(verifier!)
+    );
   });
 
   it("adds google-specific extra params", () => {
@@ -211,7 +234,8 @@ describe("handlePluginCallback", () => {
       "gmail-id",
       "gmail-secret",
       "auth-code",
-      "http://localhost:3000/api/auth/plugin/google-gmail/callback"
+      "http://localhost:3000/api/auth/plugin/google-gmail/callback",
+      undefined
     );
     expect(tokens.storeToken).toHaveBeenCalledWith(
       "user-1",
@@ -221,6 +245,23 @@ describe("handlePluginCallback", () => {
         refreshToken: "refresh-456",
         scopes: "https://www.googleapis.com/auth/gmail.modify",
       })
+    );
+  });
+
+  it("passes the stored PKCE verifier to the token exchange", async () => {
+    vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+      userId: "user-1",
+      integration: "google-gmail",
+      codeVerifier: "stored-verifier",
+    });
+    await handlePluginCallback("google-gmail", "auth-code", "valid-state");
+    expect(oauth.exchangeCode).toHaveBeenCalledWith(
+      "https://oauth2.googleapis.com/token",
+      "gmail-id",
+      "gmail-secret",
+      "auth-code",
+      "http://localhost:3000/api/auth/plugin/google-gmail/callback",
+      "stored-verifier"
     );
   });
 

@@ -1,11 +1,19 @@
 import { config } from "../config";
 import { registry } from "../plugins/registry";
-import { createAuthState, verifyAuthState, exchangeCode } from "./oauth";
+import {
+  createAuthState,
+  verifyAuthState,
+  exchangeCode,
+  generateCodeVerifier,
+  codeChallengeS256,
+} from "./oauth";
 import { storeToken } from "./tokens";
 
 interface ClientCreds {
   clientId: string;
-  clientSecret: string;
+  // Absent for public (PKCE-only) clients — e.g. a Keycloak client with
+  // "Client authentication" off. The flow then relies on PKCE alone.
+  clientSecret?: string;
 }
 
 /**
@@ -35,8 +43,9 @@ export function getPluginOAuthCreds(integration: string): ClientCreds | null {
   const prefix = envVarPrefix(integration);
   const id = process.env[`${prefix}_CLIENT_ID`];
   const secret = process.env[`${prefix}_CLIENT_SECRET`];
-  if (!id || !secret) return null;
-  return { clientId: id, clientSecret: secret };
+  if (!id) return null;
+  // Empty/unset secret means a public client: configured, but PKCE-only.
+  return { clientId: id, clientSecret: secret || undefined };
 }
 
 export function getPluginCallbackUrl(integration: string): string {
@@ -71,11 +80,16 @@ export function buildPluginAuthUrl(userId: string, integration: string): string 
     throw new Error(`OAuth client not configured for ${integration}`);
   }
 
-  const state = createAuthState(userId, integration);
+  // PKCE on every flow, confidential clients included (OAuth 2.1 baseline).
+  // Providers that don't support it ignore the extra params per RFC 6749.
+  const codeVerifier = generateCodeVerifier();
+  const state = createAuthState(userId, integration, codeVerifier);
   const url = new URL(integ.auth.authorizationUrl);
   url.searchParams.set("client_id", creds.clientId);
   url.searchParams.set("redirect_uri", getPluginCallbackUrl(integration));
   url.searchParams.set("response_type", "code");
+  url.searchParams.set("code_challenge", codeChallengeS256(codeVerifier));
+  url.searchParams.set("code_challenge_method", "S256");
   // Slack splits scopes: `scope` issues a bot token, `user_scope` a user
   // token acting as the authorizing user. We always want the user token.
   const scopeParam = integration === "slack" ? "user_scope" : "scope";
@@ -112,7 +126,8 @@ export async function handlePluginCallback(
     creds.clientId,
     creds.clientSecret,
     code,
-    getPluginCallbackUrl(integration)
+    getPluginCallbackUrl(integration),
+    authState.codeVerifier
   );
 
   // Slack wraps errors in a 200 {ok:false} envelope and nests the user
