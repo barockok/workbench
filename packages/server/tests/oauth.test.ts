@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createAuthState, verifyAuthState, exchangeCode } from "../src/auth/oauth";
+import {
+  createAuthState,
+  verifyAuthState,
+  exchangeCode,
+  generateCodeVerifier,
+  codeChallengeS256,
+} from "../src/auth/oauth";
 import { db } from "../src/db";
 
 beforeEach(() => {
@@ -36,6 +42,31 @@ describe("oauth", () => {
     expect(verifyAuthState(newState)).not.toBeNull();
   });
 
+  it("round-trips the PKCE verifier through state", () => {
+    const state = createAuthState("alice", "jira", "my-verifier");
+    expect(verifyAuthState(state)?.codeVerifier).toBe("my-verifier");
+  });
+
+  it("returns undefined verifier when none was stored", () => {
+    const state = createAuthState("alice", "jira");
+    expect(verifyAuthState(state)?.codeVerifier).toBeUndefined();
+  });
+
+  describe("PKCE helpers", () => {
+    it("generates unique base64url verifiers", () => {
+      const a = generateCodeVerifier();
+      const b = generateCodeVerifier();
+      expect(a).not.toBe(b);
+      expect(a).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    });
+
+    it("computes the RFC 7636 appendix-B challenge", () => {
+      // Verifier/challenge pair straight from the RFC's worked example.
+      expect(codeChallengeS256("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"))
+        .toBe("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
+    });
+  });
+
   describe("exchangeCode", () => {
     it("exchanges code for tokens", async () => {
       vi.mocked(global.fetch).mockResolvedValue(
@@ -60,6 +91,26 @@ describe("oauth", () => {
     it("throws on failed exchange", async () => {
       vi.mocked(global.fetch).mockResolvedValue(new Response("error", { status: 400 }));
       await expect(exchangeCode("https://example.com/token", "id", "secret", "bad", "https://localhost/callback")).rejects.toThrow("Token exchange failed: 400");
+    });
+
+    it("omits client_secret and sends code_verifier for public clients", async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ access_token: "tok" }))
+      );
+      await exchangeCode("https://example.com/token", "id", undefined, "code", "https://localhost/callback", "verifier-1");
+      const body = vi.mocked(global.fetch).mock.calls[0][1]?.body as URLSearchParams;
+      expect(body.has("client_secret")).toBe(false);
+      expect(body.get("code_verifier")).toBe("verifier-1");
+    });
+
+    it("sends both client_secret and code_verifier for confidential clients with PKCE", async () => {
+      vi.mocked(global.fetch).mockResolvedValue(
+        new Response(JSON.stringify({ access_token: "tok" }))
+      );
+      await exchangeCode("https://example.com/token", "id", "secret", "code", "https://localhost/callback", "verifier-1");
+      const body = vi.mocked(global.fetch).mock.calls[0][1]?.body as URLSearchParams;
+      expect(body.get("client_secret")).toBe("secret");
+      expect(body.get("code_verifier")).toBe("verifier-1");
     });
   });
 });

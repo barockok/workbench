@@ -104,6 +104,13 @@ try {
 } catch (e: any) {
   if (!e.message?.includes("duplicate column name")) throw e;
 }
+// PKCE code_verifier for the in-flight authorization (RFC 7636). Plaintext is
+// fine: rows live ≤10 minutes and a verifier is useless without the code.
+try {
+  db.exec(`ALTER TABLE pending_auth ADD COLUMN code_verifier TEXT`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
 // Encrypted plaintext API key, so the key can be revealed again after minting
 // (not just shown once). Hash stays for cheap verification.
 try {
