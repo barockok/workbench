@@ -245,4 +245,59 @@ describe("handleMcpRequest", () => {
     expect(parsed.type).toBe("cookie");
     expect(parsed.url).toContain("/connect/legacy");
   });
+  it("treats none-auth (built-in) tools as always connected", async () => {
+    const { getToken } = await import("../src/auth/tokens");
+    vi.mocked(getToken).mockReturnValue(null); // no token stored — must not matter
+
+    const mockTool = {
+      name: "browser_close",
+      description: "Close",
+      integration: "browser",
+      inputSchema: { type: "object" as const, properties: {} },
+      handler: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "browser",
+      version: "1.0.0",
+      auth: { type: "none" as const },
+    } as any);
+
+    const res = await handleMcpRequest(
+      {
+        method: "tools/call",
+        id: 20,
+        params: { name: "execute_tool", arguments: { tool: "browser_close", args: {} } },
+      },
+      "user-1"
+    );
+    const parsed = JSON.parse(res.result.content[0].text);
+    expect(parsed).toEqual({ result: { ok: true } });
+  });
+
+  it("hoists an _mcpImage sentinel nested under execute_tool's result wrapper", async () => {
+    const mockTool = {
+      name: "browser_screenshot",
+      description: "Shot",
+      integration: "browser",
+      inputSchema: { type: "object" as const, properties: {} },
+      handler: vi.fn().mockResolvedValue({ _mcpImage: { data: "b64", mimeType: "image/jpeg" } }),
+    };
+    vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "browser",
+      version: "1.0.0",
+      auth: { type: "none" as const },
+    } as any);
+
+    const res = await handleMcpRequest(
+      {
+        method: "tools/call",
+        id: 21,
+        params: { name: "execute_tool", arguments: { tool: "browser_screenshot", args: {} } },
+      },
+      "user-1"
+    );
+    expect(res.result.content[0]).toEqual({ type: "image", data: "b64", mimeType: "image/jpeg" });
+  });
 });

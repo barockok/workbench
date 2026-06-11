@@ -27,10 +27,10 @@ vi.mock("../src/auth/browser-session", () => ({
   closeBrowserSession: closeMock,
 }));
 
-import { metaTools } from "../src/mcp/meta-tools";
+import { browserPlugin } from "../src/plugins/internal/browser";
 
 function tool(name: string) {
-  const t = metaTools.find((m) => m.name === name);
+  const t = browserPlugin.tools.find((m) => m.name === name);
   if (!t) throw new Error(`missing ${name}`);
   return t;
 }
@@ -40,7 +40,7 @@ beforeEach(() => {
   ensureMock.mockResolvedValue({ userId: "u1" });
 });
 
-describe("browser_* meta-tools", () => {
+describe("browser plugin tools", () => {
   it("browser_navigate ensures session, touches, navigates", async () => {
     navMock.mockResolvedValue({ url: "https://e.com", title: "E" });
     const out = await (tool("browser_navigate").handler as any)({ userId: "u1" }, { url: "https://e.com" });
