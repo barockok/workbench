@@ -21,13 +21,29 @@ export function verifyAuthState(state: string): { userId: string; integration: s
   return { userId: row.user_id, integration: row.integration };
 }
 
+export interface TokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  // Slack-specific: ok/error envelope, user token nested under authed_user
+  ok?: boolean;
+  error?: string;
+  authed_user?: {
+    id?: string;
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    scope?: string;
+  };
+}
+
 export async function exchangeCode(
   tokenUrl: string,
   clientId: string,
   clientSecret: string,
   code: string,
   redirectUri: string
-): Promise<{ access_token: string; refresh_token?: string; expires_in?: number }> {
+): Promise<TokenResponse> {
   const response = await fetch(tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
