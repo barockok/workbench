@@ -1,12 +1,13 @@
-# a-workbench v0.10.2
+# a-workbench v0.11.0
 
-_2026-06-10_
+_2026-06-12_
 
-Headline: **Cookie connect always re-verifies login**, plus a **static out-of-band OAuth redirect page** for CLI agents.
+Headline: **PKCE + public-client support for plugin OAuth**, and the **Slack plugin acts as the authorizing user** instead of a bot.
 
-## Changes
-- **Cookie-auth connect always opens the login live view.** A v0.10.0 regression: after disconnecting a cookie integration and reconnecting, the "smart capture" fast-path instantly marked it connected from cookies still present in the shared browser session — even though disconnect only deletes the *stored* cookies, not the browser session's, so a stale/invalid session could silently reconnect. Connect now always prompts login (the instant fast-path is removed from both the portal route and MCP `startConnect`); the user logs in and clicks Capture. The Capture flow and `captureLiveCookies` are unchanged.
-- **Static `GET /oauth/callback` out-of-band redirect landing page.** For CLI agents that can't host a redirect listener: the OAuth provider redirects to this generic, no-auth page, which shows the full redirect URL (verbatim, including `?code&state`) with a Copy button. The user pastes it back to the agent, which does the code exchange itself — workbench does no server work. Hardened: the URL reaches the DOM only via `input.value` (no HTML sink), `CSP: default-src 'none' … frame-ancestors 'none'`, `X-Frame-Options: DENY` (no clickjacking the Copy button into leaking the auth code), `Referrer-Policy: no-referrer`. Pointing plugin `redirect_uri`s at this page and the agent-side tool that consumes the pasted URL are follow-ups.
+## Features
+- **PKCE on every plugin OAuth flow (RFC 7636).** Authorize redirects now carry an S256 `code_challenge`; the verifier is stored server-side in `pending_auth` alongside the state (new `code_verifier` column, auto-migrated) and sent as `code_verifier` on the token exchange. Confidential clients keep PKCE too — OAuth 2.1 baseline; providers without PKCE support ignore the extra params per RFC 6749.
+- **Public (PKCE-only) OAuth clients.** A plugin is now configured with `<PLUGIN>_CLIENT_ID` alone — a missing or empty `<PLUGIN>_CLIENT_SECRET` means a public client (e.g. a Keycloak client with client authentication off). Token exchange and refresh omit `client_secret` entirely rather than sending an empty string, which Keycloak rejects. Previously such plugins showed "not configured" in the portal and could never connect.
+- **Slack plugin acts as the user.** Slack reads the standard `scope` param as *bot* scopes and nests the user token under `authed_user.access_token`; the plugin now sends scopes as `user_scope` and stores the user token, so tools act as the authorizing user and `search.all` (user-token-only) works. Scopes expanded to cover all tools (`conversations.history`/`.replies`, `reactions:write`, `users:read`, `search:read`) — declare them under `scopes.user` on the Slack app. `slack_upload_file` migrated off the dead `files.upload` API to the 3-step external upload flow; `slack_find_users` email lookup fixed (`users.lookupByEmail` takes `email`, not `query`).
 
 ## Notes
-- Tests: 412 passing. The same pre-existing/flaky suite failures as prior releases (`loader.test.ts` ×2; `users.test.ts` shared-SQLite race, passes in isolation) are unrelated — both PRs passed CI clean.
+- Tests: 438 passing, CI clean on both PRs (#30, #31).
