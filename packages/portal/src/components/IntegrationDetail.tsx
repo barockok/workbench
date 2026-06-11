@@ -198,7 +198,7 @@ export default function IntegrationDetail({
           )}
         </div>
 
-        {name !== "browser" && (
+        {data?.authType !== "none" && (
           <div className="modal-foot">
             {connected && (
               <button className="btn-disconnect" onClick={() => onDisconnect(name)}>

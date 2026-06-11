@@ -36,6 +36,7 @@ export interface IntegrationSummary {
   logo?: string;
   toolCount: number;
   configured?: boolean;
+  authType?: string;
 }
 
 export interface IntegrationDetail extends IntegrationSummary {

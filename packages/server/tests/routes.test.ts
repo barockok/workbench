@@ -312,6 +312,8 @@ describe("API routes", () => {
     it("returns integrations for authenticated user", async () => {
       vi.spyOn(registry, "listIntegrations").mockReturnValue([
         { name: "slack", version: "1.0.0", auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] } },
+        // The built-in browser is a registry plugin like any other now.
+        { name: "browser", version: "1.0.0", auth: { type: "none" as const } },
       ]);
       const app = await buildApp();
       const res = await app.inject({
@@ -321,11 +323,10 @@ describe("API routes", () => {
       });
       expect(res.statusCode).toBe(200);
       const list = JSON.parse(res.body).integrations;
-      // Registered plugins + the built-in synthetic browser integration.
       expect(list).toHaveLength(2);
       expect(list.map((i: { name: string }) => i.name)).toContain("slack");
       const browser = list.find((i: { name: string }) => i.name === "browser");
-      expect(browser).toMatchObject({ name: "browser", configured: true });
+      expect(browser).toMatchObject({ name: "browser", configured: true, authType: "none" });
     });
 
     it("returns 401 without auth", async () => {
@@ -336,7 +337,8 @@ describe("API routes", () => {
 
     it("reports configured flag per auth type", async () => {
       const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
-      // cookie -> always; oauth2 -> only when creds present; none -> false.
+      // cookie -> always; oauth2 -> only when creds present; none -> always
+      // (built-in capability, nothing to configure).
       vi.mocked(getPluginOAuthCreds).mockImplementation((n: string) =>
         n === "oauth-ready" ? { clientId: "id", clientSecret: "secret" } : null
       );
@@ -344,7 +346,7 @@ describe("API routes", () => {
         { name: "cookie-x", version: "1.0.0", auth: { type: "cookie" as const, targetDomain: "x.test", cookieDomains: ["x.test"] } },
         { name: "oauth-ready", version: "1.0.0", auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] } },
         { name: "oauth-bare", version: "1.0.0", auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] } },
-        { name: "manual", version: "1.0.0", auth: { type: "none" as const } },
+        { name: "builtin", version: "1.0.0", auth: { type: "none" as const } },
       ] as never);
       const app = await buildApp();
       const res = await app.inject({
@@ -356,7 +358,7 @@ describe("API routes", () => {
       expect(by("cookie-x")).toBe(true);
       expect(by("oauth-ready")).toBe(true);
       expect(by("oauth-bare")).toBe(false);
-      expect(by("manual")).toBe(false);
+      expect(by("builtin")).toBe(true);
     });
 
     it("includes presentation metadata + tool count + resolved logo", async () => {
@@ -412,8 +414,10 @@ describe("API routes", () => {
       expect(body.tools).toEqual([{ name: "slack_post", description: "Post a message" }]);
     });
 
-    it("returns the synthetic browser integration (no registry lookup)", async () => {
-      const spy = vi.spyOn(registry, "getIntegration");
+    it("returns the built-in browser integration from the registry", async () => {
+      const { browserPlugin } = await import("../src/plugins/internal/browser");
+      vi.spyOn(registry, "getIntegration").mockReturnValue(browserPlugin.integration);
+      vi.spyOn(registry, "listToolsByIntegration").mockReturnValue(browserPlugin.tools);
       const app = await buildApp();
       const res = await app.inject({
         method: "GET", url: "/api/integrations/browser",
@@ -424,7 +428,6 @@ describe("API routes", () => {
       expect(body.name).toBe("browser");
       expect(body.authType).toBe("none");
       expect(body.tools.every((t: { name: string }) => t.name.startsWith("browser_"))).toBe(true);
-      expect(spy).not.toHaveBeenCalled();
     });
 
     it("404s for unknown integration", async () => {
@@ -519,16 +522,32 @@ describe("API routes", () => {
       expect(navigate).toHaveBeenCalled();
     });
 
-    it("returns state for unknown auth type", async () => {
+    it("reports built-in (none) auth as already connected", async () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue({
-        name: "none",
+        name: "browser",
         version: "1.0.0",
         auth: { type: "none" as const },
       });
       const app = await buildApp();
       const res = await app.inject({
         method: "GET",
-        url: "/api/auth/none",
+        url: "/api/auth/browser",
+        headers: { authorization: "Bearer valid-jwt" },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body)).toEqual({ type: "none", connected: true });
+    });
+
+    it("returns state for unknown auth type", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "keyed",
+        version: "1.0.0",
+        auth: { type: "apikey" as const, headerName: "X-Key" },
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/keyed",
         headers: { authorization: "Bearer valid-jwt" },
       });
       expect(res.statusCode).toBe(200);
@@ -920,7 +939,9 @@ describe("API routes", () => {
 
   describe("GET /api/connections", () => {
     it("reports the built-in browser as always connected", async () => {
-      vi.spyOn(registry, "listIntegrations").mockReturnValue([]);
+      vi.spyOn(registry, "listIntegrations").mockReturnValue([
+        { name: "browser", version: "1.0.0", auth: { type: "none" as const } },
+      ]);
       const app = await buildApp();
       const res = await app.inject({
         method: "GET",
@@ -1008,6 +1029,9 @@ describe("API routes", () => {
     });
 
     it("returns 400 for the built-in browser", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "browser", version: "1.0.0", auth: { type: "none" as const },
+      });
       const app = await buildApp();
       const res = await app.inject({
         method: "DELETE",

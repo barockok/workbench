@@ -24,20 +24,16 @@ import { signConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
 import { resumeAuthorize } from "../auth/oauth-server/resume";
 import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
-import {
-  BROWSER_INTEGRATION_NAME,
-  browserSummary,
-  browserDetail,
-} from "../auth/browser-integration";
 
 function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
 }
 
-// Whether an integration can actually be connected right now: cookie auth is
-// always ready (user just logs in); oauth2 needs client creds present in env;
-// anything else (manual) is not connectable from the UI.
+// Whether an integration can actually be connected right now: built-ins
+// (auth "none") and cookie auth are always ready; oauth2 needs client creds
+// present in env; anything else (manual) is not connectable from the UI.
 function isConfigured(i: Integration): boolean {
+  if (i.auth.type === "none") return true;
   if (i.auth.type === "cookie") return true;
   if (i.auth.type === "oauth2") return getPluginOAuthCreds(i.name) !== null;
   return false;
@@ -200,19 +196,17 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
 
     return {
-      integrations: [
-        ...registry.listIntegrations().map((i) => ({
-          name: i.name,
-          version: i.version,
-          displayName: i.displayName,
-          description: i.description,
-          categories: i.categories,
-          logo: resolveLogo(i),
-          toolCount: registry.listToolsByIntegration(i.name).length,
-          configured: isConfigured(i),
-        })),
-        browserSummary(),
-      ],
+      integrations: registry.listIntegrations().map((i) => ({
+        name: i.name,
+        version: i.version,
+        displayName: i.displayName,
+        description: i.description,
+        categories: i.categories,
+        logo: resolveLogo(i),
+        authType: i.auth.type,
+        toolCount: registry.listToolsByIntegration(i.name).length,
+        configured: isConfigured(i),
+      })),
     };
   });
 
@@ -225,9 +219,6 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(401).send({ error: "Unauthorized" });
       }
       const integration = request.params.integration;
-      if (integration === BROWSER_INTEGRATION_NAME) {
-        return browserDetail();
-      }
       const integ = registry.getIntegration(integration);
       if (!integ) {
         return reply.status(404).send({ error: "Integration not found" });
@@ -279,6 +270,10 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     const integ = registry.getIntegration(integration);
     if (!integ) {
       return reply.status(404).send({ error: "Integration not found" });
+    }
+
+    if (integ.auth.type === "none") {
+      return { type: "none", connected: true };
     }
 
     if (integ.auth.type === "cookie") {
@@ -549,17 +544,15 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     const integrations = registry.listIntegrations();
     return {
-      connections: [
-        ...integrations.map((i) => ({
-          name: i.name,
-          connected:
-            i.auth.type === "cookie"
+      connections: integrations.map((i) => ({
+        name: i.name,
+        connected:
+          i.auth.type === "none"
+            ? true // built-ins: always usable
+            : i.auth.type === "cookie"
               ? hasValidCookies(user.userId, i.name)
               : !!getToken(user.userId, i.name),
-        })),
-        // Built-in browser: always usable.
-        { name: BROWSER_INTEGRATION_NAME, connected: true },
-      ],
+      })),
     };
   });
 
@@ -572,12 +565,12 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(401).send({ error: "Unauthorized" });
       }
       const { integration } = request.params;
-      if (integration === BROWSER_INTEGRATION_NAME) {
-        return reply.status(400).send({ error: "Built-in browser cannot be disconnected" });
-      }
       const integ = registry.getIntegration(integration);
       if (!integ) {
         return reply.status(404).send({ error: "Integration not found" });
+      }
+      if (integ.auth.type === "none") {
+        return reply.status(400).send({ error: "Built-in integration cannot be disconnected" });
       }
       // Both delete the same connections row; branch by auth type for clarity.
       if (integ.auth.type === "cookie") {
