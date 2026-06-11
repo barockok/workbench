@@ -19,15 +19,18 @@ async function refreshAccessToken(
   const creds = getPluginOAuthCreds(integration);
   if (!creds) throw new Error(`OAuth client not configured for ${integration}`);
 
+  // Public (PKCE) clients have no secret — omit the param, don't send "".
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    client_id: creds.clientId,
+    refresh_token: data.refreshToken,
+  });
+  if (creds.clientSecret) body.set("client_secret", creds.clientSecret);
+
   const res = await fetch(integ.auth.tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: creds.clientId,
-      client_secret: creds.clientSecret,
-      refresh_token: data.refreshToken,
-    }),
+    body,
   });
   if (!res.ok) {
     const body = await res.text();
