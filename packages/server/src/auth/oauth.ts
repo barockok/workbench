@@ -1,24 +1,46 @@
 import crypto from "crypto";
 import { db } from "../db";
 
-export function createAuthState(userId: string, integration: string): string {
+// PKCE (RFC 7636): the verifier lives server-side in pending_auth alongside
+// the state, since the whole flow is server-brokered (no SPA in the loop).
+export function generateCodeVerifier(): string {
+  return crypto.randomBytes(32).toString("base64url");
+}
+
+export function codeChallengeS256(verifier: string): string {
+  return crypto.createHash("sha256").update(verifier).digest("base64url");
+}
+
+export function createAuthState(
+  userId: string,
+  integration: string,
+  codeVerifier?: string
+): string {
   const state = crypto.randomBytes(32).toString("hex");
-  db.prepare("INSERT INTO pending_auth (state, user_id, integration, expires_at) VALUES (?, ?, ?, ?)")
-    .run(state, userId, integration, Math.floor(Date.now() / 1000) + 600);
+  db.prepare(
+    "INSERT INTO pending_auth (state, user_id, integration, expires_at, code_verifier) VALUES (?, ?, ?, ?, ?)"
+  ).run(state, userId, integration, Math.floor(Date.now() / 1000) + 600, codeVerifier ?? null);
 
   db.prepare("DELETE FROM pending_auth WHERE expires_at < ?").run(Math.floor(Date.now() / 1000));
 
   return state;
 }
 
-export function verifyAuthState(state: string): { userId: string; integration: string } | null {
-  const row = db.prepare("SELECT user_id, integration FROM pending_auth WHERE state = ? AND expires_at > ?")
-    .get(state, Math.floor(Date.now() / 1000)) as { user_id: string; integration: string } | undefined;
+export function verifyAuthState(
+  state: string
+): { userId: string; integration: string; codeVerifier?: string } | null {
+  const row = db.prepare("SELECT user_id, integration, code_verifier FROM pending_auth WHERE state = ? AND expires_at > ?")
+    .get(state, Math.floor(Date.now() / 1000)) as
+      { user_id: string; integration: string; code_verifier: string | null } | undefined;
 
   if (!row) return null;
 
   db.prepare("DELETE FROM pending_auth WHERE state = ?").run(state);
-  return { userId: row.user_id, integration: row.integration };
+  return {
+    userId: row.user_id,
+    integration: row.integration,
+    codeVerifier: row.code_verifier ?? undefined,
+  };
 }
 
 export interface TokenResponse {
@@ -40,20 +62,26 @@ export interface TokenResponse {
 export async function exchangeCode(
   tokenUrl: string,
   clientId: string,
-  clientSecret: string,
+  clientSecret: string | undefined,
   code: string,
-  redirectUri: string
+  redirectUri: string,
+  codeVerifier?: string
 ): Promise<TokenResponse> {
+  // Public (PKCE-only) clients have no secret; Keycloak rejects an empty
+  // client_secret param, so omit it entirely rather than send "".
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: clientId,
+    code,
+    redirect_uri: redirectUri,
+  });
+  if (clientSecret) body.set("client_secret", clientSecret);
+  if (codeVerifier) body.set("code_verifier", codeVerifier);
+
   const response = await fetch(tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: clientId,
-      client_secret: clientSecret,
-      code,
-      redirect_uri: redirectUri,
-    }),
+    body,
   });
 
   if (!response.ok) {
