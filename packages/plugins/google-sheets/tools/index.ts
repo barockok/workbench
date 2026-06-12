@@ -1,1 +1,1 @@
-export { readSheet, writeSheet, createSpreadsheet, searchSheets } from "./sheets";
+export { readSheet, writeSheet, appendSheet, createSpreadsheet, searchSheets } from "./sheets";

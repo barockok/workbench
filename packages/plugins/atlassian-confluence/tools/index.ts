@@ -1,8 +1,28 @@
 import { z } from "zod";
 
+// Escape user input for interpolation inside a double-quoted CQL literal.
+function escapeCql(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+// The v1 content endpoints return Atlassian's full envelope (_expandable,
+// _links, breadcrumbs, …). Trim each content row to what an agent acts on.
+function slimContent(c: any) {
+  return {
+    id: c.id,
+    type: c.type,
+    status: c.status,
+    title: c.title,
+    spaceKey: c.space?.key,
+    version: c.version?.number,
+    url: c._links?.webui,
+  };
+}
+
 export const createPage = {
   name: "confluence_create_page",
-  description: "Create a Confluence page",
+  description:
+    "Create a Confluence page in a space. body is Confluence storage format (XHTML) — plain text works for simple pages. Pass parentId to nest under an existing page. Returns the new page's id, title, and url.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     spaceKey: z.string(),
@@ -30,13 +50,16 @@ export const createPage = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    return res.json();
+    const data = await res.json();
+    if (data?.id) return slimContent(data);
+    return data;
   },
 };
 
 export const searchPages = {
   name: "confluence_search_pages",
-  description: "Search Confluence pages",
+  description:
+    "Full-text search Confluence pages. Returns up to `limit` (default 10) slim rows: id, title, spaceKey, url. Use confluence_get_page with an id to read content.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     query: z.string(),
@@ -44,32 +67,53 @@ export const searchPages = {
   }),
   handler: async (ctx: any, args: any) => {
     const params = new URLSearchParams();
-    params.set("cql", `text ~ "${args.query}"`);
+    params.set("cql", `text ~ "${escapeCql(args.query)}"`);
     params.set("limit", String(args.limit));
+    params.set("expand", "space,version");
     const res = await ctx.http(`https://api.atlassian.com/ex/confluence/cloud-id/wiki/rest/api/content/search?${params}`);
-    return res.json();
+    const data = await res.json();
+    if (!Array.isArray(data?.results)) return data;
+    return {
+      results: data.results.map(slimContent),
+      size: data.size,
+      hasMore: Boolean(data._links?.next),
+    };
   },
 };
 
 export const getPage = {
   name: "confluence_get_page",
-  description: "Get a Confluence page by ID",
+  description:
+    "Get a Confluence page by ID, including its body (storage XHTML), version number, and space. Returns { id, title, spaceKey, version, body, url }. The version number is required by confluence_update_page.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
-    pageId: z.string(),
+    pageId: z.string().regex(/^\d+$/, "pageId must be numeric"),
     expand: z.string().optional(),
   }),
   handler: async (ctx: any, args: any) => {
+    // v1 GET /content/{id} was removed (410) and v2 needs granular scopes the
+    // app can't use yet — fetch via the still-alive CQL search endpoint, same
+    // workaround as listSpaces. See
+    // docs/findings/2026-06-12-confluence-v1-content-get-removed.md
     const params = new URLSearchParams();
-    if (args.expand) params.set("expand", args.expand);
-    const res = await ctx.http(`https://api.atlassian.com/ex/confluence/cloud-id/wiki/rest/api/content/${args.pageId}?${params}`);
-    return res.json();
+    params.set("cql", `id=${args.pageId}`);
+    params.set("limit", "1");
+    params.set("expand", args.expand ?? "body.storage,version,space");
+    const res = await ctx.http(`https://api.atlassian.com/ex/confluence/cloud-id/wiki/rest/api/content/search?${params}`);
+    const data = await res.json();
+    const page = data?.results?.[0];
+    if (!page) return { error: `Page ${args.pageId} not found` };
+    return {
+      ...slimContent(page),
+      body: page.body?.storage?.value,
+    };
   },
 };
 
 export const listSpaces = {
   name: "confluence_list_spaces",
-  description: "List Confluence spaces",
+  description:
+    "List Confluence spaces (up to `limit`, default 25). Returns slim rows: key, name, url. Space keys are needed by confluence_create_page.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     limit: z.number().default(25),
@@ -85,13 +129,24 @@ export const listSpaces = {
     params.set("cql", "type=space");
     params.set("limit", String(args.limit));
     const res = await ctx.http(`https://api.atlassian.com/ex/confluence/cloud-id/wiki/rest/api/search?${params}`);
-    return res.json();
+    const data = await res.json();
+    if (!Array.isArray(data?.results)) return data;
+    return {
+      results: data.results.map((r: any) => ({
+        key: r.space?.key,
+        name: r.space?.name ?? r.title,
+        url: r.url,
+      })),
+      size: data.size,
+      hasMore: Boolean(data._links?.next),
+    };
   },
 };
 
 export const updatePage = {
   name: "confluence_update_page",
-  description: "Update a Confluence page",
+  description:
+    "Update a Confluence page's title and body. `version` must be the page's CURRENT version number (from confluence_get_page) — the API stores version+1 and rejects stale numbers.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     pageId: z.string(),
@@ -112,16 +167,18 @@ export const updatePage = {
             representation: "storage",
           },
         },
-        version: { number: args.version },
+        version: { number: args.version + 1 },
       }),
     });
-    return res.json();
+    const data = await res.json();
+    if (data?.id) return slimContent(data);
+    return data;
   },
 };
 
 export const deletePage = {
   name: "confluence_delete_page",
-  description: "Delete a Confluence page",
+  description: "Delete a Confluence page by ID (moves it to space trash). Irreversible via this API.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     pageId: z.string(),

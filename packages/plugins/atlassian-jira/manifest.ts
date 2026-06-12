@@ -12,6 +12,7 @@ export default {
     scopes: [
       "read:jira-work",
       "write:jira-work",
+      "read:board-scope:jira-software",
       "read:me",
       "read:jira-user",
       "offline_access",
