@@ -1,18 +1,32 @@
-# a-workbench v0.12.0
+# a-workbench v0.13.0
 
 _2026-06-12_
 
-Headline: **Browser & jots become registry plugins** — the MCP tool list shrinks from 20 to 8.
+Headline: **Built-in plugins grow up** — 39 new tools close the create-but-can't-follow-up gap, every response is slimmed for token economy, and tool results are size-capped at the MCP layer.
 
-## Breaking
-- **`browser_*` and jot tools are no longer top-level MCP tools.** The 9 `browser_*` tools and `deploy_jot`/`list_jots`/`delete_jot` moved into the registry as internal plugins, reached the same way as every integration tool: `search_tools` → `execute_tool("browser_navigate", {url})`. MCP clients with hardcoded top-level calls must switch to the dispatch path. `tools/list` now exposes only the 8 dispatch/auth meta-tools.
+## Features
+- **Full lifecycle tools across plugins** (previously: could create an issue/PR/task, never follow up):
+  - **Jira**: `update_issue`, `get_transitions`/`transition_issue` (move status), `add_comment`/`get_comments`, `list_projects`
+  - **Bitbucket**: whole PR review set — `get_pr_diff` (+diffstat), `list_pr_comments`/`add_pr_comment` (incl. inline path+line), `approve_pr`, `request_changes`, `merge_pr`, `decline_pr`, `get_file`, `list_pr_commits`
+  - **GitHub**: full PR review loop (`list_prs`, `get_pr`, `get_pr_diff`, comments, `merge_pr`, `create_pr_review`), issue lifecycle (`list/get/update_issue`, `add_issue_comment`), `search_code`/`search_issues`, `list_workflow_runs`
+  - **Asana**: `get_task`, `update_task` (complete/assign/due), `add_comment`
+  - **Gmail**: in-thread replies (`send` gains `threadId` + `In-Reply-To`/`References`), `modify` (markRead/archive/labels)
+  - **Sheets**: `append` (write stays overwrite — both documented); **Calendar**: `freebusy`; **Slack**: `update_message`, `delete_message`
+- **Temporary authenticated git clone URLs**: `bitbucket_get_clone_url` / `github_get_clone_url` mint token-bearing HTTPS URLs (`x-token-auth` / `x-access-token`) from the connection's OAuth token — self-expiring (~2h on Bitbucket), re-mint before pushing. Bitbucket manifest gains `repository:write` for push (reconnect to pick it up).
+
+## Fixes
+- **`confluence_get_page` 410**: Atlassian removed v1 `GET /content/{id}`; the tool now fetches via the still-alive CQL search endpoint (same workaround as `listSpaces`). Note: `confluence_update_page` now takes the page's **current** version (from `get_page`) and sends version+1.
+- **Sheets search query injection**: user query was interpolated unescaped into the Drive `q` param; now escaped like drive/docs.
+- **`jira_get_boards` 401**: manifest gains `read:board-scope:jira-software` (reconnect Jira to apply).
+- **`jira_search_issues` / `google_gmail_list` bare IDs**: Jira search now defaults `fields=summary,status,assignee,priority,updated`; Gmail list enriches each page with From/Subject/Date metadata (maxResults capped at 25).
+- **Bitbucket `workspace` no longer hard-required** — auto-discovers the user's first workspace.
 
 ## Changes
-- **Internal plugins, deliberately not `PLUGINS_DIR`.** The new `browser`/`jots` plugins live in server source because their handlers reach into `browser-session` and the jots store — capabilities that must stay out of the plugin `ToolContext` (a third-party plugin must never drive the user's logged-in capture browser or touch the jots filesystem). The loader refuses `PLUGINS_DIR` dirs named `browser`/`jots` so a disk plugin can't shadow them.
-- **Auth type `"none"` now means built-in/always-on** (was: dead "manual, not connectable"): configured and connected everywhere, connect returns "already connected", disconnect returns 400, and the execute gate skips the token check.
-- **Browser/jot calls gain the `execute_tool` path benefits**: arg validation with Zod defaults applied, plus per-call audit logging — neither happened for meta-tools.
-- **`tools/call` hoists the `_mcpImage` sentinel one level deep**, since `browser_screenshot`'s image now arrives wrapped in `execute_tool`'s `{ result }` envelope (screenshots still render as real MCP image blocks).
-- **Portal**: integration list now carries `authType`; the "Built-in · always on" card state and hidden connect footer key off `authType === "none"` instead of hardcoding the browser name. Jots now shows as a normal integration card. The synthetic `browser-integration.ts` descriptor is deleted.
+- **Token economy pass on every plugin**: responses are slim rows instead of raw upstream envelopes — avatars (4 sizes/user), etags, `_expandable`/`_links`, base64 SVG icons (~8KB per Jira project type), clone-link bloat all dropped. `bitbucket_list_repos` shrinks ~95%.
+- **MCP-layer result cap**: text results over 60k chars are truncated with a notice telling the caller to narrow the request (limit/fields/pagination).
+- **Description pass to the browser/jots standard**: every tool states what it returns, defaults, when to use vs siblings, and destructive-action warnings (merge/decline/delete).
+- Docs: architecture meta-tools table updated for the v0.12.0 plugin split (browser/jots no longer listed as top-level MCP tools); browser examples now use the `execute_tool` dispatch form.
 
 ## Notes
-- Tests: 441 passing (2 new regression tests: none-auth connection gate bypass, nested image hoist). CI clean on PR #32.
+- Tests: 552 passing (119 new across 9 suites). Findings docs: `docs/findings/2026-06-12-*.md`.
+- Reconnect needed for: Jira (boards scope), Bitbucket (push via clone URL).
