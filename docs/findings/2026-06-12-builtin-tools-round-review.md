@@ -2,6 +2,7 @@
 
 **Date:** 2026-06-12
 **Scope:** built-in plugins only (packages/plugins/* + internal browser/jots), live-tested against real connections (13 integrations connected).
+**Status:** all fix directions implemented 2026-06-12 — sheets escaping, jira scope/fields/icon strip, gmail metadata enrichment, response shaping across plugins, bitbucket workspace auto-discovery, MCP-layer 60k-char result cap, description pass. Jira boards fix needs a reconnect to pick up the new scope.
 
 ## Broken / misleading tools (live-verified)
 

@@ -2,6 +2,7 @@
 
 **Date:** 2026-06-12
 **Where:** `packages/plugins/atlassian-confluence/tools/index.ts` (`confluence_get_page`)
+**Status:** fixed 2026-06-12 — get_page now fetches via the CQL search endpoint (`cql=id=<pageId>&expand=body.storage,version,space`) per the fix direction below. Note: `confluence_update_page` now takes the page's CURRENT version (from get_page) and sends version+1.
 
 ## Symptom
 

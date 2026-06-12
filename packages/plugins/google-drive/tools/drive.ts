@@ -1,8 +1,23 @@
 import { z } from "zod";
 
+// Slim file row shared by list/search — drops etags, links, owner blobs etc.
+// (raw Drive file resources are ~20x this size). size is omitted for Google
+// Docs-native files, which have none.
+function slimFileRow(f: any) {
+  const row: any = {
+    id: f.id,
+    name: f.name,
+    mimeType: f.mimeType,
+    modifiedTime: f.modifiedTime,
+  };
+  if (f.size !== undefined) row.size = f.size;
+  return row;
+}
+
 export const listFiles = {
   name: "google_drive_list",
-  description: "List files in Google Drive",
+  description:
+    "List files in Google Drive, optionally filtered by a raw Drive query string (`query`, Drive q syntax, e.g. \"mimeType='application/pdf'\"). Returns up to pageSize (default 10) slim rows { id, name, mimeType, modifiedTime, size? } plus nextPageToken for paging. For keyword/full-text lookups prefer google_drive_search (it escapes the query for you).",
   integration: "google-drive",
   inputSchema: z.object({
     pageSize: z.number().default(10),
@@ -12,9 +27,13 @@ export const listFiles = {
     const params = new URLSearchParams();
     params.set("pageSize", String(args.pageSize));
     if (args.query) params.set("q", args.query);
+    params.set("fields", "nextPageToken,files(id,name,mimeType,modifiedTime,size)");
 
     const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params}`);
-    return res.json();
+    const data = await res.json();
+    const out: any = { files: (data.files ?? []).map(slimFileRow) };
+    if (data.nextPageToken) out.nextPageToken = data.nextPageToken;
+    return out;
   },
 };
 
@@ -42,7 +61,8 @@ export const createFolder = {
 
 export const searchFiles = {
   name: "google_drive_search",
-  description: "Search files in Google Drive",
+  description:
+    "Search Google Drive by keyword — matches file names AND document contents (full text), with the query safely escaped. Returns up to pageSize (default 10) slim rows { id, name, mimeType, modifiedTime, size? } plus nextPageToken. Use google_drive_list with a raw Drive q expression for structured filters (mimeType, folder, date).",
   integration: "google-drive",
   inputSchema: z.object({
     query: z.string(),
@@ -58,7 +78,10 @@ export const searchFiles = {
     params.set("pageSize", String(args.pageSize));
     params.set("fields", "nextPageToken,files(id,name,mimeType,modifiedTime,size)");
     const res = await ctx.http(`https://www.googleapis.com/drive/v3/files?${params.toString().replace(/\+/g, "%20")}`);
-    return res.json();
+    const data = await res.json();
+    const out: any = { files: (data.files ?? []).map(slimFileRow) };
+    if (data.nextPageToken) out.nextPageToken = data.nextPageToken;
+    return out;
   },
 };
 
