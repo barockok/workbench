@@ -725,3 +725,21 @@ export const listWorkflowRuns = {
     }));
   },
 };
+
+export const getCloneUrl = {
+  name: "github_get_clone_url",
+  description:
+    "Mint a temporary authenticated HTTPS git URL for a repo (https://x-access-token:<token>@github.com/owner/repo.git), usable for clone/pull/push (the granted repo scope covers push). The embedded OAuth token is short-lived and the URL dies with it — re-call this right before a push rather than storing the URL. Do NOT persist it in .git/config or scripts: anyone holding the URL holds the token until expiry.",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const token = await ctx.getToken();
+    return {
+      cloneUrl: `https://x-access-token:${token}@github.com/${args.owner}/${args.repo}.git`,
+      note: "Token-bearing URL — expires with the OAuth access token. Re-mint before pushing; don't store it.",
+    };
+  },
+};
