@@ -43,6 +43,15 @@ Static MCP meta-tools:
 | `list_integrations` | List all integrations + connection status |
 | `connect` / `wait_for_connection` | Start a connection (OAuth/cookie) and block until it completes |
 | `get_auth_url` | Deprecated alias of `connect` |
+
+These 8 are the only top-level MCP tools. Everything else — integration tools *and* the internal `browser`/`jots` plugins — lives in the registry and is reached via `search_tools` → `execute_tool` (since v0.12.0).
+
+Tool results returned as text are capped at 60k chars; oversized results are truncated with a notice telling the caller to narrow the request (limit/fields/pagination).
+
+### Internal plugins (registry, not `PLUGINS_DIR`)
+
+| Tools | Purpose |
+|------|---------|
 | `browser_navigate` / `browser_screenshot` / `browser_read_text` | Drive the warm per-user Chromium (owned by `browser-session.ts`): navigate, view (downscaled JPEG, change-detected), read page text |
 | `browser_click` / `browser_type` / `browser_key` / `browser_scroll` | Computer-use input into the warm session |
 | `browser_live_url` / `browser_close` | Human watch-and-take-over link; end the session |
