@@ -65,7 +65,9 @@ Claude: connect("jira") → open URL → authorize → wait_for_connection(id)
 
 Workbench hosts one warm Chromium per user — the same persistent profile cookie
 connects build on, so prior logins (any site/IdP) carry over instead of a blank
-browser. The MCP client drives it step-by-step:
+browser. Since v0.12.0 the browser tools are registry plugins, so they're called
+through `execute_tool` like any integration tool. The MCP client drives it
+step-by-step:
 
 - `browser_navigate({ url })` — go to a page (opens the warm session if cold); returns `{ url, title }`
 - `browser_screenshot({ format?, quality?, maxWidth? })` — downscaled JPEG by default (maxWidth 1000) to keep vision tokens low; returns `{ unchanged: true }` instead of an image when the page is pixel-identical to your last shot
@@ -76,10 +78,10 @@ browser. The MCP client drives it step-by-step:
 
 ```
 You: open my dashboard and read the latest figure
-Claude: browser_navigate({url:"https://app.example.com"})
-        browser_screenshot()           # look
-        browser_click({x:320,y:210})   # drill in
-        browser_screenshot()            # read it off
+Claude: execute_tool("browser_navigate", {url:"https://app.example.com"})
+        execute_tool("browser_screenshot", {})        # look
+        execute_tool("browser_click", {x:320,y:210})  # drill in
+        execute_tool("browser_screenshot", {})        # read it off
 ```
 
 Screenshots cost vision tokens (priced by pixel dimensions), so the model is
