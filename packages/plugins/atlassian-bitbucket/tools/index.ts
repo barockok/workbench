@@ -435,3 +435,22 @@ export const listPRCommits = {
     };
   },
 };
+
+export const getCloneUrl = {
+  name: "bitbucket_get_clone_url",
+  description:
+    "Mint a temporary authenticated HTTPS git URL for a repo (https://x-token-auth:<token>@bitbucket.org/ws/slug.git), usable for clone/pull/push. The embedded OAuth token expires (typically ≤2h) and the URL dies with it — re-call this right before a push rather than storing the URL. Do NOT persist it in .git/config or scripts: anyone holding the URL holds the token until expiry. Push requires the repository:write scope on the connection (reconnect if it was added after connecting). workspace defaults to the user's first workspace.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string().optional(),
+    repoSlug: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const workspace = await resolveWorkspace(ctx, args.workspace);
+    const token = await ctx.getToken();
+    return {
+      cloneUrl: `https://x-token-auth:${token}@bitbucket.org/${workspace}/${args.repoSlug}.git`,
+      note: "Token-bearing URL — expires with the OAuth access token (≤2h). Re-mint before pushing; don't store it.",
+    };
+  },
+};
