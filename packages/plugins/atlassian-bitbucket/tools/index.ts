@@ -1,26 +1,126 @@
 import { z } from "zod";
 
+const BASE = "https://api.bitbucket.org/2.0";
+
+/**
+ * Resolve the workspace slug. When the caller omits `workspace`, fall back to
+ * the first workspace the authenticated user belongs to (one extra GET).
+ */
+async function resolveWorkspace(ctx: any, workspace?: string): Promise<string> {
+  if (workspace) return workspace;
+  const res = await ctx.http(`${BASE}/workspaces?pagelen=1`);
+  const data = await res.json();
+  const slug = data?.values?.[0]?.slug;
+  if (!slug) {
+    throw new Error("No Bitbucket workspace found for this account; pass `workspace` explicitly.");
+  }
+  return slug;
+}
+
+/** Read a text-bodied response; falls back to json() for ctx.http impls without text(). */
+async function readText(res: any): Promise<string> {
+  const text = res.text ? await res.text() : await res.json();
+  return typeof text === "string" ? text : JSON.stringify(text);
+}
+
+// Bitbucket's REST payloads are ~95% links/avatars/nested owner objects
+// (live-measured ~30 KB for 10 repos). Shape every response down to the
+// fields an agent actually acts on. See
+// docs/findings/2026-06-12-builtin-tools-round-review.md.
+
+function slimRepo(r: any) {
+  return {
+    slug: r.slug,
+    name: r.name,
+    full_name: r.full_name,
+    is_private: r.is_private,
+    mainbranch: r.mainbranch?.name,
+    updated_on: r.updated_on,
+    description: typeof r.description === "string" ? r.description.slice(0, 200) : undefined,
+  };
+}
+
+function slimPRRow(pr: any) {
+  return {
+    id: pr.id,
+    title: pr.title,
+    state: pr.state,
+    author: pr.author?.display_name,
+    source: pr.source?.branch?.name,
+    destination: pr.destination?.branch?.name,
+    updated_on: pr.updated_on,
+  };
+}
+
+function slimPRDetail(pr: any) {
+  return {
+    id: pr.id,
+    title: pr.title,
+    description: pr.description,
+    state: pr.state,
+    author: pr.author?.display_name,
+    source: pr.source?.branch?.name,
+    destination: pr.destination?.branch?.name,
+    reviewers: (pr.participants ?? []).map((p: any) => ({
+      display_name: p.user?.display_name,
+      approved: p.approved,
+    })),
+    comment_count: pr.comment_count,
+    task_count: pr.task_count,
+    created_on: pr.created_on,
+    updated_on: pr.updated_on,
+    url: pr.links?.html?.href,
+  };
+}
+
 export const listRepos = {
   name: "bitbucket_list_repos",
-  description: "List Bitbucket repositories for a workspace",
+  description:
+    "List repositories in a Bitbucket workspace as slim rows (slug, name, full_name, is_private, main branch, updated_on, description) — no links/avatars/clone noise. `workspace` is optional and defaults to the user's first workspace; pass it explicitly if the account belongs to several. Returns { repos, hasMore }; page forward with `page` (pagelen defaults to 10). Use bitbucket_get_repo for clone URL and full detail on one repo.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
-    workspace: z.string(),
+    workspace: z.string().optional().describe("Workspace slug; defaults to the user's first workspace"),
     page: z.number().default(1),
     pagelen: z.number().default(10),
   }),
   handler: async (ctx: any, args: any) => {
+    const workspace = await resolveWorkspace(ctx, args.workspace);
     const params = new URLSearchParams();
-    params.set("page", String(args.page));
-    params.set("pagelen", String(args.pagelen));
-    const res = await ctx.http(`https://api.bitbucket.org/2.0/repositories/${args.workspace}?${params}`);
-    return res.json();
+    params.set("page", String(args.page ?? 1));
+    params.set("pagelen", String(args.pagelen ?? 10));
+    const res = await ctx.http(`${BASE}/repositories/${workspace}?${params}`);
+    const data = await res.json();
+    return {
+      workspace,
+      repos: (data.values ?? []).map(slimRepo),
+      hasMore: Boolean(data.next),
+    };
+  },
+};
+
+export const getRepo = {
+  name: "bitbucket_get_repo",
+  description:
+    "Get one Bitbucket repository: slug, name, full_name, privacy, main branch, last update, description, and the https clone URL. Use after bitbucket_list_repos when you need the clone URL or to confirm the main branch before creating a PR.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(`${BASE}/repositories/${args.workspace}/${args.repoSlug}`);
+    const data = await res.json();
+    return {
+      ...slimRepo(data),
+      clone_https: (data.links?.clone ?? []).find((c: any) => c.name === "https")?.href,
+    };
   },
 };
 
 export const createPR = {
   name: "bitbucket_create_pr",
-  description: "Create a Bitbucket pull request",
+  description:
+    "Create a Bitbucket pull request from sourceBranch into destinationBranch (default \"main\" — check the repo's actual main branch with bitbucket_get_repo first if unsure). Returns the new PR's id, state, branches, and html URL. Follow up with bitbucket_get_pr / bitbucket_get_pr_diff to review it.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
     workspace: z.string(),
@@ -32,39 +132,27 @@ export const createPR = {
   }),
   handler: async (ctx: any, args: any) => {
     const res = await ctx.http(
-      `https://api.bitbucket.org/2.0/repositories/${args.workspace}/${args.repoSlug}/pullrequests`,
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: args.title,
           source: { branch: { name: args.sourceBranch } },
-          destination: { branch: { name: args.destinationBranch } },
+          destination: { branch: { name: args.destinationBranch ?? "main" } },
           description: args.description,
         }),
       }
     );
-    return res.json();
-  },
-};
-
-export const getRepo = {
-  name: "bitbucket_get_repo",
-  description: "Get a Bitbucket repository",
-  integration: "atlassian-bitbucket",
-  inputSchema: z.object({
-    workspace: z.string(),
-    repoSlug: z.string(),
-  }),
-  handler: async (ctx: any, args: any) => {
-    const res = await ctx.http(`https://api.bitbucket.org/2.0/repositories/${args.workspace}/${args.repoSlug}`);
-    return res.json();
+    const data = await res.json();
+    return slimPRDetail(data);
   },
 };
 
 export const listPRs = {
   name: "bitbucket_list_prs",
-  description: "List pull requests in a Bitbucket repository",
+  description:
+    "List pull requests in a repository as slim rows (id, title, state, author, source/destination branch, updated_on). `state` defaults to OPEN; pass MERGED/DECLINED/SUPERSEDED for history. Returns { prs, hasMore }; page forward with `page`. Use bitbucket_get_pr for reviewers, counts, and the PR URL.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
     workspace: z.string(),
@@ -75,17 +163,24 @@ export const listPRs = {
   }),
   handler: async (ctx: any, args: any) => {
     const params = new URLSearchParams();
-    params.set("state", args.state);
-    params.set("page", String(args.page));
-    params.set("pagelen", String(args.pagelen));
-    const res = await ctx.http(`https://api.bitbucket.org/2.0/repositories/${args.workspace}/${args.repoSlug}/pullrequests?${params}`);
-    return res.json();
+    params.set("state", args.state ?? "OPEN");
+    params.set("page", String(args.page ?? 1));
+    params.set("pagelen", String(args.pagelen ?? 10));
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests?${params}`
+    );
+    const data = await res.json();
+    return {
+      prs: (data.values ?? []).map(slimPRRow),
+      hasMore: Boolean(data.next),
+    };
   },
 };
 
 export const getPR = {
   name: "bitbucket_get_pr",
-  description: "Get a specific Bitbucket pull request",
+  description:
+    "Get one pull request: title, description, state, author, source/destination branches, reviewers with approval status, comment/task counts, timestamps, and html URL. Always check this (state, approvals, open tasks) before bitbucket_merge_pr. For the code changes use bitbucket_get_pr_diff.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
     workspace: z.string(),
@@ -93,7 +188,250 @@ export const getPR = {
     pullRequestId: z.number(),
   }),
   handler: async (ctx: any, args: any) => {
-    const res = await ctx.http(`https://api.bitbucket.org/2.0/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.pullRequestId}`);
-    return res.json();
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.pullRequestId}`
+    );
+    const data = await res.json();
+    return slimPRDetail(data);
+  },
+};
+
+export const getPRDiff = {
+  name: "bitbucket_get_pr_diff",
+  description:
+    "Get the changes in a pull request. With diffstat=true (recommended first for big PRs) returns one slim row per file: { status, old, new, lines_added, lines_removed } — far cheaper than the full diff. With diffstat=false (default) returns the raw unified diff text of the whole PR, which can be very large. Typical flow: diffstat first, then full diff only if you need to read the actual code.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+    diffstat: z
+      .boolean()
+      .default(false)
+      .describe("true = per-file summary rows (cheap); false = full unified diff text"),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const base = `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}`;
+    if (args.diffstat) {
+      const res = await ctx.http(`${base}/diffstat`);
+      const data = await res.json();
+      return {
+        files: (data.values ?? []).map((f: any) => ({
+          status: f.status,
+          old: f.old?.path,
+          new: f.new?.path,
+          lines_added: f.lines_added,
+          lines_removed: f.lines_removed,
+        })),
+        hasMore: Boolean(data.next),
+      };
+    }
+    const res = await ctx.http(`${base}/diff`);
+    return readText(res);
+  },
+};
+
+export const listPRComments = {
+  name: "bitbucket_list_pr_comments",
+  description:
+    "List comments on a pull request as slim rows: { id, author, text, inline: { path, line } for code comments (absent for general comments), created_on }. pagelen defaults to 20. Returns { comments, hasMore }. Use before replying with bitbucket_add_pr_comment to see existing review feedback.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+    pagelen: z.number().default(20),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("pagelen", String(args.pagelen ?? 20));
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}/comments?${params}`
+    );
+    const data = await res.json();
+    return {
+      comments: (data.values ?? []).map((c: any) => ({
+        id: c.id,
+        author: c.user?.display_name,
+        text: c.content?.raw,
+        inline: c.inline ? { path: c.inline.path, line: c.inline.to ?? c.inline.from } : undefined,
+        created_on: c.created_on,
+      })),
+      hasMore: Boolean(data.next),
+    };
+  },
+};
+
+export const addPRComment = {
+  name: "bitbucket_add_pr_comment",
+  description:
+    "Add a comment to a pull request. Plain `text` posts a general comment; also pass `inline` { path, line } to attach it to a specific line of a changed file (get paths/lines from bitbucket_get_pr_diff). Returns { id, created_on }.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+    text: z.string(),
+    inline: z
+      .object({
+        path: z.string().describe("File path within the PR diff"),
+        line: z.number().describe("Line number in the new version of the file"),
+      })
+      .optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const body: any = { content: { raw: args.text } };
+    if (args.inline) body.inline = { path: args.inline.path, to: args.inline.line };
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}/comments`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    const data = await res.json();
+    return { id: data.id, created_on: data.created_on };
+  },
+};
+
+export const approvePR = {
+  name: "bitbucket_approve_pr",
+  description:
+    "Approve a pull request as the connected user (the green checkmark reviewers see). Non-destructive and revocable in the Bitbucket UI. Review the changes with bitbucket_get_pr_diff before approving. Returns { approved: true }.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}/approve`,
+      { method: "POST" }
+    );
+    await res.json();
+    return { approved: true };
+  },
+};
+
+export const requestChanges = {
+  name: "bitbucket_request_changes",
+  description:
+    "Mark a pull request as \"changes requested\" by the connected user — signals the author to revise before merge. Pair with bitbucket_add_pr_comment to explain what needs changing. Returns { requested: true }.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}/request-changes`,
+      { method: "POST" }
+    );
+    await res.json();
+    return { requested: true };
+  },
+};
+
+export const mergePR = {
+  name: "bitbucket_merge_pr",
+  description:
+    "Merge a pull request into its destination branch. IRREVERSIBLE: this lands the commits on the destination branch — check state, approvals, and open tasks with bitbucket_get_pr first, and only merge when explicitly asked to. Optional: `message` (merge commit message), `merge_strategy` (merge_commit | squash | fast_forward), `close_source_branch`. Returns the merged PR's id and state.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+    message: z.string().optional(),
+    merge_strategy: z.enum(["merge_commit", "squash", "fast_forward"]).optional(),
+    close_source_branch: z.boolean().optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const body: any = {};
+    if (args.message !== undefined) body.message = args.message;
+    if (args.merge_strategy !== undefined) body.merge_strategy = args.merge_strategy;
+    if (args.close_source_branch !== undefined) body.close_source_branch = args.close_source_branch;
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}/merge`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    const data = await res.json();
+    return { id: data.id, state: data.state, merge_commit: data.merge_commit?.hash };
+  },
+};
+
+export const declinePR = {
+  name: "bitbucket_decline_pr",
+  description:
+    "Decline (reject) a pull request. WARNING: this closes the PR without merging — the author must open a new PR to resurrect it. Prefer bitbucket_request_changes if you only want revisions. Returns the PR's id and state.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}/decline`,
+      { method: "POST" }
+    );
+    const data = await res.json();
+    return { id: data.id, state: data.state };
+  },
+};
+
+export const getFile = {
+  name: "bitbucket_get_file",
+  description:
+    "Read a file's raw text content from a repository at a specific ref. `ref` is required and must be a real branch name or commit hash (e.g. \"main\" or a 40-char SHA — \"HEAD\" is NOT valid on this API). Useful for seeing surrounding code that a PR diff doesn't show. Returns the file contents as plain text.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    ref: z.string().describe("Branch name or commit hash (\"HEAD\" is not valid)"),
+    path: z.string().describe("File path within the repository"),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const encodedPath = String(args.path)
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/");
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/src/${encodeURIComponent(args.ref)}/${encodedPath}`
+    );
+    return readText(res);
+  },
+};
+
+export const listPRCommits = {
+  name: "bitbucket_list_pr_commits",
+  description:
+    "List the commits in a pull request as slim rows: { hash (12 chars), message (first line only), author, date }. Cheaper than the diff for understanding the shape/history of a PR. Returns { commits, hasMore }.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string(),
+    repoSlug: z.string(),
+    prId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests/${args.prId}/commits`
+    );
+    const data = await res.json();
+    return {
+      commits: (data.values ?? []).map((c: any) => ({
+        hash: c.hash?.slice(0, 12),
+        message: typeof c.message === "string" ? c.message.split("\n")[0] : undefined,
+        author: c.author?.user?.display_name ?? c.author?.raw,
+        date: c.date,
+      })),
+      hasMore: Boolean(data.next),
+    };
   },
 };

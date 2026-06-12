@@ -1,1 +1,1 @@
-export { sendEmail, listEmails, getEmail, getProfile, listLabels, listThreads, createDraft } from "./gmail";
+export { sendEmail, listEmails, getEmail, modifyEmail, getProfile, listLabels, listThreads, createDraft } from "./gmail";

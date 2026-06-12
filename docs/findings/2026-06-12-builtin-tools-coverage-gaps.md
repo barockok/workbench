@@ -1,6 +1,7 @@
 # Built-in tools coverage gaps — create-but-can't-follow-up pattern
 
 **Date:** 2026-06-12
+**Status:** implemented 2026-06-12 — all gaps below filled (jira lifecycle, bitbucket review set, github review+issue lifecycle+search+actions, asana lifecycle, gmail thread reply+modify, sheets append, calendar freebusy, slack update/delete).
 **Scope:** gap analysis across all built-in plugins (companion to [2026-06-12 builtin tools round review](2026-06-12-builtin-tools-round-review.md), which covers quality of *existing* tools; this covers what's *missing*).
 
 ## The pattern
