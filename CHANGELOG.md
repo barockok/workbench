@@ -4,6 +4,17 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.13.1
+
+_2026-06-14_
+
+Headline: **GitHub OAuth connect fixed** — patch release.
+
+## Fixes
+- **GitHub OAuth connect failed with "Unexpected token"**: GitHub's token endpoint returns a form-urlencoded body by default, so `exchangeCode()`'s `response.json()` threw on the callback. The token POST now sends `Accept: application/json`; JSON-only providers (Google, Atlassian) ignore it. See `docs/findings/2026-06-14-github-token-form-encoded.md`.
+
+---
+
 # a-workbench v0.13.0
 
 _2026-06-12_
