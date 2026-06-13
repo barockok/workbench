@@ -80,7 +80,13 @@ export async function exchangeCode(
 
   const response = await fetch(tokenUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    // GitHub's token endpoint defaults to a form-urlencoded response body;
+    // Accept: application/json forces JSON so response.json() doesn't choke.
+    // Other providers (Google/Atlassian) return JSON regardless and ignore it.
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
     body,
   });
 
