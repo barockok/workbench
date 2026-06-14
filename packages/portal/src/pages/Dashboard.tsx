@@ -92,7 +92,16 @@ export default function Dashboard() {
   async function handleConnect(integration: string) {
     setConnectError(null);
     try {
-      const result = await startIntegrationAuth(integration);
+      // Self-hosted integrations (e.g. GitLab) declare an `instance` block:
+      // prompt for the instance origin, prefilled with the cloud default.
+      let instanceUrl: string | undefined;
+      const integ = integrations.find((i) => i.name === integration);
+      if (integ?.instance) {
+        const entered = window.prompt(integ.instance.label, integ.instance.default);
+        if (entered === null) return; // user cancelled
+        instanceUrl = entered.trim() || integ.instance.default;
+      }
+      const result = await startIntegrationAuth(integration, instanceUrl);
       if (result.type === "cookie") {
         // Cookie connect always returns login_required: open the live view so
         // the user logs in and clicks Capture. The WS auth frame's sessionId is
