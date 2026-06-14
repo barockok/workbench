@@ -14,6 +14,12 @@ vi.mock("../src/auth/cookie", () => ({
 
 vi.mock("../src/auth/plugin-oauth", () => ({
   getPluginOAuthCreds: vi.fn(),
+  // Passthrough: no self-hosted instance in these tests, so the static
+  // manifest URLs are used as-is.
+  resolveOAuthUrls: (auth: { authorizationUrl: string; tokenUrl: string }) => ({
+    authorizationUrl: auth.authorizationUrl,
+    tokenUrl: auth.tokenUrl,
+  }),
 }));
 
 const mockCookieIntegration = {

@@ -118,3 +118,17 @@ try {
 } catch (e: any) {
   if (!e.message?.includes("duplicate column name")) throw e;
 }
+// Per-connection config (JSON), e.g. a self-hosted GitLab instance origin
+// chosen at connect time. Not secret (no tokens), so stored plaintext.
+try {
+  db.exec(`ALTER TABLE connections ADD COLUMN config TEXT`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
+// Carries the same per-connection config through the in-flight OAuth handshake
+// (set when the auth URL is built, read back in the callback). Rows live ≤10m.
+try {
+  db.exec(`ALTER TABLE pending_auth ADD COLUMN config TEXT`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
