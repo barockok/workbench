@@ -14,6 +14,7 @@ export default {
     scopes: [
       "chat:write",
       "channels:read",
+      "channels:write",
       "groups:read",
       "im:read",
       "mpim:read",
@@ -25,6 +26,7 @@ export default {
       "users:read",
       "users:read.email",
       "files:write",
+      "files:read",
       "search:read",
     ],
   },
