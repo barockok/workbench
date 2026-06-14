@@ -436,6 +436,97 @@ export const listPRCommits = {
   },
 };
 
+// Bitbucket pipeline payloads nest state under state.name / state.result.name /
+// state.stage.name and carry link/avatar blobs. Shape to the fields an agent acts on.
+function slimPipeline(p: any) {
+  return {
+    uuid: p.uuid,
+    build_number: p.build_number,
+    state: p.state?.name,
+    result: p.state?.result?.name ?? p.state?.stage?.name,
+    ref_name: p.target?.ref_name,
+    created_on: p.created_on,
+    completed_on: p.completed_on,
+  };
+}
+
+export const triggerPipeline = {
+  name: "bitbucket_trigger_pipeline",
+  description:
+    "Trigger a Bitbucket Pipelines run on a branch (`ref`). Optional `custom` runs a custom pipeline defined under `pipelines.custom.<name>` in bitbucket-pipelines.yml; omit it to run the branch's default pipeline. Returns a slim pipeline { uuid, build_number, state, result, ref_name, created_on, completed_on } — poll bitbucket_get_pipeline with the uuid. Requires the pipeline scope and Pipelines enabled on the repo. workspace defaults to the user's first workspace.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string().optional(),
+    repoSlug: z.string(),
+    ref: z.string().describe("Branch name to run the pipeline on"),
+    custom: z.string().optional().describe("Name of a custom pipeline definition to run"),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const workspace = await resolveWorkspace(ctx, args.workspace);
+    const target: any = {
+      ref_type: "branch",
+      type: "pipeline_ref_target",
+      ref_name: args.ref,
+    };
+    if (args.custom) {
+      target.selector = { type: "custom", pattern: args.custom };
+    }
+    const res = await ctx.http(
+      `${BASE}/repositories/${workspace}/${args.repoSlug}/pipelines/`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target }),
+      }
+    );
+    const p = await res.json();
+    if (!p || !p.uuid) return p;
+    return slimPipeline(p);
+  },
+};
+
+export const getPipeline = {
+  name: "bitbucket_get_pipeline",
+  description:
+    "Get a single Bitbucket pipeline by uuid (or build number) as a slim object { uuid, build_number, state, result, ref_name, created_on, completed_on }. Use to poll a pipeline you triggered (state: PENDING | IN_PROGRESS | COMPLETED; result: SUCCESSFUL | FAILED | STOPPED). workspace defaults to the user's first workspace.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string().optional(),
+    repoSlug: z.string(),
+    pipelineUuid: z.string().describe("Pipeline uuid (with braces) or build number"),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const workspace = await resolveWorkspace(ctx, args.workspace);
+    const res = await ctx.http(
+      `${BASE}/repositories/${workspace}/${args.repoSlug}/pipelines/${encodeURIComponent(args.pipelineUuid)}`
+    );
+    const p = await res.json();
+    if (!p || !p.uuid) return p;
+    return slimPipeline(p);
+  },
+};
+
+export const stopPipeline = {
+  name: "bitbucket_stop_pipeline",
+  description:
+    "Stop a running Bitbucket pipeline by uuid. Returns { ok: true } on success (204 No Content); on failure returns Bitbucket's { ok:false, status, error } body. workspace defaults to the user's first workspace.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string().optional(),
+    repoSlug: z.string(),
+    pipelineUuid: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const workspace = await resolveWorkspace(ctx, args.workspace);
+    const res = await ctx.http(
+      `${BASE}/repositories/${workspace}/${args.repoSlug}/pipelines/${encodeURIComponent(args.pipelineUuid)}/stopPipeline`,
+      { method: "POST" }
+    );
+    if (res.status === 204) return { ok: true };
+    return { ok: false, status: res.status, error: await res.json().catch(() => res.statusText) };
+  },
+};
+
 export const getCloneUrl = {
   name: "bitbucket_get_clone_url",
   description:
