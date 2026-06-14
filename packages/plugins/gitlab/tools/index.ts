@@ -737,6 +737,104 @@ export const listPipelines = {
   },
 };
 
+function slimPipeline(p: any) {
+  return {
+    id: p.id,
+    status: p.status,
+    ref: p.ref,
+    sha: typeof p.sha === "string" ? p.sha.slice(0, 12) : p.sha,
+    source: p.source,
+    web_url: p.web_url,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+  };
+}
+
+export const triggerPipeline = {
+  name: "gitlab_trigger_pipeline",
+  description:
+    "Trigger a new CI pipeline for a GitLab project on a branch or tag (`ref`). Optional `variables` are passed as CI/CD variables for the run. Returns a slim pipeline { id, status, ref, sha, source, web_url, created_at, updated_at } — poll gitlab_get_pipeline with the id for status. The project must have a .gitlab-ci.yml on that ref or GitLab returns 400.",
+  integration: INTEGRATION,
+  inputSchema: z.object({
+    project: z.string(),
+    ref: z.string().describe("Branch or tag to run the pipeline on"),
+    variables: z.record(z.string()).optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const body: any = { ref: args.ref };
+    if (args.variables) {
+      body.variables = Object.entries(args.variables).map(([key, value]) => ({ key, value }));
+    }
+    const res = await ctx.http(`${apiBase(ctx)}/projects/${pid(args.project)}/pipeline`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const p = await res.json();
+    if (!p || typeof p.id !== "number") return p;
+    return slimPipeline(p);
+  },
+};
+
+export const getPipeline = {
+  name: "gitlab_get_pipeline",
+  description:
+    "Get a single GitLab CI pipeline by id as a slim object { id, status, ref, sha, source, web_url, created_at, updated_at }. Use to poll a pipeline you triggered (status: created | pending | running | success | failed | canceled).",
+  integration: INTEGRATION,
+  inputSchema: z.object({
+    project: z.string(),
+    pipelineId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${apiBase(ctx)}/projects/${pid(args.project)}/pipelines/${args.pipelineId}`
+    );
+    const p = await res.json();
+    if (!p || typeof p.id !== "number") return p;
+    return slimPipeline(p);
+  },
+};
+
+export const retryPipeline = {
+  name: "gitlab_retry_pipeline",
+  description:
+    "Retry the failed and canceled jobs in a GitLab pipeline by id. Returns the slim pipeline; on failure returns GitLab's error body.",
+  integration: INTEGRATION,
+  inputSchema: z.object({
+    project: z.string(),
+    pipelineId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${apiBase(ctx)}/projects/${pid(args.project)}/pipelines/${args.pipelineId}/retry`,
+      { method: "POST" }
+    );
+    const p = await res.json();
+    if (!p || typeof p.id !== "number") return p;
+    return slimPipeline(p);
+  },
+};
+
+export const cancelPipeline = {
+  name: "gitlab_cancel_pipeline",
+  description:
+    "Cancel a running GitLab pipeline by id (cancels its running/pending jobs). Returns the slim pipeline; on failure returns GitLab's error body.",
+  integration: INTEGRATION,
+  inputSchema: z.object({
+    project: z.string(),
+    pipelineId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${apiBase(ctx)}/projects/${pid(args.project)}/pipelines/${args.pipelineId}/cancel`,
+      { method: "POST" }
+    );
+    const p = await res.json();
+    if (!p || typeof p.id !== "number") return p;
+    return slimPipeline(p);
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Search
 // ---------------------------------------------------------------------------
