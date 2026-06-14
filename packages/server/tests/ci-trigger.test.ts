@@ -66,10 +66,18 @@ describe("bitbucket pipeline trigger", () => {
       if (url.includes("/pipelines/")) return { json: async () => ({ uuid: "{x}", build_number: 1, state: { name: "PENDING" }, target: { ref_name: "main" } }) } as any;
       throw new Error(`unexpected ${url}`);
     });
-    const result = await bbTrigger.handler(ctxWith(http), { workspace: "ws", repoSlug: "r", ref: "main", custom: "deploy" });
+    const result = await bbTrigger.handler(ctxWith(http), {
+      workspace: "ws", repoSlug: "r", ref: "main", custom: "deploy",
+      variables: { ENV: "prod", TOKEN: "abc" }, secured: ["TOKEN"],
+    });
     expect(calls[0].url).toBe("https://api.bitbucket.org/2.0/repositories/ws/r/pipelines/");
     const body = JSON.parse(calls[0].init.body);
     expect(body.target).toEqual({ ref_type: "branch", type: "pipeline_ref_target", ref_name: "main", selector: { type: "custom", pattern: "deploy" } });
+    // variables live at body root, not under target, with per-key secured flag
+    expect(body.variables).toEqual([
+      { key: "ENV", value: "prod", secured: false },
+      { key: "TOKEN", value: "abc", secured: true },
+    ]);
     expect(result).toMatchObject({ uuid: "{x}", state: "PENDING", ref_name: "main" });
   });
 
