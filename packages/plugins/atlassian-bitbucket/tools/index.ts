@@ -453,30 +453,44 @@ function slimPipeline(p: any) {
 export const triggerPipeline = {
   name: "bitbucket_trigger_pipeline",
   description:
-    "Trigger a Bitbucket Pipelines run on a branch (`ref`). Optional `custom` runs a custom pipeline defined under `pipelines.custom.<name>` in bitbucket-pipelines.yml; omit it to run the branch's default pipeline. Returns a slim pipeline { uuid, build_number, state, result, ref_name, created_on, completed_on } — poll bitbucket_get_pipeline with the uuid. Requires the pipeline scope and Pipelines enabled on the repo. workspace defaults to the user's first workspace.",
+    "Trigger a Bitbucket Pipelines run on a branch (`ref`). Optional `custom` runs a custom pipeline defined under `pipelines.custom.<name>` in bitbucket-pipelines.yml; omit it to run the branch's default pipeline. Optional `variables` ({KEY: value}) are passed to the run — custom pipelines that declare `variables:` read them here; pass `secured` (list of variable names) to mark those secured/masked. Returns a slim pipeline { uuid, build_number, state, result, ref_name, created_on, completed_on } — poll bitbucket_get_pipeline with the uuid. Requires the pipeline scope and Pipelines enabled on the repo. workspace defaults to the user's first workspace.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
     workspace: z.string().optional(),
     repoSlug: z.string(),
     ref: z.string().describe("Branch name to run the pipeline on"),
     custom: z.string().optional().describe("Name of a custom pipeline definition to run"),
+    variables: z.record(z.string()).optional().describe("Pipeline variables as { KEY: value }"),
+    secured: z.array(z.string()).optional().describe("Names of variables to mark as secured/masked"),
   }),
   handler: async (ctx: any, args: any) => {
     const workspace = await resolveWorkspace(ctx, args.workspace);
-    const target: any = {
-      ref_type: "branch",
-      type: "pipeline_ref_target",
-      ref_name: args.ref,
+    const body: any = {
+      target: {
+        ref_type: "branch",
+        type: "pipeline_ref_target",
+        ref_name: args.ref,
+      },
     };
     if (args.custom) {
-      target.selector = { type: "custom", pattern: args.custom };
+      body.target.selector = { type: "custom", pattern: args.custom };
+    }
+    // Pipeline variables live on the request body (not under target). Bitbucket
+    // wants [{key, value, secured}]; map the caller's {KEY: value} object.
+    if (args.variables) {
+      const secured = new Set(args.secured ?? []);
+      body.variables = Object.entries(args.variables).map(([key, value]) => ({
+        key,
+        value,
+        secured: secured.has(key),
+      }));
     }
     const res = await ctx.http(
       `${BASE}/repositories/${workspace}/${args.repoSlug}/pipelines/`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target }),
+        body: JSON.stringify(body),
       }
     );
     const p = await res.json();
