@@ -26,6 +26,8 @@ quirks worth noting:
 - **Trigger**: `POST /repositories/{ws}/{repo}/pipelines/` (note trailing slash),
   body `{target: {ref_type:"branch", type:"pipeline_ref_target", ref_name}}`.
   Custom pipeline → add `target.selector = {type:"custom", pattern}`.
+  - Variables go at the **body root** (NOT under `target`): `variables: [{key, value, secured}]`.
+    The tool maps `{KEY: value}` + a `secured` name-list into that shape.
   - Requires **Pipelines enabled** on the repo.
 - **Get**: `pipelines/{uuid}` · **Stop**: `pipelines/{uuid}/stopPipeline` (204).
 - State nests under `state.name` / `state.result.name` / `state.stage.name` —
