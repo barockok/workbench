@@ -204,6 +204,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         categories: i.categories,
         logo: resolveLogo(i),
         authType: i.auth.type,
+        instance: i.auth.type === "oauth2" ? i.auth.instance : undefined,
         toolCount: registry.listToolsByIntegration(i.name).length,
         configured: isConfigured(i),
       })),
@@ -231,6 +232,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         categories: integ.categories,
         logo: resolveLogo(integ),
         authType: integ.auth.type,
+        instance: integ.auth.type === "oauth2" ? integ.auth.instance : undefined,
         tools: registry.listToolsByIntegration(integration).map((t) => ({
           name: t.name,
           description: t.description,
@@ -290,7 +292,8 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
 
     if (integ.auth.type === "oauth2") {
       try {
-        const url = buildPluginAuthUrl(user.userId, integration);
+        const { instanceUrl } = request.query as { instanceUrl?: string };
+        const url = buildPluginAuthUrl(user.userId, integration, instanceUrl);
         return { type: "oauth2", url };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
