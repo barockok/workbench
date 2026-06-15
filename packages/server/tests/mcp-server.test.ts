@@ -116,7 +116,7 @@ describe("handleMcpRequest", () => {
     expect(res.error.message).toContain("Method not found");
   });
 
-  it("handles execute_tool via mcp call", async () => {
+  it("handles execute_tools via mcp call", async () => {
     const mockTool = {
       name: "exec_tool",
       description: "Exec",
@@ -135,7 +135,7 @@ describe("handleMcpRequest", () => {
       {
         method: "tools/call",
         id: 6,
-        params: { name: "execute_tool", arguments: { tool: "exec_tool", args: {} } },
+        params: { name: "execute_tools", arguments: { executions: [{ tool: "exec_tool", args: {} }] } },
       },
       "user-1"
     );
@@ -165,12 +165,12 @@ describe("handleMcpRequest", () => {
       {
         method: "tools/call",
         id: 7,
-        params: { name: "execute_tool", arguments: { tool: "exec_tool", args: {} } },
+        params: { name: "execute_tools", arguments: { executions: [{ tool: "exec_tool", args: {} }] } },
       },
       "user-1"
     );
     const parsed = JSON.parse(res.result.content[0].text);
-    expect(parsed.error).toBe("NOT_CONNECTED");
+    expect(parsed.results[0].error).toBe("NOT_CONNECTED");
   });
 
   it("returns error when handler throws", async () => {
@@ -195,12 +195,12 @@ describe("handleMcpRequest", () => {
       {
         method: "tools/call",
         id: 8,
-        params: { name: "execute_tool", arguments: { tool: "exec_tool", args: {} } },
+        params: { name: "execute_tools", arguments: { executions: [{ tool: "exec_tool", args: {} }] } },
       },
       "user-1"
     );
     const parsed = JSON.parse(res.result.content[0].text);
-    expect(parsed.error).toBe("handler-error");
+    expect(parsed.results[0].error).toBe("handler-error");
   });
 
   it("lists integrations via mcp call", async () => {
@@ -267,15 +267,15 @@ describe("handleMcpRequest", () => {
       {
         method: "tools/call",
         id: 20,
-        params: { name: "execute_tool", arguments: { tool: "browser_close", args: {} } },
+        params: { name: "execute_tools", arguments: { executions: [{ tool: "browser_close", args: {} }] } },
       },
       "user-1"
     );
     const parsed = JSON.parse(res.result.content[0].text);
-    expect(parsed).toEqual({ result: { ok: true } });
+    expect(parsed).toEqual({ results: [{ result: { ok: true } }] });
   });
 
-  it("hoists an _mcpImage sentinel nested under execute_tool's result wrapper", async () => {
+  it("hoists an _mcpImage sentinel nested under execute_tools' result wrapper", async () => {
     const mockTool = {
       name: "browser_screenshot",
       description: "Shot",
@@ -294,10 +294,51 @@ describe("handleMcpRequest", () => {
       {
         method: "tools/call",
         id: 21,
-        params: { name: "execute_tool", arguments: { tool: "browser_screenshot", args: {} } },
+        params: { name: "execute_tools", arguments: { executions: [{ tool: "browser_screenshot", args: {} }] } },
       },
       "user-1"
     );
     expect(res.result.content[0]).toEqual({ type: "image", data: "b64", mimeType: "image/jpeg" });
+  });
+
+  it("emits one image block per sentinel in an execute_tools batch", async () => {
+    // Two screenshots in one batch: the renderer digs into results[] and
+    // surfaces both as image blocks (no text block when every result is an image).
+    let shot = 0;
+    const mockTool = {
+      name: "browser_screenshot",
+      description: "Shot",
+      integration: "browser",
+      inputSchema: { type: "object" as const, properties: {} },
+      handler: vi.fn().mockImplementation(async () => ({
+        _mcpImage: { data: `b64-${++shot}`, mimeType: "image/jpeg" },
+      })),
+    };
+    vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "browser",
+      version: "1.0.0",
+      auth: { type: "none" as const },
+    } as any);
+
+    const res = await handleMcpRequest(
+      {
+        method: "tools/call",
+        id: 22,
+        params: {
+          name: "execute_tools",
+          arguments: {
+            executions: [
+              { tool: "browser_screenshot", args: {} },
+              { tool: "browser_screenshot", args: {} },
+            ],
+          },
+        },
+      },
+      "user-1"
+    );
+    expect(res.result.content).toHaveLength(2);
+    expect(res.result.content.every((c: any) => c.type === "image")).toBe(true);
+    expect(res.result.content.map((c: any) => c.data).sort()).toEqual(["b64-1", "b64-2"]);
   });
 });

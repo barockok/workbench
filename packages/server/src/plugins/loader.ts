@@ -19,6 +19,7 @@ const builtinPlugins = [
   "atlassian-bitbucket",
   "asana",
   "github",
+  "gitlab",
   "slack",
   "httpbin-cookie",
 ];
