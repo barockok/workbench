@@ -50,12 +50,12 @@ export function listAgents(userId: string): ConnectedAgent[] {
 // at their own TTL. Never touches the shared oauth_clients row or other users'
 // rows. Returns the number of refresh-token rows deleted (0 if none — idempotent).
 export function revokeAgent(userId: string, clientId: string): number {
-  const tx = db.transaction(() => {
-    const info = db
-      .prepare("DELETE FROM oauth_refresh_tokens WHERE user_id = ? AND client_id = ?")
-      .run(userId, clientId);
-    db.prepare("DELETE FROM oauth_auth_codes WHERE user_id = ? AND client_id = ?").run(userId, clientId);
-    return info.changes;
-  });
-  return tx();
+  // better-sqlite3 runs synchronously; these two scoped deletes need no explicit
+  // transaction (and the rest of the codebase doesn't use one). Revoke is
+  // idempotent, so a partial run is safely retryable.
+  const info = db
+    .prepare("DELETE FROM oauth_refresh_tokens WHERE user_id = ? AND client_id = ?")
+    .run(userId, clientId);
+  db.prepare("DELETE FROM oauth_auth_codes WHERE user_id = ? AND client_id = ?").run(userId, clientId);
+  return info.changes as number;
 }
