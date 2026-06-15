@@ -16,6 +16,21 @@ export interface OAuthConfig {
   authorizationUrl: string;
   tokenUrl: string;
   scopes: string[];
+  // Self-hosted support. When set, the integration accepts a user-supplied
+  // instance base URL at connect time (e.g. a private GitLab at
+  // https://gitlab.acme.com). The authorize/token URLs above act as the
+  // cloud default; for a custom instance the server keeps their *paths* and
+  // swaps in the user's origin. The chosen instance origin is persisted on the
+  // connection and exposed to tools via ctx.getConfig().instanceUrl so they can
+  // build the right API base. Cloud-only integrations omit this block.
+  instance?: {
+    // Portal field label, e.g. "GitLab instance URL".
+    label: string;
+    // Placeholder shown in the portal input, e.g. "https://gitlab.example.com".
+    placeholder?: string;
+    // Prefilled default origin, e.g. "https://gitlab.com" (the cloud host).
+    default: string;
+  };
 }
 
 export interface ApiKeyConfig {

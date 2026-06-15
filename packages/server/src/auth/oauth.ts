@@ -14,12 +14,13 @@ export function codeChallengeS256(verifier: string): string {
 export function createAuthState(
   userId: string,
   integration: string,
-  codeVerifier?: string
+  codeVerifier?: string,
+  config?: string
 ): string {
   const state = crypto.randomBytes(32).toString("hex");
   db.prepare(
-    "INSERT INTO pending_auth (state, user_id, integration, expires_at, code_verifier) VALUES (?, ?, ?, ?, ?)"
-  ).run(state, userId, integration, Math.floor(Date.now() / 1000) + 600, codeVerifier ?? null);
+    "INSERT INTO pending_auth (state, user_id, integration, expires_at, code_verifier, config) VALUES (?, ?, ?, ?, ?, ?)"
+  ).run(state, userId, integration, Math.floor(Date.now() / 1000) + 600, codeVerifier ?? null, config ?? null);
 
   db.prepare("DELETE FROM pending_auth WHERE expires_at < ?").run(Math.floor(Date.now() / 1000));
 
@@ -28,10 +29,10 @@ export function createAuthState(
 
 export function verifyAuthState(
   state: string
-): { userId: string; integration: string; codeVerifier?: string } | null {
-  const row = db.prepare("SELECT user_id, integration, code_verifier FROM pending_auth WHERE state = ? AND expires_at > ?")
+): { userId: string; integration: string; codeVerifier?: string; config?: string } | null {
+  const row = db.prepare("SELECT user_id, integration, code_verifier, config FROM pending_auth WHERE state = ? AND expires_at > ?")
     .get(state, Math.floor(Date.now() / 1000)) as
-      { user_id: string; integration: string; code_verifier: string | null } | undefined;
+      { user_id: string; integration: string; code_verifier: string | null; config: string | null } | undefined;
 
   if (!row) return null;
 
@@ -40,6 +41,7 @@ export function verifyAuthState(
     userId: row.user_id,
     integration: row.integration,
     codeVerifier: row.code_verifier ?? undefined,
+    config: row.config ?? undefined,
   };
 }
 

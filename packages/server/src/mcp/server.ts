@@ -81,17 +81,27 @@ export async function handleMcpRequest(body: Record<string, unknown>, userId: st
 
     const result = await tool.handler({ userId }, parsed.data as any);
 
-    // A handler may return an image sentinel; surface it as a real MCP image
-    // content block instead of JSON text. Everything else is text-wrapped.
-    // Also check one level down: execute_tool wraps the plugin result in
-    // { result }, and browser_screenshot (a plugin tool now) returns the
-    // sentinel there.
+    // A plugin handler may return an image sentinel; surface it as a real MCP
+    // image content block instead of JSON text. The renderer stays agnostic of
+    // which meta-tool produced the result: it just looks for `_mcpImage`
+    // wherever it can sit — on the value itself, under a `{ result }` wrapper,
+    // or inside an `execute_tools` `{ results: [{ result }] }` batch (which may
+    // carry several screenshots). Any sentinels found become image blocks;
+    // otherwise the whole result is text-wrapped.
     type ImageSentinel = { _mcpImage?: { data: string; mimeType: string } };
-    const img =
-      (result as ImageSentinel | null)?._mcpImage ??
-      ((result as { result?: ImageSentinel } | null)?.result?._mcpImage);
-    const content = img
-      ? [{ type: "image", data: img.data, mimeType: img.mimeType }]
+    const collectImages = (node: unknown): { data: string; mimeType: string }[] => {
+      if (!node || typeof node !== "object") return [];
+      const direct = (node as ImageSentinel)._mcpImage;
+      if (direct) return [direct];
+      const wrapped = (node as { result?: unknown }).result;
+      if (wrapped !== undefined) return collectImages(wrapped);
+      const batch = (node as { results?: unknown }).results;
+      if (Array.isArray(batch)) return batch.flatMap(collectImages);
+      return [];
+    };
+    const images = collectImages(result);
+    const content = images.length
+      ? images.map((img) => ({ type: "image", data: img.data, mimeType: img.mimeType }))
       : [{ type: "text", text: capResultText(JSON.stringify(result)) }];
 
     return {
