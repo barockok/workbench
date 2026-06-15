@@ -9,6 +9,6 @@ export default {
     type: "oauth2",
     authorizationUrl: "https://bitbucket.org/site/oauth2/authorize",
     tokenUrl: "https://bitbucket.org/site/oauth2/access_token",
-    scopes: ["repository", "repository:write", "pullrequest:write", "account"],
+    scopes: ["repository", "repository:write", "pullrequest:write", "pipeline", "pipeline:write", "account"],
   },
 };
