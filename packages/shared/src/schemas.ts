@@ -4,11 +4,6 @@ export const searchToolsSchema = z.object({
   query: z.string().min(1),
 });
 
-export const executeToolSchema = z.object({
-  tool: z.string(),
-  args: z.record(z.unknown()),
-});
-
 export const getToolSchema = z.object({
   tool: z.string(),
 });

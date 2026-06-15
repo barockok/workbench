@@ -27,6 +27,12 @@ export async function fetchIntegrations() {
   return res.json();
 }
 
+export interface InstanceConfig {
+  label: string;
+  placeholder?: string;
+  default: string;
+}
+
 export interface IntegrationSummary {
   name: string;
   version: string;
@@ -37,6 +43,8 @@ export interface IntegrationSummary {
   toolCount: number;
   configured?: boolean;
   authType?: string;
+  // Present when the integration supports a self-hosted instance URL prompt.
+  instance?: InstanceConfig;
 }
 
 export interface IntegrationDetail extends IntegrationSummary {
@@ -95,8 +103,12 @@ export type StartAuthResult =
   | { type: "oauth2"; url: string }
   | { type: "manual"; state: string };
 
-export async function startIntegrationAuth(integration: string): Promise<StartAuthResult> {
-  const res = await fetch(`${API_URL}/api/auth/${integration}`, { headers: getHeaders() });
+export async function startIntegrationAuth(
+  integration: string,
+  instanceUrl?: string
+): Promise<StartAuthResult> {
+  const qs = instanceUrl ? `?instanceUrl=${encodeURIComponent(instanceUrl)}` : "";
+  const res = await fetch(`${API_URL}/api/auth/${integration}${qs}`, { headers: getHeaders() });
   if (res.status === 401) {
     localStorage.removeItem("awb_token");
     window.location.href = "/login";

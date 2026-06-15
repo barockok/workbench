@@ -124,11 +124,16 @@ describe("meta-tools", () => {
     });
   });
 
-  describe("execute_tool", () => {
+  // Per-item engine (executeSingle) is exercised through execute_tools with a
+  // single execution — there is no longer a singular execute_tool meta-tool.
+  describe("execute_tools (single execution)", () => {
+    const runOne = (tool: any, exec: { tool: string; args: Record<string, unknown> }) =>
+      tool.handler({ userId: "user-1" }, { executions: [exec] }).then((r: any) => r.results[0]);
+
     it("returns error when tool not found", async () => {
       vi.spyOn(registry, "getTool").mockReturnValue(undefined);
-      const tool = findTool("execute_tool");
-      const result = await tool.handler({ userId: "user-1" }, { tool: "missing", args: {} });
+      const tool = findTool("execute_tools");
+      const result = await runOne(tool, { tool: "missing", args: {} });
       expect(result.error).toBe("Tool not found");
     });
 
@@ -138,8 +143,8 @@ describe("meta-tools", () => {
       vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
 
-      const tool = findTool("execute_tool");
-      const result = await tool.handler({ userId: "user-1" }, { tool: "test_tool", args: {} });
+      const tool = findTool("execute_tools");
+      const result = await runOne(tool, { tool: "test_tool", args: {} });
       expect(result.error).toBe("NOT_CONNECTED");
       expect(result.integration).toBe("test-integ");
     });
@@ -150,8 +155,8 @@ describe("meta-tools", () => {
       vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
 
-      const tool = findTool("execute_tool");
-      const result = await tool.handler({ userId: "user-1" }, { tool: "test_tool", args: {} });
+      const tool = findTool("execute_tools");
+      const result = await runOne(tool, { tool: "test_tool", args: {} });
       expect(result.error).toBe("NOT_CONNECTED");
     });
 
@@ -162,8 +167,8 @@ describe("meta-tools", () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
       mockTool.handler.mockResolvedValue({ done: true });
 
-      const tool = findTool("execute_tool");
-      const result = await tool.handler({ userId: "user-1" }, { tool: "test_tool", args: { x: 1 } });
+      const tool = findTool("execute_tools");
+      const result = await runOne(tool, { tool: "test_tool", args: { x: 1 } });
       expect(result.result).toEqual({ done: true });
       expect(mockTool.handler).toHaveBeenCalledWith(expect.anything(), { x: 1 });
     });
@@ -175,8 +180,8 @@ describe("meta-tools", () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
       mockTool.handler.mockRejectedValue(new Error("boom"));
 
-      const tool = findTool("execute_tool");
-      const result = await tool.handler({ userId: "user-1" }, { tool: "test_tool", args: {} });
+      const tool = findTool("execute_tools");
+      const result = await runOne(tool, { tool: "test_tool", args: {} });
       expect(result.error).toBe("boom");
     });
   });

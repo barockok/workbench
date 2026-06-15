@@ -53,6 +53,110 @@ export function getPluginCallbackUrl(integration: string): string {
 }
 
 /**
+ * Block obvious SSRF targets given as IP literals or loopback names. This is a
+ * literal-only check (no DNS); the real containment is the host allowlist in
+ * isInstanceAllowed — but rejecting these outright stops the dumbest mistakes
+ * even for an allowlisted-but-misconfigured deployment.
+ */
+function isPrivateHost(host: string): boolean {
+  const h = host.toLowerCase();
+  if (h === "localhost" || h.endsWith(".localhost")) return true;
+  if (h === "[::1]" || h === "::1") return true;
+  // IPv6 loopback / unique-local (fc00::/7) / link-local (fe80::/10).
+  if (h.startsWith("[::1") || h.startsWith("[fc") || h.startsWith("[fd") || h.startsWith("[fe8") || h.startsWith("[fe9") || h.startsWith("[fea") || h.startsWith("[feb")) return true;
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a === 0 || a === 127 || a === 10) return true; // this-host, loopback, RFC1918
+    if (a === 169 && b === 254) return true; // link-local (incl. cloud metadata 169.254.169.254)
+    if (a === 172 && b >= 16 && b <= 31) return true; // RFC1918
+    if (a === 192 && b === 168) return true; // RFC1918
+  }
+  return false;
+}
+
+/**
+ * Normalize a user-supplied instance URL to a bare origin (scheme + host[:port]),
+ * dropping any path/query/fragment. Returns null if invalid or unsafe.
+ *
+ * The OAuth token-exchange POST sends the (shared) client secret to this origin,
+ * so we are strict: https only — no plaintext secret on the wire; no userinfo —
+ * a `user:pass@host` URL is a classic open-redirect/credential trick; and no
+ * private/loopback literals (defense-in-depth against SSRF; the allowlist is the
+ * primary control).
+ */
+export function normalizeInstanceUrl(raw: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(raw.trim());
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:") return null;
+  if (u.username || u.password) return null;
+  if (isPrivateHost(u.hostname)) return null;
+  return u.origin;
+}
+
+/**
+ * A user picks the instance origin at connect time, and the server then POSTs
+ * the shared OAuth client secret to that origin's /oauth/token. Without a guard,
+ * any authenticated user could point that at an attacker host and steal the
+ * secret (or SSRF an internal service). So the origin must be allowlisted:
+ *  - the manifest's cloud default (e.g. https://gitlab.com) is always allowed;
+ *  - additional self-hosted origins come from <PREFIX>_ALLOWED_INSTANCES
+ *    (comma-separated), set by the deployment admin who controls those hosts.
+ * With no env allowlist, only the cloud default is permitted.
+ */
+export function isInstanceAllowed(
+  integration: string,
+  instanceDefault: string,
+  origin: string
+): boolean {
+  if (origin === normalizeInstanceUrl(instanceDefault)) return true;
+  const env = process.env[`${envVarPrefix(integration)}_ALLOWED_INSTANCES`];
+  if (!env) return false;
+  const allowed = env
+    .split(",")
+    .map((s) => normalizeInstanceUrl(s))
+    .filter((o): o is string => Boolean(o));
+  return allowed.includes(origin);
+}
+
+/**
+ * Resolve the authorize/token URLs for an OAuth integration, honoring a
+ * self-hosted instance origin when the integration declares `instance` support.
+ * The manifest's authorizationUrl/tokenUrl are the cloud default; for a custom
+ * instance we keep their path and swap in the user's origin.
+ */
+export function resolveOAuthUrls(
+  auth: { authorizationUrl: string; tokenUrl: string; instance?: { default: string } },
+  configJson?: string
+): { authorizationUrl: string; tokenUrl: string } {
+  if (!auth.instance) {
+    return { authorizationUrl: auth.authorizationUrl, tokenUrl: auth.tokenUrl };
+  }
+  let instanceUrl: string | undefined;
+  if (configJson) {
+    try {
+      instanceUrl = JSON.parse(configJson)?.instanceUrl;
+    } catch {
+      /* fall through to default */
+    }
+  }
+  const origin = normalizeInstanceUrl(instanceUrl ?? auth.instance.default) ?? auth.instance.default;
+  const swap = (defaultUrl: string): string => {
+    const d = new URL(defaultUrl);
+    const o = new URL(origin);
+    o.pathname = d.pathname;
+    o.search = d.search;
+    return o.toString();
+  };
+  return { authorizationUrl: swap(auth.authorizationUrl), tokenUrl: swap(auth.tokenUrl) };
+}
+
+/**
  * Provider-specific authorization URL parameters.
  * Google needs access_type=offline + prompt=consent to issue refresh tokens.
  */
@@ -68,7 +172,11 @@ function providerExtraParams(integration: string): Record<string, string> {
   return {};
 }
 
-export function buildPluginAuthUrl(userId: string, integration: string): string {
+export function buildPluginAuthUrl(
+  userId: string,
+  integration: string,
+  instanceUrl?: string
+): string {
   const integ = registry.getIntegration(integration);
   if (!integ) throw new Error(`Integration not found: ${integration}`);
   if (integ.auth.type !== "oauth2") {
@@ -80,11 +188,31 @@ export function buildPluginAuthUrl(userId: string, integration: string): string 
     throw new Error(`OAuth client not configured for ${integration}`);
   }
 
+  // Self-hosted instance: validate + persist the chosen origin through the flow.
+  let configJson: string | undefined;
+  if (integ.auth.instance) {
+    const raw = instanceUrl?.trim() || integ.auth.instance.default;
+    const origin = normalizeInstanceUrl(raw);
+    if (!origin) {
+      throw new Error(`Invalid instance URL for ${integration}: ${raw}`);
+    }
+    // Guard the shared client secret: the chosen origin receives the token POST,
+    // so it must be the cloud default or an admin-allowlisted self-hosted host.
+    if (!isInstanceAllowed(integration, integ.auth.instance.default, origin)) {
+      throw new Error(
+        `Instance not allowed for ${integration}: ${origin}. Add it to ${envVarPrefix(integration)}_ALLOWED_INSTANCES.`
+      );
+    }
+    configJson = JSON.stringify({ instanceUrl: origin });
+  }
+
+  const { authorizationUrl } = resolveOAuthUrls(integ.auth, configJson);
+
   // PKCE on every flow, confidential clients included (OAuth 2.1 baseline).
   // Providers that don't support it ignore the extra params per RFC 6749.
   const codeVerifier = generateCodeVerifier();
-  const state = createAuthState(userId, integration, codeVerifier);
-  const url = new URL(integ.auth.authorizationUrl);
+  const state = createAuthState(userId, integration, codeVerifier, configJson);
+  const url = new URL(authorizationUrl);
   url.searchParams.set("client_id", creds.clientId);
   url.searchParams.set("redirect_uri", getPluginCallbackUrl(integration));
   url.searchParams.set("response_type", "code");
@@ -121,8 +249,9 @@ export async function handlePluginCallback(
     throw new Error(`OAuth client not configured for ${integration}`);
   }
 
+  const { tokenUrl } = resolveOAuthUrls(integ.auth, authState.config);
   const tokens = await exchangeCode(
-    integ.auth.tokenUrl,
+    tokenUrl,
     creds.clientId,
     creds.clientSecret,
     code,
@@ -156,6 +285,7 @@ export async function handlePluginCallback(
     refreshToken,
     expiresAt,
     scopes: integ.auth.scopes.join(" "),
+    config: authState.config,
   });
 
   return { userId: authState.userId };

@@ -726,6 +726,104 @@ export const listWorkflowRuns = {
   },
 };
 
+export const triggerWorkflow = {
+  name: "github_trigger_workflow",
+  description:
+    "Trigger a GitHub Actions workflow run via workflow_dispatch. `workflow` is the workflow file name (e.g. ci.yml) or its numeric id; `ref` is the branch or tag to run on. Optional `inputs` maps to the workflow's workflow_dispatch inputs. The workflow file MUST declare `on: workflow_dispatch` or GitHub returns 422. Returns { ok: true } — the dispatch API has no body and returns no run id; poll github_list_workflow_runs (filter by branch/event=workflow_dispatch) to find the created run.",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    workflow: z.string().describe("Workflow file name (ci.yml) or numeric id"),
+    ref: z.string().describe("Branch or tag to run the workflow on"),
+    inputs: z.record(z.string()).optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const body: any = { ref: args.ref };
+    if (args.inputs) body.inputs = args.inputs;
+    const res = await ctx.http(
+      `${GH}/repos/${args.owner}/${args.repo}/actions/workflows/${encodeURIComponent(args.workflow)}/dispatches`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    // 204 No Content = success; anything else carries a GitHub error body.
+    if (res.status === 204) return { ok: true };
+    return { ok: false, status: res.status, error: await res.json().catch(() => res.statusText) };
+  },
+};
+
+export const getWorkflowRun = {
+  name: "github_get_workflow_run",
+  description:
+    "Get a single GitHub Actions workflow run by id as a slim object { id, name, head_branch, event, status, conclusion, run_started_at, html_url }. Use this to poll a run you triggered with github_trigger_workflow (status: queued | in_progress | completed; conclusion: success | failure | cancelled | …).",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    runId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(`${GH}/repos/${args.owner}/${args.repo}/actions/runs/${args.runId}`);
+    const r = await res.json();
+    if (!r || typeof r.id !== "number") return r;
+    return {
+      id: r.id,
+      name: r.name,
+      head_branch: r.head_branch,
+      event: r.event,
+      status: r.status,
+      conclusion: r.conclusion,
+      run_started_at: r.run_started_at,
+      html_url: r.html_url,
+    };
+  },
+};
+
+export const rerunWorkflowRun = {
+  name: "github_rerun_workflow_run",
+  description:
+    "Re-run a GitHub Actions workflow run by id (all jobs). Pass failedOnly to re-run only the failed jobs (rerun-failed-jobs). Returns { ok: true } on success; on failure returns GitHub's { ok:false, status, error } body.",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    runId: z.number(),
+    failedOnly: z.boolean().default(false),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const path = args.failedOnly ? "rerun-failed-jobs" : "rerun";
+    const res = await ctx.http(
+      `${GH}/repos/${args.owner}/${args.repo}/actions/runs/${args.runId}/${path}`,
+      { method: "POST" }
+    );
+    if (res.status === 201) return { ok: true };
+    return { ok: false, status: res.status, error: await res.json().catch(() => res.statusText) };
+  },
+};
+
+export const cancelWorkflowRun = {
+  name: "github_cancel_workflow_run",
+  description:
+    "Cancel an in-progress GitHub Actions workflow run by id. Returns { ok: true } on success; on failure returns GitHub's { ok:false, status, error } body (e.g. 409 if the run already finished).",
+  integration: "github",
+  inputSchema: z.object({
+    owner: z.string(),
+    repo: z.string(),
+    runId: z.number(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http(
+      `${GH}/repos/${args.owner}/${args.repo}/actions/runs/${args.runId}/cancel`,
+      { method: "POST" }
+    );
+    if (res.status === 202) return { ok: true };
+    return { ok: false, status: res.status, error: await res.json().catch(() => res.statusText) };
+  },
+};
+
 export const getCloneUrl = {
   name: "github_get_clone_url",
   description:

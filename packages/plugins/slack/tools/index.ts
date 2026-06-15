@@ -290,6 +290,159 @@ export const listUsers = {
   },
 };
 
+// Hosts the credentialed Bearer token may be sent to. The OAuth branch of
+// ctx.http has NO domain guard (unlike cookie auth), so an attacker-supplied
+// url here would otherwise exfiltrate the user's Slack token to any host.
+// Restrict to Slack's own file hosts; presigned-CDN redirect targets are
+// followed WITHOUT the token (see below).
+function isSlackHost(host: string): boolean {
+  const h = host.toLowerCase().replace(/\.$/, "");
+  return h === "slack.com" || h === "files.slack.com" || h.endsWith(".slack.com");
+}
+
+export const downloadFile = {
+  name: "slack_download_file",
+  description:
+    "Download a Slack file (attachment) by its private URL. Pass the url_private_download (preferred) or url_private from a file object in slack_get_channel_history / slack_get_thread_replies / slack_search_all. Returns { ok, filename, mimetype, size, base64 } — the raw bytes base64-encoded. Requires the files:read scope. Slack auth-walls these URLs, so a plain fetch without the token returns the login HTML, not the file.",
+  integration: "slack",
+  inputSchema: z.object({
+    url: z.string().url(),
+    filename: z.string().optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    // url_private(_download) is host slack.com / files.slack.com — ctx.http
+    // attaches the Bearer token. Validate the host BEFORE the credentialed
+    // request so we never send the token to an arbitrary URL.
+    let target: URL;
+    try {
+      target = new URL(args.url);
+    } catch {
+      return { ok: false, error: "invalid_url" };
+    }
+    if (target.protocol !== "https:" || !isSlackHost(target.hostname)) {
+      return { ok: false, error: "invalid_host" };
+    }
+
+    // Slack file URLs 302 to a presigned CDN (S3) that needs no auth. Follow
+    // hops manually: keep the Bearer only while still on a Slack host; drop it
+    // (plain fetch) the moment we leave, so the token can't be redirected out.
+    let url = target.toString();
+    let onSlack = true;
+    let res: Response | undefined;
+    for (let hop = 0; hop < 5; hop++) {
+      res = onSlack
+        ? await ctx.http(url, { redirect: "manual" })
+        : await fetch(url, { redirect: "manual" });
+      if (res.status >= 300 && res.status < 400) {
+        const loc = res.headers.get("location");
+        if (!loc) break;
+        const next = new URL(loc, url);
+        if (next.protocol !== "https:") return { ok: false, error: "invalid_redirect" };
+        url = next.toString();
+        onSlack = isSlackHost(next.hostname);
+        continue;
+      }
+      break;
+    }
+    if (!res) return { ok: false, error: "download_failed" };
+    if (!res.ok) {
+      return { ok: false, error: `download_failed_${res.status}` };
+    }
+    const ct = res.headers.get("content-type") || "";
+    // Slack returns text/html (the login page) when the token can't see the
+    // file — treat that as an auth failure rather than handing back HTML bytes.
+    if (ct.includes("text/html")) {
+      return { ok: false, error: "not_authed_or_not_found" };
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    return {
+      ok: true,
+      filename: args.filename,
+      mimetype: ct || undefined,
+      size: buf.byteLength,
+      base64: buf.toString("base64"),
+    };
+  },
+};
+
+export const getFileInfo = {
+  name: "slack_get_file_info",
+  description:
+    "Get metadata for a Slack file by its id (files.info): name, mimetype, size, and the url_private_download you can pass to slack_download_file. Requires the files:read scope. Returns Slack's body; not-found / no-access comes back as {ok:false, error}.",
+  integration: "slack",
+  inputSchema: z.object({
+    file: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("file", args.file);
+    const res = await ctx.http(`https://slack.com/api/files.info?${params}`);
+    return res.json();
+  },
+};
+
+export const removeReaction = {
+  name: "slack_remove_reaction",
+  description:
+    "Remove a reaction emoji you added to a Slack message (reactions.remove). Needs the channel and the message timestamp, plus the emoji name (no colons). Mirror of slack_add_reaction. Returns Slack's body; {ok:false, error:'no_reaction'} if it wasn't there.",
+  integration: "slack",
+  inputSchema: z.object({
+    channel: z.string(),
+    timestamp: z.string(),
+    emoji: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http("https://slack.com/api/reactions.remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channel: args.channel,
+        timestamp: args.timestamp,
+        name: args.emoji,
+      }),
+    });
+    return res.json();
+  },
+};
+
+export const getPermalink = {
+  name: "slack_get_permalink",
+  description:
+    "Get the shareable permalink URL for a Slack message (chat.getPermalink). Needs the channel and the message ts (from slack_send_message or channel history). Returns { ok, permalink } — use it to cite or link a message in a reply. On failure returns Slack's {ok:false, error} body.",
+  integration: "slack",
+  inputSchema: z.object({
+    channel: z.string(),
+    ts: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const params = new URLSearchParams();
+    params.set("channel", args.channel);
+    params.set("message_ts", args.ts);
+    const res = await ctx.http(`https://slack.com/api/chat.getPermalink?${params}`);
+    const data = await res.json();
+    if (!data.ok) return data;
+    return { ok: true, permalink: data.permalink };
+  },
+};
+
+export const joinChannel = {
+  name: "slack_join_channel",
+  description:
+    "Join a public Slack channel (conversations.join) so you can read its full history / post — reading a channel you're not in often returns not_in_channel. Needs the channel id (from slack_list_channels). Idempotent: joining a channel you're already in succeeds. Returns Slack's body; private channels and DMs can't be joined this way.",
+  integration: "slack",
+  inputSchema: z.object({
+    channel: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const res = await ctx.http("https://slack.com/api/conversations.join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channel: args.channel }),
+    });
+    return res.json();
+  },
+};
+
 export const findUsers = {
   name: "slack_find_users",
   description:

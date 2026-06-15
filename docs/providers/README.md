@@ -14,6 +14,7 @@ One markdown per supported integration, with current official steps to obtain OA
 | Google Docs | `google-docs` | OAuth 2.0 | [google.md](./google.md) |
 | Google Slides | `google-slides` | OAuth 2.0 | [google.md](./google.md) |
 | GitHub | `github` | OAuth App | [github.md](./github.md) |
+| GitLab (cloud + self-hosted) | `gitlab` | OAuth 2.0 (PKCE) | [gitlab.md](./gitlab.md) |
 | Slack | `slack` | OAuth 2.0 (v2 bot) | [slack.md](./slack.md) |
 | Jira (Atlassian Cloud) | `atlassian-jira` | OAuth 2.0 (3LO) | [atlassian-jira.md](./atlassian-jira.md) |
 | Confluence (Atlassian Cloud) | `atlassian-confluence` | OAuth 2.0 (3LO) | [atlassian-confluence.md](./atlassian-confluence.md) |
@@ -52,6 +53,7 @@ GOOGLE_GEMINI_CLIENT_ID / GOOGLE_GEMINI_CLIENT_SECRET
 GOOGLE_DOCS_CLIENT_ID / GOOGLE_DOCS_CLIENT_SECRET
 GOOGLE_SLIDES_CLIENT_ID / GOOGLE_SLIDES_CLIENT_SECRET
 GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET
+GITLAB_CLIENT_ID / GITLAB_CLIENT_SECRET           # cloud + self-hosted (instance picked at connect time)
 SLACK_CLIENT_ID / SLACK_CLIENT_SECRET
 ATLASSIAN_JIRA_CLIENT_ID / ATLASSIAN_JIRA_CLIENT_SECRET
 ATLASSIAN_CONFLUENCE_CLIENT_ID / ATLASSIAN_CONFLUENCE_CLIENT_SECRET
