@@ -61,8 +61,8 @@ async function startConnect(
 }
 
 // Core single-tool execution: connection check, schema validation, audit, run.
-// Shared by `execute_tool` (one call) and `execute_tools` (batch), so both
-// behave identically per item. Never throws — failures come back as { error }.
+// The per-item engine behind `execute_tools` (batch). Never throws — failures
+// come back as { error }.
 type ExecResult = { result: unknown } | { error: string; integration?: string; message?: string };
 async function executeSingle(
   userId: string,
@@ -71,7 +71,7 @@ async function executeSingle(
 ): Promise<ExecResult> {
   const targetTool = registry.getTool(toolName);
   return withSpan(
-    "execute_tool",
+    "execute_single",
     async () => {
       const start = Date.now();
 
@@ -114,8 +114,8 @@ async function executeSingle(
 
       // Validate args against the plugin tool's own schema so that
       // Zod defaults (e.g. pageSize=10) get applied. Without this,
-      // execute_tool blindly forwards whatever the caller sent and
-      // the plugin sees `undefined` for optional-with-default fields.
+      // we'd blindly forward whatever the caller sent and the plugin
+      // would see `undefined` for optional-with-default fields.
       let parsedArgs: unknown = rawArgs;
       try {
         const parsed = targetTool.inputSchema.safeParse(rawArgs ?? {});
@@ -213,19 +213,9 @@ export const metaTools = [
     },
   },
   {
-    name: "execute_tool",
-    description: "Execute a tool by name with arguments",
-    inputSchema: z.object({
-      tool: z.string(),
-      args: z.record(z.unknown()),
-    }),
-    handler: (ctx: { userId: string }, args: { tool: string; args: Record<string, unknown> }) =>
-      executeSingle(ctx.userId, args.tool, args.args),
-  },
-  {
     name: "execute_tools",
     description:
-      "Execute multiple tools in one call. Runs them concurrently (bounded) and returns a `results` array in the same order as `executions`. A single tool failing does not abort the others — its entry carries an `error` instead of a `result`.",
+      "Execute one or more tools in a single call. Runs them concurrently (bounded) and returns a `results` array in the same order as `executions`. A single tool failing does not abort the others — its entry carries an `error` instead of a `result`. For a single tool, pass a one-element `executions` array.",
     inputSchema: z.object({
       executions: z
         .array(z.object({ tool: z.string(), args: z.record(z.unknown()).default({}) }))
@@ -331,14 +321,6 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     type: "object",
     properties: { tool: { type: "string", description: "Tool name" } },
     required: ["tool"],
-  },
-  execute_tool: {
-    type: "object",
-    properties: {
-      tool: { type: "string", description: "Tool name returned by search_tools" },
-      args: { type: "object", description: "Arguments for the tool", additionalProperties: true },
-    },
-    required: ["tool", "args"],
   },
   execute_tools: {
     type: "object",
