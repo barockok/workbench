@@ -1,25 +1,24 @@
-# a-workbench v0.14.0
+# a-workbench v0.15.0
 
 _2026-06-15_
 
-Headline: **GitLab integration (cloud + self-hosted), Slack file tools, and CI pipeline triggers across GitHub/GitLab/Bitbucket.**
+Headline: **Connected Agents — see and revoke the agents connected to your Workbench, right from the dashboard.**
 
 ## Features
 
-- **GitLab plugin** — full integration at parity with GitHub/Bitbucket: projects, branches, commits, releases, files, issues, merge requests (create/list/get/diff/comments/inline review/approve/merge/close), pipelines, search, and a token-bearing clone URL.
-  - **Self-hosted support** (new platform capability): a connect-time instance-URL prompt (`OAuthConfig.instance`) carried through the OAuth handshake (`connections.config` / `pending_auth.config`), origin-swapped authorize/token/refresh (`resolveOAuthUrls`), and exposed to tools via `ctx.getConfig()` for the right API base.
-  - **Security**: the chosen origin receives the shared client secret on the token POST, so it must be the cloud default or admin-allowlisted via `GITLAB_ALLOWED_INSTANCES`. `normalizeInstanceUrl` enforces https-only, rejects userinfo, and blocks private/loopback/link-local literals.
-- **Slack file tools** — `slack_download_file` (download attachments via `url_private(_download)`; host-allowlists Slack before sending the Bearer, follows the presigned-CDN redirect without the token, guards the login-HTML no-access case), plus `slack_get_file_info`, `slack_get_permalink`, `slack_remove_reaction`, and `slack_join_channel`. Adds the `files:read` + `channels:write` scopes.
-- **CI pipeline triggers** — trigger / poll / rerun / cancel across all three providers:
-  - GitHub Actions: `github_trigger_workflow` (workflow_dispatch + `inputs`), `github_get_workflow_run`, `github_rerun_workflow_run` (all | failed-only), `github_cancel_workflow_run`.
-  - GitLab Pipelines: `gitlab_trigger_pipeline` (+`variables`), `gitlab_get_pipeline`, `gitlab_retry_pipeline`, `gitlab_cancel_pipeline`.
-  - Bitbucket Pipelines: `bitbucket_trigger_pipeline` (branch + optional `custom` selector, `variables`, `secured`), `bitbucket_get_pipeline`, `bitbucket_stop_pipeline`. Adds the `pipeline` + `pipeline:write` scopes.
+- **Connected Agents panel.** The portal dashboard now lists every agent (OAuth client) connected to your Workbench and lets you revoke any of them in one click. Revoking drops the agent's refresh tokens, so it can no longer mint new access tokens — the connection is cut at the next refresh.
+  - New API: `GET /api/agents` (list connected agents) and `DELETE /api/agents/:id` (revoke), backed by a `listAgents` / `revokeAgent` module in the OAuth server. (`packages/server/src/api/routes.ts`, `packages/server/src/auth/oauth-server/agents.ts`)
+  - Dashboard UI: an `AgentsPanel` wired into the portal dashboard with its API helpers. (`packages/portal/src/components/AgentsPanel.tsx`, `packages/portal/src/api.ts`, `packages/portal/src/pages/Dashboard.tsx`)
+- **Refresh tokens now track `created_at`**, so the panel can show when each agent first connected. (`packages/server/src/auth/oauth-server/refresh.ts`, `packages/server/src/db.ts`)
 
-## Refactors
+## Fixes
 
-- **`execute_tool` removed** — the singular meta-tool (and its wire schema + shared `executeToolSchema`) is gone; `execute_tools` covers the single-call case with a one-element `executions` array. The MCP image renderer is now decoupled from the old result wrapper — it scans `.result` / `.results[]` generically and emits one image block per `_mcpImage` sentinel, so screenshots still render through `execute_tools` (including multi-shot batches).
+- Dropped an unused `db.transaction` wrapper (untyped in better-sqlite3, unused elsewhere). (`packages/server`)
+
+## Tests
+
+- New `packages/server/tests/agents.test.ts` covering list + revoke.
 
 ## Upgrade notes
 
-- **Reconnect required** for existing **Slack** connections (`files:read` + `channels:write`) and **Bitbucket** connections (`pipeline` + `pipeline:write`). GitHub / GitLab need no scope change.
-- MCP clients calling the singular `execute_tool` must switch to `execute_tools` with a one-element `executions` array.
+- Additive release — no scope changes, no breaking API changes. Existing connections keep working; the Connected Agents panel appears on the dashboard after upgrade.
