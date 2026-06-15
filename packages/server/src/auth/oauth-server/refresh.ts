@@ -7,12 +7,17 @@ function hash(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-export function issueRefreshToken(input: { clientId: string; userId: string; scope: string }): string {
+export function issueRefreshToken(input: {
+  clientId: string;
+  userId: string;
+  scope: string;
+  createdAt?: number;
+}): string {
   const token = crypto.randomBytes(32).toString("base64url");
   const now = Math.floor(Date.now() / 1000);
   db.prepare(
-    "INSERT INTO oauth_refresh_tokens (token_hash, client_id, user_id, scope, expires_at) VALUES (?, ?, ?, ?, ?)"
-  ).run(hash(token), input.clientId, input.userId, input.scope, now + REFRESH_TTL_SECONDS);
+    "INSERT INTO oauth_refresh_tokens (token_hash, client_id, user_id, scope, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+  ).run(hash(token), input.clientId, input.userId, input.scope, now + REFRESH_TTL_SECONDS, input.createdAt ?? now);
   db.prepare("DELETE FROM oauth_refresh_tokens WHERE expires_at < ?").run(now);
   return token;
 }
@@ -27,12 +32,17 @@ export function rotateRefreshToken(token: string, clientId: string): Rotated | n
   const now = Math.floor(Date.now() / 1000);
   const h = hash(token);
   const row = db
-    .prepare("SELECT client_id, user_id, scope FROM oauth_refresh_tokens WHERE token_hash = ? AND expires_at > ?")
-    .get(h, now) as { client_id: string; user_id: string; scope: string } | undefined;
+    .prepare("SELECT client_id, user_id, scope, created_at FROM oauth_refresh_tokens WHERE token_hash = ? AND expires_at > ?")
+    .get(h, now) as { client_id: string; user_id: string; scope: string; created_at: number | null } | undefined;
   if (!row) return null;
   // Always invalidate the presented token (rotation).
   db.prepare("DELETE FROM oauth_refresh_tokens WHERE token_hash = ?").run(h);
   if (row.client_id !== clientId) return null;
-  const newToken = issueRefreshToken({ clientId, userId: row.user_id, scope: row.scope });
+  const newToken = issueRefreshToken({
+    clientId,
+    userId: row.user_id,
+    scope: row.scope,
+    createdAt: row.created_at ?? now,
+  });
   return { userId: row.user_id, scope: row.scope, newToken };
 }

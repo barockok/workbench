@@ -92,6 +92,37 @@ export async function disconnectIntegration(integration: string): Promise<{ succ
   return res.json();
 }
 
+export interface ConnectedAgent {
+  client_id: string;
+  client_name?: string;
+  scopes: string[];
+  connected_since: number;
+  expires_at: number;
+}
+
+export async function fetchAgents(): Promise<{ agents: ConnectedAgent[] }> {
+  const res = await fetch(`${API_URL}/api/agents`, { headers: getHeaders() });
+  if (res.status === 401) {
+    localStorage.removeItem("awb_token");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) throw new Error("Failed to fetch agents");
+  return res.json();
+}
+
+export async function revokeAgent(clientId: string): Promise<{ revoked: number }> {
+  const res = await fetch(`${API_URL}/api/agents/${encodeURIComponent(clientId)}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.error || "Failed to revoke agent");
+  }
+  return res.json();
+}
+
 export type StartAuthResult =
   | {
       type: "cookie";
