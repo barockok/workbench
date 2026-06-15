@@ -132,3 +132,14 @@ try {
 } catch (e: any) {
   if (!e.message?.includes("duplicate column name")) throw e;
 }
+// "Connected since" for an agent's refresh token, surfaced in the portal's
+// Connected Agents list. Carried across rotation (see refresh.ts) so it
+// survives token refreshes. NOTE: SQLite forbids a non-constant DEFAULT
+// (unixepoch()) in ALTER TABLE ADD COLUMN, so the column is added bare and
+// issueRefreshToken stamps it explicitly; pre-migration rows stay NULL and
+// age out within the 30-day refresh TTL.
+try {
+  db.exec(`ALTER TABLE oauth_refresh_tokens ADD COLUMN created_at INTEGER`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
