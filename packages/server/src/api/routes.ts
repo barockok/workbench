@@ -23,6 +23,7 @@ import { verifyConnectToken } from "../auth/connect-token";
 import { signConnectToken } from "../auth/connect-token";
 import { markConnected, startReaper } from "../auth/connections";
 import { resumeAuthorize } from "../auth/oauth-server/resume";
+import { listAgents, revokeAgent } from "../auth/oauth-server/agents";
 import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
 
 function isUrl(s: string): boolean {
@@ -582,6 +583,32 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         deleteToken(user.userId, integration);
       }
       return { success: true };
+    }
+  );
+
+  // Connected agents: MCP/OAuth clients the user has authorized to reach their
+  // workbench. Distinct from /api/connections (workbench → SaaS). One row per
+  // client_id.
+  app.get("/api/agents", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    return { agents: listAgents(user.userId) };
+  });
+
+  // Revoke an agent: delete the user's refresh tokens for that client (soft
+  // revoke — live access tokens lapse at their TTL). Idempotent: returns
+  // { revoked: 0 } when there was nothing to remove.
+  app.delete<{ Params: { clientId: string } }>(
+    "/api/agents/:clientId",
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+      const revoked = revokeAgent(user.userId, request.params.clientId);
+      return { revoked };
     }
   );
 }

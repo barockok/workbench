@@ -4,6 +4,7 @@ import { fetchIntegrations, fetchConnections, startIntegrationAuth, disconnectIn
 import { useAuth } from "../context/AuthContext";
 import CookieAuthPopup from "../components/CookieAuthPopup";
 import ApiKeyPanel from "../components/ApiKeyPanel";
+import AgentsPanel from "../components/AgentsPanel";
 import IntegrationLogo from "../components/IntegrationLogo";
 import IntegrationDetail from "../components/IntegrationDetail";
 
@@ -160,6 +161,8 @@ export default function Dashboard() {
 
       <main className="main">
         <ApiKeyPanel />
+
+        <AgentsPanel />
 
         <div className="section-head">
           <div>
