@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   envVarPrefix,
   getPluginOAuthCreds,
   getPluginCallbackUrl,
   buildPluginAuthUrl,
   handlePluginCallback,
+  resolveOAuthUrls,
+  normalizeInstanceUrl,
 } from "../src/auth/plugin-oauth";
 import { registry } from "../src/plugins/registry";
 import * as oauth from "../src/auth/oauth";
@@ -51,6 +53,22 @@ const mockSlackIntegration = {
     authorizationUrl: "https://slack.com/oauth/v2/authorize",
     tokenUrl: "https://slack.com/api/oauth.v2.access",
     scopes: ["chat:write", "channels:read"],
+  },
+};
+
+const mockGitlabIntegration = {
+  name: "gitlab",
+  version: "1.0.0",
+  auth: {
+    type: "oauth2" as const,
+    authorizationUrl: "https://gitlab.com/oauth/authorize",
+    tokenUrl: "https://gitlab.com/oauth/token",
+    scopes: ["api"],
+    instance: {
+      label: "GitLab instance URL",
+      placeholder: "https://gitlab.example.com",
+      default: "https://gitlab.com",
+    },
   },
 };
 
@@ -109,6 +127,58 @@ describe("getPluginOAuthCreds", () => {
 
   it("returns null when both are missing", () => {
     expect(getPluginOAuthCreds("google-gmail")).toBeNull();
+  });
+});
+
+describe("normalizeInstanceUrl", () => {
+  it("reduces a URL to its origin", () => {
+    expect(normalizeInstanceUrl("https://gitlab.acme.com/some/path?x=1")).toBe(
+      "https://gitlab.acme.com"
+    );
+  });
+  it("keeps a non-default port", () => {
+    expect(normalizeInstanceUrl("https://gl.acme.com:8443")).toBe("https://gl.acme.com:8443");
+  });
+  it("rejects http (secret rides the token POST — https only)", () => {
+    expect(normalizeInstanceUrl("http://gitlab.internal")).toBeNull();
+  });
+  it("rejects userinfo-bearing URLs", () => {
+    expect(normalizeInstanceUrl("https://user:pass@gitlab.acme.com")).toBeNull();
+  });
+  it("rejects private/loopback/link-local literals (SSRF)", () => {
+    expect(normalizeInstanceUrl("https://127.0.0.1")).toBeNull();
+    expect(normalizeInstanceUrl("https://localhost")).toBeNull();
+    expect(normalizeInstanceUrl("https://10.0.0.5")).toBeNull();
+    expect(normalizeInstanceUrl("https://172.16.0.1")).toBeNull();
+    expect(normalizeInstanceUrl("https://192.168.1.1")).toBeNull();
+    expect(normalizeInstanceUrl("https://169.254.169.254")).toBeNull();
+    expect(normalizeInstanceUrl("https://[::1]")).toBeNull();
+  });
+  it("rejects non-http(s) and garbage", () => {
+    expect(normalizeInstanceUrl("ftp://x")).toBeNull();
+    expect(normalizeInstanceUrl("not a url")).toBeNull();
+  });
+});
+
+describe("resolveOAuthUrls", () => {
+  it("returns the static URLs when no instance support", () => {
+    expect(resolveOAuthUrls(mockIntegration.auth)).toEqual({
+      authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+      tokenUrl: "https://oauth2.googleapis.com/token",
+    });
+  });
+  it("defaults to the cloud host when no config is stored", () => {
+    expect(resolveOAuthUrls(mockGitlabIntegration.auth)).toEqual({
+      authorizationUrl: "https://gitlab.com/oauth/authorize",
+      tokenUrl: "https://gitlab.com/oauth/token",
+    });
+  });
+  it("swaps in the self-hosted origin while keeping the paths", () => {
+    const cfg = JSON.stringify({ instanceUrl: "https://gitlab.acme.com" });
+    expect(resolveOAuthUrls(mockGitlabIntegration.auth, cfg)).toEqual({
+      authorizationUrl: "https://gitlab.acme.com/oauth/authorize",
+      tokenUrl: "https://gitlab.acme.com/oauth/token",
+    });
   });
 });
 
@@ -206,6 +276,58 @@ describe("buildPluginAuthUrl", () => {
     const parsed = new URL(url);
     expect(parsed.searchParams.get("access_type")).toBeNull();
     expect(parsed.searchParams.get("prompt")).toBeNull();
+  });
+});
+
+describe("buildPluginAuthUrl — self-hosted instance", () => {
+  beforeEach(() => {
+    process.env.GITLAB_CLIENT_ID = "gl-id";
+    process.env.GITLAB_CLIENT_SECRET = "gl-secret";
+    process.env.GITLAB_ALLOWED_INSTANCES = "https://gitlab.acme.com";
+    vi.spyOn(registry, "getIntegration").mockReturnValue(mockGitlabIntegration);
+    vi.spyOn(oauth, "createAuthState").mockReturnValue("test-state");
+  });
+  afterEach(() => {
+    delete process.env.GITLAB_ALLOWED_INSTANCES;
+  });
+
+  it("targets an allowlisted instance host and persists it in the state config", () => {
+    const url = buildPluginAuthUrl("user-1", "gitlab", "https://gitlab.acme.com");
+    const parsed = new URL(url);
+    expect(parsed.hostname).toBe("gitlab.acme.com");
+    expect(parsed.pathname).toBe("/oauth/authorize");
+    const configArg = vi.mocked(oauth.createAuthState).mock.calls[0][3];
+    expect(JSON.parse(configArg!)).toEqual({ instanceUrl: "https://gitlab.acme.com" });
+  });
+
+  it("falls back to the cloud default when no instance URL is given", () => {
+    const url = buildPluginAuthUrl("user-1", "gitlab");
+    expect(new URL(url).hostname).toBe("gitlab.com");
+    const configArg = vi.mocked(oauth.createAuthState).mock.calls[0][3];
+    expect(JSON.parse(configArg!)).toEqual({ instanceUrl: "https://gitlab.com" });
+  });
+
+  it("allows the cloud default even with no allowlist env", () => {
+    delete process.env.GITLAB_ALLOWED_INSTANCES;
+    expect(new URL(buildPluginAuthUrl("user-1", "gitlab", "https://gitlab.com")).hostname).toBe(
+      "gitlab.com"
+    );
+  });
+
+  it("rejects a non-allowlisted instance (client-secret exfil guard)", () => {
+    expect(() => buildPluginAuthUrl("user-1", "gitlab", "https://attacker.example")).toThrow(
+      /Instance not allowed/
+    );
+  });
+
+  it("rejects an invalid instance URL", () => {
+    expect(() => buildPluginAuthUrl("user-1", "gitlab", "not a url")).toThrow(/Invalid instance URL/);
+  });
+
+  it("rejects an http instance URL", () => {
+    expect(() => buildPluginAuthUrl("user-1", "gitlab", "http://gitlab.acme.com")).toThrow(
+      /Invalid instance URL/
+    );
   });
 });
 
@@ -394,6 +516,35 @@ describe("handlePluginCallback", () => {
         /user token/i
       );
     });
+  });
+
+  it("self-hosted: exchanges against the instance token URL and stores the config", async () => {
+    process.env.GITLAB_CLIENT_ID = "gl-id";
+    process.env.GITLAB_CLIENT_SECRET = "gl-secret";
+    vi.spyOn(registry, "getIntegration").mockReturnValue(mockGitlabIntegration);
+    vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+      userId: "user-1",
+      integration: "gitlab",
+      config: JSON.stringify({ instanceUrl: "https://gitlab.acme.com" }),
+    });
+    vi.spyOn(oauth, "exchangeCode").mockResolvedValue({ access_token: "a", refresh_token: "r" });
+    await handlePluginCallback("gitlab", "code", "state");
+    expect(oauth.exchangeCode).toHaveBeenCalledWith(
+      "https://gitlab.acme.com/oauth/token",
+      "gl-id",
+      "gl-secret",
+      "code",
+      "http://localhost:3000/api/auth/plugin/gitlab/callback",
+      undefined
+    );
+    expect(tokens.storeToken).toHaveBeenCalledWith(
+      "user-1",
+      "gitlab",
+      expect.objectContaining({
+        accessToken: "a",
+        config: JSON.stringify({ instanceUrl: "https://gitlab.acme.com" }),
+      })
+    );
   });
 
   it("handles tokens without expires_in", async () => {
