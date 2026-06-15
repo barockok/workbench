@@ -1,6 +1,6 @@
-import { getToken, storeToken, TokenData } from "../auth/tokens";
+import { getToken, storeToken, getConnectionConfig, TokenData } from "../auth/tokens";
 import { getCookies, CookieData, isCookieExpired } from "../auth/cookie";
-import { getPluginOAuthCreds } from "../auth/plugin-oauth";
+import { getPluginOAuthCreds, resolveOAuthUrls } from "../auth/plugin-oauth";
 import { registry } from "./registry";
 
 // Refresh a few seconds before the actual expiry to absorb clock skew.
@@ -27,7 +27,9 @@ async function refreshAccessToken(
   });
   if (creds.clientSecret) body.set("client_secret", creds.clientSecret);
 
-  const res = await fetch(integ.auth.tokenUrl, {
+  // Honor a self-hosted instance origin so refresh hits the right token endpoint.
+  const { tokenUrl } = resolveOAuthUrls(integ.auth, data.config);
+  const res = await fetch(tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
@@ -50,6 +52,7 @@ async function refreshAccessToken(
       ? Math.floor(Date.now() / 1000) + tokens.expires_in
       : undefined,
     scopes: data.scopes,
+    config: data.config,
   };
   storeToken(userId, integration, refreshed);
   return refreshed;
@@ -59,6 +62,10 @@ export interface ToolContext {
   userId: string;
   getToken(): Promise<string>;
   http(url: string, init?: RequestInit): Promise<Response>;
+  // Per-connection config set at connect time (e.g. { instanceUrl } for a
+  // self-hosted GitLab). Returns {} when none was stored. Tools use it to build
+  // the right API base — e.g. `${ctx.getConfig().instanceUrl}/api/v4`.
+  getConfig(): Record<string, unknown>;
 }
 
 // Cache resolved Atlassian cloud IDs per (user, product) so we don't hit
@@ -83,9 +90,26 @@ async function resolveAtlassianCloudId(
 export function createContext(userId: string, integration: string): ToolContext {
   let tokenData: TokenData | null = null;
   let cookieData: CookieData | null = null;
+  let configCache: Record<string, unknown> | undefined;
 
   return {
     userId,
+
+    getConfig(): Record<string, unknown> {
+      if (configCache === undefined) {
+        const raw = getConnectionConfig(userId, integration);
+        let parsed: Record<string, unknown> = {};
+        if (raw) {
+          try {
+            parsed = JSON.parse(raw) as Record<string, unknown>;
+          } catch {
+            parsed = {};
+          }
+        }
+        configCache = parsed;
+      }
+      return configCache;
+    },
 
     async getToken(): Promise<string> {
       if (!tokenData) {
