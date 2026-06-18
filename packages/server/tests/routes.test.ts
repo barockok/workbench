@@ -57,6 +57,7 @@ vi.mock("../src/auth/users", () => ({
 vi.mock("../src/auth/tokens", () => ({
   getToken: vi.fn(() => null),
   deleteToken: vi.fn(),
+  storeToken: vi.fn(),
 }));
 
 vi.mock("../src/auth/cookie", async () => {
@@ -538,11 +539,15 @@ describe("API routes", () => {
       expect(JSON.parse(res.body)).toEqual({ type: "none", connected: true });
     });
 
-    it("returns state for unknown auth type", async () => {
+    it("returns the field spec for apikey auth", async () => {
+      const fields = [
+        { key: "apiKey", label: "API Key", secret: true },
+        { key: "region", label: "Region", options: ["US", "EU"] },
+      ];
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "keyed",
         version: "1.0.0",
-        auth: { type: "apikey" as const, headerName: "X-Key" },
+        auth: { type: "apikey" as const, headerName: "X-Key", fields },
       });
       const app = await buildApp();
       const res = await app.inject({
@@ -551,7 +556,83 @@ describe("API routes", () => {
         headers: { authorization: "Bearer valid-jwt" },
       });
       expect(res.statusCode).toBe(200);
-      expect(JSON.parse(res.body).state).toBe("test-state");
+      expect(JSON.parse(res.body)).toEqual({ type: "apikey", fields });
+    });
+
+    it("stores secret as token and other fields as config on apikey submit", async () => {
+      const { storeToken } = await import("../src/auth/tokens");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "Api-Key",
+          fields: [
+            { key: "apiKey", label: "API Key", secret: true },
+            { key: "region", label: "Region", options: ["US", "EU"] },
+          ],
+        },
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/apikey/newrelic",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { values: { apiKey: "nrak-secret", region: "EU" } },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body)).toEqual({ success: true });
+      expect(storeToken).toHaveBeenCalledWith("user-1", "newrelic", {
+        accessToken: "nrak-secret",
+        scopes: "",
+        config: JSON.stringify({ region: "EU" }),
+      });
+    });
+
+    it("rejects apikey submit with a missing required field", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "Api-Key",
+          fields: [
+            { key: "apiKey", label: "API Key", secret: true },
+            { key: "region", label: "Region", options: ["US", "EU"] },
+          ],
+        },
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/apikey/newrelic",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { values: { apiKey: "nrak-secret" } },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it("rejects apikey submit when an enum field is out of range", async () => {
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "Api-Key",
+          fields: [
+            { key: "apiKey", label: "API Key", secret: true },
+            { key: "region", label: "Region", options: ["US", "EU"] },
+          ],
+        },
+      });
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/auth/apikey/newrelic",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { values: { apiKey: "nrak-secret", region: "APAC" } },
+      });
+      expect(res.statusCode).toBe(400);
     });
 
     it("returns 401 without auth", async () => {

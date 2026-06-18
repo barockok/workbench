@@ -35,7 +35,35 @@ export interface OAuthConfig {
 
 export interface ApiKeyConfig {
   type: "apikey";
+  // Header the credential is sent in, e.g. "Api-Key" (New Relic) or
+  // "Authorization". The value is the secret field below, sent verbatim (no
+  // "Bearer " prefix — bake any scheme into the value if one is needed).
   headerName: string;
+  // Connect-time form fields shown in the portal. Exactly one field marks the
+  // credential with `secret: true` — it's stored encrypted as the connection's
+  // access token and attached to ctx.http() as `headerName`. Any remaining
+  // fields (e.g. an account region) are stored as per-connection config and
+  // surfaced to tools via ctx.getConfig()[field.key].
+  fields: ApiKeyField[];
+}
+
+export interface ApiKeyField {
+  // Form name + config/getConfig() key, e.g. "apiKey" or "region".
+  key: string;
+  // Portal field label, e.g. "New Relic User API Key".
+  label: string;
+  // Helper text shown under the label.
+  description?: string;
+  // Placeholder shown in the input.
+  placeholder?: string;
+  // The credential itself — stored encrypted, rendered as a masked input.
+  // Exactly one field per integration should set this.
+  secret?: boolean;
+  // Optional fixed choices — rendered as a <select> instead of a text input.
+  options?: string[];
+  // When true the field may be left blank at connect time (e.g. a default
+  // account id tools fall back to). Non-optional fields are required.
+  optional?: boolean;
 }
 
 export interface CookieConfig {

@@ -127,6 +127,18 @@ export function createContext(userId: string, integration: string): ToolContext 
       const integrationConfig = registry.getIntegration(integration);
       const headers = new Headers(init?.headers);
 
+      if (integrationConfig?.auth.type === "apikey") {
+        // API-key auth: the credential lives in the connection's access token
+        // (stored at connect time) and rides in the manifest's headerName —
+        // verbatim, no Bearer scheme. There's no token expiry/refresh here.
+        if (!tokenData) {
+          tokenData = getToken(userId, integration);
+          if (!tokenData) throw new Error("NOT_CONNECTED");
+        }
+        headers.set(integrationConfig.auth.headerName, tokenData.accessToken);
+        return fetch(url, { ...init, headers });
+      }
+
       if (integrationConfig?.auth.type === "cookie") {
         if (!cookieData) {
           cookieData = getCookies(userId, integration);
