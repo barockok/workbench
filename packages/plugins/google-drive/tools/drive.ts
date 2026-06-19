@@ -135,6 +135,18 @@ export const uploadFromUrl = {
     parentId: z.string().optional(),
   }),
   handler: async (ctx: any, args: any) => {
+    const parsed = new URL(args.url);
+    if (parsed.protocol !== "https:") {
+      throw new Error("Only https:// URLs are allowed");
+    }
+    const host = parsed.hostname.replace(/^\[|\]$/g, ""); // strip IPv6 brackets
+    const privateRange =
+      /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.0\.0\.0$)/;
+    const privateIPv6 = /^(::1$|fc|fd|fe80)/i;
+    if (host === "localhost" || privateRange.test(host) || privateIPv6.test(host)) {
+      throw new Error("Requests to private or internal addresses are not allowed");
+    }
+
     const download = await fetch(args.url);
     if (!download.ok) {
       throw new Error(`Signed URL fetch failed: ${download.status} ${download.statusText}`);
