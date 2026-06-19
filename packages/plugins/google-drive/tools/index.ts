@@ -1,1 +1,1 @@
-export { listFiles, createFolder, searchFiles, uploadFile, downloadFile, trashFile, updatePermissions } from "./drive";
+export { listFiles, createFolder, searchFiles, uploadFile, uploadFromUrl, downloadFile, trashFile, updatePermissions } from "./drive";

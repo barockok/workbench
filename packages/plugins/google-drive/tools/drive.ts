@@ -123,6 +123,57 @@ export const uploadFile = {
   },
 };
 
+export const uploadFromUrl = {
+  name: "google_drive_upload_from_url",
+  description:
+    "Fetch a file from a signed or pre-authenticated URL (e.g. S3, GCS, CDN) and upload it directly to Google Drive — no need to pass file content inline. MIME type is auto-detected from the response Content-Type header when not specified. Returns the created Drive file { id, name, mimeType }.",
+  integration: "google-drive",
+  inputSchema: z.object({
+    url: z.string().url(),
+    name: z.string(),
+    mimeType: z.string().optional(),
+    parentId: z.string().optional(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const download = await fetch(args.url);
+    if (!download.ok) {
+      throw new Error(`Signed URL fetch failed: ${download.status} ${download.statusText}`);
+    }
+
+    const detectedType = download.headers.get("content-type")?.split(";")[0].trim();
+    const mimeType = args.mimeType ?? detectedType ?? "application/octet-stream";
+
+    const fileBytes = new Uint8Array(await download.arrayBuffer());
+
+    const metadata: Record<string, unknown> = { name: args.name, mimeType };
+    if (args.parentId) metadata.parents = [args.parentId];
+
+    const boundary = "-------314159265358979323846";
+    const enc = new TextEncoder();
+    const header = enc.encode(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+        JSON.stringify(metadata) +
+        `\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`
+    );
+    const footer = enc.encode(`\r\n--${boundary}--`);
+
+    const body = new Uint8Array(header.byteLength + fileBytes.byteLength + footer.byteLength);
+    body.set(header, 0);
+    body.set(fileBytes, header.byteLength);
+    body.set(footer, header.byteLength + fileBytes.byteLength);
+
+    const res = await ctx.http(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+      {
+        method: "POST",
+        headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
+        body,
+      }
+    );
+    return res.json();
+  },
+};
+
 export const downloadFile = {
   name: "google_drive_download",
   description: "Download a file from Google Drive",
