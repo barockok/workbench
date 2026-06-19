@@ -104,6 +104,103 @@ describe("createContext", () => {
     });
   });
 
+  describe("http with apikey auth", () => {
+    it("sets the manifest headerName to the stored key (no Bearer prefix)", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: { type: "apikey" as const, headerName: "Api-Key", fields: [] },
+      });
+
+      const ctx = createContext("user-1", "newrelic");
+      await ctx.http("https://api.newrelic.com/graphql", { method: "POST" });
+
+      const callArgs = (global.fetch as any).mock.calls[0];
+      expect(callArgs[0]).toBe("https://api.newrelic.com/graphql");
+      expect(callArgs[1].headers.get("Api-Key")).toBe("nrak-secret");
+      expect(callArgs[1].headers.get("Authorization")).toBeNull();
+      expect(callArgs[1].method).toBe("POST");
+    });
+
+    it("throws NOT_CONNECTED when no key is stored", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue(null);
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: { type: "apikey" as const, headerName: "Api-Key", fields: [] },
+      });
+
+      const ctx = createContext("user-1", "newrelic");
+      await expect(ctx.http("https://api.newrelic.com/graphql")).rejects.toThrow("NOT_CONNECTED");
+    });
+
+    it("attaches the key to a host in allowedHosts", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "Api-Key",
+          fields: [],
+          allowedHosts: ["api.newrelic.com", "api.eu.newrelic.com"],
+        },
+      });
+
+      const ctx = createContext("user-1", "newrelic");
+      await ctx.http("https://api.eu.newrelic.com/graphql", { method: "POST" });
+
+      const callArgs = (global.fetch as any).mock.calls[0];
+      expect(callArgs[1].headers.get("Api-Key")).toBe("nrak-secret");
+    });
+
+    it("allows subdomains declared by allowedHosts", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "example",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "X-Key",
+          fields: [],
+          allowedHosts: ["example.com"],
+        },
+      });
+
+      const ctx = createContext("user-1", "example");
+      await ctx.http("https://api.example.com/v1");
+
+      const callArgs = (global.fetch as any).mock.calls[0];
+      expect(callArgs[1].headers.get("X-Key")).toBe("nrak-secret");
+    });
+
+    it("throws (and never sends the key) for a host outside allowedHosts", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "Api-Key",
+          fields: [],
+          allowedHosts: ["api.newrelic.com"],
+        },
+      });
+
+      const ctx = createContext("user-1", "newrelic");
+      await expect(ctx.http("https://evil.com/steal")).rejects.toThrow(
+        "API-key auth: URL host evil.com not in declared allowedHosts"
+      );
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
   describe("http with cookie auth", () => {
     it("sets Cookie header for allowed domain", async () => {
       const { getCookies } = await import("../src/auth/cookie");
