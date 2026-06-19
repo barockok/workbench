@@ -33,6 +33,16 @@ export interface InstanceConfig {
   default: string;
 }
 
+export interface ApiKeyField {
+  key: string;
+  label: string;
+  description?: string;
+  placeholder?: string;
+  secret?: boolean;
+  options?: string[];
+  optional?: boolean;
+}
+
 export interface IntegrationSummary {
   name: string;
   version: string;
@@ -45,6 +55,8 @@ export interface IntegrationSummary {
   authType?: string;
   // Present when the integration supports a self-hosted instance URL prompt.
   instance?: InstanceConfig;
+  // Present for apikey integrations: the connect-time form field spec.
+  apikeyFields?: ApiKeyField[];
 }
 
 export interface IntegrationDetail extends IntegrationSummary {
@@ -132,6 +144,7 @@ export type StartAuthResult =
       loginUrl: string;
     }
   | { type: "oauth2"; url: string }
+  | { type: "apikey"; fields: ApiKeyField[] }
   | { type: "manual"; state: string };
 
 export async function startIntegrationAuth(
@@ -157,6 +170,24 @@ export async function startIntegrationAuth(
 
 /** @deprecated use startIntegrationAuth */
 export const startCookieAuth = startIntegrationAuth;
+
+// Submit the apikey connect form: the user-entered field values (credential +
+// any config such as region) are stored server-side as the connection.
+export async function submitApiKey(
+  integration: string,
+  values: Record<string, string>
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_URL}/api/auth/apikey/${integration}`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ values }),
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.error || "Failed to connect");
+  }
+  return res.json();
+}
 
 export async function captureCookies(integration: string): Promise<{ success: boolean; cookieCount: number }> {
   const res = await fetch(`${API_URL}/api/auth/cookie/${integration}/capture`, {

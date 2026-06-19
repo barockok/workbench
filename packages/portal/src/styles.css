@@ -904,6 +904,30 @@ body::before {
 }
 .session-transfer-ok { color: var(--mauve, #b794d4); font-size: 12px; margin-top: 8px; }
 
+/* apikey connect form */
+.apikey-form {
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+  background: var(--panel);
+}
+.apikey-field { display: grid; gap: 5px; }
+.apikey-field-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.apikey-req { color: var(--danger); }
+.apikey-opt { color: var(--ink-dim); font-weight: 400; font-size: 11px; }
+.apikey-field-desc {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--ink-dim);
+  line-height: 1.4;
+}
+
 /* category dropdown */
 .cat-select-wrap { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .cat-select-label {

@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchIntegrations, fetchConnections, startIntegrationAuth, disconnectIntegration, IntegrationSummary } from "../api";
 import { useAuth } from "../context/AuthContext";
 import CookieAuthPopup from "../components/CookieAuthPopup";
+import ApiKeyAuthModal from "../components/ApiKeyAuthModal";
 import ApiKeyPanel from "../components/ApiKeyPanel";
 import AgentsPanel from "../components/AgentsPanel";
 import IntegrationLogo from "../components/IntegrationLogo";
 import IntegrationDetail from "../components/IntegrationDetail";
+import { ApiKeyField } from "../api";
 
 interface CookieAuthState {
   integration: string;
@@ -14,6 +16,12 @@ interface CookieAuthState {
   cdpProxyUrl: string;
   cdpToken: string;
   sessionId: string;
+}
+
+interface ApiKeyAuthState {
+  integration: string;
+  displayName?: string;
+  fields: ApiKeyField[];
 }
 
 type Filter = "all" | "connected" | "available";
@@ -34,6 +42,7 @@ export default function Dashboard() {
   });
 
   const [cookieAuth, setCookieAuth] = useState<CookieAuthState | null>(null);
+  const [apiKeyAuth, setApiKeyAuth] = useState<ApiKeyAuthState | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [category, setCategory] = useState<string>("all");
   const [detail, setDetail] = useState<string | null>(null);
@@ -119,6 +128,14 @@ export default function Dashboard() {
       }
       if (result.type === "oauth2") {
         window.location.href = result.url;
+        return;
+      }
+      if (result.type === "apikey") {
+        setApiKeyAuth({
+          integration,
+          displayName: integ?.displayName,
+          fields: result.fields,
+        });
         return;
       }
       setConnectError(`Manual auth required for ${integration}.`);
@@ -343,6 +360,16 @@ export default function Dashboard() {
           cdpToken={cookieAuth.cdpToken}
           sessionId={cookieAuth.sessionId}
           onClose={() => setCookieAuth(null)}
+          onSuccess={() => refetchConnections()}
+        />
+      )}
+
+      {apiKeyAuth && (
+        <ApiKeyAuthModal
+          integration={apiKeyAuth.integration}
+          displayName={apiKeyAuth.displayName}
+          fields={apiKeyAuth.fields}
+          onClose={() => setApiKeyAuth(null)}
           onSuccess={() => refetchConnections()}
         />
       )}

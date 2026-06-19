@@ -127,6 +127,32 @@ export function createContext(userId: string, integration: string): ToolContext 
       const integrationConfig = registry.getIntegration(integration);
       const headers = new Headers(init?.headers);
 
+      if (integrationConfig?.auth.type === "apikey") {
+        // API-key auth: the credential lives in the connection's access token
+        // (stored at connect time) and rides in the manifest's headerName —
+        // verbatim, no Bearer scheme. There's no token expiry/refresh here.
+        if (!tokenData) {
+          tokenData = getToken(userId, integration);
+          if (!tokenData) throw new Error("NOT_CONNECTED");
+        }
+        // Restrict key attachment to declared hosts when the manifest opts in.
+        // Stops a plugin (or open redirect) from forwarding the API key to an
+        // attacker-controlled URL. When allowedHosts is omitted the plugin owns
+        // host safety — see the PLUGIN CONTRACT note on ApiKeyConfig.
+        const allowedHosts = integrationConfig.auth.allowedHosts;
+        if (allowedHosts && allowedHosts.length) {
+          const targetHost = new URL(url).hostname.toLowerCase().replace(/\.$/, "");
+          const allowed = allowedHosts.map((d) => d.replace(/^\./, "").toLowerCase());
+          if (!allowed.some((d) => targetHost === d || targetHost.endsWith("." + d))) {
+            throw new Error(
+              `API-key auth: URL host ${targetHost} not in declared allowedHosts`
+            );
+          }
+        }
+        headers.set(integrationConfig.auth.headerName, tokenData.accessToken);
+        return fetch(url, { ...init, headers });
+      }
+
       if (integrationConfig?.auth.type === "cookie") {
         if (!cookieData) {
           cookieData = getCookies(userId, integration);

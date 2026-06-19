@@ -29,6 +29,18 @@ export const integrationSchema = z.object({
     z.object({
       type: z.literal("apikey"),
       headerName: z.string(),
+      allowedHosts: z.array(z.string()).optional(),
+      fields: z.array(
+        z.object({
+          key: z.string(),
+          label: z.string(),
+          description: z.string().optional(),
+          placeholder: z.string().optional(),
+          secret: z.boolean().optional(),
+          options: z.array(z.string()).optional(),
+          optional: z.boolean().optional(),
+        })
+      ),
     }),
     z.object({
       type: z.literal("cookie"),

@@ -21,6 +21,7 @@ const builtinPlugins = [
   "github",
   "gitlab",
   "slack",
+  "newrelic",
   "httpbin-cookie",
 ];
 
