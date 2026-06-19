@@ -1,24 +1,21 @@
-# a-workbench v0.15.0
+# a-workbench v0.16.0
 
-_2026-06-15_
+_2026-06-19_
 
-Headline: **Connected Agents — see and revoke the agents connected to your Workbench, right from the dashboard.**
+Headline: **Google Drive upload-from-URL — fetch any signed URL and pipe it directly into Drive, SSRF-safe.**
 
 ## Features
 
-- **Connected Agents panel.** The portal dashboard now lists every agent (OAuth client) connected to your Workbench and lets you revoke any of them in one click. Revoking drops the agent's refresh tokens, so it can no longer mint new access tokens — the connection is cut at the next refresh.
-  - New API: `GET /api/agents` (list connected agents) and `DELETE /api/agents/:id` (revoke), backed by a `listAgents` / `revokeAgent` module in the OAuth server. (`packages/server/src/api/routes.ts`, `packages/server/src/auth/oauth-server/agents.ts`)
-  - Dashboard UI: an `AgentsPanel` wired into the portal dashboard with its API helpers. (`packages/portal/src/components/AgentsPanel.tsx`, `packages/portal/src/api.ts`, `packages/portal/src/pages/Dashboard.tsx`)
-- **Refresh tokens now track `created_at`**, so the panel can show when each agent first connected. (`packages/server/src/auth/oauth-server/refresh.ts`, `packages/server/src/db.ts`)
+- **`google_drive_upload_from_url`** — new Google Drive tool that fetches a file from a signed or pre-authenticated URL (S3, GCS, CDN, etc.) and uploads it directly to Google Drive via multipart upload. No need to pass file content inline. MIME type is auto-detected from the `Content-Type` response header when not specified. Returns `{ id, name, mimeType }`. (`packages/plugins/google-drive/tools/drive.ts`)
 
-## Fixes
+## Security
 
-- Dropped an unused `db.transaction` wrapper (untyped in better-sqlite3, unused elsewhere). (`packages/server`)
+- **SSRF guard on `google_drive_upload_from_url`**: enforces `https://` only and blocks all RFC-1918 (`10.x`, `172.16-31.x`, `192.168.x`), link-local (`169.254.x`, `fe80::`), loopback (`127.x`, `::1`), and ULA (`fc/fd`) addresses before fetching. Prevents prompt-injection attacks that could redirect the server to internal services or cloud IMDS endpoints. (`packages/plugins/google-drive/tools/drive.ts`)
 
 ## Tests
 
-- New `packages/server/tests/agents.test.ts` covering list + revoke.
+- 12 new test cases for `google_drive_upload_from_url`: success path, 403 failure, and 10 SSRF guard cases covering all blocked address families. (`packages/server/tests/google-drive-query.test.ts`)
 
 ## Upgrade notes
 
-- Additive release — no scope changes, no breaking API changes. Existing connections keep working; the Connected Agents panel appears on the dashboard after upgrade.
+- Additive release — no breaking changes. Existing Google Drive connections work without reconnect.
