@@ -75,7 +75,27 @@ describe("newrelic_create_static_nrql_condition", () => {
     expect(cond.nrql).toEqual({ query: "SELECT count(*) FROM Transaction" });
     expect(cond.terms[0]).toMatchObject({ threshold: 10, operator: "ABOVE", priority: "CRITICAL" });
     expect(cond.signal.aggregationMethod).toBe("EVENT_FLOW");
+    expect(cond.signal).toHaveProperty("aggregationDelay", 120);
+    expect(cond.signal).not.toHaveProperty("aggregationTimer");
     expect(cond).not.toHaveProperty("expiration");
+  });
+
+  it("uses aggregationTimer, not aggregationDelay, for EVENT_TIMER", async () => {
+    const { ctx, bodies } = recordingCtx({ alertsNrqlConditionStaticCreate: { id: "9" } });
+    await createStaticNrqlAlertCondition.handler(ctx, {
+      accountId: 1,
+      policyId: "5",
+      name: "c",
+      nrql: "SELECT count(*) FROM Transaction",
+      threshold: 10,
+      aggregationMethod: "EVENT_TIMER",
+      aggregationDelay: 999,
+      aggregationTimer: 45,
+    });
+    const signal = bodies[0].variables.condition.signal;
+    expect(signal.aggregationMethod).toBe("EVENT_TIMER");
+    expect(signal).toHaveProperty("aggregationTimer", 45);
+    expect(signal).not.toHaveProperty("aggregationDelay");
   });
 
   it("adds expiration block for signal-loss detection", async () => {
@@ -219,6 +239,12 @@ describe("newrelic_search_entities", () => {
     const { ctx, bodies } = recordingCtx({ actor: { entitySearch: { count: 0, results: { entities: [] } } } });
     await searchEntities.handler(ctx, { name: "ignored", query: "domain = 'VIZ'", limit: 25 });
     expect(bodies[0].variables.searchQuery).toBe("domain = 'VIZ'");
+  });
+
+  it("strips single quotes from helper-built name filters", async () => {
+    const { ctx, bodies } = recordingCtx({ actor: { entitySearch: { count: 0, results: { entities: [] } } } });
+    await searchEntities.handler(ctx, { name: "O'Hare", type: "DASHBOARD", limit: 25 });
+    expect(bodies[0].variables.searchQuery).toBe("name LIKE '%OHare%' AND type = 'DASHBOARD'");
   });
 
   it("errors when no filter is supplied", async () => {

@@ -158,6 +158,27 @@ describe("createContext", () => {
       expect(callArgs[1].headers.get("Api-Key")).toBe("nrak-secret");
     });
 
+    it("allows subdomains declared by allowedHosts", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "example",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "X-Key",
+          fields: [],
+          allowedHosts: ["example.com"],
+        },
+      });
+
+      const ctx = createContext("user-1", "example");
+      await ctx.http("https://api.example.com/v1");
+
+      const callArgs = (global.fetch as any).mock.calls[0];
+      expect(callArgs[1].headers.get("X-Key")).toBe("nrak-secret");
+    });
+
     it("throws (and never sends the key) for a host outside allowedHosts", async () => {
       const { getToken } = await import("../src/auth/tokens");
       vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
