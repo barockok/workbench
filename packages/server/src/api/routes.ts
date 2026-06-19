@@ -10,7 +10,7 @@ import { verifyApiKey, getUserById, setApiKey, clearApiKey, hasApiKey, getApiKey
 import { buildAuthUrl, handleCallback } from "../auth/google";
 import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
-import { getToken, deleteToken } from "../auth/tokens";
+import { getToken, deleteToken, storeToken } from "../auth/tokens";
 import {
   storeCookies,
   getCookies,
@@ -36,6 +36,9 @@ function isUrl(s: string): boolean {
 function isConfigured(i: Integration): boolean {
   if (i.auth.type === "none") return true;
   if (i.auth.type === "cookie") return true;
+  // API-key integrations need no server-side creds — the user supplies the key
+  // at connect time, so they're always ready to connect.
+  if (i.auth.type === "apikey") return true;
   if (i.auth.type === "oauth2") return getPluginOAuthCreds(i.name) !== null;
   return false;
 }
@@ -206,6 +209,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         logo: resolveLogo(i),
         authType: i.auth.type,
         instance: i.auth.type === "oauth2" ? i.auth.instance : undefined,
+        apikeyFields: i.auth.type === "apikey" ? i.auth.fields : undefined,
         toolCount: registry.listToolsByIntegration(i.name).length,
         configured: isConfigured(i),
       })),
@@ -234,6 +238,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         logo: resolveLogo(integ),
         authType: integ.auth.type,
         instance: integ.auth.type === "oauth2" ? integ.auth.instance : undefined,
+        apikeyFields: integ.auth.type === "apikey" ? integ.auth.fields : undefined,
         tools: registry.listToolsByIntegration(integration).map((t) => ({
           name: t.name,
           description: t.description,
@@ -302,9 +307,70 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
+    if (integ.auth.type === "apikey") {
+      // Hand the portal the field spec so it can render the connect form; the
+      // user POSTs the values back to /api/auth/apikey/:integration.
+      return { type: "apikey", fields: integ.auth.fields };
+    }
+
     const state = createAuthState(user.userId, integration);
     return { state };
   });
+
+  // API-key connect: store the user-supplied credential + config fields. The
+  // field flagged `secret` becomes the encrypted access token; the rest are
+  // persisted as per-connection config (read by tools via ctx.getConfig()).
+  app.post<{ Params: { integration: string }; Body: { values?: Record<string, string> } }>(
+    "/api/auth/apikey/:integration",
+    async (request, reply) => {
+      const user = await authenticate(request);
+      if (!user) return reply.status(401).send({ error: "Unauthorized" });
+
+      const { integration } = request.params;
+      const integ = registry.getIntegration(integration);
+      if (!integ || integ.auth.type !== "apikey") {
+        return reply.status(404).send({ error: "API-key integration not found" });
+      }
+
+      const values = request.body?.values ?? {};
+      const secretField = integ.auth.fields.find((f) => f.secret);
+      if (!secretField) {
+        return reply.status(500).send({ error: "Integration has no secret field" });
+      }
+
+      // Validate: required (non-optional) fields must be present; any enum
+      // field that *is* supplied must match its options.
+      for (const f of integ.auth.fields) {
+        const v = (values[f.key] ?? "").trim();
+        if (!v) {
+          if (f.optional) continue;
+          return reply.status(400).send({ error: `Missing required field: ${f.label}` });
+        }
+        if (f.options && !f.options.includes(v)) {
+          return reply.status(400).send({ error: `${f.label} must be one of: ${f.options.join(", ")}` });
+        }
+      }
+
+      const secret = values[secretField.key].trim();
+      const configFields: Record<string, string> = {};
+      for (const f of integ.auth.fields) {
+        if (f.secret) continue;
+        const v = (values[f.key] ?? "").trim();
+        // Skip optional fields left blank — don't persist empty strings.
+        if (!v) continue;
+        configFields[f.key] = v;
+      }
+
+      storeToken(user.userId, integration, {
+        accessToken: secret,
+        scopes: "",
+        config: Object.keys(configFields).length ? JSON.stringify(configFields) : undefined,
+      });
+      // No markConnected(): apikey connect is synchronous (no PENDING record to
+      // flip). The stored token alone makes /api/connections report connected.
+      return { success: true };
+    }
+  );
 
   // Plugin OAuth callback (generic — works for any oauth2 plugin
   // whose creds are wired in getPluginOAuthCreds). Namespaced under
