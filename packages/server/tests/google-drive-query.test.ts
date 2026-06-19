@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { searchDocuments } from "../../plugins/google-docs/tools/docs";
-import { searchFiles } from "../../plugins/google-drive/tools/drive";
+import { searchFiles, uploadFromUrl } from "../../plugins/google-drive/tools/drive";
 import { searchSlides, createFromMarkdown } from "../../plugins/google-slides/tools/slides";
 
 // Mock ctx.http that records the URL it was called with.
@@ -53,6 +53,55 @@ describe("Drive query safety (#8) + orderBy encoding (#7)", () => {
     await searchDocuments.handler(ctx, { query: undefined, pageSize: 10, orderBy: "modifiedTime desc" });
     expect(urls[0]).toContain("orderBy=modifiedTime%20desc");
     expect(urls[0]).not.toContain("orderBy=modifiedTime+desc");
+  });
+});
+
+describe("google_drive_upload_from_url", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("fetches signed URL and uploads via multipart to Drive", async () => {
+    const fileContent = "col1,col2\nval1,val2\n";
+    const fileBytes = new TextEncoder().encode(fileContent);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        headers: new Headers({ "content-type": "text/csv" }),
+        arrayBuffer: async () => fileBytes.buffer,
+      }))
+    );
+
+    const { ctx } = recordingCtx({ id: "file123", name: "report.csv", mimeType: "text/csv" });
+    const result = await uploadFromUrl.handler(ctx, {
+      url: "https://storage.example.com/signed/report.csv",
+      name: "report.csv",
+      parentId: "folder123",
+    });
+
+    expect(result.id).toBe("file123");
+    expect(ctx.http).toHaveBeenCalledWith(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": expect.stringContaining("multipart/related"),
+        }),
+        body: expect.any(Uint8Array),
+      })
+    );
+  });
+
+  it("throws when the signed URL returns a non-ok status", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: false, status: 403, statusText: "Forbidden" }))
+    );
+
+    const { ctx } = recordingCtx();
+    await expect(
+      uploadFromUrl.handler(ctx, { url: "https://example.com/expired", name: "file.txt" })
+    ).rejects.toThrow("Signed URL fetch failed: 403");
   });
 });
 
