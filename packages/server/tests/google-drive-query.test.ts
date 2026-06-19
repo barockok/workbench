@@ -103,6 +103,22 @@ describe("google_drive_upload_from_url", () => {
       uploadFromUrl.handler(ctx, { url: "https://example.com/expired", name: "file.txt" })
     ).rejects.toThrow("Signed URL fetch failed: 403");
   });
+
+  it.each([
+    ["http:// URL", "http://storage.example.com/file.csv"],
+    ["localhost", "https://localhost/secret"],
+    ["RFC-1918 10.x", "https://10.0.0.1/metadata"],
+    ["RFC-1918 172.16.x", "https://172.16.0.1/internal"],
+    ["RFC-1918 192.168.x", "https://192.168.1.1/admin"],
+    ["link-local 169.254.x (IMDS)", "https://169.254.169.254/latest/meta-data/"],
+    ["loopback 127.0.0.1", "https://127.0.0.1/secret"],
+    ["IPv6 loopback ::1", "https://[::1]/secret"],
+    ["IPv6 ULA fc00::", "https://[fc00::1]/secret"],
+    ["IPv6 link-local fe80::", "https://[fe80::1]/secret"],
+  ])("blocks %s", async (_label, url) => {
+    const { ctx } = recordingCtx();
+    await expect(uploadFromUrl.handler(ctx, { url, name: "file.txt" })).rejects.toThrow();
+  });
 });
 
 describe("createFromMarkdown inserts content (#9)", () => {
