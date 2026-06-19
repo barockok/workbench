@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-export type ConnectionType = "oauth2" | "cookie";
+export type ConnectionType = "oauth2" | "cookie" | "apikey";
 export type ConnectionStatus = "PENDING" | "CONNECTED" | "EXPIRED";
 
 export interface PendingConnection {
