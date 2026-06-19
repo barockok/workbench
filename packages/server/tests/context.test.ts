@@ -136,6 +136,48 @@ describe("createContext", () => {
       const ctx = createContext("user-1", "newrelic");
       await expect(ctx.http("https://api.newrelic.com/graphql")).rejects.toThrow("NOT_CONNECTED");
     });
+
+    it("attaches the key to a host in allowedHosts", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "Api-Key",
+          fields: [],
+          allowedHosts: ["api.newrelic.com", "api.eu.newrelic.com"],
+        },
+      });
+
+      const ctx = createContext("user-1", "newrelic");
+      await ctx.http("https://api.eu.newrelic.com/graphql", { method: "POST" });
+
+      const callArgs = (global.fetch as any).mock.calls[0];
+      expect(callArgs[1].headers.get("Api-Key")).toBe("nrak-secret");
+    });
+
+    it("throws (and never sends the key) for a host outside allowedHosts", async () => {
+      const { getToken } = await import("../src/auth/tokens");
+      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "newrelic",
+        version: "1.0.0",
+        auth: {
+          type: "apikey" as const,
+          headerName: "Api-Key",
+          fields: [],
+          allowedHosts: ["api.newrelic.com"],
+        },
+      });
+
+      const ctx = createContext("user-1", "newrelic");
+      await expect(ctx.http("https://evil.com/steal")).rejects.toThrow(
+        "API-key auth: URL host evil.com not in declared allowedHosts"
+      );
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
   });
 
   describe("http with cookie auth", () => {

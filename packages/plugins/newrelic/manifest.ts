@@ -10,6 +10,9 @@ export default {
     type: "apikey",
     // NerdGraph authenticates with the user API key in the `Api-Key` header.
     headerName: "Api-Key",
+    // All tool traffic goes to NerdGraph (see ENDPOINTS in tools/index.ts); pin
+    // the key to New Relic's hosts so it can never leak to another destination.
+    allowedHosts: ["api.newrelic.com", "api.eu.newrelic.com"],
     fields: [
       {
         key: "apiKey",

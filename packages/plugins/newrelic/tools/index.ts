@@ -114,7 +114,10 @@ export const searchEntities = {
     let searchQuery = args.query;
     if (!searchQuery) {
       const clauses: string[] = [];
-      if (args.name) clauses.push(`name LIKE '%${String(args.name).replace(/'/g, "\\'")}%'`);
+      // entitySearch's query language has no backslash escaping; the safe move
+      // for a quote inside the LIKE literal is to drop it (the name still rides
+      // in a GraphQL variable, so this is about the inner parser, not injection).
+      if (args.name) clauses.push(`name LIKE '%${String(args.name).replace(/'/g, "")}%'`);
       if (args.domain) clauses.push(`domain = '${args.domain}'`);
       if (args.type) clauses.push(`type = '${args.type}'`);
       searchQuery = clauses.join(" AND ");
@@ -236,7 +239,8 @@ export const createStaticNrqlAlertCondition = {
     // Signal shaping.
     aggregationWindow: z.number().default(60).describe("Aggregation window in seconds."),
     aggregationMethod: z.enum(["EVENT_FLOW", "EVENT_TIMER", "CADENCE"]).default("EVENT_FLOW"),
-    aggregationDelay: z.number().default(120).describe("Seconds to wait for late data (EVENT_FLOW/CADENCE)."),
+    aggregationDelay: z.number().default(120).describe("Seconds to wait for late data; EVENT_FLOW/CADENCE only (ignored for EVENT_TIMER)."),
+    aggregationTimer: z.number().default(60).describe("Seconds to wait after the window closes before evaluating; EVENT_TIMER only (ignored otherwise)."),
     fillOption: z.enum(["NONE", "LAST_VALUE", "STATIC"]).default("NONE").describe("Gap-fill strategy."),
     fillValue: z.number().optional().describe("Value used when fillOption=STATIC."),
     // Signal-loss detection.
@@ -248,6 +252,21 @@ export const createStaticNrqlAlertCondition = {
     closeViolationsOnExpiration: z.boolean().default(false),
   }),
   handler: async (ctx: any, args: any) => {
+    // NerdGraph's signal block takes a different late-data field per method:
+    // EVENT_FLOW/CADENCE use aggregationDelay, EVENT_TIMER uses aggregationTimer.
+    // Sending the wrong one fails NR validation, so emit only the matching field.
+    const aggregationMethod = args.aggregationMethod ?? "EVENT_FLOW";
+    const signal: any = {
+      aggregationWindow: args.aggregationWindow ?? 60,
+      aggregationMethod,
+      fillOption: args.fillOption ?? "NONE",
+      ...(args.fillValue != null ? { fillValue: args.fillValue } : {}),
+    };
+    if (aggregationMethod === "EVENT_TIMER") {
+      signal.aggregationTimer = args.aggregationTimer ?? 60;
+    } else {
+      signal.aggregationDelay = args.aggregationDelay ?? 120;
+    }
     const condition: any = {
       name: args.name,
       enabled: args.enabled ?? true,
@@ -261,13 +280,7 @@ export const createStaticNrqlAlertCondition = {
           thresholdOccurrences: args.thresholdOccurrences ?? "ALL",
         },
       ],
-      signal: {
-        aggregationWindow: args.aggregationWindow ?? 60,
-        aggregationMethod: args.aggregationMethod ?? "EVENT_FLOW",
-        aggregationDelay: args.aggregationDelay ?? 120,
-        fillOption: args.fillOption ?? "NONE",
-        ...(args.fillValue != null ? { fillValue: args.fillValue } : {}),
-      },
+      signal,
     };
     if (args.expirationDuration != null) {
       condition.expiration = {

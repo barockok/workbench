@@ -45,6 +45,15 @@ export interface ApiKeyConfig {
   // fields (e.g. an account region) are stored as per-connection config and
   // surfaced to tools via ctx.getConfig()[field.key].
   fields: ApiKeyField[];
+  // Hosts ctx.http() is allowed to send the API key to. When set, the server
+  // rejects any request to a host not in this list (exact match or a subdomain)
+  // before attaching the credential — the apikey analogue of cookieDomains.
+  //
+  // PLUGIN CONTRACT: unlike the cookie/oauth branches, ctx.http() for apikey
+  // auth performs NO host validation when this is omitted. A plugin that passes
+  // a user- or tool-supplied URL to ctx.http() MUST set allowedHosts (or guard
+  // the host itself) or it will forward the API key to whatever host it's given.
+  allowedHosts?: string[];
 }
 
 export interface ApiKeyField {

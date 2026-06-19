@@ -23,6 +23,15 @@ generic apikey flow end-to-end first, then dropping the plugin on top.
   `headers[headerName] = accessToken` **verbatim — no `Bearer` prefix** (New
   Relic wants a bare `Api-Key: <key>`). No token expiry/refresh. Bake any scheme
   into the field value if a future apikey integration needs one.
+- **Host guard contract** (added in PR #36 review): the apikey branch performs
+  **no host validation unless the manifest sets `allowedHosts`** (optional
+  `string[]` on `ApiKeyConfig`). When present, `ctx.http` rejects any URL whose
+  host isn't an exact/subdomain match *before* attaching the key — the apikey
+  analogue of the cookie branch's `cookieDomains`. A plugin that forwards a
+  user/tool-supplied URL to `ctx.http` **must** set `allowedHosts` or guard the
+  host itself, or it leaks the key to arbitrary hosts. New Relic pins
+  `["api.newrelic.com", "api.eu.newrelic.com"]` (all traffic is the hardcoded
+  NerdGraph endpoint anyway).
 - **Tools read config** via `ctx.getConfig()[field.key]` (e.g. `region`), same
   mechanism self-hosted GitLab uses for `instanceUrl`.
 - **Portal**: `GET /api/auth/:integration` returns `{ type: "apikey", fields }`;
