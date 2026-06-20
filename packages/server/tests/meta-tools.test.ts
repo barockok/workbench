@@ -45,6 +45,7 @@ vi.mock("../src/auth/cookie", () => ({
 
 vi.mock("../src/auth/browser-session", () => ({
   ensureSession: vi.fn(async () => ({ cdpToken: "tok-123" })),
+  navigate: vi.fn(async (_s: unknown, url: string) => ({ url, title: "" })),
   captureLiveCookies: vi.fn(async () => ({ domain: "legacy.com", cookies: [], capturedAt: 1 })),
 }));
 
@@ -288,13 +289,18 @@ describe("meta-tools", () => {
       expect(result.url).toContain("provider.example");
     });
 
-    it("returns a portal magic-link + connectionId for cookie", async () => {
+    it("returns a portal magic-link + connectionId for cookie and navigates to loginUrl", async () => {
+      const { navigate } = await import("../src/auth/browser-session");
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
       const tool = findTool("connect");
       const result = await tool.handler({ userId: "user-1" }, { integration: "legacy" });
       expect(result.connectionId).toBe("conn-1");
       expect(result.type).toBe("cookie");
       expect(result.url).toContain("/connect/legacy?t=jwt-123");
+      expect(vi.mocked(navigate)).toHaveBeenCalledWith(
+        expect.objectContaining({ cdpToken: "tok-123" }),
+        mockCookieInteg.auth.loginUrl
+      );
     });
 
     it("always returns a login link, even when live cookies already exist (cookie)", async () => {

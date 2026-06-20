@@ -11,7 +11,7 @@ import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
-import { ensureSession } from "../auth/browser-session";
+import { ensureSession, navigate } from "../auth/browser-session";
 
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
 // can call `.safeParse` directly without hand-rolled casts. `handler` is kept
@@ -40,6 +40,7 @@ async function startConnect(
   if (integ.auth.type === "cookie") {
     try {
       const session = await ensureSession(userId);
+      await navigate(session, integ.auth.loginUrl);
       const rec = createPending({ userId, integration, type: "cookie", ttlSeconds: ttl });
       const jwt = await signConnectToken(
         { connectionId: rec.connectionId, userId, integration, sessionId: userId, cdpToken: session.cdpToken },
