@@ -9,11 +9,17 @@ export default {
     type: "oauth2",
     authorizationUrl: "https://auth.atlassian.com/authorize",
     tokenUrl: "https://auth.atlassian.com/oauth/token",
+    // Granular scopes — required by the v2 REST API (`/wiki/api/v2/...`).
+    // The classic `*:confluence-content`/`*:confluence-space.summary` scopes
+    // only authorize the removed v1 content API. `search:confluence` (already
+    // granular) backs the CQL search endpoint that search_pages still uses.
+    // NOTE: changing scopes requires existing users to reconnect/reconsent.
     scopes: [
-      "read:confluence-content.summary",
-      "write:confluence-content",
+      "read:page:confluence",
+      "write:page:confluence",
+      "delete:page:confluence",
+      "read:space:confluence",
       "search:confluence",
-      "read:confluence-space.summary",
       "offline_access",
     ],
   },
