@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-12
 **Where:** `packages/plugins/atlassian-confluence/tools/index.ts` (`confluence_get_page`)
-**Status:** fixed 2026-06-12 — get_page now fetches via the CQL search endpoint (`cql=id=<pageId>&expand=body.storage,version,space`) per the fix direction below. Note: `confluence_update_page` now takes the page's CURRENT version (from get_page) and sends version+1.
+**Status:** SUPERSEDED 2026-06-22 — the whole integration moved to REST v2; `get_page` now uses `GET /wiki/api/v2/pages/{id}?body-format=storage` (no more CQL workaround). See [2026-06-22 confluence v2 migration](2026-06-22-confluence-v2-migration.md). Historical fix (2026-06-12): get_page fetched via the CQL search endpoint (`cql=id=<pageId>&expand=body.storage,version,space`); `confluence_update_page` took the page's CURRENT version and sent version+1 (still true under v2).
 
 ## Symptom
 
