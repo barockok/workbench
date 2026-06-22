@@ -245,6 +245,26 @@ describe("handleMcpRequest", () => {
     expect(parsed.type).toBe("cookie");
     expect(parsed.url).toContain("/connect/legacy");
   });
+
+  it("navigates to loginUrl when connecting a cookie integration", async () => {
+    const { navigate } = await import("../src/auth/browser-session");
+    vi.spyOn(registry, "getIntegration").mockReturnValue({
+      name: "legacy",
+      version: "1.0.0",
+      auth: { type: "cookie" as const, loginUrl: "https://legacy.com/login", targetDomain: "legacy.com", cookieDomains: [] },
+    } as any);
+
+    await handleMcpRequest(
+      { method: "tools/call", id: 30, params: { name: "connect", arguments: { integration: "legacy" } } },
+      "user-1"
+    );
+
+    expect(vi.mocked(navigate)).toHaveBeenCalledWith(
+      expect.objectContaining({ cdpToken: "cdp-1" }),
+      "https://legacy.com/login"
+    );
+  });
+
   it("treats none-auth (built-in) tools as always connected", async () => {
     const { getToken } = await import("../src/auth/tokens");
     vi.mocked(getToken).mockReturnValue(null); // no token stored — must not matter
