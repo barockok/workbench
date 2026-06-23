@@ -22,7 +22,7 @@ services:
       - PLUGINS_DIR=/app/custom-plugins
     volumes:
       - ./data:/data
-      - ../deploy/plugins:/app/custom-plugins:ro
+      - ../custom-plugins:/app/custom-plugins:ro
 
   sample-oauth:
     build:
