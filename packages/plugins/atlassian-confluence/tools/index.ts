@@ -35,7 +35,7 @@ async function readJson(res: any, label: string): Promise<any> {
         /* body already consumed / empty */
       }
     }
-    throw new Error(`${label}: HTTP ${res.status} ${detail.slice(0, 400)}`);
+    throw new Error(`${label}: HTTP ${res.status} ${detail.slice(0, 200)}`);
   }
   return res.json();
 }
