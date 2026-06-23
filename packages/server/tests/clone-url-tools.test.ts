@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { getCloneUrl as bitbucketCloneUrl } from "../../plugins/atlassian-bitbucket/tools/index";
 import { getCloneUrl as githubCloneUrl } from "../../plugins/github/tools/index";
 
-function ctxWith(token: string, workspaces: string[] = ["amartha"]) {
+function ctxWith(token: string, workspaces: string[] = ["acme"]) {
   const urls: string[] = [];
   const http = vi.fn(async (url: string) => {
     urls.push(url);
@@ -33,8 +33,8 @@ describe("bitbucket_get_clone_url", () => {
 describe("github_get_clone_url", () => {
   it("builds an x-access-token URL", async () => {
     const { ctx, urls } = ctxWith("gh-tok");
-    const out = await githubCloneUrl.handler(ctx, { owner: "barockok", repo: "workbench" });
-    expect(out.cloneUrl).toBe("https://x-access-token:gh-tok@github.com/barockok/workbench.git");
+    const out = await githubCloneUrl.handler(ctx, { owner: "acme", repo: "demo-repo" });
+    expect(out.cloneUrl).toBe("https://x-access-token:gh-tok@github.com/acme/demo-repo.git");
     expect(urls).toHaveLength(0);
     expect(out.note).toContain("expires");
   });
