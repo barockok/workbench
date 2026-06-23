@@ -65,7 +65,7 @@ const rawPR = {
   title: "Add rate limiter",
   description: "Implements token bucket",
   state: "OPEN",
-  author: { display_name: "Zidni Mubarok", links: { avatar: { href: "..." } } },
+  author: { display_name: "Test User", links: { avatar: { href: "..." } } },
   source: { branch: { name: "feat/rate-limit" }, repository: { full_name: "acme/api-server" } },
   destination: { branch: { name: "develop" } },
   participants: [
@@ -161,7 +161,7 @@ describe("bitbucket_list_prs", () => {
       id: 42,
       title: "Add rate limiter",
       state: "OPEN",
-      author: "Zidni Mubarok",
+      author: "Test User",
       source: "feat/rate-limit",
       destination: "develop",
       updated_on: "2026-06-10T12:00:00Z",
@@ -183,7 +183,7 @@ describe("bitbucket_get_pr", () => {
       title: "Add rate limiter",
       description: "Implements token bucket",
       state: "OPEN",
-      author: "Zidni Mubarok",
+      author: "Test User",
       source: "feat/rate-limit",
       destination: "develop",
       reviewers: [
@@ -486,7 +486,7 @@ describe("bitbucket_list_pr_commits", () => {
           {
             hash: "abcdef1234567890abcdef1234567890abcdef12",
             message: "feat: add limiter\n\nLong body with details\nmore lines",
-            author: { user: { display_name: "Zidni Mubarok" }, raw: "Zidni <z@x.com>" },
+            author: { user: { display_name: "Test User" }, raw: "Test User <dev@example.com>" },
             date: "2026-06-09T10:00:00Z",
             links: {},
             parents: [{ hash: "0000" }],
@@ -513,7 +513,7 @@ describe("bitbucket_list_pr_commits", () => {
       {
         hash: "abcdef123456",
         message: "feat: add limiter",
-        author: "Zidni Mubarok",
+        author: "Test User",
         date: "2026-06-09T10:00:00Z",
       },
       {

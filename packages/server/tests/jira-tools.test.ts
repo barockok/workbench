@@ -46,7 +46,7 @@ describe("jira_search_issues", () => {
         fields: {
           summary: "Fix the loader",
           status: { name: "In Progress", id: "3" },
-          assignee: { displayName: "Zidni Mubarok", accountId: "abc", avatarUrls: { "48x48": "x" } },
+          assignee: { displayName: "Test User", accountId: "abc", avatarUrls: { "48x48": "x" } },
           priority: { name: "High", iconUrl: "y" },
           updated: "2026-06-12T10:00:00.000+0000",
         },
@@ -72,7 +72,7 @@ describe("jira_search_issues", () => {
         id: "139262",
         summary: "Fix the loader",
         status: "In Progress",
-        assignee: "Zidni Mubarok",
+        assignee: "Test User",
         priority: "High",
         updated: "2026-06-12T10:00:00.000+0000",
       },
@@ -186,7 +186,7 @@ describe("jira_search_users", () => {
     const reply = [
       {
         accountId: "acc-1",
-        displayName: "Zidni",
+        displayName: "Test User",
         emailAddress: "z@example.com",
         active: true,
         avatarUrls: { "16x16": "a", "24x24": "b", "32x32": "c", "48x48": "d" },
@@ -194,10 +194,10 @@ describe("jira_search_users", () => {
       },
     ];
     const { ctx, urls } = recordingCtx(reply);
-    const out: any = await searchUsers.handler(ctx, { query: "zidni", maxResults: 10 });
-    expect(param(urls[0], "query")).toBe("zidni");
+    const out: any = await searchUsers.handler(ctx, { query: "testuser", maxResults: 10 });
+    expect(param(urls[0], "query")).toBe("testuser");
     expect(out).toEqual([
-      { accountId: "acc-1", displayName: "Zidni", emailAddress: "z@example.com", active: true },
+      { accountId: "acc-1", displayName: "Test User", emailAddress: "z@example.com", active: true },
     ]);
   });
 });
@@ -294,7 +294,7 @@ describe("jira_add_comment / jira_get_comments (ADF round-trip)", () => {
         {
           id: "900",
           created: "2026-06-12",
-          author: { displayName: "Zidni", avatarUrls: {} },
+          author: { displayName: "Test User", avatarUrls: {} },
           body: adf("Looks good to me"),
         },
       ],
@@ -303,7 +303,7 @@ describe("jira_add_comment / jira_get_comments (ADF round-trip)", () => {
     const out: any = await getComments.handler(ctx, { issueKey: "WB-6", maxResults: 10 });
     expect(param(urls[0], "maxResults")).toBe("10");
     expect(out).toEqual([
-      { id: "900", author: "Zidni", body: "Looks good to me", created: "2026-06-12" },
+      { id: "900", author: "Test User", body: "Looks good to me", created: "2026-06-12" },
     ]);
   });
 });
