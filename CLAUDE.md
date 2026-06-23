@@ -42,9 +42,9 @@ Before staging/committing, scrub. Never commit:
 
 - **Personal PII** — real names, emails, phone numbers. Test fixtures use synthetic
   values only: `Test User`, `dev@example.com`, `acme`/`demo-repo`.
-- **Internal/company refs** — acme names, internal project names (e.g. `deploy`),
-  internal hostnames, IPs, ArgoCD/Vault/k8s endpoints, Jira keys, Slack workspace IDs.
-  Generic examples only: `example.com`, `acme`.
+- **Internal/company refs** — company names, internal project/service names,
+  internal hostnames, IPs, infra endpoints (k8s/CD/secrets-manager), Jira keys,
+  Slack workspace IDs. Generic examples only: `example.com`, `acme`.
 - **Secrets** — keys, tokens, OAuth client secrets, passwords. All secrets come from
   env vars; `.env.example` holds placeholders only. Never hardcode, even in tests
   (use obvious fakes like `gsecret`, `tok-abc`).
@@ -54,7 +54,7 @@ Before staging/committing, scrub. Never commit:
 Pre-commit check:
 
 ```bash
-git diff --cached | grep -inIE 'acme|deploy|@(icloud|gmail)\.com|<real-name>' 
+git diff --cached | grep -inIE '<company>|<internal-project>|@(icloud|gmail)\.com|<real-name>'
 ```
 
 If publishing existing history, also purge stray blobs (e.g. committed `node_modules`)
