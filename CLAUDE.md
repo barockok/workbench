@@ -35,6 +35,31 @@ npm run test     # run tests
 npm run build    # build all packages
 ```
 
+## Public Repo Hygiene
+
+This repo is **public**. History is published too — a leak in any commit is permanent.
+Before staging/committing, scrub. Never commit:
+
+- **Personal PII** — real names, emails, phone numbers. Test fixtures use synthetic
+  values only: `Test User`, `dev@example.com`, `acme`/`demo-repo`.
+- **Internal/company refs** — acme names, internal project names (e.g. `deploy`),
+  internal hostnames, IPs, ArgoCD/Vault/k8s endpoints, Jira keys, Slack workspace IDs.
+  Generic examples only: `example.com`, `acme`.
+- **Secrets** — keys, tokens, OAuth client secrets, passwords. All secrets come from
+  env vars; `.env.example` holds placeholders only. Never hardcode, even in tests
+  (use obvious fakes like `gsecret`, `tok-abc`).
+- **Internal-only refs in code** — RFC-1918 / `.internal` URLs are fine ONLY as SSRF
+  test fixtures (asserting they get blocked).
+
+Pre-commit check:
+
+```bash
+git diff --cached | grep -inIE 'acme|deploy|@(icloud|gmail)\.com|<real-name>' 
+```
+
+If publishing existing history, also purge stray blobs (e.g. committed `node_modules`)
+with `git filter-repo`.
+
 ## Project Structure
 
 ```
