@@ -8,11 +8,9 @@ disclosure.
 
 **Do not open a public issue for security vulnerabilities.**
 
-Report privately via one of:
-
-- GitHub Security Advisories — use the **"Report a vulnerability"** button under
-  the repository's **Security** tab (preferred).
-- Email: `security@example.com` <!-- replace with a real monitored address before publishing -->
+Report privately through **GitHub Security Advisories** — use the
+**"Report a vulnerability"** button under the repository's **Security** tab.
+This opens a private channel visible only to the maintainers.
 
 Please include:
 
