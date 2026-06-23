@@ -4,6 +4,33 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.18.0
+
+_2026-06-23_
+
+Headline: **Confluence plugin fully migrated to REST API v2 — v1 content endpoints are gone.**
+
+## Fixes
+
+- **Confluence REST API v1 → v2 migration** — Atlassian removed the entire v1 content family (`/wiki/rest/api/content/*`), which 410'd with `GoneException: "This deprecated endpoint has been removed."`. All page and space operations now run on v2 (`/wiki/api/v2/pages`, `/wiki/api/v2/spaces`). Full-text search stays on the still-supported CQL search endpoint. (`packages/plugins/atlassian-confluence/tools/index.ts`)
+- **spaceKey → spaceId resolution** — v2 page ops require a numeric `spaceId`; in-memory cache resolves `spaceKey ↔ spaceId`, keyed by `userId` for multi-tenant isolation.
+- **CQL injection prevention** — `escapeCql()` escapes `\` and `"` before interpolating into CQL literals.
+- **Error detail capped at 200 chars** — `readJson` slices upstream error bodies to 200 characters.
+
+## Scope changes
+
+OAuth scopes updated from classic to granular v2 (`read/write/delete:page:confluence`, `read:space:confluence`). Users must reconnect Confluence to pick up new scopes.
+
+## New tools
+
+- `confluence_delete_page`
+
+## Tests
+
+- New test suite for all Confluence v2 tool handlers. (`packages/server/tests/confluence-tools.test.ts`)
+
+---
+
 # a-workbench v0.17.1
 
 _2026-06-22_
