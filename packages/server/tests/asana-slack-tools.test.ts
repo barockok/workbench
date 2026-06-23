@@ -37,7 +37,7 @@ describe("asana_update_task", () => {
         name: "T",
         notes: "n",
         completed: false,
-        assignee: { name: "Zidni" },
+        assignee: { name: "Test User" },
         due_on: "2026-07-01",
         projects: [{ name: "P1" }],
         permalink_url: "https://app.asana.com/0/1/42",
@@ -50,7 +50,7 @@ describe("asana_update_task", () => {
       name: "T",
       notes: "n",
       completed: false,
-      assignee: "Zidni",
+      assignee: "Test User",
       due_on: "2026-07-01",
       projects: ["P1"],
       url: "https://app.asana.com/0/1/42",
@@ -147,8 +147,8 @@ describe("slack_list_users shaping", () => {
       members: [
         {
           id: "U1",
-          name: "zidni",
-          real_name: "Zidni Mubarok",
+          name: "testuser",
+          real_name: "Test User",
           is_bot: false,
           deleted: false,
           profile: {
@@ -167,8 +167,8 @@ describe("slack_list_users shaping", () => {
     expect(result.members).toEqual([
       {
         id: "U1",
-        name: "zidni",
-        real_name: "Zidni Mubarok",
+        name: "testuser",
+        real_name: "Test User",
         email: "z@example.com",
         is_bot: false,
         deleted: false,

@@ -115,7 +115,7 @@ describe("google_calendar_list_events shaping", () => {
   const rawPayload = {
     kind: "calendar#events",
     etag: '"p32o9bp8omu2vc0g"',
-    summary: "feel.science.1n@icloud.com",
+    summary: "user@example.com",
     updated: "2026-06-11T08:00:00.000Z",
     timeZone: "Asia/Jakarta",
     accessRole: "owner",
