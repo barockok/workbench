@@ -57,6 +57,12 @@ Pre-commit check:
 git diff --cached | grep -inIE '<company>|<internal-project>|@(icloud|gmail)\.com|<real-name>'
 ```
 
+**No AI co-authorship.** Never add a `Co-Authored-By:` or "Generated with …" trailer naming Claude/Anthropic to commits or PRs, and never commit under an AI author identity. The `.githooks/commit-msg` hook enforces this — enable once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 If publishing existing history, also purge stray blobs (e.g. committed `node_modules`)
 with `git filter-repo`.
 
