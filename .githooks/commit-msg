@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# commit-msg hook — reject AI co-authorship and AI author identities.
+#
+# Enable for this clone with:
+#   git config core.hooksPath .githooks
+# (tracked in-repo; core.hooksPath is per-clone, so each checkout opts in once.)
+#
+# Blocks two things before a commit is recorded:
+#   1. Any "Co-Authored-By:" / "Generated with …" trailer naming Claude/Anthropic.
+#   2. A git author/committer identity that looks like an AI bot.
+# Override a single commit (e.g. an intentional import) with: git commit --no-verify
+set -euo pipefail
+
+msg_file="$1"
+
+if grep -qiE 'co-?authored-by:[[:space:]].*(claude|anthropic)' "$msg_file" \
+   || grep -qiE 'generated with .*(claude|anthropic)' "$msg_file"; then
+  echo "commit-msg: refusing — drop the Claude/AI co-author/generated-with trailer." >&2
+  exit 1
+fi
+
+# Author identity check (the "check the author before commit" guard).
+for ident in "$(git var GIT_AUTHOR_IDENT 2>/dev/null || true)" \
+             "$(git var GIT_COMMITTER_IDENT 2>/dev/null || true)"; do
+  if printf '%s' "$ident" | grep -qiE 'claude|anthropic|noreply@anthropic'; then
+    echo "commit-msg: refusing — author/committer looks like an AI: $ident" >&2
+    exit 1
+  fi
+done
+
+exit 0
