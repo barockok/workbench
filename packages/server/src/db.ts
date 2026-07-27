@@ -143,3 +143,11 @@ try {
 } catch (e: any) {
   if (!e.message?.includes("duplicate column name")) throw e;
 }
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN keycloak_sub TEXT`);
+} catch (e: any) {
+  if (!e.message?.includes("duplicate column name")) throw e;
+}
+try {
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_keycloak_sub ON users(keycloak_sub) WHERE keycloak_sub IS NOT NULL`);
+} catch { /* already exists */ }

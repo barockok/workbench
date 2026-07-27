@@ -75,9 +75,21 @@ export async function fetchIntegration(name: string): Promise<IntegrationDetail>
   return res.json();
 }
 
+export async function fetchProviders(): Promise<{ providers: string[] }> {
+  const res = await fetch(`${API_URL}/api/auth/providers`);
+  if (!res.ok) return { providers: [] };
+  return res.json();
+}
+
 export async function fetchAuthUrl(): Promise<{ url: string }> {
   const res = await fetch(`${API_URL}/api/auth/google`);
   if (!res.ok) throw new Error("SSO not configured");
+  return res.json();
+}
+
+export async function fetchKeycloakAuthUrl(): Promise<{ url: string }> {
+  const res = await fetch(`${API_URL}/api/auth/keycloak`);
+  if (!res.ok) throw new Error("Keycloak SSO not configured");
   return res.json();
 }
 
