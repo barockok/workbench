@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   createPR,
+  listDefaultReviewers,
+  searchUsers,
   listRepos,
   getRepo,
   listPRs,
@@ -240,6 +242,142 @@ describe("bitbucket_create_pr", () => {
     });
 
     expect(JSON.parse(bodies[0])).not.toHaveProperty("reviewers");
+  });
+});
+
+describe("bitbucket_list_default_reviewers", () => {
+  it("returns slim rows with uuid and reviewer_type", async () => {
+    const { ctx, urls } = recordingCtx(() =>
+      jsonRes({
+        pagelen: 100,
+        size: 2,
+        page: 1,
+        values: [
+          {
+            type: "default_reviewer",
+            reviewer_type: "project",
+            user: { display_name: "Patrick Wolf", uuid: "{9565301a}" },
+          },
+          {
+            type: "default_reviewer",
+            reviewer_type: "repository",
+            user: { display_name: "Davis Lee", uuid: "{f0e0e8e9}" },
+          },
+        ],
+      })
+    );
+    const out = await listDefaultReviewers.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+    });
+
+    expect(urls[0]).toBe(
+      "https://api.bitbucket.org/2.0/repositories/acme/api-server/effective-default-reviewers?pagelen=100"
+    );
+    expect(out.reviewers).toEqual([
+      { display_name: "Patrick Wolf", uuid: "{9565301a}", reviewer_type: "project" },
+      { display_name: "Davis Lee", uuid: "{f0e0e8e9}", reviewer_type: "repository" },
+    ]);
+  });
+
+  it("returns empty array when no default reviewers configured", async () => {
+    const { ctx } = recordingCtx(() =>
+      jsonRes({ pagelen: 100, size: 0, page: 1, values: [] })
+    );
+    const out = await listDefaultReviewers.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+    });
+    expect(out.reviewers).toEqual([]);
+  });
+});
+
+describe("bitbucket_search_users", () => {
+  const rawMembers = {
+    pagelen: 50,
+    size: 3,
+    page: 1,
+    next: "https://api.bitbucket.org/2.0/workspaces/acme/members?page=2&pagelen=50",
+    values: [
+      {
+        type: "workspace_membership",
+        user: {
+          type: "user",
+          display_name: "Jane Alexander",
+          nickname: "jalex",
+          uuid: "{jane-uuid}",
+        },
+        workspace: { slug: "acme", type: "workspace" },
+      },
+      {
+        type: "workspace_membership",
+        user: {
+          type: "user",
+          display_name: "Alex Pemberton",
+          nickname: "alexp",
+          uuid: "{alex-uuid}",
+        },
+        workspace: { slug: "acme", type: "workspace" },
+      },
+      {
+        type: "workspace_membership",
+        user: {
+          type: "user",
+          display_name: "Beta No Match",
+          nickname: "betano",
+          uuid: "{beta-uuid}",
+        },
+        workspace: { slug: "acme", type: "workspace" },
+      },
+    ],
+  };
+
+  it("returns members matching the query by display_name or nickname", async () => {
+    const { ctx, urls } = recordingCtx(() => jsonRes(rawMembers));
+    const out = await searchUsers.handler(ctx, {
+      workspace: "acme",
+      query: "alex",
+      page: 1,
+      pagelen: 50,
+    });
+
+    expect(urls[0]).toBe(
+      "https://api.bitbucket.org/2.0/workspaces/acme/members?page=1&pagelen=50"
+    );
+    expect(out.users).toEqual([
+      { display_name: "Jane Alexander", nickname: "jalex", uuid: "{jane-uuid}" },
+      { display_name: "Alex Pemberton", nickname: "alexp", uuid: "{alex-uuid}" },
+    ]);
+    expect(out.hasMore).toBe(true);
+  });
+
+  it("returns empty array when no members match", async () => {
+    const { ctx } = recordingCtx(() => jsonRes(rawMembers));
+    const out = await searchUsers.handler(ctx, {
+      workspace: "acme",
+      query: "zzz",
+    });
+    expect(out.users).toEqual([]);
+  });
+
+  it("filters case-insensitively", async () => {
+    const { ctx } = recordingCtx(() => jsonRes(rawMembers));
+    const out = await searchUsers.handler(ctx, {
+      workspace: "acme",
+      query: "ALEX",
+    });
+    expect(out.users).toHaveLength(2);
+  });
+
+  it("hasMore=false when no next link", async () => {
+    const { ctx } = recordingCtx(() =>
+      jsonRes({ pagelen: 50, size: 3, page: 1, values: rawMembers.values })
+    );
+    const out = await searchUsers.handler(ctx, {
+      workspace: "acme",
+      query: "alex",
+    });
+    expect(out.hasMore).toBe(false);
   });
 });
 

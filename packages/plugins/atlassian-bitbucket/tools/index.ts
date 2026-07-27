@@ -121,7 +121,7 @@ export const getRepo = {
 export const createPR = {
   name: "bitbucket_create_pr",
   description:
-    "Create a Bitbucket pull request from sourceBranch into destinationBranch (default \"main\" — check the repo's actual main branch with bitbucket_get_repo first if unsure). Optionally pass `reviewers` (array of user UUIDs) to add reviewers at creation time — get UUIDs from bitbucket_get_pr's reviewers output. Returns the new PR's id, state, branches, reviewers, and html URL. Follow up with bitbucket_get_pr / bitbucket_get_pr_diff to review it.",
+    "Create a Bitbucket pull request from sourceBranch into destinationBranch (default \"main\" — check the repo's actual main branch with bitbucket_get_repo first if unsure). Optionally pass `reviewers` (array of user UUIDs) to add reviewers at creation time — get UUIDs from bitbucket_search_users (search by name) or bitbucket_list_default_reviewers (repo's configured defaults). Returns the new PR's id, state, branches, reviewers, and html URL. Follow up with bitbucket_get_pr / bitbucket_get_pr_diff to review it.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
     workspace: z.string(),
@@ -133,7 +133,7 @@ export const createPR = {
     reviewers: z
       .array(z.string())
       .optional()
-      .describe("User UUIDs to add as reviewers (get UUIDs from bitbucket_get_pr reviewers output)"),
+      .describe("User UUIDs to add as reviewers (get from bitbucket_search_users or bitbucket_list_default_reviewers)"),
   }),
   handler: async (ctx: any, args: any) => {
     const body: any = {
@@ -565,6 +565,69 @@ export const getCloneUrl = {
     return {
       cloneUrl: `https://x-token-auth:${token}@bitbucket.org/${workspace}/${args.repoSlug}.git`,
       note: "Token-bearing URL — expires with the OAuth access token (≤2h). Re-mint before pushing; don't store it.",
+    };
+  },
+};
+
+export const listDefaultReviewers = {
+  name: "bitbucket_list_default_reviewers",
+  description:
+    'List the default reviewers that will auto-attach to new pull requests on a repository. Returns slim rows { display_name, uuid, reviewer_type: "project"|"repository" } — project ones are inherited from the workspace project, repository ones were set on this repo (requires repository:admin to add). Bitbucket auto-adds these to every new PR even without passing them to bitbucket_create_pr — use this to see who will review by default, or pass a returned uuid into bitbucket_create_pr reviewers explicitly. workspace defaults to the first workspace.',
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string().optional(),
+    repoSlug: z.string(),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const workspace = await resolveWorkspace(ctx, args.workspace);
+    const res = await ctx.http(
+      `${BASE}/repositories/${workspace}/${args.repoSlug}/effective-default-reviewers?pagelen=100`
+    );
+    const data = await res.json();
+    return {
+      reviewers: (data.values ?? []).map((r: any) => ({
+        display_name: r.user?.display_name,
+        uuid: r.user?.uuid,
+        reviewer_type: r.reviewer_type,
+      })),
+    };
+  },
+};
+
+export const searchUsers = {
+  name: "bitbucket_search_users",
+  description:
+    "Search Bitbucket workspace members by name or username to resolve user UUIDs for use with bitbucket_create_pr reviewers. Substring match against display_name OR nickname (case-insensitive) — 'alex' matches 'Jane Alexander' and 'alexp'. Only finds workspace members, not external repo-only collaborators. Email filtering not supported (Bitbucket gates that behind admin scope). Returns { users: [{ display_name, nickname, uuid }], hasMore } — page forward with page. workspace defaults to the first workspace.",
+  integration: "atlassian-bitbucket",
+  inputSchema: z.object({
+    workspace: z.string().optional(),
+    query: z
+      .string()
+      .describe("Case-insensitive substring matched against display_name and nickname"),
+    page: z.number().default(1),
+    pagelen: z.number().default(50),
+  }),
+  handler: async (ctx: any, args: any) => {
+    const workspace = await resolveWorkspace(ctx, args.workspace);
+    const params = new URLSearchParams();
+    params.set("page", String(args.page ?? 1));
+    params.set("pagelen", String(args.pagelen ?? 50));
+    const res = await ctx.http(`${BASE}/workspaces/${workspace}/members?${params}`);
+    const data = await res.json();
+    const q = String(args.query).toLowerCase();
+    return {
+      users: (data.values ?? [])
+        .filter(
+          (m: any) =>
+            (m.user?.display_name ?? "").toLowerCase().includes(q) ||
+            (m.user?.nickname ?? "").toLowerCase().includes(q)
+        )
+        .map((m: any) => ({
+          display_name: m.user?.display_name,
+          nickname: m.user?.nickname,
+          uuid: m.user?.uuid,
+        })),
+      hasMore: Boolean(data.next),
     };
   },
 };
