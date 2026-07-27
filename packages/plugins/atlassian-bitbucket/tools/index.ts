@@ -63,6 +63,7 @@ function slimPRDetail(pr: any) {
     destination: pr.destination?.branch?.name,
     reviewers: (pr.participants ?? []).map((p: any) => ({
       display_name: p.user?.display_name,
+      uuid: p.user?.uuid,
       approved: p.approved,
     })),
     comment_count: pr.comment_count,
@@ -120,7 +121,7 @@ export const getRepo = {
 export const createPR = {
   name: "bitbucket_create_pr",
   description:
-    "Create a Bitbucket pull request from sourceBranch into destinationBranch (default \"main\" — check the repo's actual main branch with bitbucket_get_repo first if unsure). Returns the new PR's id, state, branches, and html URL. Follow up with bitbucket_get_pr / bitbucket_get_pr_diff to review it.",
+    "Create a Bitbucket pull request from sourceBranch into destinationBranch (default \"main\" — check the repo's actual main branch with bitbucket_get_repo first if unsure). Optionally pass `reviewers` (array of user UUIDs) to add reviewers at creation time — get UUIDs from bitbucket_get_pr's reviewers output. Returns the new PR's id, state, branches, reviewers, and html URL. Follow up with bitbucket_get_pr / bitbucket_get_pr_diff to review it.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
     workspace: z.string(),
@@ -129,19 +130,27 @@ export const createPR = {
     sourceBranch: z.string(),
     destinationBranch: z.string().default("main"),
     description: z.string().optional(),
+    reviewers: z
+      .array(z.string())
+      .optional()
+      .describe("User UUIDs to add as reviewers (get UUIDs from bitbucket_get_pr reviewers output)"),
   }),
   handler: async (ctx: any, args: any) => {
+    const body: any = {
+      title: args.title,
+      source: { branch: { name: args.sourceBranch } },
+      destination: { branch: { name: args.destinationBranch ?? "main" } },
+      description: args.description,
+    };
+    if (args.reviewers?.length) {
+      body.reviewers = args.reviewers.map((uuid: string) => ({ uuid }));
+    }
     const res = await ctx.http(
       `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: args.title,
-          source: { branch: { name: args.sourceBranch } },
-          destination: { branch: { name: args.destinationBranch ?? "main" } },
-          description: args.description,
-        }),
+        body: JSON.stringify(body),
       }
     );
     const data = await res.json();
