@@ -8,6 +8,7 @@ import { createAuthState } from "../auth/oauth";
 import { buildPluginAuthUrl, handlePluginCallback, getPluginOAuthCreds } from "../auth/plugin-oauth";
 import { verifyApiKey, getUserById, setApiKey, clearApiKey, hasApiKey, getApiKey } from "../auth/users";
 import { buildAuthUrl, handleCallback } from "../auth/google";
+import { buildAuthUrl as buildKeycloakAuthUrl, handleCallback as handleKeycloakCallback, isKeycloakConfigured } from "../auth/keycloak";
 import { signSession, verifySession } from "../auth/session";
 import { config } from "../config";
 import { getToken, deleteToken, storeToken } from "../auth/tokens";
@@ -88,12 +89,43 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   startReaper();
 
   // --- Auth routes ---
+  app.get("/api/auth/providers", async () => {
+    const providers: string[] = [];
+    if (config.GOOGLE_CLIENT_ID) providers.push("google");
+    if (isKeycloakConfigured()) providers.push("keycloak");
+    return { providers };
+  });
+
   app.get("/api/auth/google", async (_request, reply) => {
     if (!config.GOOGLE_CLIENT_ID) {
       return reply.status(503).send({ error: "Google SSO not configured" });
     }
     const url = buildAuthUrl();
     return { url };
+  });
+
+  app.get("/api/auth/keycloak", async (_request, reply) => {
+    if (!isKeycloakConfigured()) {
+      return reply.status(503).send({ error: "Keycloak SSO not configured" });
+    }
+    const url = await buildKeycloakAuthUrl();
+    return { url };
+  });
+
+  app.get("/api/auth/keycloak/callback", async (request, reply) => {
+    const { code, state, error } = request.query as Record<string, string>;
+    if (error) return reply.status(400).send({ error: `Keycloak auth error: ${error}` });
+    if (!code) return reply.status(400).send({ error: "Missing code" });
+    try {
+      const { userId, email } = await handleKeycloakCallback(code, state);
+      const token = await signSession({ userId, email });
+      const redirect = new URL(config.PORTAL_URL);
+      redirect.hash = `token=${token}`;
+      return reply.redirect(redirect.toString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Auth failed";
+      return reply.status(400).send({ error: message });
+    }
   });
 
   app.get("/api/auth/google/callback", async (request, reply) => {
