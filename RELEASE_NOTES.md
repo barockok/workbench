@@ -1,33 +1,31 @@
-# a-workbench v0.18.0
+# a-workbench v0.19.0
 
-_2026-06-23_
+_2026-07-27_
 
-Headline: **Confluence plugin fully migrated to REST API v2 — v1 content endpoints are gone.**
+Headline: **Keycloak OIDC joins Google as a configurable SSO provider, plus new Bitbucket reviewer tools.**
 
-## Fixes
+## Features
 
-- **Confluence REST API v1 → v2 migration** — Atlassian removed the entire v1 content family (`/wiki/rest/api/content/*`), which 410'd with `GoneException: "This deprecated endpoint has been removed."`. All page and space operations now run on v2 (`/wiki/api/v2/pages`, `/wiki/api/v2/spaces`). Full-text search stays on the still-supported CQL search endpoint (`/wiki/rest/api/search`). (`packages/plugins/atlassian-confluence/tools/index.ts`)
-- **spaceKey → spaceId resolution** — v2 page ops require a numeric `spaceId`; added an in-memory cache that resolves `spaceKey ↔ spaceId` with a single lookup per key, keyed by `userId` so multi-tenant sessions stay isolated.
-- **CQL injection prevention** — `escapeCql()` escapes `\` and `"` in user-supplied search terms before interpolating into double-quoted CQL literals.
-- **Error detail capped at 200 chars** — `readJson` now slices upstream error bodies to 200 characters, reducing error leakage surface.
+- **Keycloak OIDC auth provider** — operators can now wire Keycloak as an SSO option alongside (or instead of) Google. Set `KEYCLOAK_ISSUER_URL`, `KEYCLOAK_CLIENT_ID`, and `KEYCLOAK_CLIENT_SECRET` to enable it. The login page calls `/api/auth/providers` at runtime and renders only the buttons for configured providers — no code changes needed to add or remove providers. Standard OIDC discovery, JWKS token verification, and `keycloak_sub` user upsert. (`packages/server/src/auth/keycloak.ts`, `packages/server/src/api/routes.ts`, `packages/portal/src/pages/Login.tsx`)
 
-## Scope changes
+- **Bitbucket: reviewer tools** — two new Bitbucket tools:
+  - `bitbucket_get_users` — list workspace members and default reviewers for a repo.
+  - `bitbucket_create_pull_request` now accepts an optional `reviewers` field to pre-assign reviewers at creation time.
+  (`packages/plugins/atlassian-bitbucket/tools/index.ts`)
 
-OAuth scopes updated from classic (`write:confluence-content`) to granular v2 scopes required by the new endpoints:
+## Internal
 
-| Added | Removed |
-|---|---|
-| `read:page:confluence` | `read:confluence-content.summary` |
-| `write:page:confluence` | `write:confluence-content` |
-| `delete:page:confluence` | `read:confluence-space.summary` |
-| `read:space:confluence` | |
+- **Commit-msg hook** — `.githooks/commit-msg` blocks AI co-authorship trailers (`Co-Authored-By: Claude`, `Generated with`, etc.) from landing in commits. Enable once per clone: `git config core.hooksPath .githooks`.
+- **Public release hardening** — added `LICENSE` (MIT), `SECURITY.md` (GitHub Security Advisories as the sole vuln-report channel), and `CONTRIBUTING.md`. Scrubbed personal PII and internal references from docs and test fixtures. Added public-repo hygiene guard to `CLAUDE.md`. Removed internal `staging-dir/` staging reports.
+- **Test coverage** — extended Bitbucket tool tests to cover `get_users` and the reviewer option on PR creation.
 
-**Action required:** users must reconnect their Atlassian Confluence connection to pick up the new scopes.
+## Commits
 
-## New tools
+- `feat(auth): add Keycloak OIDC provider` (dc82bdf)
+- `chore: add tool get users and default reviewer` (e2f1735)
+- `chore: add reviewer opt when creating pr` (ec130f6)
+- `chore: add commit-msg hook blocking AI co-authorship` (ffcca84)
+- `docs: add LICENSE, SECURITY.md, CONTRIBUTING.md for public release` (b79f742)
+- `chore: scrub personal PII and internal refs for public release` (53f8098)
 
-- `confluence_delete_page` — delete a page by ID (moves to space trash).
-
-## Tests
-
-- Comprehensive test suite for all Confluence v2 tool handlers. (`packages/server/tests/confluence-tools.test.ts`)
+**Full diff:** https://github.com/barockok/workbench/compare/v0.18.0...v0.19.0
