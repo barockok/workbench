@@ -4,6 +4,24 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.19.0
+
+_2026-07-27_
+
+Headline: **Keycloak OIDC joins Google as a configurable SSO provider, plus new Bitbucket reviewer tools.**
+
+## Features
+
+- **Keycloak OIDC auth provider** — `KEYCLOAK_ISSUER_URL` + `KEYCLOAK_CLIENT_ID` + `KEYCLOAK_CLIENT_SECRET` enables Keycloak SSO. Login page calls `/api/auth/providers` at runtime and renders only configured provider buttons. (`packages/server/src/auth/keycloak.ts`)
+- **Bitbucket: reviewer tools** — `bitbucket_get_users` lists workspace members/default reviewers; `bitbucket_create_pull_request` now accepts `reviewers`. (`packages/plugins/atlassian-bitbucket/tools/index.ts`)
+
+## Internal
+
+- **Commit-msg hook** — `.githooks/commit-msg` blocks AI co-authorship trailers. Enable: `git config core.hooksPath .githooks`.
+- **Public release hardening** — `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md` added; PII scrubbed; internal `uat-dir/` removed.
+
+---
+
 # a-workbench v0.18.0
 
 _2026-06-23_
