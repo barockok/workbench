@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
+  createPR,
   listRepos,
   getRepo,
   listPRs,
@@ -69,8 +70,8 @@ const rawPR = {
   source: { branch: { name: "feat/rate-limit" }, repository: { full_name: "acme/api-server" } },
   destination: { branch: { name: "develop" } },
   participants: [
-    { user: { display_name: "Reviewer One" }, approved: true, role: "REVIEWER" },
-    { user: { display_name: "Reviewer Two" }, approved: false, role: "REVIEWER" },
+    { user: { display_name: "Reviewer One", uuid: "{abc-123}" }, approved: true, role: "REVIEWER" },
+    { user: { display_name: "Reviewer Two", uuid: "{def-456}" }, approved: false, role: "REVIEWER" },
   ],
   comment_count: 3,
   task_count: 1,
@@ -187,8 +188,8 @@ describe("bitbucket_get_pr", () => {
       source: "feat/rate-limit",
       destination: "develop",
       reviewers: [
-        { display_name: "Reviewer One", approved: true },
-        { display_name: "Reviewer Two", approved: false },
+        { display_name: "Reviewer One", uuid: "{abc-123}", approved: true },
+        { display_name: "Reviewer Two", uuid: "{def-456}", approved: false },
       ],
       comment_count: 3,
       task_count: 1,
@@ -196,6 +197,49 @@ describe("bitbucket_get_pr", () => {
       updated_on: "2026-06-10T12:00:00Z",
       url: "https://bitbucket.org/acme/api-server/pull-requests/42",
     });
+  });
+});
+
+describe("bitbucket_create_pr", () => {
+  it("sends reviewers as [{uuid}] in the POST body when provided", async () => {
+    const { ctx, urls, methods, bodies } = recordingCtx(() => jsonRes(rawPR));
+    const out = await createPR.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+      title: "Add rate limiter",
+      sourceBranch: "feat/rate-limit",
+      destinationBranch: "develop",
+      description: "Implements token bucket",
+      reviewers: ["{abc-123}", "{def-456}"],
+    });
+
+    expect(urls[0]).toBe(
+      "https://api.bitbucket.org/2.0/repositories/acme/api-server/pullrequests"
+    );
+    expect(methods[0]).toBe("POST");
+    expect(JSON.parse(bodies[0])).toEqual({
+      title: "Add rate limiter",
+      source: { branch: { name: "feat/rate-limit" } },
+      destination: { branch: { name: "develop" } },
+      description: "Implements token bucket",
+      reviewers: [{ uuid: "{abc-123}" }, { uuid: "{def-456}" }],
+    });
+    expect(out.reviewers).toEqual([
+      { display_name: "Reviewer One", uuid: "{abc-123}", approved: true },
+      { display_name: "Reviewer Two", uuid: "{def-456}", approved: false },
+    ]);
+  });
+
+  it("omits reviewers from the body when not provided", async () => {
+    const { ctx, bodies } = recordingCtx(() => jsonRes(rawPR));
+    await createPR.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+      title: "Add rate limiter",
+      sourceBranch: "feat/rate-limit",
+    });
+
+    expect(JSON.parse(bodies[0])).not.toHaveProperty("reviewers");
   });
 });
 
