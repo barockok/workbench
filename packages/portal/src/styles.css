@@ -593,6 +593,31 @@ body::before {
   box-shadow: 0 0 0 1px var(--accent), 0 0 24px var(--accent-edge);
 }
 
+.btn-keycloak {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 13px;
+  width: 100%;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+  margin-top: 8px;
+}
+.btn-keycloak:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 24px var(--accent-edge);
+}
+.btn-keycloak svg { stroke: var(--accent); }
+
 .login-fine {
   font-family: var(--mono);
   font-size: 9.5px;
