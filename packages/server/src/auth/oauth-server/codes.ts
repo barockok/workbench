@@ -12,14 +12,15 @@ export interface IssueCodeInput {
   resource: string;
 }
 
-export function issueCode(input: IssueCodeInput): string {
+export async function issueCode(input: IssueCodeInput): Promise<string> {
   const code = crypto.randomBytes(32).toString("base64url");
   const now = Math.floor(Date.now() / 1000);
-  db.prepare(
+  await db.run(
     `INSERT INTO oauth_auth_codes (code, client_id, user_id, redirect_uri, code_challenge, scope, resource, expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(code, input.clientId, input.userId, input.redirectUri, input.codeChallenge, input.scope, input.resource, now + CODE_TTL_SECONDS);
-  db.prepare("DELETE FROM oauth_auth_codes WHERE expires_at < ?").run(now);
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [code, input.clientId, input.userId, input.redirectUri, input.codeChallenge, input.scope, input.resource, now + CODE_TTL_SECONDS]
+  );
+  await db.run("DELETE FROM oauth_auth_codes WHERE expires_at < ?", [now]);
   return code;
 }
 
@@ -35,15 +36,18 @@ export interface ConsumedCode {
   resource: string;
 }
 
-export function consumeCode(code: string, input: ConsumeCodeInput): ConsumedCode | null {
+export async function consumeCode(code: string, input: ConsumeCodeInput): Promise<ConsumedCode | null> {
   const now = Math.floor(Date.now() / 1000);
-  const row = db
-    .prepare("SELECT * FROM oauth_auth_codes WHERE code = ? AND expires_at > ?")
-    .get(code, now) as
-    | { client_id: string; user_id: string; redirect_uri: string; code_challenge: string; scope: string; resource: string }
-    | undefined;
+  const row = await db.get<{
+    client_id: string;
+    user_id: string;
+    redirect_uri: string;
+    code_challenge: string;
+    scope: string;
+    resource: string;
+  }>("SELECT * FROM oauth_auth_codes WHERE code = ? AND expires_at > ?", [code, now]);
   // Single-use: delete on any lookup hit, success or not.
-  if (row) db.prepare("DELETE FROM oauth_auth_codes WHERE code = ?").run(code);
+  if (row) await db.run("DELETE FROM oauth_auth_codes WHERE code = ?", [code]);
   if (!row) return null;
   if (row.client_id !== input.clientId) return null;
   if (row.redirect_uri !== input.redirectUri) return null;

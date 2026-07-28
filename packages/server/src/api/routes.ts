@@ -68,7 +68,7 @@ async function authenticate(request: {
   // with the portal's session JWT.
   const apiKey = request.headers["x-workbench-api-key"];
   if (apiKey) {
-    const userId = verifyApiKey(apiKey);
+    const userId = await verifyApiKey(apiKey);
     if (userId) return { userId };
   }
 
@@ -100,7 +100,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!config.GOOGLE_CLIENT_ID) {
       return reply.status(503).send({ error: "Google SSO not configured" });
     }
-    const url = buildAuthUrl();
+    const url = await buildAuthUrl();
     return { url };
   });
 
@@ -147,7 +147,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         const cookie = request.headers.cookie ?? "";
         const m = cookie.match(/(?:^|;\s*)awb_oauth_binding=([^;]+)/);
         const binding = m ? m[1] : undefined;
-        const redirectUrl = resumeAuthorize(oauthTicket, userId, binding);
+        const redirectUrl = await resumeAuthorize(oauthTicket, userId, binding);
         // Clear the one-time binding cookie.
         reply.header("Set-Cookie", "awb_oauth_binding=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
         if (redirectUrl) return reply.redirect(redirectUrl);
@@ -170,7 +170,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    const profile = getUserById(user.userId);
+    const profile = await getUserById(user.userId);
     if (!profile) {
       return reply.status(404).send({ error: "User not found" });
     }
@@ -190,7 +190,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    return setApiKey(user.userId);
+    return await setApiKey(user.userId);
   });
 
   // Whether the user currently has a key.
@@ -199,7 +199,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    return { hasKey: hasApiKey(user.userId) };
+    return { hasKey: await hasApiKey(user.userId) };
   });
 
   // Reveal the existing plaintext key (decrypted). Session-auth only.
@@ -208,7 +208,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    const apiKey = getApiKey(user.userId);
+    const apiKey = await getApiKey(user.userId);
     if (!apiKey) {
       return reply.status(404).send({ error: "No key set." });
     }
@@ -220,7 +220,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    clearApiKey(user.userId);
+    await clearApiKey(user.userId);
     return { success: true };
   });
 
@@ -331,7 +331,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (integ.auth.type === "oauth2") {
       try {
         const { instanceUrl } = request.query as { instanceUrl?: string };
-        const url = buildPluginAuthUrl(user.userId, integration, instanceUrl);
+        const url = await buildPluginAuthUrl(user.userId, integration, instanceUrl);
         return { type: "oauth2", url };
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -345,7 +345,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return { type: "apikey", fields: integ.auth.fields };
     }
 
-    const state = createAuthState(user.userId, integration);
+    const state = await createAuthState(user.userId, integration);
     return { state };
   });
 
@@ -393,7 +393,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         configFields[f.key] = v;
       }
 
-      storeToken(user.userId, integration, {
+      await storeToken(user.userId, integration, {
         accessToken: secret,
         scopes: "",
         config: Object.keys(configFields).length ? JSON.stringify(configFields) : undefined,
@@ -446,7 +446,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       if (data.cookies.length === 0) {
         return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
       }
-      storeCookies(user.userId, integration, data);
+      await storeCookies(user.userId, integration, data);
       markConnected(user.userId, integration);
       return { success: true, cookieCount: data.cookies.length };
     } catch (err) {
@@ -470,7 +470,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       if (!integ || integ.auth.type !== "cookie") {
         return reply.status(404).send({ error: "Cookie integration not found" });
       }
-      const session = getCookies(user.userId, integration);
+      const session = await getCookies(user.userId, integration);
       if (!session) return reply.status(404).send({ error: "No session to export. Connect the integration first." });
       return { integration, session };
     }
@@ -504,7 +504,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         cookies: session.cookies,
         capturedAt: session.capturedAt ?? Math.floor(Date.now() / 1000),
       };
-      storeCookies(user.userId, integration, data);
+      await storeCookies(user.userId, integration, data);
       markConnected(user.userId, integration);
       return { success: true, cookieCount: data.cookies.length };
     }
@@ -606,7 +606,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       if (data.cookies.length === 0) {
         return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
       }
-      storeCookies(payload.userId, payload.integration, data);
+      await storeCookies(payload.userId, payload.integration, data);
       markConnected(payload.userId, payload.integration);
       return { success: true, cookieCount: data.cookies.length };
     } catch (err) {
@@ -645,17 +645,18 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const integrations = registry.listIntegrations();
-    return {
-      connections: integrations.map((i) => ({
+    const connections = await Promise.all(
+      integrations.map(async (i) => ({
         name: i.name,
         connected:
           i.auth.type === "none"
-            ? true // built-ins: always usable
+            ? true
             : i.auth.type === "cookie"
-              ? hasValidCookies(user.userId, i.name)
-              : !!getToken(user.userId, i.name),
-      })),
-    };
+              ? await hasValidCookies(user.userId, i.name)
+              : !!(await getToken(user.userId, i.name)),
+      }))
+    );
+    return { connections };
   });
 
   // Disconnect: drop stored creds (OAuth tokens or cookies) for one integration.
@@ -676,9 +677,9 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       }
       // Both delete the same connections row; branch by auth type for clarity.
       if (integ.auth.type === "cookie") {
-        deleteCookies(user.userId, integration);
+        await deleteCookies(user.userId, integration);
       } else {
-        deleteToken(user.userId, integration);
+        await deleteToken(user.userId, integration);
       }
       return { success: true };
     }
@@ -692,7 +693,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!user) {
       return reply.status(401).send({ error: "Unauthorized" });
     }
-    return { agents: listAgents(user.userId) };
+    return { agents: await listAgents(user.userId) };
   });
 
   // Revoke an agent: delete the user's refresh tokens for that client (soft
@@ -705,7 +706,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       if (!user) {
         return reply.status(401).send({ error: "Unauthorized" });
       }
-      const revoked = revokeAgent(user.userId, request.params.clientId);
+      const revoked = await revokeAgent(user.userId, request.params.clientId);
       return { revoked };
     }
   );

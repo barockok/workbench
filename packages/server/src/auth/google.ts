@@ -49,7 +49,7 @@ async function getJwksUri(): Promise<string> {
   return jwksUri;
 }
 
-export function buildAuthUrl(returnTicket?: string): string {
+export async function buildAuthUrl(returnTicket?: string): Promise<string> {
   if (!config.GOOGLE_CLIENT_ID) {
     throw new Error("GOOGLE_CLIENT_ID not configured");
   }
@@ -59,7 +59,7 @@ export function buildAuthUrl(returnTicket?: string): string {
 
   // Encode an optional return ticket (e.g. a pending OAuth /authorize request)
   // into the state so the callback can resume the right flow.
-  const baseState = createAuthState(crypto.randomUUID(), "google-sso");
+  const baseState = await createAuthState(crypto.randomUUID(), "google-sso");
   const state = returnTicket ? `${baseState}.${returnTicket}` : baseState;
 
   // Generate nonce and store it keyed by state
@@ -129,7 +129,7 @@ export async function handleCallback(code: string, state: string): Promise<{ use
   // verifyAuthState was stored under the base; the nonce is keyed by the full state.
   const base = state.includes(".") ? state.slice(0, state.indexOf(".")) : state;
   // Verify state to prevent CSRF
-  const authState = verifyAuthState(base);
+  const authState = await verifyAuthState(base);
   if (!authState || authState.integration !== "google-sso") {
     throw new Error("Invalid state");
   }
@@ -148,27 +148,29 @@ export async function handleCallback(code: string, state: string): Promise<{ use
     throw new Error("Email not verified");
   }
 
-  let user = db.prepare("SELECT id, email, google_sub FROM users WHERE google_sub = ?").get(googleUser.sub) as
-    | { id: string; email: string; google_sub: string }
-    | undefined;
+  let user = await db.get<{ id: string; email: string; google_sub: string }>(
+    "SELECT id, email, google_sub FROM users WHERE google_sub = ?",
+    [googleUser.sub]
+  );
 
   if (!user) {
     // Check by email for account linking
-    user = db.prepare("SELECT id, email, google_sub FROM users WHERE email = ?").get(googleUser.email) as
-      | { id: string; email: string; google_sub: string }
-      | undefined;
+    user = await db.get<{ id: string; email: string; google_sub: string }>(
+      "SELECT id, email, google_sub FROM users WHERE email = ?",
+      [googleUser.email]
+    );
 
     if (user) {
       // Link existing user
-      db.prepare("UPDATE users SET google_sub = ? WHERE id = ?").run(googleUser.sub, user.id);
+      await db.run("UPDATE users SET google_sub = ? WHERE id = ?", [googleUser.sub, user.id]);
     } else {
       // Create new user
       const id = crypto.randomUUID();
-      db.prepare("INSERT INTO users (id, email, google_sub) VALUES (?, ?, ?)").run(
+      await db.run("INSERT INTO users (id, email, google_sub) VALUES (?, ?, ?)", [
         id,
         googleUser.email,
-        googleUser.sub
-      );
+        googleUser.sub,
+      ]);
       user = { id, email: googleUser.email, google_sub: googleUser.sub };
     }
   }
