@@ -54,7 +54,7 @@ async function startConnect(
 
   try {
     const rec = createPending({ userId, integration, type: "oauth2", ttlSeconds: ttl });
-    const url = buildPluginAuthUrl(userId, integration);
+    const url = await buildPluginAuthUrl(userId, integration);
     return { connectionId: rec.connectionId, type: "oauth2", url };
   } catch (err) {
     return { error: err instanceof Error ? err.message : String(err) };
@@ -93,8 +93,8 @@ async function executeSingle(
         integ?.auth.type === "none"
           ? true
           : integ?.auth.type === "cookie"
-            ? hasValidCookies(userId, targetTool.integration)
-            : !!getToken(userId, targetTool.integration);
+            ? await hasValidCookies(userId, targetTool.integration)
+            : !!(await getToken(userId, targetTool.integration));
 
       if (!isConnected) {
         await auditLogger.log({
@@ -150,7 +150,7 @@ async function executeSingle(
       }
 
       try {
-        const toolCtx = createContext(userId, targetTool.integration);
+        const toolCtx = await createContext(userId, targetTool.integration);
         const result = await targetTool.handler(toolCtx, parsedArgs as Record<string, unknown>);
         await auditLogger.log({
           user_id: userId,
@@ -252,7 +252,7 @@ export const metaTools = [
     description: "Return the current authenticated workbench user (id + email). Like /me — identity only, not connected integrations.",
     inputSchema: z.object({}),
     handler: async (ctx: { userId: string }) => {
-      const user = getUserById(ctx.userId);
+      const user = await getUserById(ctx.userId);
       if (!user) return { error: "User not found" };
       return { id: user.id, email: user.email };
     },
@@ -263,18 +263,19 @@ export const metaTools = [
     inputSchema: z.object({}),
     handler: async (ctx: { userId: string }) => {
       const integrations = registry.listIntegrations();
-      return {
-        integrations: integrations.map((i) => ({
+      const items = await Promise.all(
+        integrations.map(async (i) => ({
           name: i.name,
           version: i.version,
           connected:
             i.auth.type === "none"
               ? true
               : i.auth.type === "cookie"
-                ? hasValidCookies(ctx.userId, i.name)
-                : !!getToken(ctx.userId, i.name),
-        })),
-      };
+                ? await hasValidCookies(ctx.userId, i.name)
+                : !!(await getToken(ctx.userId, i.name)),
+        }))
+      );
+      return { integrations: items };
     },
   },
   {

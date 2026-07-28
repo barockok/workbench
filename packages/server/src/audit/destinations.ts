@@ -7,19 +7,20 @@ export interface AuditDestination {
 }
 
 export class SqliteDestination implements AuditDestination {
-  log(event: AuditEvent): void {
-    db.prepare(`
-      INSERT INTO audit_log (user_id, integration, tool, action, success, error, duration_ms, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      event.user_id,
-      event.integration ?? null,
-      event.tool ?? null,
-      event.action,
-      event.success ? 1 : 0,
-      event.error ?? null,
-      event.duration_ms ?? null,
-      Math.floor(new Date(event.timestamp).getTime() / 1000)
+  async log(event: AuditEvent): Promise<void> {
+    await db.run(
+      `INSERT INTO audit_log (user_id, integration, tool, action, success, error, duration_ms, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        event.user_id,
+        event.integration ?? null,
+        event.tool ?? null,
+        event.action,
+        event.success ? 1 : 0,
+        event.error ?? null,
+        event.duration_ms ?? null,
+        Math.floor(new Date(event.timestamp).getTime() / 1000),
+      ]
     );
   }
 }

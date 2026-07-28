@@ -19,7 +19,6 @@ async function refreshAccessToken(
   const creds = getPluginOAuthCreds(integration);
   if (!creds) throw new Error(`OAuth client not configured for ${integration}`);
 
-  // Public (PKCE) clients have no secret — omit the param, don't send "".
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     client_id: creds.clientId,
@@ -27,7 +26,6 @@ async function refreshAccessToken(
   });
   if (creds.clientSecret) body.set("client_secret", creds.clientSecret);
 
-  // Honor a self-hosted instance origin so refresh hits the right token endpoint.
   const { tokenUrl } = resolveOAuthUrls(integ.auth, data.config);
   const res = await fetch(tokenUrl, {
     method: "POST",
@@ -45,8 +43,6 @@ async function refreshAccessToken(
   };
   const refreshed: TokenData = {
     accessToken: tokens.access_token,
-    // Some providers (Google) re-issue the same refresh token implicitly;
-    // others (Atlassian) rotate it. Keep whichever we last saw.
     refreshToken: tokens.refresh_token ?? data.refreshToken,
     expiresAt: tokens.expires_in
       ? Math.floor(Date.now() / 1000) + tokens.expires_in
@@ -54,7 +50,7 @@ async function refreshAccessToken(
     scopes: data.scopes,
     config: data.config,
   };
-  storeToken(userId, integration, refreshed);
+  await storeToken(userId, integration, refreshed);
   return refreshed;
 }
 
@@ -63,8 +59,7 @@ export interface ToolContext {
   getToken(): Promise<string>;
   http(url: string, init?: RequestInit): Promise<Response>;
   // Per-connection config set at connect time (e.g. { instanceUrl } for a
-  // self-hosted GitLab). Returns {} when none was stored. Tools use it to build
-  // the right API base — e.g. `${ctx.getConfig().instanceUrl}/api/v4`.
+  // self-hosted GitLab). Returns {} when none was stored.
   getConfig(): Record<string, unknown>;
 }
 
@@ -87,33 +82,31 @@ async function resolveAtlassianCloudId(
   return match.id;
 }
 
-export function createContext(userId: string, integration: string): ToolContext {
+// Pre-fetch connection config so getConfig() can stay synchronous on ToolContext.
+export async function createContext(userId: string, integration: string): Promise<ToolContext> {
+  const rawConfig = await getConnectionConfig(userId, integration);
+  let parsedConfig: Record<string, unknown> = {};
+  if (rawConfig) {
+    try {
+      parsedConfig = JSON.parse(rawConfig) as Record<string, unknown>;
+    } catch {
+      parsedConfig = {};
+    }
+  }
+
   let tokenData: TokenData | null = null;
   let cookieData: CookieData | null = null;
-  let configCache: Record<string, unknown> | undefined;
 
-  return {
+  const ctx: ToolContext = {
     userId,
 
     getConfig(): Record<string, unknown> {
-      if (configCache === undefined) {
-        const raw = getConnectionConfig(userId, integration);
-        let parsed: Record<string, unknown> = {};
-        if (raw) {
-          try {
-            parsed = JSON.parse(raw) as Record<string, unknown>;
-          } catch {
-            parsed = {};
-          }
-        }
-        configCache = parsed;
-      }
-      return configCache;
+      return parsedConfig;
     },
 
     async getToken(): Promise<string> {
       if (!tokenData) {
-        tokenData = getToken(userId, integration);
+        tokenData = await getToken(userId, integration);
         if (!tokenData) throw new Error("Not connected");
       }
       const now = Math.floor(Date.now() / 1000);
@@ -128,17 +121,10 @@ export function createContext(userId: string, integration: string): ToolContext 
       const headers = new Headers(init?.headers);
 
       if (integrationConfig?.auth.type === "apikey") {
-        // API-key auth: the credential lives in the connection's access token
-        // (stored at connect time) and rides in the manifest's headerName —
-        // verbatim, no Bearer scheme. There's no token expiry/refresh here.
         if (!tokenData) {
-          tokenData = getToken(userId, integration);
+          tokenData = await getToken(userId, integration);
           if (!tokenData) throw new Error("NOT_CONNECTED");
         }
-        // Restrict key attachment to declared hosts when the manifest opts in.
-        // Stops a plugin (or open redirect) from forwarding the API key to an
-        // attacker-controlled URL. When allowedHosts is omitted the plugin owns
-        // host safety — see the PLUGIN CONTRACT note on ApiKeyConfig.
         const allowedHosts = integrationConfig.auth.allowedHosts;
         if (allowedHosts && allowedHosts.length) {
           const targetHost = new URL(url).hostname.toLowerCase().replace(/\.$/, "");
@@ -155,15 +141,12 @@ export function createContext(userId: string, integration: string): ToolContext 
 
       if (integrationConfig?.auth.type === "cookie") {
         if (!cookieData) {
-          cookieData = getCookies(userId, integration);
+          cookieData = await getCookies(userId, integration);
           if (!cookieData || isCookieExpired(cookieData)) {
             throw new Error("NOT_CONNECTED");
           }
         }
 
-        // Restrict cookie attachment to declared domains.
-        // Prevents credential exfiltration if a plugin (or open-redirect)
-        // points ctx.http() at an attacker-controlled URL.
         const targetHost = new URL(url).hostname.toLowerCase().replace(/\.$/, "");
         const allowed = [
           integrationConfig.auth.targetDomain,
@@ -176,16 +159,6 @@ export function createContext(userId: string, integration: string): ToolContext 
           );
         }
 
-        // Send only the cookies a browser would send to this host:
-        //  - drop cookies that have since expired (a cookie can lapse between
-        //    capture and use);
-        //  - scope by domain — a host-only cookie (domain === host) goes only
-        //    to that host; a domain cookie (.example.com) goes to the domain
-        //    and its subdomains. Capture sweeps in sibling-host cookies (e.g.
-        //    sso.* SSO cookies); replaying ALL of them to one host both
-        //    bloats the header past the upstream's limit (proxy "400 Request
-        //    Header Or Cookie Too Large") and breaks auth that expects exactly
-        //    the browser's cookie set.
         const nowSec = Math.floor(Date.now() / 1000);
         const cookieHeader = cookieData.cookies
           .filter((c) => !c.expires || c.expires >= nowSec)
@@ -197,17 +170,12 @@ export function createContext(userId: string, integration: string): ToolContext 
           .join("; ");
         headers.set("Cookie", cookieHeader);
 
-        // redirect:'manual' so a 3xx to a foreign host cannot launder cookies.
-        // Caller must explicitly re-issue ctx.http() to follow a same-host redirect.
         return fetch(url, { ...init, headers, redirect: "manual" });
       }
 
-      const token = await this.getToken();
+      const token = await ctx.getToken();
       headers.set("Authorization", `Bearer ${token}`);
 
-      // Atlassian plugins ship URLs with a literal `cloud-id` placeholder
-      // (because the OAuth flow doesn't know which Atlassian site the user
-      // will pick until consent). Resolve and substitute it on the fly.
       let resolvedUrl = url;
       const atlassianMatch = url.match(/^https:\/\/api\.atlassian\.com\/ex\/(jira|confluence)\/cloud-id\//);
       if (atlassianMatch) {
@@ -224,10 +192,8 @@ export function createContext(userId: string, integration: string): ToolContext 
         );
       }
 
-      return fetch(resolvedUrl, {
-        ...init,
-        headers,
-      });
+      return fetch(resolvedUrl, { ...init, headers });
     },
   };
+  return ctx;
 }

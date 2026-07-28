@@ -64,6 +64,8 @@ async function main() {
     }
   }
 
+  const { initDb } = await import("./db.js");
+  await initDb();
   await app.register(fastifyWebsocket);
   await loadPlugins();
   await registerApiRoutes(app);

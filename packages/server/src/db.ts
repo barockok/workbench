@@ -1,16 +1,19 @@
-import fs from "fs";
-import path from "path";
-import Database from "better-sqlite3";
 import { config } from "./config";
+import type { DbAdapter } from "./db-adapter";
+import { SqliteAdapter } from "./db-sqlite";
+import { PostgresAdapter } from "./db-postgres";
 
-const dbDir = path.dirname(config.DATABASE_URL);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
+function createDb(): DbAdapter {
+  const url = config.DATABASE_URL;
+  if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
+    return new PostgresAdapter(url);
+  }
+  return new SqliteAdapter(url);
 }
 
-export const db = new Database(config.DATABASE_URL);
+export const db: DbAdapter = createDb();
 
-db.exec(`
+const SQLITE_SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     api_key_hash TEXT,
@@ -59,7 +62,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS oauth_clients (
     client_id TEXT PRIMARY KEY,
     client_name TEXT,
-    redirect_uris TEXT NOT NULL,     -- JSON array
+    redirect_uris TEXT NOT NULL,
     created_at INTEGER DEFAULT (unixepoch())
   );
 
@@ -81,73 +84,131 @@ db.exec(`
     scope TEXT,
     expires_at INTEGER NOT NULL
   );
-`);
+`;
 
-// Migrations
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN email TEXT`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
+const POSTGRES_SCHEMA = `
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    api_key_hash TEXT,
+    email TEXT UNIQUE,
+    google_sub TEXT UNIQUE,
+    is_admin BOOLEAN DEFAULT FALSE,
+    created_at INTEGER DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS connections (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    integration TEXT NOT NULL,
+    access_token BYTEA,
+    refresh_token BYTEA,
+    expires_at INTEGER,
+    scopes TEXT,
+    cookies BYTEA,
+    created_at INTEGER DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER,
+    updated_at INTEGER DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER,
+    UNIQUE(user_id, integration)
+  );
+
+  CREATE TABLE IF NOT EXISTS pending_auth (
+    state TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    integration TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    integration TEXT,
+    tool TEXT,
+    action TEXT NOT NULL,
+    success BOOLEAN NOT NULL,
+    error TEXT,
+    duration_ms INTEGER,
+    created_at INTEGER DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id, created_at);
+  CREATE INDEX IF NOT EXISTS idx_audit_integration ON audit_log(integration, created_at);
+
+  CREATE TABLE IF NOT EXISTS oauth_clients (
+    client_id TEXT PRIMARY KEY,
+    client_name TEXT,
+    redirect_uris TEXT NOT NULL,
+    created_at INTEGER DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS oauth_auth_codes (
+    code TEXT PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    redirect_uri TEXT NOT NULL,
+    code_challenge TEXT NOT NULL,
+    scope TEXT,
+    resource TEXT,
+    expires_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
+    token_hash TEXT PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    scope TEXT,
+    expires_at INTEGER NOT NULL
+  );
+`;
+
+async function initSqliteSchema(): Promise<void> {
+  await db.exec(SQLITE_SCHEMA);
+  for (const stmt of [
+    "ALTER TABLE users ADD COLUMN email TEXT",
+    "ALTER TABLE users ADD COLUMN google_sub TEXT",
+    "ALTER TABLE connections ADD COLUMN cookies BLOB",
+    "ALTER TABLE pending_auth ADD COLUMN session_data TEXT",
+    "ALTER TABLE pending_auth ADD COLUMN code_verifier TEXT",
+    "ALTER TABLE users ADD COLUMN api_key_enc BLOB",
+    "ALTER TABLE connections ADD COLUMN config TEXT",
+    "ALTER TABLE pending_auth ADD COLUMN config TEXT",
+    "ALTER TABLE oauth_refresh_tokens ADD COLUMN created_at INTEGER",
+    "ALTER TABLE users ADD COLUMN keycloak_sub TEXT",
+  ]) {
+    try {
+      await db.exec(stmt);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!msg.includes("duplicate column name")) throw e;
+    }
+  }
+  try {
+    await db.exec(
+      "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_keycloak_sub ON users(keycloak_sub) WHERE keycloak_sub IS NOT NULL"
+    );
+  } catch { /* already exists */ }
 }
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN google_sub TEXT`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
+
+async function initPostgresSchema(): Promise<void> {
+  await db.exec(POSTGRES_SCHEMA);
+  // PostgreSQL 9.6+ supports ADD COLUMN IF NOT EXISTS
+  await db.exec(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+    ALTER TABLE connections ADD COLUMN IF NOT EXISTS cookies BYTEA;
+    ALTER TABLE pending_auth ADD COLUMN IF NOT EXISTS session_data TEXT;
+    ALTER TABLE pending_auth ADD COLUMN IF NOT EXISTS code_verifier TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS api_key_enc BYTEA;
+    ALTER TABLE connections ADD COLUMN IF NOT EXISTS config TEXT;
+    ALTER TABLE pending_auth ADD COLUMN IF NOT EXISTS config TEXT;
+    ALTER TABLE oauth_refresh_tokens ADD COLUMN IF NOT EXISTS created_at INTEGER;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS keycloak_sub TEXT;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_keycloak_sub ON users(keycloak_sub) WHERE keycloak_sub IS NOT NULL;
+  `);
 }
-try {
-  db.exec(`ALTER TABLE connections ADD COLUMN cookies BLOB`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
+
+export async function initDb(): Promise<void> {
+  if (db.dialect === "sqlite") {
+    await initSqliteSchema();
+  } else {
+    await initPostgresSchema();
+  }
 }
-try {
-  db.exec(`ALTER TABLE pending_auth ADD COLUMN session_data TEXT`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
-}
-// PKCE code_verifier for the in-flight authorization (RFC 7636). Plaintext is
-// fine: rows live ≤10 minutes and a verifier is useless without the code.
-try {
-  db.exec(`ALTER TABLE pending_auth ADD COLUMN code_verifier TEXT`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
-}
-// Encrypted plaintext API key, so the key can be revealed again after minting
-// (not just shown once). Hash stays for cheap verification.
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN api_key_enc BLOB`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
-}
-// Per-connection config (JSON), e.g. a self-hosted GitLab instance origin
-// chosen at connect time. Not secret (no tokens), so stored plaintext.
-try {
-  db.exec(`ALTER TABLE connections ADD COLUMN config TEXT`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
-}
-// Carries the same per-connection config through the in-flight OAuth handshake
-// (set when the auth URL is built, read back in the callback). Rows live ≤10m.
-try {
-  db.exec(`ALTER TABLE pending_auth ADD COLUMN config TEXT`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
-}
-// "Connected since" for an agent's refresh token, surfaced in the portal's
-// Connected Agents list. Carried across rotation (see refresh.ts) so it
-// survives token refreshes. NOTE: SQLite forbids a non-constant DEFAULT
-// (unixepoch()) in ALTER TABLE ADD COLUMN, so the column is added bare and
-// issueRefreshToken stamps it explicitly; pre-migration rows stay NULL and
-// age out within the 30-day refresh TTL.
-try {
-  db.exec(`ALTER TABLE oauth_refresh_tokens ADD COLUMN created_at INTEGER`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
-}
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN keycloak_sub TEXT`);
-} catch (e: any) {
-  if (!e.message?.includes("duplicate column name")) throw e;
-}
-try {
-  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_keycloak_sub ON users(keycloak_sub) WHERE keycloak_sub IS NOT NULL`);
-} catch { /* already exists */ }
