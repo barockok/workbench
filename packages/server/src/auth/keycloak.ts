@@ -57,7 +57,7 @@ export async function buildAuthUrl(returnTicket?: string): Promise<string> {
   if (!isKeycloakConfigured()) throw new Error("Keycloak not configured");
   const d = await getDiscovery();
   pruneExpiredNonces();
-  const baseState = createAuthState(crypto.randomUUID(), "keycloak-sso");
+  const baseState = await createAuthState(crypto.randomUUID(), "keycloak-sso");
   const state = returnTicket ? `${baseState}.${returnTicket}` : baseState;
   const nonce = crypto.randomBytes(16).toString("hex");
   nonceMap.set(state, { nonce, expiresAt: Date.now() + 10 * 60 * 1000 });
@@ -116,7 +116,7 @@ async function verifyIdToken(idToken: string, expectedNonce?: string): Promise<K
 
 export async function handleCallback(code: string, state: string): Promise<{ userId: string; email: string }> {
   const base = state.includes(".") ? state.slice(0, state.indexOf(".")) : state;
-  const authState = verifyAuthState(base);
+  const authState = await verifyAuthState(base);
   if (!authState || authState.integration !== "keycloak-sso") {
     throw new Error("Invalid state");
   }
@@ -130,18 +130,20 @@ export async function handleCallback(code: string, state: string): Promise<{ use
   if (kcUser.email_verified === false) {
     throw new Error("Email not verified");
   }
-  let user = db.prepare("SELECT id, email, keycloak_sub FROM users WHERE keycloak_sub = ?").get(kcUser.sub) as
-    | { id: string; email: string; keycloak_sub: string }
-    | undefined;
+  let user = await db.get<{ id: string; email: string; keycloak_sub: string }>(
+    "SELECT id, email, keycloak_sub FROM users WHERE keycloak_sub = ?",
+    [kcUser.sub]
+  );
   if (!user) {
-    user = db.prepare("SELECT id, email, keycloak_sub FROM users WHERE email = ?").get(kcUser.email) as
-      | { id: string; email: string; keycloak_sub: string }
-      | undefined;
+    user = await db.get<{ id: string; email: string; keycloak_sub: string }>(
+      "SELECT id, email, keycloak_sub FROM users WHERE email = ?",
+      [kcUser.email]
+    );
     if (user) {
-      db.prepare("UPDATE users SET keycloak_sub = ? WHERE id = ?").run(kcUser.sub, user.id);
+      await db.run("UPDATE users SET keycloak_sub = ? WHERE id = ?", [kcUser.sub, user.id]);
     } else {
       const id = crypto.randomUUID();
-      db.prepare("INSERT INTO users (id, email, keycloak_sub) VALUES (?, ?, ?)").run(id, kcUser.email, kcUser.sub);
+      await db.run("INSERT INTO users (id, email, keycloak_sub) VALUES (?, ?, ?)", [id, kcUser.email, kcUser.sub]);
       user = { id, email: kcUser.email, keycloak_sub: kcUser.sub };
     }
   }

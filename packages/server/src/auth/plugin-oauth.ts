@@ -172,11 +172,11 @@ function providerExtraParams(integration: string): Record<string, string> {
   return {};
 }
 
-export function buildPluginAuthUrl(
+export async function buildPluginAuthUrl(
   userId: string,
   integration: string,
   instanceUrl?: string
-): string {
+): Promise<string> {
   const integ = registry.getIntegration(integration);
   if (!integ) throw new Error(`Integration not found: ${integration}`);
   if (integ.auth.type !== "oauth2") {
@@ -211,7 +211,7 @@ export function buildPluginAuthUrl(
   // PKCE on every flow, confidential clients included (OAuth 2.1 baseline).
   // Providers that don't support it ignore the extra params per RFC 6749.
   const codeVerifier = generateCodeVerifier();
-  const state = createAuthState(userId, integration, codeVerifier, configJson);
+  const state = await createAuthState(userId, integration, codeVerifier, configJson);
   const url = new URL(authorizationUrl);
   url.searchParams.set("client_id", creds.clientId);
   url.searchParams.set("redirect_uri", getPluginCallbackUrl(integration));
@@ -234,7 +234,7 @@ export async function handlePluginCallback(
   code: string,
   state: string
 ): Promise<{ userId: string }> {
-  const authState = verifyAuthState(state);
+  const authState = await verifyAuthState(state);
   if (!authState || authState.integration !== integration) {
     throw new Error("Invalid state");
   }
@@ -280,7 +280,7 @@ export async function handlePluginCallback(
     ? Math.floor(Date.now() / 1000) + expiresIn
     : undefined;
 
-  storeToken(authState.userId, integration, {
+  await storeToken(authState.userId, integration, {
     accessToken,
     refreshToken,
     expiresAt,
