@@ -121,7 +121,7 @@ export const getRepo = {
 export const createPR = {
   name: "bitbucket_create_pr",
   description:
-    "Create a Bitbucket pull request from sourceBranch into destinationBranch (default \"main\" — check the repo's actual main branch with bitbucket_get_repo first if unsure). Optionally pass `reviewers` (array of user UUIDs) to add reviewers at creation time — get UUIDs from bitbucket_search_users (search by name) or bitbucket_list_default_reviewers (repo's configured defaults). Returns the new PR's id, state, branches, reviewers, and html URL. Follow up with bitbucket_get_pr / bitbucket_get_pr_diff to review it.",
+    "Create a Bitbucket pull request from sourceBranch into destinationBranch (default \"main\" — check the repo's actual main branch with bitbucket_get_repo first if unsure). UPSERT BEHAVIOR: If an open PR already exists from the same sourceBranch, this tool updates that PR instead of creating a duplicate — use this to add reviewers to an existing PR. Optionally pass `reviewers` (array of user UUIDs) to add reviewers at creation time — get UUIDs from bitbucket_search_users (search by name) or bitbucket_list_default_reviewers (repo's configured defaults). NOTE: The PR author cannot be added as a reviewer — Bitbucket rejects the entire request silently if the author's UUID is included. The tool automatically filters out the PR author from the reviewers list. Returns the new PR's id, state, branches, reviewers, and html URL. Follow up with bitbucket_get_pr / bitbucket_get_pr_diff to review it.",
   integration: "atlassian-bitbucket",
   inputSchema: z.object({
     workspace: z.string(),
@@ -143,7 +143,28 @@ export const createPR = {
       description: args.description,
     };
     if (args.reviewers?.length) {
-      body.reviewers = args.reviewers.map((uuid: string) => ({ uuid }));
+      // Get current user to identify PR author — Bitbucket silently rejects
+      // adding the author as a reviewer, which fails the entire request.
+      const userRes = await ctx.http(`${BASE}/user`);
+      const currentUser = await userRes.json();
+      const authorUuid = currentUser.uuid?.replace(/[{}]/g, "");
+
+      const filteredReviewers = args.reviewers
+        .filter((uuid: string) => {
+          const normalized = uuid.replace(/[{}]/g, "");
+          return normalized !== authorUuid;
+        })
+        .map((uuid: string) => ({ uuid }));
+
+      if (filteredReviewers.length < args.reviewers.length) {
+        console.warn(
+          `[bitbucket_create_pr] Excluded PR author from reviewers (Bitbucket rejects author-as-reviewer)`
+        );
+      }
+
+      if (filteredReviewers.length > 0) {
+        body.reviewers = filteredReviewers;
+      }
     }
     const res = await ctx.http(
       `${BASE}/repositories/${args.workspace}/${args.repoSlug}/pullrequests`,

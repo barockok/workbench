@@ -4,6 +4,23 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.19.1
+
+_2026-08-03_
+
+Headline: **Bitbucket PR author reviewer bug fix — silent failure when author included in reviewers.**
+
+## Fixes
+
+- **Bitbucket `create_pr` author-as-reviewer bug** — When calling `bitbucket_create_pr` with the PR author's UUID in the `reviewers` array, Bitbucket API fails silently returning `{"reviewers":[]}`. Added validation to filter out PR author from reviewers list before sending to API. (`packages/plugins/atlassian-bitbucket/tools/index.ts`)
+- **Documented "upsert" behavior** — `bitbucket_create_pr` updates existing PRs when the same `sourceBranch` is used instead of creating duplicates. Updated tool description to document this behavior.
+
+## Tests
+
+- New unit tests for author validation logic (filter author UUID, handle braces format, warn on exclusion). (`packages/server/tests/bitbucket-tools.test.ts`)
+
+---
+
 # a-workbench v0.19.0
 
 _2026-07-27_
