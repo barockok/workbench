@@ -204,7 +204,12 @@ describe("bitbucket_get_pr", () => {
 
 describe("bitbucket_create_pr", () => {
   it("sends reviewers as [{uuid}] in the POST body when provided", async () => {
-    const { ctx, urls, methods, bodies } = recordingCtx(() => jsonRes(rawPR));
+    const { ctx, urls, methods, bodies } = recordingCtx((url: string) => {
+      if (url.includes("/user")) {
+        return jsonRes({ uuid: "{current-user-uuid}", display_name: "Current User" });
+      }
+      return jsonRes(rawPR);
+    });
     const out = await createPR.handler(ctx, {
       workspace: "acme",
       repoSlug: "api-server",
@@ -215,10 +220,13 @@ describe("bitbucket_create_pr", () => {
       reviewers: ["{abc-123}", "{def-456}"],
     });
 
-    expect(urls[0]).toBe(
+    // First call is /user (GET), second is /pullrequests (POST)
+    expect(urls[0]).toBe("https://api.bitbucket.org/2.0/user");
+    expect(urls[1]).toBe(
       "https://api.bitbucket.org/2.0/repositories/acme/api-server/pullrequests"
     );
-    expect(methods[0]).toBe("POST");
+    expect(methods[0]).toBe("GET");
+    expect(methods[1]).toBe("POST");
     expect(JSON.parse(bodies[0])).toEqual({
       title: "Add rate limiter",
       source: { branch: { name: "feat/rate-limit" } },
@@ -242,6 +250,109 @@ describe("bitbucket_create_pr", () => {
     });
 
     expect(JSON.parse(bodies[0])).not.toHaveProperty("reviewers");
+  });
+
+  it("filters out PR author from reviewers list", async () => {
+    const { ctx, urls, bodies } = recordingCtx((url: string) => {
+      if (url.includes("/user")) {
+        return jsonRes({ uuid: "{author-uuid}", display_name: "PR Author" });
+      }
+      return jsonRes(rawPR);
+    });
+
+    await createPR.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+      title: "Add rate limiter",
+      sourceBranch: "feat/rate-limit",
+      destinationBranch: "develop",
+      reviewers: ["{author-uuid}", "{other-uuid}"],
+    });
+
+    // First call is /user, second is /pullrequests
+    expect(urls[0]).toBe("https://api.bitbucket.org/2.0/user");
+    expect(urls[1]).toBe(
+      "https://api.bitbucket.org/2.0/repositories/acme/api-server/pullrequests"
+    );
+    const parsed = JSON.parse(bodies[0]);
+    expect(parsed.reviewers).toEqual([{ uuid: "{other-uuid}" }]);
+  });
+
+  it("handles author UUID without braces in reviewers list", async () => {
+    const { ctx, bodies } = recordingCtx((url: string) => {
+      if (url.includes("/user")) {
+        return jsonRes({ uuid: "{author-uuid}", display_name: "PR Author" });
+      }
+      return jsonRes(rawPR);
+    });
+
+    await createPR.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+      title: "Add rate limiter",
+      sourceBranch: "feat/rate-limit",
+      reviewers: ["author-uuid", "{other-uuid}"],
+    });
+
+    const parsed = JSON.parse(bodies[0]);
+    expect(parsed.reviewers).toEqual([{ uuid: "{other-uuid}" }]);
+  });
+
+  it("omits reviewers when only author is provided", async () => {
+    const { ctx, bodies } = recordingCtx((url: string) => {
+      if (url.includes("/user")) {
+        return jsonRes({ uuid: "{author-uuid}", display_name: "PR Author" });
+      }
+      return jsonRes(rawPR);
+    });
+
+    await createPR.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+      title: "Add rate limiter",
+      sourceBranch: "feat/rate-limit",
+      reviewers: ["{author-uuid}"],
+    });
+
+    const parsed = JSON.parse(bodies[0]);
+    expect(parsed).not.toHaveProperty("reviewers");
+  });
+
+  it("warns when author is excluded from reviewers", async () => {
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const { ctx } = recordingCtx((url: string) => {
+      if (url.includes("/user")) {
+        return jsonRes({ uuid: "{author-uuid}", display_name: "PR Author" });
+      }
+      return jsonRes(rawPR);
+    });
+
+    await createPR.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+      title: "Add rate limiter",
+      sourceBranch: "feat/rate-limit",
+      reviewers: ["{author-uuid}", "{other-uuid}"],
+    });
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Excluded PR author from reviewers")
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("does not call /user when no reviewers provided", async () => {
+    const { ctx, urls } = recordingCtx(() => jsonRes(rawPR));
+    await createPR.handler(ctx, {
+      workspace: "acme",
+      repoSlug: "api-server",
+      title: "Add rate limiter",
+      sourceBranch: "feat/rate-limit",
+    });
+
+    // Should NOT call /user endpoint
+    expect(urls.every((u) => !u.includes("/user"))).toBe(true);
   });
 });
 
