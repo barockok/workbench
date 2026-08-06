@@ -145,7 +145,7 @@ describe("handleMcpRequest", () => {
 
   it("returns NOT_CONNECTED when token missing", async () => {
     const { getToken } = await import("../src/auth/tokens");
-    vi.mocked(getToken).mockReturnValue(null);
+    vi.mocked(getToken).mockResolvedValue(null);
 
     const mockTool = {
       name: "exec_tool",
@@ -175,7 +175,7 @@ describe("handleMcpRequest", () => {
 
   it("returns error when handler throws", async () => {
     const { getToken } = await import("../src/auth/tokens");
-    vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+    vi.mocked(getToken).mockResolvedValue({ accessToken: "tok", scopes: "" });
 
     const mockTool = {
       name: "exec_tool",
@@ -267,7 +267,7 @@ describe("handleMcpRequest", () => {
 
   it("treats none-auth (built-in) tools as always connected", async () => {
     const { getToken } = await import("../src/auth/tokens");
-    vi.mocked(getToken).mockReturnValue(null); // no token stored — must not matter
+    vi.mocked(getToken).mockResolvedValue(null); // no token stored — must not matter
 
     const mockTool = {
       name: "browser_close",

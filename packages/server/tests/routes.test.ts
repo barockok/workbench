@@ -189,7 +189,7 @@ describe("API routes", () => {
 
     it("reports key status", async () => {
       const { hasApiKey } = await import("../src/auth/users");
-      vi.mocked(hasApiKey).mockReturnValueOnce(true);
+      vi.mocked(hasApiKey).mockResolvedValueOnce(true);
       const app = await buildApp();
       const res = await app.inject({
         method: "GET",
@@ -213,7 +213,7 @@ describe("API routes", () => {
 
     it("404s reveal when no key set", async () => {
       const { getApiKey } = await import("../src/auth/users");
-      vi.mocked(getApiKey).mockReturnValueOnce(null);
+      vi.mocked(getApiKey).mockResolvedValueOnce(null);
       const app = await buildApp();
       const res = await app.inject({
         method: "GET",
@@ -289,7 +289,7 @@ describe("API routes", () => {
 
     it("returns 404 for unknown user", async () => {
       const { getUserById } = await import("../src/auth/users");
-      vi.mocked(getUserById).mockReturnValue(null);
+      vi.mocked(getUserById).mockResolvedValue(null);
       const app = await buildApp();
       const res = await app.inject({
         method: "GET",
@@ -1036,7 +1036,7 @@ describe("API routes", () => {
 
     it("returns connection status for oauth2 integrations", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok", scopes: "" });
       vi.spyOn(registry, "listIntegrations").mockReturnValue([
         { name: "slack", version: "1.0.0", auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] } },
       ]);
@@ -1052,7 +1052,7 @@ describe("API routes", () => {
 
     it("returns connection status for cookie integrations", async () => {
       const { hasValidCookies } = await import("../src/auth/cookie");
-      vi.mocked(hasValidCookies).mockReturnValue(true);
+      vi.mocked(hasValidCookies).mockResolvedValue(true);
       vi.spyOn(registry, "listIntegrations").mockReturnValue([
         { name: "legacy", version: "1.0.0", auth: { type: "cookie" as const, loginUrl: "", targetDomain: "" } },
       ]);
@@ -1178,7 +1178,7 @@ describe("API routes", () => {
 
     it("exports the stored cookie bundle for a cookie integration", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue(bundle as any);
+      vi.mocked(getCookies).mockResolvedValue(bundle as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/integrations/legacy/session/export", headers: apiKey });
@@ -1190,7 +1190,7 @@ describe("API routes", () => {
 
     it("404s export when no session stored", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue(null);
+      vi.mocked(getCookies).mockResolvedValue(null);
       vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg);
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/integrations/legacy/session/export", headers: apiKey });
