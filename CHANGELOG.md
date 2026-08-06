@@ -4,6 +4,50 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.22.0
+
+_2026-08-06_
+
+Headline: **A migration path onto PostgreSQL — v0.21.0 made the backend selectable, this brings the data across.**
+
+## Features
+
+- **`migrate/sqlite-to-postgres`** — a one-shot data migration, run by hand inside the container against an idle instance. Without it, pointing `DATABASE_URL` at a PostgreSQL server gives that server an empty schema: every user is logged out of every cookie-auth integration and has to reconnect. (`packages/server/src/migrate/`)
+
+```bash
+# dry run by default — writes nothing without --apply
+TARGET_DATABASE_URL=postgres://user:pass@host:5432/workbench \
+  tsx server/migrate/sqlite-to-postgres.js
+
+TARGET_DATABASE_URL=postgres://user:pass@host:5432/workbench \
+  tsx server/migrate/sqlite-to-postgres.js --apply
+```
+
+  Credentials may instead come from the standard libpq variables (`PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`). The source defaults to `DATABASE_URL` while it still names a file, else `/data/tokens.db`; override with `SOURCE_SQLITE_PATH`.
+
+  It creates the target schema with `applySchema()` — the same function the server runs at boot, so it cannot drift from a second copy of the DDL. Columns are discovered by intersecting `PRAGMA table_info` with `information_schema` rather than hardcoded, and any column present only in the source is **reported**, not silently dropped. Values are coerced per target column type: SQLite's 0/1 becomes a real boolean, and a BLOB becomes BYTEA even when TEXT affinity handed back a string. The whole copy runs in one transaction, `SERIAL` sequences are resynced afterwards (explicit id inserts do not advance them, so without this the next `INSERT` collides on the primary key), and row counts are verified per table before it reports success.
+
+  Safety: dry run unless `--apply`; refuses a non-empty target unless `--allow-nonempty`; never writes to the source; redacts the password before logging the connection string; `--skip=a,b` to omit tables.
+
+## Config
+
+No new environment variables. The migration reads `TARGET_DATABASE_URL` or the libpq variables only while it runs.
+
+**Upgrade note.** Nothing changes for existing deployments — this adds a tool, not a behaviour. **`ENCRYPTION_KEY` must not change across a migration:** tokens and cookies are stored encrypted and are copied as ciphertext, so a different key on the instance that later points at PostgreSQL makes every migrated credential undecryptable — exactly the mass reconnect the migration exists to avoid.
+
+## Tests
+
+- `packages/server/tests/migrate-plan.test.ts` — 27 tests over the pure half (argument parsing, source/target resolution, credential percent-encoding, password redaction, every coercion branch). The planning logic lives in `migrate/plan.ts`, which imports nothing from `../db`, so testing a string helper does not require a database.
+- The I/O half needs both engines running and is exercised by running the script; the dry-run default exists so the first attempt is free.
+
+## Docs
+
+- `docs/how-to-use.md` — "Moving an existing instance to PostgreSQL", including why `DATABASE_URL` alone is not a migration.
+
+**Full diff:** https://github.com/barockok/workbench/compare/v0.21.0...v0.22.0
+
+---
+
 # a-workbench v0.21.0
 
 _2026-08-06_
