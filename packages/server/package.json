@@ -8,7 +8,8 @@
     "test": "NODE_ENV=test vitest run",
     "test:coverage": "NODE_ENV=test vitest run --coverage",
     "typecheck:tests": "tsc -p tsconfig.test.json",
-    "gap": "tsx src/gap/cli.ts"
+    "gap": "tsx src/gap/cli.ts",
+    "migrate:sqlite-to-postgres": "tsx src/migrate/sqlite-to-postgres.ts"
   },
   "dependencies": {
     "@a-workbench/shared": "*",
