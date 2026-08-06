@@ -11,32 +11,37 @@ export function codeChallengeS256(verifier: string): string {
   return crypto.createHash("sha256").update(verifier).digest("base64url");
 }
 
-export function createAuthState(
+export async function createAuthState(
   userId: string,
   integration: string,
   codeVerifier?: string,
   config?: string
-): string {
+): Promise<string> {
   const state = crypto.randomBytes(32).toString("hex");
-  db.prepare(
-    "INSERT INTO pending_auth (state, user_id, integration, expires_at, code_verifier, config) VALUES (?, ?, ?, ?, ?, ?)"
-  ).run(state, userId, integration, Math.floor(Date.now() / 1000) + 600, codeVerifier ?? null, config ?? null);
-
-  db.prepare("DELETE FROM pending_auth WHERE expires_at < ?").run(Math.floor(Date.now() / 1000));
-
+  await db.run(
+    "INSERT INTO pending_auth (state, user_id, integration, expires_at, code_verifier, config) VALUES (?, ?, ?, ?, ?, ?)",
+    [state, userId, integration, Math.floor(Date.now() / 1000) + 600, codeVerifier ?? null, config ?? null]
+  );
+  await db.run("DELETE FROM pending_auth WHERE expires_at < ?", [Math.floor(Date.now() / 1000)]);
   return state;
 }
 
-export function verifyAuthState(
+export async function verifyAuthState(
   state: string
-): { userId: string; integration: string; codeVerifier?: string; config?: string } | null {
-  const row = db.prepare("SELECT user_id, integration, code_verifier, config FROM pending_auth WHERE state = ? AND expires_at > ?")
-    .get(state, Math.floor(Date.now() / 1000)) as
-      { user_id: string; integration: string; code_verifier: string | null; config: string | null } | undefined;
+): Promise<{ userId: string; integration: string; codeVerifier?: string; config?: string } | null> {
+  const row = await db.get<{
+    user_id: string;
+    integration: string;
+    code_verifier: string | null;
+    config: string | null;
+  }>(
+    "SELECT user_id, integration, code_verifier, config FROM pending_auth WHERE state = ? AND expires_at > ?",
+    [state, Math.floor(Date.now() / 1000)]
+  );
 
   if (!row) return null;
 
-  db.prepare("DELETE FROM pending_auth WHERE state = ?").run(state);
+  await db.run("DELETE FROM pending_auth WHERE state = ?", [state]);
   return {
     userId: row.user_id,
     integration: row.integration,
@@ -69,8 +74,6 @@ export async function exchangeCode(
   redirectUri: string,
   codeVerifier?: string
 ): Promise<TokenResponse> {
-  // Public (PKCE-only) clients have no secret; Keycloak rejects an empty
-  // client_secret param, so omit it entirely rather than send "".
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     client_id: clientId,
@@ -82,9 +85,6 @@ export async function exchangeCode(
 
   const response = await fetch(tokenUrl, {
     method: "POST",
-    // GitHub's token endpoint defaults to a form-urlencoded response body;
-    // Accept: application/json forces JSON so response.json() doesn't choke.
-    // Other providers (Google/Atlassian) return JSON regardless and ignore it.
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",

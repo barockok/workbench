@@ -30,7 +30,7 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     if (!Array.isArray(body.redirect_uris) || body.redirect_uris.length === 0) {
       return reply.status(400).send({ error: "invalid_client_metadata", error_description: "redirect_uris required" });
     }
-    const client = registerClient({ client_name: body.client_name, redirect_uris: body.redirect_uris });
+    const client = await registerClient({ client_name: body.client_name, redirect_uris: body.redirect_uris });
     return reply.status(201).send({
       client_id: client.client_id,
       client_name: client.client_name,
@@ -43,7 +43,7 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/authorize", async (request, reply) => {
     const q = request.query as Record<string, string>;
-    const client = q.client_id ? getClient(q.client_id) : undefined;
+    const client = q.client_id ? await getClient(q.client_id) : undefined;
     if (!client) return reply.status(400).send({ error: "invalid_request", error_description: "unknown client_id" });
     if (q.response_type !== "code") return reply.status(400).send({ error: "unsupported_response_type" });
     if (!client.redirect_uris.includes(q.redirect_uri)) {
@@ -58,19 +58,20 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     // Bind this flow to the initiating browser (prevents login CSRF).
     const binding = crypto.randomBytes(16).toString("hex");
     const now = Math.floor(Date.now() / 1000);
-    db.prepare(
-      "INSERT INTO pending_auth (state, user_id, integration, expires_at, session_data) VALUES (?, ?, ?, ?, ?)"
-    ).run(
-      ticket, "", "__oauth_authorize__", now + 600,
-      JSON.stringify({
-        clientId: client.client_id,
-        redirectUri: q.redirect_uri,
-        codeChallenge: q.code_challenge,
-        scope: q.scope || "mcp",
-        state: q.state || "",
-        resource: q.resource || `${config.SERVER_PUBLIC_URL}/mcp`,
-        binding,
-      })
+    await db.run(
+      "INSERT INTO pending_auth (state, user_id, integration, expires_at, session_data) VALUES (?, ?, ?, ?, ?)",
+      [
+        ticket, "", "__oauth_authorize__", now + 600,
+        JSON.stringify({
+          clientId: client.client_id,
+          redirectUri: q.redirect_uri,
+          codeChallenge: q.code_challenge,
+          scope: q.scope || "mcp",
+          state: q.state || "",
+          resource: q.resource || `${config.SERVER_PUBLIC_URL}/mcp`,
+          binding,
+        }),
+      ]
     );
 
     // Bind this flow to the initiating browser. SameSite=Lax so it's sent on
@@ -80,7 +81,7 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       "Set-Cookie",
       `awb_oauth_binding=${binding}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax${secure}`
     );
-    return reply.redirect(buildAuthUrl(ticket));
+    return reply.redirect(await buildAuthUrl(ticket));
   });
 
   app.post("/token", async (request, reply) => {
@@ -88,17 +89,17 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     const ttl = config.OAUTH_ACCESS_TOKEN_TTL_SECONDS;
 
     if (b.grant_type === "authorization_code") {
-      const consumed = consumeCode(b.code, {
+      const consumed = await consumeCode(b.code, {
         clientId: b.client_id, redirectUri: b.redirect_uri, codeVerifier: b.code_verifier,
       });
       if (!consumed) return reply.status(400).send({ error: "invalid_grant" });
       const access_token = await signAccessToken({ userId: consumed.userId, scope: consumed.scope, clientId: b.client_id });
-      const refresh_token = issueRefreshToken({ clientId: b.client_id, userId: consumed.userId, scope: consumed.scope });
+      const refresh_token = await issueRefreshToken({ clientId: b.client_id, userId: consumed.userId, scope: consumed.scope });
       return reply.send({ access_token, token_type: "Bearer", expires_in: ttl, refresh_token, scope: consumed.scope });
     }
 
     if (b.grant_type === "refresh_token") {
-      const rot = rotateRefreshToken(b.refresh_token, b.client_id);
+      const rot = await rotateRefreshToken(b.refresh_token, b.client_id);
       if (!rot) return reply.status(400).send({ error: "invalid_grant" });
       const access_token = await signAccessToken({ userId: rot.userId, scope: rot.scope, clientId: b.client_id });
       return reply.send({ access_token, token_type: "Bearer", expires_in: ttl, refresh_token: rot.newToken, scope: rot.scope });

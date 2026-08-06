@@ -1,0 +1,39 @@
+// Typechecks `tests/` alongside `src/`. The build's tsconfig.json only includes
+// `src/**/*`, so nothing ever type-checked the test suite — which is how a
+// sync→async refactor could leave 40+ broken call sites in tests while `npm run
+// build` stayed green and only the test step failed. CI runs this as its own
+// step (`npm run typecheck:tests`).
+//
+// moduleResolution is "bundler", not the build's "NodeNext": vitest resolves
+// the tests, and it accepts extensionless relative imports. Under NodeNext
+// every `await import("../src/x")` in the suite is a TS2835 error against a
+// runtime that has no such rule.
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*", "tests/**/*"],
+  // Pre-existing debt, not exclusions by design. These files were never
+  // type-checked and carry ~145 errors between them (mostly untyped mock
+  // shapes and unnarrowed union results). Fixing them is worthwhile but is
+  // unrelated to any one change; gating the rest of the suite now is better
+  // than gating nothing until they are. Delete entries as they are cleaned up.
+  "exclude": [
+    "tests/meta-tools.test.ts",
+    "tests/meta-tools-jots.test.ts",
+    "tests/mcp-server.test.ts",
+    "tests/browser-actions.test.ts",
+    "tests/plugins.test.ts",
+    "tests/routes.test.ts",
+    "tests/context.test.ts",
+    "tests/slack-download.test.ts",
+    "tests/asana-slack-tools.test.ts",
+    "tests/bitbucket-tools.test.ts",
+    "tests/google-drive-query.test.ts"
+  ],
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "../..",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"]
+  }
+}

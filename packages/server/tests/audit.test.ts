@@ -2,23 +2,23 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { SqliteDestination, StdoutDestination, KafkaDestination, createDestination } from "../src/audit/destinations";
 import { db } from "../src/db";
 
-beforeEach(() => {
-  db.exec("DELETE FROM audit_log");
+beforeEach(async () => {
+  await db.exec("DELETE FROM audit_log");
   vi.restoreAllMocks();
 });
 
 describe("audit", () => {
-  it("sqlite destination writes to db", () => {
+  it("sqlite destination writes to db", async () => {
     const dest = new SqliteDestination();
-    dest.log({
+    await dest.log({
       user_id: "alice",
       action: "EXECUTE",
       success: true,
       timestamp: new Date().toISOString(),
     });
 
-    const count = db.prepare("SELECT COUNT(*) as c FROM audit_log").get() as { c: number };
-    expect(count.c).toBe(1);
+    const count = await db.get<{ c: number }>("SELECT COUNT(*) as c FROM audit_log");
+    expect(Number(count?.c)).toBe(1);
   });
 
   it("stdout destination prints json", () => {

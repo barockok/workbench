@@ -10,29 +10,31 @@ function challenge(verifier: string) {
 }
 
 describe("oauth auth codes", () => {
-  it("issues then consumes once with correct PKCE verifier", () => {
-    const code = issueCode({
+  it("issues then consumes once with correct PKCE verifier", async () => {
+    const code = await issueCode({
       clientId: "c1", userId: "u1", redirectUri: "http://127.0.0.1/cb",
       codeChallenge: challenge("verifier123"), scope: "mcp", resource: "http://x/mcp",
     });
-    const ok = consumeCode(code, { clientId: "c1", redirectUri: "http://127.0.0.1/cb", codeVerifier: "verifier123" });
+    const ok = await consumeCode(code, { clientId: "c1", redirectUri: "http://127.0.0.1/cb", codeVerifier: "verifier123" });
     expect(ok?.userId).toBe("u1");
-    expect(consumeCode(code, { clientId: "c1", redirectUri: "http://127.0.0.1/cb", codeVerifier: "verifier123" })).toBeNull();
+    expect(
+      await consumeCode(code, { clientId: "c1", redirectUri: "http://127.0.0.1/cb", codeVerifier: "verifier123" })
+    ).toBeNull();
   });
 
-  it("rejects a wrong PKCE verifier", () => {
-    const code = issueCode({
+  it("rejects a wrong PKCE verifier", async () => {
+    const code = await issueCode({
       clientId: "c1", userId: "u1", redirectUri: "http://127.0.0.1/cb",
       codeChallenge: challenge("right"), scope: "mcp", resource: "http://x/mcp",
     });
-    expect(consumeCode(code, { clientId: "c1", redirectUri: "http://127.0.0.1/cb", codeVerifier: "wrong" })).toBeNull();
+    expect(await consumeCode(code, { clientId: "c1", redirectUri: "http://127.0.0.1/cb", codeVerifier: "wrong" })).toBeNull();
   });
 
-  it("rejects a redirect_uri mismatch", () => {
-    const code = issueCode({
+  it("rejects a redirect_uri mismatch", async () => {
+    const code = await issueCode({
       clientId: "c1", userId: "u1", redirectUri: "http://127.0.0.1/cb",
       codeChallenge: challenge("v"), scope: "mcp", resource: "http://x/mcp",
     });
-    expect(consumeCode(code, { clientId: "c1", redirectUri: "http://evil/cb", codeVerifier: "v" })).toBeNull();
+    expect(await consumeCode(code, { clientId: "c1", redirectUri: "http://evil/cb", codeVerifier: "v" })).toBeNull();
   });
 });
