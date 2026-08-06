@@ -12,8 +12,8 @@ vi.mock("../src/config", () => ({
 import { buildAuthUrl } from "../src/auth/google";
 
 describe("buildAuthUrl returnTicket", () => {
-  it("encodes the ticket into the OAuth state", () => {
-    const url = new URL(buildAuthUrl("ticket-abc"));
+  it("encodes the ticket into the OAuth state", async () => {
+    const url = new URL(await buildAuthUrl("ticket-abc"));
     const state = url.searchParams.get("state")!;
     expect(state).toContain("ticket-abc");
   });
