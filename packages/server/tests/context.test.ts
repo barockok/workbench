@@ -5,6 +5,10 @@ import { registry } from "../src/plugins/registry";
 vi.mock("../src/auth/tokens", () => ({
   getToken: vi.fn(),
   storeToken: vi.fn(),
+  // createContext reads the per-connection config (self-hosted instance URL)
+  // through this. A factory mock replaces the module wholesale, so anything
+  // the subject imports must be listed here or the import throws.
+  getConnectionConfig: vi.fn(async () => null),
 }));
 
 vi.mock("../src/auth/cookie", () => ({
