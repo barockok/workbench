@@ -13,6 +13,7 @@ import { loadPlugins } from "./plugins/loader";
 import { verifySession } from "./auth/session";
 import { resolveMcpUser } from "./auth/oauth-server/resolve";
 import { startBrowserReaper } from "./auth/browser-session";
+import { startProfileDiskReaper } from "./auth/profile-disk";
 import { authorizeCdpFrame } from "./auth/cdp-authz";
 import "./telemetry/tracing";
 
@@ -72,6 +73,7 @@ async function main() {
   await registerOAuthRoutes(app);
   await registerOAuthRedirectRoute(app);
   startBrowserReaper();
+  startProfileDiskReaper();
 
   // Reject the WS upgrade itself when the Origin header doesn't match the
   // portal — blocks Cross-Site WebSocket Hijacking. Applies BEFORE the
