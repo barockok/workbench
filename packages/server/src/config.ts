@@ -30,6 +30,12 @@ const configSchema = z.object({
   OAUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(3600),
   BROWSER_PROFILES_DIR: z.string().optional(),
   BROWSER_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  // Whole-profile deletion after this many days unused. Deleting a profile logs
+  // that user out of every cookie-auth integration, so it is deliberately far
+  // more conservative than the cache trim, which costs nothing. 0 = never.
+  BROWSER_PROFILE_TTL_DAYS: z.coerce.number().int().nonnegative().default(30),
+  BROWSER_PROFILE_REAP_INTERVAL_SECONDS: z.coerce.number().int().positive().default(3600),
+  BROWSER_DISK_CACHE_MB: z.coerce.number().int().nonnegative().default(32),
   JOTS_DIR: z.string().optional(),
   JOTS_MAX_BYTES: z.coerce.number().int().positive().default(5_242_880),
   JOTS_MAX_FILES: z.coerce.number().int().positive().default(1000),

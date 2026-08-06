@@ -15,8 +15,14 @@ export function profilesBaseDir(): string {
   return config.BROWSER_PROFILES_DIR || join(dirname(config.DATABASE_URL), "browser-profiles");
 }
 
+// A userId is not a safe path segment on its own — sanitize before it ever
+// becomes one (see the path-traversal test).
+export function profileDirName(userId: string): string {
+  return userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
 export function userProfileDir(userId: string): string {
-  return join(profilesBaseDir(), userId.replace(/[^a-zA-Z0-9_-]/g, "_"));
+  return join(profilesBaseDir(), profileDirName(userId));
 }
 
 // Chromium writes SingletonLock/Socket/Cookie into the profile to stop two
@@ -117,11 +123,22 @@ export async function cdpCall(
   });
 }
 
+export interface SpawnStageTimings {
+  /** free-port lookup + mkdir + stale-lock clear, before exec */
+  prepareMs: number;
+  /** exec → DevTools /json/version answers. Dominated by chromium's own startup. */
+  devtoolsMs: number;
+  /** DevTools up → a usable page target exists */
+  targetMs: number;
+  totalMs: number;
+}
+
 export interface SpawnedChromium {
   proc: ChildProcess;
   remotePort: number;
   cdpBrowserWsUrl: string;
   cdpPageWsUrl: string;
+  timings: SpawnStageTimings;
 }
 
 // Launch a headless Chromium on the user's persistent profile and resolve once
@@ -131,6 +148,7 @@ export async function spawnProfileChromium(
   userId: string,
   opts: { startUrl?: string } = {}
 ): Promise<SpawnedChromium> {
+  const t0 = Date.now();
   const remotePort = await getFreePort();
   const userDataDir = userProfileDir(userId);
   mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
@@ -146,6 +164,22 @@ export async function spawnProfileChromium(
     "--no-default-browser-check",
     "--disable-features=TranslateUI",
     "--window-size=1280,800",
+    // Disk discipline. These profiles are persistent and per-user, so anything
+    // chromium downloads into one is paid for 1× per user, forever. A headless
+    // driving session needs none of it:
+    //   background networking — pulls the Safe Browsing blocklist (tens of MB
+    //     per profile) plus component/field-trial updates. Nobody is being
+    //     protected from phishing here; the operator drives the browser.
+    //   component update / phishing detection / sync — same class, no consumer.
+    //   disk-cache-size — caps the HTTP cache, which otherwise grows to
+    //     hundreds of MB per profile and is regenerable by definition.
+    // See docs/findings/2026-08-06-browser-profile-disk-growth.md.
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-client-side-phishing-detection",
+    "--disable-sync",
+    "--disable-breakpad",
+    `--disk-cache-size=${config.BROWSER_DISK_CACHE_MB * 1024 * 1024}`,
     ...(process.env.CAPTURE_PROXY ? [`--proxy-server=${process.env.CAPTURE_PROXY}`] : []),
     "--no-sandbox",
     "--disable-dev-shm-usage",
@@ -153,6 +187,7 @@ export async function spawnProfileChromium(
   if (opts.startUrl) args.push(opts.startUrl);
   // Capture stderr so a launch failure (missing lib, crashed renderer, unwritable
   // profile dir, OOM) surfaces as a real reason instead of an opaque CDP timeout.
+  const tSpawn = Date.now();
   const proc = spawn(execPath, args, { stdio: ["ignore", "ignore", "pipe"], detached: false });
 
   let stderrTail = "";
@@ -178,6 +213,7 @@ export async function spawnProfileChromium(
   try {
     await pollJson(`http://127.0.0.1:${remotePort}/json/version`, 40, 100, launchFailure);
     const versionInfo = (await pollJson(`http://127.0.0.1:${remotePort}/json/version`)) as VersionInfo;
+    const tDevtools = Date.now();
     let target: TargetInfo | undefined;
     for (let i = 0; i < 30; i++) {
       const targets = (await pollJson(`http://127.0.0.1:${remotePort}/json`)) as TargetInfo[];
@@ -187,11 +223,27 @@ export async function spawnProfileChromium(
     }
     if (!target) throw new Error("CDP: no page target found");
 
+    // Per-stage timings, not one opaque total: "connect is slow" is unactionable,
+    // "devtoolsMs is 9s and targetMs is 200ms" points straight at chromium
+    // startup rather than at our polling or the page load.
+    const tDone = Date.now();
+    const timings: SpawnStageTimings = {
+      prepareMs: tSpawn - t0,
+      devtoolsMs: tDevtools - tSpawn,
+      targetMs: tDone - tDevtools,
+      totalMs: tDone - t0,
+    };
+    console.log(
+      `[chromium-spawn] prepare=${timings.prepareMs}ms devtools=${timings.devtoolsMs}ms ` +
+        `target=${timings.targetMs}ms total=${timings.totalMs}ms`
+    );
+
     return {
       proc,
       remotePort,
       cdpBrowserWsUrl: versionInfo.webSocketDebuggerUrl,
       cdpPageWsUrl: target.webSocketDebuggerUrl,
+      timings,
     };
   } catch (e) {
     // Don't leak a half-alive chromium when startup fails. Prefer the concrete
