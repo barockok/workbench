@@ -2,80 +2,80 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { createUser, verifyApiKey, setApiKey, clearApiKey, hasApiKey, getApiKey } from "../src/auth/users";
 import { db } from "../src/db";
 
-beforeEach(() => {
-  db.exec("DELETE FROM users");
+beforeEach(async () => {
+  await db.exec("DELETE FROM users");
 });
 
 // An existing user (e.g. created via Google SSO) with no api key yet.
-function seedUser(id: string) {
-  db.prepare("INSERT INTO users (id, email) VALUES (?, ?)").run(id, `${id}@x.test`);
+async function seedUser(id: string) {
+  await db.run("INSERT INTO users (id, email) VALUES (?, ?)", [id, `${id}@x.test`]);
 }
 
 describe("users", () => {
-  it("creates user with api key", () => {
-    const { apiKey } = createUser("alice");
+  it("creates user with api key", async () => {
+    const { apiKey } = await createUser("alice");
     expect(apiKey).toHaveLength(64);
   });
 
-  it("verifies valid api key", () => {
-    const { apiKey } = createUser("alice");
-    const userId = verifyApiKey(apiKey);
+  it("verifies valid api key", async () => {
+    const { apiKey } = await createUser("alice");
+    const userId = await verifyApiKey(apiKey);
     expect(userId).toBe("alice");
   });
 
-  it("rejects invalid api key", () => {
-    const userId = verifyApiKey("invalid");
+  it("rejects invalid api key", async () => {
+    const userId = await verifyApiKey("invalid");
     expect(userId).toBeNull();
   });
 });
 
 describe("api key management for existing users", () => {
-  it("mints a key for an existing user and verifies it", () => {
-    seedUser("bob");
-    const { apiKey } = setApiKey("bob");
+  it("mints a key for an existing user and verifies it", async () => {
+    await seedUser("bob");
+    const { apiKey } = await setApiKey("bob");
     expect(apiKey).toHaveLength(64);
-    expect(verifyApiKey(apiKey)).toBe("bob");
-    expect(hasApiKey("bob")).toBe(true);
+    expect(await verifyApiKey(apiKey)).toBe("bob");
+    expect(await hasApiKey("bob")).toBe(true);
   });
 
-  it("rotates the key: old key stops working, new key works", () => {
-    seedUser("bob");
-    const { apiKey: first } = setApiKey("bob");
-    const { apiKey: second } = setApiKey("bob");
+  it("rotates the key: old key stops working, new key works", async () => {
+    await seedUser("bob");
+    const { apiKey: first } = await setApiKey("bob");
+    const { apiKey: second } = await setApiKey("bob");
     expect(second).not.toBe(first);
-    expect(verifyApiKey(first)).toBeNull();
-    expect(verifyApiKey(second)).toBe("bob");
+    expect(await verifyApiKey(first)).toBeNull();
+    expect(await verifyApiKey(second)).toBe("bob");
   });
 
-  it("reports hasApiKey false before minting", () => {
-    seedUser("bob");
-    expect(hasApiKey("bob")).toBe(false);
+  it("reports hasApiKey false before minting", async () => {
+    await seedUser("bob");
+    expect(await hasApiKey("bob")).toBe(false);
   });
 
-  it("revokes the key", () => {
-    seedUser("bob");
-    const { apiKey } = setApiKey("bob");
-    clearApiKey("bob");
-    expect(hasApiKey("bob")).toBe(false);
-    expect(verifyApiKey(apiKey)).toBeNull();
+  it("revokes the key", async () => {
+    await seedUser("bob");
+    const { apiKey } = await setApiKey("bob");
+    await clearApiKey("bob");
+    expect(await hasApiKey("bob")).toBe(false);
+    expect(await verifyApiKey(apiKey)).toBeNull();
   });
 
-  it("reveals the same plaintext key it minted", () => {
-    seedUser("bob");
-    const { apiKey } = setApiKey("bob");
-    expect(getApiKey("bob")).toBe(apiKey);
+  it("reveals the same plaintext key it minted", async () => {
+    await seedUser("bob");
+    const { apiKey } = await setApiKey("bob");
+    expect(await getApiKey("bob")).toBe(apiKey);
   });
 
-  it("reveals the key for createUser too", () => {
-    const { apiKey } = createUser("carol");
-    expect(getApiKey("carol")).toBe(apiKey);
+  it("reveals the key for createUser too", async () => {
+    const { apiKey } = await createUser("carol");
+    expect(await getApiKey("carol")).toBe(apiKey);
   });
 
-  it("returns null reveal before minting and after revoke", () => {
-    seedUser("bob");
-    expect(getApiKey("bob")).toBeNull();
-    setApiKey("bob");
-    clearApiKey("bob");
-    expect(getApiKey("bob")).toBeNull();
+  it("returns null reveal before minting and after revoke", async () => {
+    await seedUser("bob");
+    expect(await getApiKey("bob")).toBeNull();
+    await setApiKey("bob");
+    await clearApiKey("bob");
+    expect(await getApiKey("bob")).toBeNull();
   });
 });

@@ -41,8 +41,8 @@ describe("createContext", () => {
   describe("getToken", () => {
     it("returns access token when connected", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok-123", scopes: "read" });
-      const ctx = createContext("user-1", "slack");
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok-123", scopes: "read" });
+      const ctx = await createContext("user-1", "slack");
       const token = await ctx.getToken();
       expect(token).toBe("tok-123");
       expect(getToken).toHaveBeenCalledWith("user-1", "slack");
@@ -50,8 +50,8 @@ describe("createContext", () => {
 
     it("caches token after first call", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok-123", scopes: "read" });
-      const ctx = createContext("user-1", "slack");
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok-123", scopes: "read" });
+      const ctx = await createContext("user-1", "slack");
       await ctx.getToken();
       await ctx.getToken();
       expect(getToken).toHaveBeenCalledTimes(1);
@@ -59,8 +59,8 @@ describe("createContext", () => {
 
     it("throws when not connected", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue(null);
-      const ctx = createContext("user-1", "slack");
+      vi.mocked(getToken).mockResolvedValue(null);
+      const ctx = await createContext("user-1", "slack");
       await expect(ctx.getToken()).rejects.toThrow("Not connected");
     });
   });
@@ -68,14 +68,14 @@ describe("createContext", () => {
   describe("http with oauth2", () => {
     it("sets Bearer header and calls fetch", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok-123", scopes: "read" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok-123", scopes: "read" });
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "slack",
         version: "1.0.0",
         auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
       });
 
-      const ctx = createContext("user-1", "slack");
+      const ctx = await createContext("user-1", "slack");
       await ctx.http("https://api.slack.com/test");
 
       expect(global.fetch).toHaveBeenCalledWith(
@@ -88,14 +88,14 @@ describe("createContext", () => {
 
     it("preserves existing headers", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok-123", scopes: "read" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok-123", scopes: "read" });
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "slack",
         version: "1.0.0",
         auth: { type: "oauth2" as const, authorizationUrl: "", tokenUrl: "", scopes: [] },
       });
 
-      const ctx = createContext("user-1", "slack");
+      const ctx = await createContext("user-1", "slack");
       await ctx.http("https://api.slack.com/test", { headers: { "X-Custom": "value" } });
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -107,14 +107,14 @@ describe("createContext", () => {
   describe("http with apikey auth", () => {
     it("sets the manifest headerName to the stored key (no Bearer prefix)", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "nrak-secret", scopes: "" });
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "newrelic",
         version: "1.0.0",
         auth: { type: "apikey" as const, headerName: "Api-Key", fields: [] },
       });
 
-      const ctx = createContext("user-1", "newrelic");
+      const ctx = await createContext("user-1", "newrelic");
       await ctx.http("https://api.newrelic.com/graphql", { method: "POST" });
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -126,20 +126,20 @@ describe("createContext", () => {
 
     it("throws NOT_CONNECTED when no key is stored", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue(null);
+      vi.mocked(getToken).mockResolvedValue(null);
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "newrelic",
         version: "1.0.0",
         auth: { type: "apikey" as const, headerName: "Api-Key", fields: [] },
       });
 
-      const ctx = createContext("user-1", "newrelic");
+      const ctx = await createContext("user-1", "newrelic");
       await expect(ctx.http("https://api.newrelic.com/graphql")).rejects.toThrow("NOT_CONNECTED");
     });
 
     it("attaches the key to a host in allowedHosts", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "nrak-secret", scopes: "" });
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "newrelic",
         version: "1.0.0",
@@ -151,7 +151,7 @@ describe("createContext", () => {
         },
       });
 
-      const ctx = createContext("user-1", "newrelic");
+      const ctx = await createContext("user-1", "newrelic");
       await ctx.http("https://api.eu.newrelic.com/graphql", { method: "POST" });
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -160,7 +160,7 @@ describe("createContext", () => {
 
     it("allows subdomains declared by allowedHosts", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "nrak-secret", scopes: "" });
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "example",
         version: "1.0.0",
@@ -172,7 +172,7 @@ describe("createContext", () => {
         },
       });
 
-      const ctx = createContext("user-1", "example");
+      const ctx = await createContext("user-1", "example");
       await ctx.http("https://api.example.com/v1");
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -181,7 +181,7 @@ describe("createContext", () => {
 
     it("throws (and never sends the key) for a host outside allowedHosts", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "nrak-secret", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "nrak-secret", scopes: "" });
       vi.spyOn(registry, "getIntegration").mockReturnValue({
         name: "newrelic",
         version: "1.0.0",
@@ -193,7 +193,7 @@ describe("createContext", () => {
         },
       });
 
-      const ctx = createContext("user-1", "newrelic");
+      const ctx = await createContext("user-1", "newrelic");
       await expect(ctx.http("https://evil.com/steal")).rejects.toThrow(
         "API-key auth: URL host evil.com not in declared allowedHosts"
       );
@@ -204,14 +204,14 @@ describe("createContext", () => {
   describe("http with cookie auth", () => {
     it("sets Cookie header for allowed domain", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue({
+      vi.mocked(getCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "session", value: "abc", domain: "legacy.com", path: "/" }],
         capturedAt: 1,
       });
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await ctx.http("https://legacy.com/api/data");
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -224,7 +224,7 @@ describe("createContext", () => {
       // Replaying ALL of them to one host bloats the header (nginx 400) and
       // isn't what a browser does. Only host-matching cookies must be sent.
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue({
+      vi.mocked(getCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [
           { name: "session", value: "abc", domain: "legacy.com", path: "/" },
@@ -235,7 +235,7 @@ describe("createContext", () => {
       });
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await ctx.http("https://legacy.com/api/data");
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -246,30 +246,30 @@ describe("createContext", () => {
 
     it("allows subdomain via cookieDomains", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue({
+      vi.mocked(getCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "session", value: "abc", domain: ".legacy.com", path: "/" }],
         capturedAt: 1,
       });
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await ctx.http("https://app.legacy.com/api/data");
       expect(global.fetch).toHaveBeenCalled();
     });
 
     it("throws NOT_CONNECTED when no cookies", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue(null);
+      vi.mocked(getCookies).mockResolvedValue(null);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await expect(ctx.http("https://legacy.com/api/data")).rejects.toThrow("NOT_CONNECTED");
     });
 
     it("throws NOT_CONNECTED when cookies expired", async () => {
       const { getCookies, isCookieExpired } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue({
+      vi.mocked(getCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "session", value: "abc", domain: "legacy.com", path: "/", expires: 1 }],
         capturedAt: 1,
@@ -277,20 +277,20 @@ describe("createContext", () => {
       vi.mocked(isCookieExpired).mockReturnValueOnce(true);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await expect(ctx.http("https://legacy.com/api/data")).rejects.toThrow("NOT_CONNECTED");
     });
 
     it("throws for foreign domain", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue({
+      vi.mocked(getCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "session", value: "abc", domain: "legacy.com", path: "/" }],
         capturedAt: 1,
       });
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await expect(ctx.http("https://evil.com/steal")).rejects.toThrow(
         "Cookie auth: URL host evil.com not in declared cookieDomains"
       );
@@ -298,14 +298,14 @@ describe("createContext", () => {
 
     it("caches cookie data after first call", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue({
+      vi.mocked(getCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [{ name: "session", value: "abc", domain: "legacy.com", path: "/" }],
         capturedAt: 1,
       });
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await ctx.http("https://legacy.com/api/1");
       await ctx.http("https://legacy.com/api/2");
 
@@ -314,7 +314,7 @@ describe("createContext", () => {
 
     it("joins multiple cookies with semicolon", async () => {
       const { getCookies } = await import("../src/auth/cookie");
-      vi.mocked(getCookies).mockReturnValue({
+      vi.mocked(getCookies).mockResolvedValue({
         domain: "legacy.com",
         cookies: [
           { name: "a", value: "1", domain: "legacy.com", path: "/" },
@@ -324,7 +324,7 @@ describe("createContext", () => {
       });
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration as any);
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await ctx.http("https://legacy.com/api/data");
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -335,10 +335,10 @@ describe("createContext", () => {
   describe("http without integration config", () => {
     it("falls back to Bearer token when integration not in registry", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok-123", scopes: "read" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok-123", scopes: "read" });
       vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
 
-      const ctx = createContext("user-1", "unknown");
+      const ctx = await createContext("user-1", "unknown");
       await ctx.http("https://api.example.com/test");
 
       const callArgs = (global.fetch as any).mock.calls[0];
@@ -367,7 +367,7 @@ describe("createContext", () => {
 
       // Stored token already expired.
       const now = Math.floor(Date.now() / 1000);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "stale",
         refreshToken: "rt-old",
         expiresAt: now - 60,
@@ -379,7 +379,7 @@ describe("createContext", () => {
       );
       global.fetch = fetchMock as any;
 
-      const ctx = createContext("user-1", "google-gmail");
+      const ctx = await createContext("user-1", "google-gmail");
       const token = await ctx.getToken();
 
       expect(token).toBe("fresh");
@@ -403,7 +403,7 @@ describe("createContext", () => {
 
       vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
       vi.mocked(getPluginOAuthCreds).mockReturnValue({ clientId: "cid", clientSecret: "csec" });
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "stale",
         refreshToken: "rt-old",
         expiresAt: 1, // expired
@@ -416,7 +416,7 @@ describe("createContext", () => {
         })
       ) as any;
 
-      const ctx = createContext("user-1", "google-gmail");
+      const ctx = await createContext("user-1", "google-gmail");
       await ctx.getToken();
       expect(storeToken).toHaveBeenCalledWith(
         "user-1",
@@ -428,7 +428,7 @@ describe("createContext", () => {
     it("does not refresh when expiry is in the future", async () => {
       const { getToken, storeToken } = await import("../src/auth/tokens");
       vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "still-good",
         refreshToken: "rt",
         expiresAt: Math.floor(Date.now() / 1000) + 3600,
@@ -437,7 +437,7 @@ describe("createContext", () => {
       const fetchMock = vi.fn();
       global.fetch = fetchMock as any;
 
-      const ctx = createContext("user-1", "google-gmail");
+      const ctx = await createContext("user-1", "google-gmail");
       const token = await ctx.getToken();
       expect(token).toBe("still-good");
       expect(fetchMock).not.toHaveBeenCalled();
@@ -447,13 +447,13 @@ describe("createContext", () => {
     it("throws if no refresh token stored", async () => {
       const { getToken } = await import("../src/auth/tokens");
       vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "stale",
         expiresAt: 1,
         scopes: "read",
       });
 
-      const ctx = createContext("user-1", "google-gmail");
+      const ctx = await createContext("user-1", "google-gmail");
       await expect(ctx.getToken()).rejects.toThrow(/no refresh_token/i);
     });
 
@@ -462,7 +462,7 @@ describe("createContext", () => {
       const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
       vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
       vi.mocked(getPluginOAuthCreds).mockReturnValue({ clientId: "cid", clientSecret: "csec" });
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "stale",
         refreshToken: "rt",
         expiresAt: 1,
@@ -470,7 +470,7 @@ describe("createContext", () => {
       });
       global.fetch = vi.fn(async () => new Response("invalid_grant", { status: 400 })) as any;
 
-      const ctx = createContext("user-1", "google-gmail");
+      const ctx = await createContext("user-1", "google-gmail");
       await expect(ctx.getToken()).rejects.toThrow(/Refresh failed 400/);
     });
 
@@ -479,28 +479,28 @@ describe("createContext", () => {
       const { getPluginOAuthCreds } = await import("../src/auth/plugin-oauth");
       vi.spyOn(registry, "getIntegration").mockReturnValue(oauth2Integration);
       vi.mocked(getPluginOAuthCreds).mockReturnValue(null);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "stale",
         refreshToken: "rt",
         expiresAt: 1,
         scopes: "read",
       });
 
-      const ctx = createContext("user-1", "google-gmail");
+      const ctx = await createContext("user-1", "google-gmail");
       await expect(ctx.getToken()).rejects.toThrow(/OAuth client not configured/);
     });
 
     it("refuses to refresh non-oauth2 integrations", async () => {
       const { getToken } = await import("../src/auth/tokens");
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "stale",
         refreshToken: "rt",
         expiresAt: 1,
         scopes: "read",
       });
 
-      const ctx = createContext("user-1", "legacy");
+      const ctx = await createContext("user-1", "legacy");
       await expect(ctx.getToken()).rejects.toThrow(/Cannot refresh non-oauth2/);
     });
   });
@@ -520,7 +520,7 @@ describe("createContext", () => {
     it("substitutes cloud-id placeholder for atlassian-jira URLs", async () => {
       const { getToken } = await import("../src/auth/tokens");
       vi.spyOn(registry, "getIntegration").mockReturnValue(jiraIntegration);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "atok",
         expiresAt: Math.floor(Date.now() / 1000) + 3600,
         scopes: "read:jira-work",
@@ -536,7 +536,7 @@ describe("createContext", () => {
       });
       global.fetch = fetchMock as any;
 
-      const ctx = createContext("user-cid", "atlassian-jira");
+      const ctx = await createContext("user-cid", "atlassian-jira");
       await ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/myself");
 
       // Last call should be the substituted URL.
@@ -549,7 +549,7 @@ describe("createContext", () => {
     it("caches the resolved cloud-id across requests", async () => {
       const { getToken } = await import("../src/auth/tokens");
       vi.spyOn(registry, "getIntegration").mockReturnValue(jiraIntegration);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "atok",
         expiresAt: Math.floor(Date.now() / 1000) + 3600,
         scopes: "read:jira-work",
@@ -567,7 +567,7 @@ describe("createContext", () => {
       });
       global.fetch = fetchMock as any;
 
-      const ctx = createContext("user-cache", "atlassian-jira");
+      const ctx = await createContext("user-cache", "atlassian-jira");
       await ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/a");
       await ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/b");
 
@@ -586,7 +586,7 @@ describe("createContext", () => {
           scopes: ["x"],
         },
       });
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "g",
         expiresAt: Math.floor(Date.now() / 1000) + 3600,
         scopes: "x",
@@ -595,7 +595,7 @@ describe("createContext", () => {
       const fetchMock = vi.fn(async () => new Response("ok"));
       global.fetch = fetchMock as any;
 
-      const ctx = createContext("user-x", "google-gmail");
+      const ctx = await createContext("user-x", "google-gmail");
       await ctx.http("https://gmail.googleapis.com/gmail/v1/users/me/profile");
       expect(fetchMock).toHaveBeenCalledTimes(1);
       expect(fetchMock.mock.calls[0][0]).toBe(
@@ -606,14 +606,14 @@ describe("createContext", () => {
     it("throws when accessible-resources upstream fails", async () => {
       const { getToken } = await import("../src/auth/tokens");
       vi.spyOn(registry, "getIntegration").mockReturnValue(jiraIntegration);
-      vi.mocked(getToken).mockReturnValue({
+      vi.mocked(getToken).mockResolvedValue({
         accessToken: "atok",
         expiresAt: Math.floor(Date.now() / 1000) + 3600,
         scopes: "read:jira-work",
       });
       global.fetch = vi.fn(async () => new Response("nope", { status: 401 })) as any;
 
-      const ctx = createContext("user-err", "atlassian-jira");
+      const ctx = await createContext("user-err", "atlassian-jira");
       await expect(
         ctx.http("https://api.atlassian.com/ex/jira/cloud-id/rest/api/3/x")
       ).rejects.toThrow(/accessible-resources 401/);

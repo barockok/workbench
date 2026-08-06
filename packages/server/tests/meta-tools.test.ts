@@ -140,7 +140,7 @@ describe("meta-tools", () => {
 
     it("returns NOT_CONNECTED when oauth token missing", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue(null);
+      vi.mocked(getToken).mockResolvedValue(null);
       vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
 
@@ -152,7 +152,7 @@ describe("meta-tools", () => {
 
     it("returns NOT_CONNECTED when cookie invalid", async () => {
       const { hasValidCookies } = await import("../src/auth/cookie");
-      vi.mocked(hasValidCookies).mockReturnValue(false);
+      vi.mocked(hasValidCookies).mockResolvedValue(false);
       vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
 
@@ -163,7 +163,7 @@ describe("meta-tools", () => {
 
     it("executes tool and returns result", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok", scopes: "" });
       vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
       mockTool.handler.mockResolvedValue({ done: true });
@@ -176,7 +176,7 @@ describe("meta-tools", () => {
 
     it("catches and returns handler errors", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok", scopes: "" });
       vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
       mockTool.handler.mockRejectedValue(new Error("boom"));
@@ -190,7 +190,7 @@ describe("meta-tools", () => {
   describe("execute_tools (batch)", () => {
     it("runs multiple tools and returns ordered results", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok", scopes: "" });
       vi.spyOn(registry, "getTool").mockReturnValue(mockTool as any);
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
       mockTool.handler.mockImplementation(async (_ctx: unknown, args: any) => ({ echoed: args.x }));
@@ -207,7 +207,7 @@ describe("meta-tools", () => {
 
     it("isolates per-item failures without aborting the batch", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok", scopes: "" });
       vi.spyOn(registry, "getTool").mockImplementation((name: string) =>
         name === "test_tool" ? (mockTool as any) : undefined
       );
@@ -228,7 +228,7 @@ describe("meta-tools", () => {
   describe("list_integrations", () => {
     it("lists integrations with connection status", async () => {
       const { getToken } = await import("../src/auth/tokens");
-      vi.mocked(getToken).mockReturnValue({ accessToken: "tok", scopes: "" });
+      vi.mocked(getToken).mockResolvedValue({ accessToken: "tok", scopes: "" });
       vi.spyOn(registry, "listIntegrations").mockReturnValue([mockOauthInteg as any, mockCookieInteg as any]);
 
       const tool = findTool("list_integrations");
@@ -241,7 +241,7 @@ describe("meta-tools", () => {
   describe("whoami", () => {
     it("returns current user id and email", async () => {
       const { getUserById } = await import("../src/auth/users");
-      vi.mocked(getUserById).mockReturnValue({ id: "user-1", email: "a@b.com" });
+      vi.mocked(getUserById).mockResolvedValue({ id: "user-1", email: "a@b.com" });
       const tool = findTool("whoami");
       const result = await tool.handler({ userId: "user-1" }, {});
       expect(result).toEqual({ id: "user-1", email: "a@b.com" });
@@ -249,7 +249,7 @@ describe("meta-tools", () => {
 
     it("returns error when user not found", async () => {
       const { getUserById } = await import("../src/auth/users");
-      vi.mocked(getUserById).mockReturnValue(null);
+      vi.mocked(getUserById).mockResolvedValue(null);
       const tool = findTool("whoami");
       const result = await tool.handler({ userId: "ghost" }, {});
       expect(result).toEqual({ error: "User not found" });

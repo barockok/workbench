@@ -195,11 +195,11 @@ describe("buildPluginAuthUrl", () => {
     process.env.GOOGLE_GMAIL_CLIENT_ID = "gmail-id";
     process.env.GOOGLE_GMAIL_CLIENT_SECRET = "gmail-secret";
     vi.spyOn(registry, "getIntegration").mockReturnValue(mockIntegration);
-    vi.spyOn(oauth, "createAuthState").mockReturnValue("test-state");
+    vi.spyOn(oauth, "createAuthState").mockResolvedValue("test-state");
   });
 
-  it("builds auth url with all required params", () => {
-    const url = buildPluginAuthUrl("user-1", "google-gmail");
+  it("builds auth url with all required params", async () => {
+    const url = await buildPluginAuthUrl("user-1", "google-gmail");
     const parsed = new URL(url);
     expect(parsed.hostname).toBe("accounts.google.com");
     expect(parsed.searchParams.get("client_id")).toBe("gmail-id");
@@ -211,8 +211,8 @@ describe("buildPluginAuthUrl", () => {
     expect(parsed.searchParams.get("state")).toBe("test-state");
   });
 
-  it("includes an S256 PKCE challenge derived from the stored verifier", () => {
-    const url = buildPluginAuthUrl("user-1", "google-gmail");
+  it("includes an S256 PKCE challenge derived from the stored verifier", async () => {
+    const url = await buildPluginAuthUrl("user-1", "google-gmail");
     const parsed = new URL(url);
     expect(parsed.searchParams.get("code_challenge_method")).toBe("S256");
     const verifier = vi.mocked(oauth.createAuthState).mock.calls[0][2];
@@ -222,45 +222,45 @@ describe("buildPluginAuthUrl", () => {
     );
   });
 
-  it("adds google-specific extra params", () => {
-    const url = buildPluginAuthUrl("user-1", "google-gmail");
+  it("adds google-specific extra params", async () => {
+    const url = await buildPluginAuthUrl("user-1", "google-gmail");
     const parsed = new URL(url);
     expect(parsed.searchParams.get("access_type")).toBe("offline");
     expect(parsed.searchParams.get("prompt")).toBe("consent");
     expect(parsed.searchParams.get("include_granted_scopes")).toBe("true");
   });
 
-  it("throws when integration not found", () => {
+  it("throws when integration not found", async () => {
     vi.spyOn(registry, "getIntegration").mockReturnValue(undefined);
-    expect(() => buildPluginAuthUrl("user-1", "unknown")).toThrow("Integration not found: unknown");
+    await expect(buildPluginAuthUrl("user-1", "unknown")).rejects.toThrow("Integration not found: unknown");
   });
 
-  it("throws when integration is not oauth2", () => {
+  it("throws when integration is not oauth2", async () => {
     vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegration);
-    expect(() => buildPluginAuthUrl("user-1", "legacy-app")).toThrow(
+    await expect(buildPluginAuthUrl("user-1", "legacy-app")).rejects.toThrow(
       "Integration legacy-app is not oauth2"
     );
   });
 
-  it("throws when creds not configured", () => {
+  it("throws when creds not configured", async () => {
     delete process.env.GOOGLE_GMAIL_CLIENT_ID;
     delete process.env.GOOGLE_GMAIL_CLIENT_SECRET;
-    expect(() => buildPluginAuthUrl("user-1", "google-gmail")).toThrow(
+    await expect(buildPluginAuthUrl("user-1", "google-gmail")).rejects.toThrow(
       "OAuth client not configured for google-gmail"
     );
   });
 
-  it("sends slack scopes as user_scope so tokens act as the user, not a bot", () => {
+  it("sends slack scopes as user_scope so tokens act as the user, not a bot", async () => {
     process.env.SLACK_CLIENT_ID = "slack-id";
     process.env.SLACK_CLIENT_SECRET = "slack-secret";
     vi.spyOn(registry, "getIntegration").mockReturnValue(mockSlackIntegration);
-    const url = buildPluginAuthUrl("user-1", "slack");
+    const url = await buildPluginAuthUrl("user-1", "slack");
     const parsed = new URL(url);
     expect(parsed.searchParams.get("user_scope")).toBe("chat:write channels:read");
     expect(parsed.searchParams.get("scope")).toBeNull();
   });
 
-  it("does not add extra params for non-google plugins", () => {
+  it("does not add extra params for non-google plugins", async () => {
     const nonGoogleIntegration = {
       ...mockIntegration,
       name: "github",
@@ -272,7 +272,7 @@ describe("buildPluginAuthUrl", () => {
     process.env.GITHUB_CLIENT_ID = "github-id";
     process.env.GITHUB_CLIENT_SECRET = "github-secret";
     vi.spyOn(registry, "getIntegration").mockReturnValue(nonGoogleIntegration);
-    const url = buildPluginAuthUrl("user-1", "github");
+    const url = await buildPluginAuthUrl("user-1", "github");
     const parsed = new URL(url);
     expect(parsed.searchParams.get("access_type")).toBeNull();
     expect(parsed.searchParams.get("prompt")).toBeNull();
@@ -285,14 +285,14 @@ describe("buildPluginAuthUrl — self-hosted instance", () => {
     process.env.GITLAB_CLIENT_SECRET = "gl-secret";
     process.env.GITLAB_ALLOWED_INSTANCES = "https://gitlab.acme.com";
     vi.spyOn(registry, "getIntegration").mockReturnValue(mockGitlabIntegration);
-    vi.spyOn(oauth, "createAuthState").mockReturnValue("test-state");
+    vi.spyOn(oauth, "createAuthState").mockResolvedValue("test-state");
   });
   afterEach(() => {
     delete process.env.GITLAB_ALLOWED_INSTANCES;
   });
 
-  it("targets an allowlisted instance host and persists it in the state config", () => {
-    const url = buildPluginAuthUrl("user-1", "gitlab", "https://gitlab.acme.com");
+  it("targets an allowlisted instance host and persists it in the state config", async () => {
+    const url = await buildPluginAuthUrl("user-1", "gitlab", "https://gitlab.acme.com");
     const parsed = new URL(url);
     expect(parsed.hostname).toBe("gitlab.acme.com");
     expect(parsed.pathname).toBe("/oauth/authorize");
@@ -300,32 +300,32 @@ describe("buildPluginAuthUrl — self-hosted instance", () => {
     expect(JSON.parse(configArg!)).toEqual({ instanceUrl: "https://gitlab.acme.com" });
   });
 
-  it("falls back to the cloud default when no instance URL is given", () => {
-    const url = buildPluginAuthUrl("user-1", "gitlab");
+  it("falls back to the cloud default when no instance URL is given", async () => {
+    const url = await buildPluginAuthUrl("user-1", "gitlab");
     expect(new URL(url).hostname).toBe("gitlab.com");
     const configArg = vi.mocked(oauth.createAuthState).mock.calls[0][3];
     expect(JSON.parse(configArg!)).toEqual({ instanceUrl: "https://gitlab.com" });
   });
 
-  it("allows the cloud default even with no allowlist env", () => {
+  it("allows the cloud default even with no allowlist env", async () => {
     delete process.env.GITLAB_ALLOWED_INSTANCES;
-    expect(new URL(buildPluginAuthUrl("user-1", "gitlab", "https://gitlab.com")).hostname).toBe(
+    expect(new URL(await buildPluginAuthUrl("user-1", "gitlab", "https://gitlab.com")).hostname).toBe(
       "gitlab.com"
     );
   });
 
-  it("rejects a non-allowlisted instance (client-secret exfil guard)", () => {
-    expect(() => buildPluginAuthUrl("user-1", "gitlab", "https://attacker.example")).toThrow(
+  it("rejects a non-allowlisted instance (client-secret exfil guard)", async () => {
+    await expect(buildPluginAuthUrl("user-1", "gitlab", "https://attacker.example")).rejects.toThrow(
       /Instance not allowed/
     );
   });
 
-  it("rejects an invalid instance URL", () => {
-    expect(() => buildPluginAuthUrl("user-1", "gitlab", "not a url")).toThrow(/Invalid instance URL/);
+  it("rejects an invalid instance URL", async () => {
+    await expect(buildPluginAuthUrl("user-1", "gitlab", "not a url")).rejects.toThrow(/Invalid instance URL/);
   });
 
-  it("rejects an http instance URL", () => {
-    expect(() => buildPluginAuthUrl("user-1", "gitlab", "http://gitlab.acme.com")).toThrow(
+  it("rejects an http instance URL", async () => {
+    await expect(buildPluginAuthUrl("user-1", "gitlab", "http://gitlab.acme.com")).rejects.toThrow(
       /Invalid instance URL/
     );
   });
@@ -336,7 +336,7 @@ describe("handlePluginCallback", () => {
     process.env.GOOGLE_GMAIL_CLIENT_ID = "gmail-id";
     process.env.GOOGLE_GMAIL_CLIENT_SECRET = "gmail-secret";
     vi.spyOn(registry, "getIntegration").mockReturnValue(mockIntegration);
-    vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+    vi.spyOn(oauth, "verifyAuthState").mockResolvedValue({
       userId: "user-1",
       integration: "google-gmail",
     });
@@ -345,7 +345,7 @@ describe("handlePluginCallback", () => {
       refresh_token: "refresh-456",
       expires_in: 3600,
     });
-    vi.spyOn(tokens, "storeToken").mockImplementation(() => {});
+    vi.spyOn(tokens, "storeToken").mockResolvedValue(undefined);
   });
 
   it("exchanges code and stores token", async () => {
@@ -371,7 +371,7 @@ describe("handlePluginCallback", () => {
   });
 
   it("passes the stored PKCE verifier to the token exchange", async () => {
-    vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+    vi.spyOn(oauth, "verifyAuthState").mockResolvedValue({
       userId: "user-1",
       integration: "google-gmail",
       codeVerifier: "stored-verifier",
@@ -404,14 +404,14 @@ describe("handlePluginCallback", () => {
   });
 
   it("rejects invalid state", async () => {
-    vi.spyOn(oauth, "verifyAuthState").mockReturnValue(null);
+    vi.spyOn(oauth, "verifyAuthState").mockResolvedValue(null);
     await expect(handlePluginCallback("google-gmail", "code", "bad-state")).rejects.toThrow(
       "Invalid state"
     );
   });
 
   it("rejects state for wrong integration", async () => {
-    vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+    vi.spyOn(oauth, "verifyAuthState").mockResolvedValue({
       userId: "user-1",
       integration: "google-drive",
     });
@@ -428,7 +428,7 @@ describe("handlePluginCallback", () => {
   });
 
   it("throws when integration is not oauth2", async () => {
-    vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+    vi.spyOn(oauth, "verifyAuthState").mockResolvedValue({
       userId: "user-1",
       integration: "legacy-app",
     });
@@ -451,7 +451,7 @@ describe("handlePluginCallback", () => {
       process.env.SLACK_CLIENT_ID = "slack-id";
       process.env.SLACK_CLIENT_SECRET = "slack-secret";
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockSlackIntegration);
-      vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+      vi.spyOn(oauth, "verifyAuthState").mockResolvedValue({
         userId: "user-1",
         integration: "slack",
       });
@@ -522,7 +522,7 @@ describe("handlePluginCallback", () => {
     process.env.GITLAB_CLIENT_ID = "gl-id";
     process.env.GITLAB_CLIENT_SECRET = "gl-secret";
     vi.spyOn(registry, "getIntegration").mockReturnValue(mockGitlabIntegration);
-    vi.spyOn(oauth, "verifyAuthState").mockReturnValue({
+    vi.spyOn(oauth, "verifyAuthState").mockResolvedValue({
       userId: "user-1",
       integration: "gitlab",
       config: JSON.stringify({ instanceUrl: "https://gitlab.acme.com" }),
