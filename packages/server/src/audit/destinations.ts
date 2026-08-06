@@ -16,7 +16,9 @@ export class SqliteDestination implements AuditDestination {
         event.integration ?? null,
         event.tool ?? null,
         event.action,
-        event.success ? 1 : 0,
+        // A real boolean, not 1/0: `success` is BOOLEAN and PostgreSQL rejects
+        // an integer for it. The SQLite adapter converts on the way in.
+        event.success,
         event.error ?? null,
         event.duration_ms ?? null,
         Math.floor(new Date(event.timestamp).getTime() / 1000),

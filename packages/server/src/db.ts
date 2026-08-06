@@ -3,15 +3,19 @@ import type { DbAdapter } from "./db-adapter";
 import { SqliteAdapter } from "./db-sqlite";
 import { PostgresAdapter } from "./db-postgres";
 
-function createDb(): DbAdapter {
-  const url = config.DATABASE_URL;
+/**
+ * Pick a backend from the connection string. A `postgres://` / `postgresql://`
+ * URL selects PostgreSQL; anything else is treated as a SQLite file path, which
+ * keeps every existing deployment working untouched.
+ */
+export function createDb(url: string): DbAdapter {
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
     return new PostgresAdapter(url);
   }
   return new SqliteAdapter(url);
 }
 
-export const db: DbAdapter = createDb();
+export const db: DbAdapter = createDb(config.DATABASE_URL);
 
 const SQLITE_SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
@@ -159,7 +163,7 @@ const POSTGRES_SCHEMA = `
   );
 `;
 
-async function initSqliteSchema(): Promise<void> {
+async function initSqliteSchema(db: DbAdapter): Promise<void> {
   await db.exec(SQLITE_SCHEMA);
   for (const stmt of [
     "ALTER TABLE users ADD COLUMN email TEXT",
@@ -187,7 +191,7 @@ async function initSqliteSchema(): Promise<void> {
   } catch { /* already exists */ }
 }
 
-async function initPostgresSchema(): Promise<void> {
+async function initPostgresSchema(db: DbAdapter): Promise<void> {
   await db.exec(POSTGRES_SCHEMA);
   // PostgreSQL 9.6+ supports ADD COLUMN IF NOT EXISTS
   await db.exec(`
@@ -205,10 +209,21 @@ async function initPostgresSchema(): Promise<void> {
   `);
 }
 
-export async function initDb(): Promise<void> {
-  if (db.dialect === "sqlite") {
-    await initSqliteSchema();
+/**
+ * Create the schema and run migrations on `target`. Idempotent.
+ *
+ * Takes the adapter rather than closing over the module singleton so the
+ * integration suite can stand up a throwaway database of either dialect and
+ * exercise exactly the DDL production runs.
+ */
+export async function applySchema(target: DbAdapter): Promise<void> {
+  if (target.dialect === "sqlite") {
+    await initSqliteSchema(target);
   } else {
-    await initPostgresSchema();
+    await initPostgresSchema(target);
   }
+}
+
+export function initDb(): Promise<void> {
+  return applySchema(db);
 }

@@ -26,16 +26,16 @@ vi.mock("jose", () => ({
   createRemoteJWKSet: vi.fn(() => "mock-jwks"),
 }));
 
-beforeEach(() => {
-  db.exec("DELETE FROM users");
-  db.exec("DELETE FROM pending_auth");
+beforeEach(async () => {
+  await db.exec("DELETE FROM users");
+  await db.exec("DELETE FROM pending_auth");
   vi.restoreAllMocks();
   global.fetch = vi.fn(() => Promise.resolve(new Response('{"jwks_uri":"https://accounts.google.com/jwks"}'))) as any;
 });
 
 describe("google auth", () => {
-  it("builds auth URL with correct params", () => {
-    const url = buildAuthUrl();
+  it("builds auth URL with correct params", async () => {
+    const url = await buildAuthUrl();
     const parsed = new URL(url);
     expect(parsed.hostname).toBe("accounts.google.com");
     expect(parsed.searchParams.get("client_id")).toBe("test-google-client-id");
@@ -54,23 +54,23 @@ describe("google auth", () => {
 
   it("rejects missing nonce in callback", async () => {
     // Create a valid state but skip nonce storage
-    const state = oauth.createAuthState("user-1", "google-sso");
+    const state = await oauth.createAuthState("user-1", "google-sso");
     await expect(handleCallback("code", state)).rejects.toThrow("Invalid or expired nonce");
   });
 
-  it("stores state in pending_auth and nonce in map", () => {
-    const url = buildAuthUrl();
+  it("stores state in pending_auth and nonce in map", async () => {
+    const url = await buildAuthUrl();
     const parsed = new URL(url);
     const state = parsed.searchParams.get("state")!;
     const nonce = parsed.searchParams.get("nonce")!;
 
     // State should be verifiable
-    const authState = oauth.verifyAuthState(state);
+    const authState = await oauth.verifyAuthState(state);
     expect(authState).not.toBeNull();
     expect(authState?.integration).toBe("google-sso");
 
     // After verification, state is consumed
-    expect(oauth.verifyAuthState(state)).toBeNull();
+    expect(await oauth.verifyAuthState(state)).toBeNull();
   });
 });
 
@@ -119,8 +119,8 @@ describe("verifyGoogleIdToken", () => {
 });
 
 describe("handleCallback", () => {
-  function getStateAndNonce() {
-    const url = buildAuthUrl();
+  async function getStateAndNonce() {
+    const url = await buildAuthUrl();
     const parsed = new URL(url);
     return {
       state: parsed.searchParams.get("state")!,
@@ -129,7 +129,7 @@ describe("handleCallback", () => {
   }
 
   it("creates new user on first login", async () => {
-    const { state, nonce } = getStateAndNonce();
+    const { state, nonce } = await getStateAndNonce();
 
     vi.mocked(jwtVerify).mockResolvedValue({
       payload: { sub: "google-123", email: "new@example.com", email_verified: true, nonce },
@@ -145,9 +145,9 @@ describe("handleCallback", () => {
   });
 
   it("links existing user by email", async () => {
-    db.prepare("INSERT INTO users (id, email, google_sub) VALUES (?, ?, ?)").run("user-1", "existing@example.com", null);
+    await db.run("INSERT INTO users (id, email, google_sub) VALUES (?, ?, ?)", ["user-1", "existing@example.com", null]);
 
-    const { state, nonce } = getStateAndNonce();
+    const { state, nonce } = await getStateAndNonce();
 
     vi.mocked(jwtVerify).mockResolvedValue({
       payload: { sub: "google-456", email: "existing@example.com", email_verified: true, nonce },
@@ -161,12 +161,12 @@ describe("handleCallback", () => {
     expect(result.userId).toBe("user-1");
     expect(result.email).toBe("existing@example.com");
 
-    const row = db.prepare("SELECT google_sub FROM users WHERE id = ?").get("user-1") as { google_sub: string };
-    expect(row.google_sub).toBe("google-456");
+    const row = await db.get<{ google_sub: string }>("SELECT google_sub FROM users WHERE id = ?", ["user-1"]);
+    expect(row?.google_sub).toBe("google-456");
   });
 
   it("throws when email not verified", async () => {
-    const { state, nonce } = getStateAndNonce();
+    const { state, nonce } = await getStateAndNonce();
 
     vi.mocked(jwtVerify).mockResolvedValue({
       payload: { sub: "google-123", email: "unverified@example.com", email_verified: false, nonce },
