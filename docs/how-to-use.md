@@ -246,6 +246,37 @@ For cookie integrations, Disconnect removes the stored capture only — the warm
 | `PORT` | `3000` | Server listen port |
 | `ENCRYPTION_KEY` | — | Key used to encrypt stored tokens |
 | `DATABASE_URL` | `./data/tokens.db` | SQLite file path, or a `postgres://` / `postgresql://` URL to use PostgreSQL |
+
+### Moving an existing instance to PostgreSQL
+
+Switching `DATABASE_URL` to a `postgres://` URL does **not** bring your data with
+it — the new database starts empty and every user has to reconnect. Copy the data
+first with the bundled migration, run against an idle instance:
+
+```bash
+# inside the container; dry run first — it writes nothing without --apply
+TARGET_DATABASE_URL=postgres://user:pass@host:5432/workbench \
+  tsx server/migrate/sqlite-to-postgres.js
+
+TARGET_DATABASE_URL=postgres://user:pass@host:5432/workbench \
+  tsx server/migrate/sqlite-to-postgres.js --apply
+```
+
+Credentials may instead come from the standard libpq variables (`PGHOST`,
+`PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`). The source defaults to
+`DATABASE_URL` when that still points at a file, or `/data/tokens.db`; override
+with `SOURCE_SQLITE_PATH`.
+
+The script creates the schema, copies every table in one transaction, resyncs the
+`SERIAL` sequences, and verifies row counts before reporting success. It refuses
+to run against a non-empty target unless you pass `--allow-nonempty`, and it never
+writes to the source.
+
+**`ENCRYPTION_KEY` must stay the same.** Tokens and cookies are stored encrypted
+and are copied as ciphertext; a different key on the instance that later points at
+PostgreSQL makes every migrated credential undecryptable.
+
+Only change `DATABASE_URL` once the migration has run and verified.
 | `PLUGINS_DIR` | `./plugins` | Directory scanned for plugin packages |
 | `AUDIT_LOG_DEST` | `sqlite` | Audit log destination (`sqlite` or `stdout`) |
 | `SESSION_SECRET` | — | 32+ char secret for JWT signing |
