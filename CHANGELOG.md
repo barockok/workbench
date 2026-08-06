@@ -4,6 +4,48 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.21.0
+
+_2026-08-06_
+
+Headline: **PostgreSQL is now a supported backend — set `DATABASE_URL` to a `postgres://` URL and nothing else changes.**
+
+## Features
+
+- **`DbAdapter` with SQLite and PostgreSQL implementations** — `exec`/`run`/`get`/`all`/`transaction`/`close`, all async. `DATABASE_URL` picks the backend: `postgres://` or `postgresql://` selects PostgreSQL, anything else is a SQLite file path, so existing deployments are untouched. SQL is written once in SQLite's `?` placeholder style; the PostgreSQL adapter renumbers placeholders on the way out. (`packages/server/src/db-adapter.ts`, `db-sqlite.ts`, `db-postgres.ts`)
+- **Dialect-aware schema and migrations** — `BYTEA`/`BLOB`, `SERIAL`/`AUTOINCREMENT`, `EXTRACT(EPOCH FROM NOW())::INTEGER`/`unixepoch()`, `STRING_AGG`/`GROUP_CONCAT`, and `ADD COLUMN IF NOT EXISTS` vs guarded try/catch. Applied by `initDb()` at startup, or `applySchema(adapter)` against any adapter.
+- **`transaction()`** — runs a callback atomically. On PostgreSQL it checks out one pooled client and pins every statement in the callback to it; on SQLite it serializes transactions against each other, which async methods over a synchronous driver otherwise allow to nest.
+
+## Fixes
+
+- **Audit writes would have failed on every PostgreSQL instance** — `audit_log.success` is `BOOLEAN` and the insert bound `1`/`0`. PostgreSQL rejects an integer there with no implicit cast. Call sites now pass real booleans and the SQLite adapter converts when binding; `SqlParam` includes `boolean` so this is the typed, obvious thing to write. (`packages/server/src/audit/destinations.ts`)
+- **Refresh tokens stopped being single-use under concurrency** — `rotateRefreshToken` was SELECT → DELETE → INSERT as three separate pool queries with no transaction, so two simultaneous presentations of one token both saw the row and both minted a valid successor. The sequence now runs in one transaction and the winner is decided by the DELETE's affected-row count rather than by the preceding SELECT. (`packages/server/src/auth/oauth-server/refresh.ts`)
+- **`?` placeholder rewriting no longer corrupts SQL** — a naive global replace also consumed `?` inside string literals, quoted identifiers, comments, and PostgreSQL's own JSONB `?` / `?|` / `?&` operators, shifting every later placeholder. The rewriter now substitutes only in ordinary SQL text. (`packages/server/src/db-postgres.ts`)
+- **Slack file download** — `res` could be read as possibly-undefined across redirect hops. (`packages/plugins/slack/tools/index.ts`)
+
+## Config
+
+| Env | Default | Meaning |
+|---|---|---|
+| `DATABASE_URL` | `./data/tokens.db` | SQLite file path, or a `postgres://` / `postgresql://` URL to use PostgreSQL |
+
+**Upgrade note.** Nothing to do for existing SQLite deployments — the default is unchanged and no migration runs. There is **no data migration path** between the two backends: pointing an existing instance at PostgreSQL gives it an empty schema, and every user has to reconnect. Treat a switch as a new instance.
+
+## Tests
+
+- `packages/server/tests/db-adapter.integration.test.ts` — one set of assertions run against **both** backends: schema idempotency, placeholder handling, BLOB/BYTEA round trip, booleans, NULLs, schema defaults, affected-row counts, UNIQUE violations, transaction commit and rollback, and a concurrent single-winner claim. PostgreSQL runs from `TEST_POSTGRES_URL` and skips loudly without it; CI supplies a `postgres:16` service container, so both backends are exercised on every pull request.
+- `packages/server/tests/db-params.test.ts` — the placeholder rewriter directly.
+- `packages/server/tests/setup.ts` — a vitest `setupFile` calling `initDb()`. Schema creation moved out of a module-import side effect, so tests get no tables without it.
+- `packages/server/tsconfig.test.json` + a `Typecheck tests` CI step — the build's `tsconfig.json` only covers `src/`, so the suite was never type-checked. It carries an explicit exclude list of files that were already failing; that is recorded debt, not design.
+
+## Docs
+
+- `docs/findings/2026-08-06-postgres-dialect-gotchas.md` — what a second SQL backend forces you to handle, including the three bugs above and why each was invisible until PostgreSQL ran.
+
+**Full diff:** https://github.com/barockok/workbench/compare/v0.20.0...v0.21.0
+
+---
+
 # a-workbench v0.20.0
 
 _2026-08-06_
