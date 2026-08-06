@@ -7,18 +7,18 @@ import { issueCode } from "../src/auth/oauth-server/codes";
 import { verifyAccessToken } from "../src/auth/oauth-server/tokens";
 import { db } from "../src/db";
 
-beforeEach(() => {
-  db.exec("DELETE FROM oauth_clients");
-  db.exec("DELETE FROM oauth_auth_codes");
-  db.exec("DELETE FROM oauth_refresh_tokens");
+beforeEach(async () => {
+  await db.exec("DELETE FROM oauth_clients");
+  await db.exec("DELETE FROM oauth_auth_codes");
+  await db.exec("DELETE FROM oauth_refresh_tokens");
 });
 
 async function app() { const a = Fastify(); await registerOAuthRoutes(a); return a; }
 
 describe("POST /token", () => {
   it("exchanges a PKCE code for access + refresh tokens", async () => {
-    const c = registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
-    const code = issueCode({
+    const c = await registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
+    const code = await issueCode({
       clientId: c.client_id, userId: "u1", redirectUri: "http://127.0.0.1/cb",
       codeChallenge: crypto.createHash("sha256").update("verifier").digest("base64url"),
       scope: "mcp", resource: "http://x/mcp",
@@ -40,8 +40,8 @@ describe("POST /token", () => {
   });
 
   it("rejects a bad PKCE verifier", async () => {
-    const c = registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
-    const code = issueCode({
+    const c = await registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
+    const code = await issueCode({
       clientId: c.client_id, userId: "u1", redirectUri: "http://127.0.0.1/cb",
       codeChallenge: crypto.createHash("sha256").update("right").digest("base64url"),
       scope: "mcp", resource: "http://x/mcp",
@@ -59,8 +59,8 @@ describe("POST /token", () => {
   });
 
   it("refreshes with a refresh_token", async () => {
-    const c = registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
-    const code = issueCode({
+    const c = await registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
+    const code = await issueCode({
       clientId: c.client_id, userId: "u1", redirectUri: "http://127.0.0.1/cb",
       codeChallenge: crypto.createHash("sha256").update("v").digest("base64url"),
       scope: "mcp", resource: "http://x/mcp",
@@ -121,7 +121,7 @@ describe("POST /token", () => {
   });
 
   it("rejects an authorization_code grant with an unknown code", async () => {
-    const c = registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
+    const c = await registerClient({ redirect_uris: ["http://127.0.0.1/cb"] });
     const a = await app();
     const res = await a.inject({
       method: "POST", url: "/token",
