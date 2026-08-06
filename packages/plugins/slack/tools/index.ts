@@ -330,11 +330,12 @@ export const downloadFile = {
     let onSlack = true;
     let res: Response | undefined;
     for (let hop = 0; hop < 5; hop++) {
-      res = onSlack
+      const hopRes = onSlack
         ? await ctx.http(url, { redirect: "manual" })
         : await fetch(url, { redirect: "manual" });
-      if (res.status >= 300 && res.status < 400) {
-        const loc = res.headers.get("location");
+      res = hopRes;
+      if (hopRes.status >= 300 && hopRes.status < 400) {
+        const loc = hopRes.headers.get("location");
         if (!loc) break;
         const next = new URL(loc, url);
         if (next.protocol !== "https:") return { ok: false, error: "invalid_redirect" };

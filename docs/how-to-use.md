@@ -245,7 +245,7 @@ For cookie integrations, Disconnect removes the stored capture only — the warm
 |---|---|---|
 | `PORT` | `3000` | Server listen port |
 | `ENCRYPTION_KEY` | — | Key used to encrypt stored tokens |
-| `DATABASE_URL` | `./data/tokens.db` | SQLite database path |
+| `DATABASE_URL` | `./data/tokens.db` | SQLite file path, or a `postgres://` / `postgresql://` URL to use PostgreSQL |
 | `PLUGINS_DIR` | `./plugins` | Directory scanned for plugin packages |
 | `AUDIT_LOG_DEST` | `sqlite` | Audit log destination (`sqlite` or `stdout`) |
 | `SESSION_SECRET` | — | 32+ char secret for JWT signing |
