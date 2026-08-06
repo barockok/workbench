@@ -21,17 +21,17 @@ import {
 import { db } from "../src/db";
 
 describe("cookie auth", () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     // Ensure clean state
-    db.prepare("DELETE FROM connections WHERE integration = ?").run("test-cookie");
+    await db.run("DELETE FROM connections WHERE integration = ?", ["test-cookie"]);
   });
 
-  afterAll(() => {
-    db.prepare("DELETE FROM connections WHERE integration = ?").run("test-cookie");
+  afterAll(async () => {
+    await db.run("DELETE FROM connections WHERE integration = ?", ["test-cookie"]);
   });
 
   describe("storeCookies / getCookies / deleteCookies", () => {
-    it("stores and retrieves cookie data", () => {
+    it("stores and retrieves cookie data", async () => {
       const data = {
         domain: "example.com",
         cookies: [
@@ -40,8 +40,8 @@ describe("cookie auth", () => {
         capturedAt: Math.floor(Date.now() / 1000),
       };
 
-      storeCookies("user-1", "test-cookie", data);
-      const retrieved = getCookies("user-1", "test-cookie");
+      await storeCookies("user-1", "test-cookie", data);
+      const retrieved = await getCookies("user-1", "test-cookie");
 
       expect(retrieved).not.toBeNull();
       expect(retrieved?.domain).toBe("example.com");
@@ -49,20 +49,20 @@ describe("cookie auth", () => {
       expect(retrieved?.cookies[0].value).toBe("abc123");
     });
 
-    it("returns null for missing cookies", () => {
-      const result = getCookies("user-none", "test-none");
+    it("returns null for missing cookies", async () => {
+      const result = await getCookies("user-none", "test-none");
       expect(result).toBeNull();
     });
 
-    it("deletes cookies", () => {
+    it("deletes cookies", async () => {
       const data = {
         domain: "example.com",
         cookies: [{ name: "x", value: "y", domain: "example.com", path: "/" }],
         capturedAt: Math.floor(Date.now() / 1000),
       };
-      storeCookies("user-2", "test-cookie", data);
-      deleteCookies("user-2", "test-cookie");
-      expect(getCookies("user-2", "test-cookie")).toBeNull();
+      await storeCookies("user-2", "test-cookie", data);
+      await deleteCookies("user-2", "test-cookie");
+      expect(await getCookies("user-2", "test-cookie")).toBeNull();
     });
   });
 
@@ -164,28 +164,28 @@ describe("cookie auth", () => {
   });
 
   describe("hasValidCookies", () => {
-    it("returns true for valid cookies", () => {
+    it("returns true for valid cookies", async () => {
       const data = {
         domain: "example.com",
         cookies: [{ name: "s", value: "v", domain: "example.com", path: "/", expires: 9999999999 }],
         capturedAt: Math.floor(Date.now() / 1000),
       };
-      storeCookies("user-3", "test-cookie", data);
-      expect(hasValidCookies("user-3", "test-cookie")).toBe(true);
+      await storeCookies("user-3", "test-cookie", data);
+      expect(await hasValidCookies("user-3", "test-cookie")).toBe(true);
     });
 
-    it("returns false for expired cookies", () => {
+    it("returns false for expired cookies", async () => {
       const data = {
         domain: "example.com",
         cookies: [{ name: "s", value: "v", domain: "example.com", path: "/", expires: 1000 }],
         capturedAt: Math.floor(Date.now() / 1000),
       };
-      storeCookies("user-4", "test-cookie", data);
-      expect(hasValidCookies("user-4", "test-cookie")).toBe(false);
+      await storeCookies("user-4", "test-cookie", data);
+      expect(await hasValidCookies("user-4", "test-cookie")).toBe(false);
     });
 
-    it("returns false for missing cookies", () => {
-      expect(hasValidCookies("user-none", "test-none")).toBe(false);
+    it("returns false for missing cookies", async () => {
+      expect(await hasValidCookies("user-none", "test-none")).toBe(false);
     });
   });
 

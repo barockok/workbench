@@ -11,7 +11,7 @@ Self-hosted MCP tool aggregator for AI agents. Connects to SaaS tools via per-us
 
 ## Architecture
 
-Monorepo: TypeScript, Fastify + MCP SDK, React portal, SQLite.
+Monorepo: TypeScript, Fastify + MCP SDK, React portal, SQLite or PostgreSQL.
 
 See [docs/architecture.md](docs/architecture.md) for full details.
 
@@ -21,7 +21,7 @@ See [docs/architecture.md](docs/architecture.md) for full details.
 |-------|------|
 | Server | Fastify + MCP TypeScript SDK |
 | Portal | Vite + React + TanStack Query |
-| Database | SQLite (encrypted tokens) |
+| Database | SQLite or PostgreSQL (encrypted tokens) |
 | Auth | OAuth 2.0 (DIY flows) |
 | Plugins | TypeScript (dynamic import) |
 | Deployment | Docker Compose |
@@ -112,3 +112,4 @@ When you learn something non-obvious:
 - [2026-06-18 apikey auth + New Relic](docs/findings/2026-06-18-apikey-auth-and-newrelic.md) — wired the previously-unused `apikey` auth path end-to-end (manifest `fields[]` w/ one `secret`, secret→token + rest→config, `ctx.http` sets `headerName` verbatim no Bearer, portal `ApiKeyAuthModal`); New Relic plugin = NerdGraph (region-scoped endpoint via `ctx.getConfig().region`); legacy alert-channel mutations are best-effort/untested
 - [2026-08-03 bitbucket pr author reviewer bug](docs/findings/2026-08-03-bitbucket-pr-author-reviewer-bug.md) — `bitbucket_create_pr` fails silently when PR author included in reviewers; added validation to filter author, documented upsert behavior
 - [2026-08-06 browser profile disk growth](docs/findings/2026-08-06-browser-profile-disk-growth.md) — persistent profiles filled 88% of the volume shared with `tokens.db` (2.9G of it duplicate Safe Browsing blocklists); nothing ever reclaimed them — a regression of the 2026-05-30 leak fix after profiles moved from tmpdir to per-user. Fix = disk-discipline spawn flags + cache trim on exit + `reapProfileDisk` sweep; storage-latency theory measured and refuted
+- [2026-08-06 postgres dialect gotchas](docs/findings/2026-08-06-postgres-dialect-gotchas.md) — what a second SQL backend forces you to handle: BOOLEAN columns reject 1/0 on PostgreSQL, `?` is not always a placeholder (string literals, JSONB operators), a pooled connection breaks read-then-write atomicity (refresh-token rotation), schema init stops being an import side effect, and `tests/` was never type-checked

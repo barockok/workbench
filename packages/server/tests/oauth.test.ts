@@ -8,48 +8,48 @@ import {
 } from "../src/auth/oauth";
 import { db } from "../src/db";
 
-beforeEach(() => {
-  db.exec("DELETE FROM pending_auth");
+beforeEach(async () => {
+  await db.exec("DELETE FROM pending_auth");
   vi.restoreAllMocks();
   global.fetch = vi.fn();
 });
 
 describe("oauth", () => {
-  it("creates and verifies state", () => {
-    const state = createAuthState("alice", "jira");
-    const result = verifyAuthState(state);
+  it("creates and verifies state", async () => {
+    const state = await createAuthState("alice", "jira");
+    const result = await verifyAuthState(state);
     expect(result?.userId).toBe("alice");
     expect(result?.integration).toBe("jira");
   });
 
-  it("rejects invalid state", () => {
-    const result = verifyAuthState("invalid");
+  it("rejects invalid state", async () => {
+    const result = await verifyAuthState("invalid");
     expect(result).toBeNull();
   });
 
-  it("deletes state after verification", () => {
-    const state = createAuthState("alice", "jira");
-    verifyAuthState(state);
-    const result = verifyAuthState(state);
+  it("deletes state after verification", async () => {
+    const state = await createAuthState("alice", "jira");
+    await verifyAuthState(state);
+    const result = await verifyAuthState(state);
     expect(result).toBeNull();
   });
 
-  it("prunes expired states on create", () => {
-    const oldState = createAuthState("alice", "jira");
-    verifyAuthState(oldState);
-    const newState = createAuthState("bob", "confluence");
-    expect(verifyAuthState(oldState)).toBeNull();
-    expect(verifyAuthState(newState)).not.toBeNull();
+  it("prunes expired states on create", async () => {
+    const oldState = await createAuthState("alice", "jira");
+    await verifyAuthState(oldState);
+    const newState = await createAuthState("bob", "confluence");
+    expect(await verifyAuthState(oldState)).toBeNull();
+    expect(await verifyAuthState(newState)).not.toBeNull();
   });
 
-  it("round-trips the PKCE verifier through state", () => {
-    const state = createAuthState("alice", "jira", "my-verifier");
-    expect(verifyAuthState(state)?.codeVerifier).toBe("my-verifier");
+  it("round-trips the PKCE verifier through state", async () => {
+    const state = await createAuthState("alice", "jira", "my-verifier");
+    expect((await verifyAuthState(state))?.codeVerifier).toBe("my-verifier");
   });
 
-  it("returns undefined verifier when none was stored", () => {
-    const state = createAuthState("alice", "jira");
-    expect(verifyAuthState(state)?.codeVerifier).toBeUndefined();
+  it("returns undefined verifier when none was stored", async () => {
+    const state = await createAuthState("alice", "jira");
+    expect((await verifyAuthState(state))?.codeVerifier).toBeUndefined();
   });
 
   describe("PKCE helpers", () => {
