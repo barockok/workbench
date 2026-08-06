@@ -2,7 +2,8 @@ import { ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import WebSocket from "ws";
 import { config } from "../config";
-import { activeProfiles, spawnProfileChromium, cdpCall } from "./profile-chromium";
+import { activeProfiles, spawnProfileChromium, cdpCall, userProfileDir } from "./profile-chromium";
+import { trimProfileCaches } from "./profile-disk";
 import { startProxyAuth, filterCookies } from "./cookie";
 import type { CookieData, RawCookie } from "./cookie";
 
@@ -131,6 +132,13 @@ export async function ensureSession(userId: string): Promise<WarmSession> {
       warmSessions.delete(userId);
       try { session.cdp.close(); } catch { /* noop */ }
       try { session.authWs?.close(); } catch { /* noop */ }
+      // The profile outlives the process on purpose — that's what keeps the user
+      // logged in. Its caches don't: reclaim them here so disk cost tracks the
+      // number of users, not the number of sessions they've ever run. Hooked on
+      // exit rather than in closeBrowserSession so a crashed or reaped chromium
+      // is cleaned up the same way. Fire-and-forget; the lock is already released
+      // and the process is dead, so nothing is holding these files open.
+      void trimProfileCaches(userProfileDir(userId)).catch(() => undefined);
     });
     return session;
   } catch (e) {
