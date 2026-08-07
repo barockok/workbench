@@ -284,6 +284,7 @@ Only change `DATABASE_URL` once the migration has run and verified.
 | `PORTAL_DIST_DIR` | `./portal` | Built portal dir the server serves (resolved to `/app/portal` in the image) |
 | `SERVER_PUBLIC_URL` | `http://localhost:3000` | Public URL of the server (used in OAuth callbacks) |
 | `CONNECT_TTL_SECONDS` | `600` | TTL (seconds) for pending connections and abandoned cookie login sessions before the reaper closes them |
+| `MAX_OVERFLOW_PARTS` | `5` | Max continuation chunks when an MCP tool result exceeds ~60k chars (Vault/K8s-injectable). Agent fetches further parts via `continue_tool_result` until `hasMore` is false |
 | `OAUTH_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Lifetime (seconds) of an issued OAuth access token |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | — | Google Workspace SSO credentials (optional) |
 | `CAPTURE_PROXY` | — | Proxy for the cookie-auth capture browser, e.g. `socks5://host:1080` or `http://host:3128`. Set when the host's egress IP is rejected by a login provider — notably **Google SSO 500s interactive sign-in from datacenter IPs**, so an in-cluster capture must exit via a clean (residential/ISP) IP. Unset → direct connection. |
