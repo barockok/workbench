@@ -40,6 +40,7 @@ const configSchema = z.object({
   JOTS_MAX_BYTES: z.coerce.number().int().positive().default(5_242_880),
   JOTS_MAX_FILES: z.coerce.number().int().positive().default(1000),
   JOTS_UPLOAD_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  MAX_OVERFLOW_PARTS: z.coerce.number().int().positive().default(5),
 });
 
 export const config = configSchema.parse(process.env);

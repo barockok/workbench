@@ -12,6 +12,7 @@ import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
 import { ensureSession, navigate } from "../auth/browser-session";
+import { getContinuationPart } from "./result-overflow";
 
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
 // can call `.safeParse` directly without hand-rolled casts. `handler` is kept
@@ -307,6 +308,17 @@ export const metaTools = [
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
+  {
+    name: "continue_tool_result",
+    description:
+      "Fetch the next chunk of an oversized tool result. When a tools/call response includes truncated:true and a continuationId, call this with that continuationId and the next part number (see nextPart / instruction). Repeat until hasMore is false, then concatenate every chunk field in order to reconstruct the full JSON.",
+    inputSchema: z.object({
+      continuationId: z.string(),
+      part: z.number().int().positive(),
+    }),
+    handler: (ctx: { userId: string }, args: { continuationId: string; part: number }) =>
+      Promise.resolve(getContinuationPart(ctx.userId, args.continuationId, args.part)),
+  },
 ] satisfies readonly MetaTool[];
 
 // JSON Schema descriptions for the meta-tools, surfaced via MCP `tools/list`.
@@ -361,5 +373,19 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     type: "object",
     properties: { integration: { type: "string", description: "Integration name" } },
     required: ["integration"],
+  },
+  continue_tool_result: {
+    type: "object",
+    properties: {
+      continuationId: {
+        type: "string",
+        description: "continuationId from a truncated tool result",
+      },
+      part: {
+        type: "number",
+        description: "1-based part number to fetch (use nextPart from the previous response)",
+      },
+    },
+    required: ["continuationId", "part"],
   },
 };

@@ -15,6 +15,7 @@ import { resolveMcpUser } from "./auth/oauth-server/resolve";
 import { startBrowserReaper } from "./auth/browser-session";
 import { startProfileDiskReaper } from "./auth/profile-disk";
 import { authorizeCdpFrame } from "./auth/cdp-authz";
+import { startOverflowReaper } from "./mcp/result-overflow";
 import "./telemetry/tracing";
 
 // Session JWT (Authorization: Bearer) — used by the portal and the CDP WS frame.
@@ -309,6 +310,7 @@ async function main() {
 
   await registerJotRoutes(app);
   startUploadReaper();
+  startOverflowReaper();
 
   // Serve the built portal (static + SPA fallback). Registered last so API,
   // MCP, and the CDP WS routes take precedence and the SPA fallback only
