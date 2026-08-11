@@ -40,6 +40,9 @@ const configSchema = z.object({
   JOTS_MAX_BYTES: z.coerce.number().int().positive().default(5_242_880),
   JOTS_MAX_FILES: z.coerce.number().int().positive().default(1000),
   JOTS_UPLOAD_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  // 0 = single-process (default). Positive integer = fork N cluster workers.
+  // Requires a PostgreSQL DATABASE_URL — SQLite cannot be shared across processes.
+  CLUSTER_WORKERS: z.coerce.number().int().nonnegative().default(0),
 });
 
 export const config = configSchema.parse(process.env);
