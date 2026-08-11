@@ -32,14 +32,13 @@ async function getUserIdFromAuth(auth?: string): Promise<string | null> {
 async function main() {
   const app = Fastify({
     logger: {
-      // Defense in depth: even though tokens are no longer in URLs, redact
-      // anything that ever lands in this category so a future regression
-      // can't leak them into access logs.
+      // Redact secrets from logs. req.url is intentionally NOT redacted —
+      // tokens were once in URLs but no longer are; keeping the URL visible
+      // is necessary for request tracing.
       redact: {
         paths: [
           "req.headers.authorization",
           'req.headers["x-workbench-api-key"]',
-          "req.url",
           'req.query.token',
           'req.query.cdpToken',
         ],
