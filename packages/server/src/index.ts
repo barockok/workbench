@@ -16,6 +16,7 @@ import { startBrowserReaper } from "./auth/browser-session";
 import { startProfileDiskReaper } from "./auth/profile-disk";
 import { authorizeCdpFrame } from "./auth/cdp-authz";
 import "./telemetry/tracing";
+import { metricsRegistry, httpRequestsTotal, httpRequestDuration } from "./telemetry/metrics";
 
 // Session JWT (Authorization: Bearer) — used by the portal and the CDP WS frame.
 async function getUserIdFromAuth(auth?: string): Promise<string | null> {
@@ -74,6 +75,29 @@ async function main() {
   await registerOAuthRedirectRoute(app);
   startBrowserReaper();
   startProfileDiskReaper();
+
+  // HTTP metrics — track every request except /metrics itself.
+  app.addHook("onRequest", async (request) => {
+    (request as { _metricStart?: number })._metricStart = Date.now();
+  });
+  app.addHook("onResponse", async (request, reply) => {
+    const start = (request as { _metricStart?: number })._metricStart;
+    if (!start) return;
+    const route = request.routerPath ?? request.url;
+    if (route === "/metrics") return;
+    const labels = {
+      method: request.method,
+      route,
+      status: String(reply.statusCode),
+    };
+    httpRequestsTotal.inc(labels);
+    httpRequestDuration.observe(labels, (Date.now() - start) / 1000);
+  });
+
+  app.get("/metrics", async (_request, reply) => {
+    reply.header("Content-Type", metricsRegistry.contentType);
+    return metricsRegistry.metrics();
+  });
 
   // Reject the WS upgrade itself when the Origin header doesn't match the
   // portal — blocks Cross-Site WebSocket Hijacking. Applies BEFORE the
