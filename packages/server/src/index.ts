@@ -15,6 +15,8 @@ import { resolveMcpUser } from "./auth/oauth-server/resolve";
 import { startBrowserReaper } from "./auth/browser-session";
 import { startProfileDiskReaper } from "./auth/profile-disk";
 import { authorizeCdpFrame } from "./auth/cdp-authz";
+import cluster from "node:cluster";
+import { availableParallelism } from "node:os";
 import "./telemetry/tracing";
 import { metricsRegistry, httpRequestsTotal, httpRequestDuration } from "./telemetry/metrics";
 
@@ -354,8 +356,6 @@ if (config.CLUSTER_ENABLED) {
     process.exit(1);
   }
 
-  const { default: cluster } = await import("node:cluster");
-  const { availableParallelism } = await import("node:os");
   const numWorkers = availableParallelism();
   if (cluster.isPrimary) {
     console.log(`[cluster] primary ${process.pid} — forking ${numWorkers} workers`);
