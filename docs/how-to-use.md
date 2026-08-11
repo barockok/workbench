@@ -61,6 +61,8 @@ Claude: connect("jira") → open URL → authorize → wait_for_connection(id)
 
 `execute_tools` runs the batch concurrently (bounded pool) and returns a `results` array aligned to the input — each entry has either a `result` or an `error`. Use it to cut round-trips when an agent has several independent calls.
 
+Overflow is **per `results[]` item**. If an item alone exceeds ~60k chars, `content[0]` keeps a `{"results":[...]}` header where that entry is a truncated stub (`continuationId`, `resultIndex`, `totalParts`, `complete`, `partsIncluded`). At most `MAX_OVERFLOW_ITEMS` oversized items also get their continuation envelopes as following content blocks (up to `MAX_OVERFLOW_PARTS` parts each); further oversized items stay stubbed with `partsIncluded: false`. Small siblings stay inline in the header. For `partsIncluded: true`, concatenate that `continuationId`'s `chunk` fields in ascending `part` order, then `JSON.parse` — do not concat across items. For `partsIncluded: false` (or if a part was discarded / the client only reads `content[0]`), call `continue_tool_result` (omit `part` to get all stored parts).
+
 ### Browser tools (computer-use)
 
 Workbench hosts one warm Chromium per user — the same persistent profile cookie
@@ -284,7 +286,8 @@ Only change `DATABASE_URL` once the migration has run and verified.
 | `PORTAL_DIST_DIR` | `./portal` | Built portal dir the server serves (resolved to `/app/portal` in the image) |
 | `SERVER_PUBLIC_URL` | `http://localhost:3000` | Public URL of the server (used in OAuth callbacks) |
 | `CONNECT_TTL_SECONDS` | `600` | TTL (seconds) for pending connections and abandoned cookie login sessions before the reaper closes them |
-| `MAX_OVERFLOW_PARTS` | `5` | Max continuation chunks when an MCP tool result exceeds ~60k chars (Vault/K8s-injectable). Agent fetches further parts via `continue_tool_result` until `hasMore` is false |
+| `MAX_OVERFLOW_PARTS` | `5` | Max continuation chunks **per** oversized payload (per `execute_tools` results item, or whole result otherwise; Vault/K8s-injectable). Initial `tools/call` returns all stored parts as separate `content[]` text blocks; `continue_tool_result` is for optional re-fetch |
+| `MAX_OVERFLOW_ITEMS` | `2` | Max oversized `execute_tools` results items that get eager multi-content parts in one `tools/call`. Further overflowed items are stubbed with `partsIncluded: false` and must be fetched via `continue_tool_result` |
 | `OAUTH_ACCESS_TOKEN_TTL_SECONDS` | `3600` | Lifetime (seconds) of an issued OAuth access token |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | — | Google Workspace SSO credentials (optional) |
 | `CAPTURE_PROXY` | — | Proxy for the cookie-auth capture browser, e.g. `socks5://host:1080` or `http://host:3128`. Set when the host's egress IP is rejected by a login provider — notably **Google SSO 500s interactive sign-in from datacenter IPs**, so an in-cluster capture must exit via a clean (residential/ISP) IP. Unset → direct connection. |

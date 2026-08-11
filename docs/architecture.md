@@ -37,16 +37,16 @@ Static MCP meta-tools:
 |------|---------|
 | `search_tools` | Keyword search across all plugin tools |
 | `get_tool_schema` | Get a tool's input schema as portable JSON Schema |
-| `execute_tool` | Execute a tool by slug with args |
-| `execute_tools` | Execute many tools in one call (bounded-concurrent, ordered results, per-item error isolation) |
+| `execute_tools` | Execute one or more tools in one call (bounded-concurrent, ordered results, per-item error isolation) |
 | `whoami` | Return the current authenticated user (id + email); identity only, not connected integrations |
 | `list_integrations` | List all integrations + connection status |
 | `connect` / `wait_for_connection` | Start a connection (OAuth/cookie) and block until it completes |
 | `get_auth_url` | Deprecated alias of `connect` |
+| `continue_tool_result` | Optional re-fetch of overflow parts by `continuationId` (omit `part` for all stored parts) |
 
-These 8 are the only top-level MCP tools. Everything else — integration tools *and* the internal `browser`/`jots` plugins — lives in the registry and is reached via `search_tools` → `execute_tool` (since v0.12.0).
+These are the only top-level MCP tools. Everything else — integration tools *and* the internal `browser`/`jots` plugins — lives in the registry and is reached via `search_tools` → `execute_tools` (since v0.12.0).
 
-Tool results returned as text are capped at 60k chars; oversized results are truncated with a notice telling the caller to narrow the request (limit/fields/pagination).
+Tool results returned as text are capped at ~60k chars per content block. Oversized results are split into chunks (up to `MAX_OVERFLOW_PARTS` per payload); the initial `tools/call` returns every stored part as a separate `content[]` text block. For `execute_tools`, overflow is per `results[]` item: small items stay inline in a header block; oversized items are stubs (`partsIncluded`, `resultIndex`) plus, for up to `MAX_OVERFLOW_ITEMS` of them, per-item continuation envelopes. Concatenate each envelope's `chunk` field for that `continuationId` in ascending `part` order to rebuild the item JSON. Stubs with `partsIncluded: false` (and clients that only read `content[0]`) use `continue_tool_result`.
 
 ### Internal plugins (registry, not `PLUGINS_DIR`)
 

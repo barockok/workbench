@@ -41,6 +41,10 @@ const configSchema = z.object({
   JOTS_MAX_FILES: z.coerce.number().int().positive().default(1000),
   JOTS_UPLOAD_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   MAX_OVERFLOW_PARTS: z.coerce.number().int().positive().default(5),
+  // Max oversized execute_tools results[] items that get eager multi-content
+  // parts in the same tools/call. Further overflowed items are still stored +
+  // stubbed; the agent fetches them via continue_tool_result.
+  MAX_OVERFLOW_ITEMS: z.coerce.number().int().positive().default(2),
 });
 
 export const config = configSchema.parse(process.env);

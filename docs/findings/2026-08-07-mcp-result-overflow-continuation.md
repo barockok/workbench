@@ -1,37 +1,67 @@
 # 2026-08-07 — MCP tool result overflow continuation
 
 **Where:** `packages/server/src/mcp/{server.ts,result-overflow.ts,meta-tools.ts}`,
-`config.MAX_OVERFLOW_PARTS`
+`config.MAX_OVERFLOW_PARTS`, `config.MAX_OVERFLOW_ITEMS`
 **Status:** current
 
 ## Problem
 
 Upstream plugin handlers (e.g. Confluence `get_page`) often pass through large
 payloads. A single `tools/call` used to hard-truncate at 60k chars mid-string,
-so the agent got invalid JSON and lost the rest of the document.
+so the agent got invalid JSON and lost the rest of the document. A follow-on
+agent-looped `continue_tool_result` chain still required skill-like orchestration.
+Whole-blob overflow of `execute_tools` `{results:[...]}` made it worse: one large
+page truncated the entire batch (siblings lost / JSON cut mid-structure).
 
 ## Fix
 
-1. **`packageResultText(userId, text)`** — if the JSON string fits in
-   `MAX_RESULT_CHARS` (60k), return it unchanged. Otherwise store a prefix and
-   return a structured continuation envelope (part 1) with an explicit
-   instruction to call `continue_tool_result`.
-2. **`continue_tool_result`** meta-tool — fetch part N by `continuationId`
-   (bound to `userId`, 10‑minute TTL, reaped periodically).
-3. **Agent contract** — keep calling until `hasMore` is false, then concatenate
-   every `chunk` field in order to reconstruct the available JSON.
+1. **`packageResultContent(userId, text)`** — if the JSON string fits in
+   `MAX_RESULT_CHARS` (60k), return `[text]`. Otherwise store a capped prefix and
+   return one JSON continuation envelope string per stored part (eager
+   multi-content).
+2. **`packageBatchResultContent(userId, results)`** — used for `execute_tools`.
+   Each `results[i]` is sized independently. Small items stay inline in
+   `content[0]` as `{"results":[...]}`. Oversized items become a stub
+   (`truncated`, `continuationId`, `resultIndex`, `totalParts`, `complete`,
+   `partsIncluded`) in that header; when `partsIncluded` is true, their chunks
+   follow as separate content blocks (envelopes carry the same `resultIndex`).
+   Reconstruct per stub: concat that `continuationId`'s `chunk`s, then
+   `JSON.parse` — never concat across items.
+3. **MCP wire** — `handleMcpRequest` maps those strings to separate `content[]`
+   text blocks. Non-batch tools still use whole-result `packageResultContent`.
+4. **`continue_tool_result`** — optional re-fetch by `continuationId` (user-bound,
+   10‑minute TTL). Omit `part` to get all stored parts as multi-content again;
+   pass `part` for a single chunk. Required when `partsIncluded:false`, and for
+   clients that only read `content[0]`.
+5. **Agent contract (descriptions)** — `execute_tools` documents per-item stubs +
+   concat-by-`continuationId` / deferred fetch.
 
-## Cap: `MAX_OVERFLOW_PARTS`
+## Caps
 
-Env var (Vault / K8s Secret injectable, same as other server knobs; default
-**5**). Bounds how many ~58k-char chunks are stored and fetchable:
+### `MAX_OVERFLOW_PARTS` (default **5**)
+
+Bounds how many ~58k-char chunks are stored **per overflowed payload** (per batch
+item for `execute_tools`, or the whole result otherwise):
 
 - Store only the first `MAX_OVERFLOW_PARTS * CHUNK_CHARS` characters.
 - Envelope includes `complete: true|false`. When `false`, the last part’s
   instruction cites `MAX_OVERFLOW_PARTS` and tells the agent the remainder was
   omitted.
 
+### `MAX_OVERFLOW_ITEMS` (default **2**)
+
+Bounds how many oversized `execute_tools` items get eager multi-content parts in
+**one** `tools/call`. Further overflowed items are still stored and stubbed with
+`partsIncluded: false`; the agent must call `continue_tool_result` (omit `part`)
+for those. Prevents N parallel large pages from exploding a single response
+(worst case ≈ `MAX_OVERFLOW_ITEMS × MAX_OVERFLOW_PARTS × ~58k` chars of eager
+chunks, plus a small header).
+
 ## Notes
 
-- No Vault SDK — operators inject `MAX_OVERFLOW_PARTS` as a container env var.
-- Continuations are in-memory only (lost on process restart).
+- No Vault SDK — operators inject both knobs as container env vars.
+- Continuations are in-memory only (lost on process restart / not shared across
+  replicas).
+- If every batch item is under the cap but the assembled `{results}` header still
+  exceeds 60k (many medium items), the header is whole-blob packaged like any
+  other oversized result.

@@ -1,11 +1,26 @@
 import { metaTools, metaToolSchemas } from "./meta-tools";
-import { packageResultText, MAX_RESULT_CHARS } from "./result-overflow";
+import {
+  packageResultContent,
+  packageResultText,
+  packageBatchResultContent,
+  encodeEnvelope,
+  MAX_RESULT_CHARS,
+  CONTINUATION_PARTS_KEY,
+  type ContinuationEnvelope,
+} from "./result-overflow";
 
 // Upstream APIs can return arbitrarily large payloads and plugin handlers
 // mostly pass them through; without a cap a single tools/call can blow the
-// caller's context window. Oversized results are split into chunks: part 1
-// is returned with an instruction to call continue_tool_result for the rest.
-export { MAX_RESULT_CHARS, packageResultText };
+// caller's context window. Oversized results are split into chunks: every
+// stored part is returned as a separate content[] text block so the agent
+// can concatenate without a continue loop. execute_tools packages each
+// results[] item independently. continue_tool_result remains for re-fetch.
+export {
+  MAX_RESULT_CHARS,
+  packageResultText,
+  packageResultContent,
+  packageBatchResultContent,
+};
 
 export async function handleMcpRequest(body: Record<string, unknown>, userId: string): Promise<Record<string, unknown> | null> {
   const { method, params, id } = body;
@@ -74,13 +89,32 @@ export async function handleMcpRequest(body: Record<string, unknown>, userId: st
 
     const result = await tool.handler({ userId }, parsed.data as any);
 
+    // continue_tool_result may return multiple envelopes via a sentinel so each
+    // becomes its own content[] text block (avoids re-overflow of a nested array).
+    const continuationParts = (result as { [CONTINUATION_PARTS_KEY]?: ContinuationEnvelope[] } | null)?.[
+      CONTINUATION_PARTS_KEY
+    ];
+    if (Array.isArray(continuationParts)) {
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: continuationParts.map((env) => ({
+            type: "text",
+            text: encodeEnvelope(env),
+          })),
+        },
+      };
+    }
+
     // A plugin handler may return an image sentinel; surface it as a real MCP
     // image content block instead of JSON text. The renderer stays agnostic of
     // which meta-tool produced the result: it just looks for `_mcpImage`
     // wherever it can sit — on the value itself, under a `{ result }` wrapper,
     // or inside an `execute_tools` `{ results: [{ result }] }` batch (which may
     // carry several screenshots). Any sentinels found become image blocks;
-    // otherwise the whole result is text-wrapped.
+    // otherwise text-wrap with eager multi-content on overflow (per-item for
+    // execute_tools).
     type ImageSentinel = { _mcpImage?: { data: string; mimeType: string } };
     const collectImages = (node: unknown): { data: string; mimeType: string }[] => {
       if (!node || typeof node !== "object") return [];
@@ -93,9 +127,25 @@ export async function handleMcpRequest(body: Record<string, unknown>, userId: st
       return [];
     };
     const images = collectImages(result);
+    let textBlocks: string[];
+    if (images.length) {
+      textBlocks = [];
+    } else if (
+      toolParams.name === "execute_tools" &&
+      result &&
+      typeof result === "object" &&
+      Array.isArray((result as { results?: unknown }).results)
+    ) {
+      textBlocks = packageBatchResultContent(
+        userId,
+        (result as { results: unknown[] }).results
+      );
+    } else {
+      textBlocks = packageResultContent(userId, JSON.stringify(result));
+    }
     const content = images.length
       ? images.map((img) => ({ type: "image", data: img.data, mimeType: img.mimeType }))
-      : [{ type: "text", text: packageResultText(userId, JSON.stringify(result)) }];
+      : textBlocks.map((text) => ({ type: "text" as const, text }));
 
     return {
       jsonrpc: "2.0",

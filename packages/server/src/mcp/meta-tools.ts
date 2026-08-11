@@ -12,7 +12,7 @@ import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
 import { ensureSession, navigate } from "../auth/browser-session";
-import { getContinuationPart } from "./result-overflow";
+import { getContinuationParts, CONTINUATION_PARTS_KEY } from "./result-overflow";
 
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
 // can call `.safeParse` directly without hand-rolled casts. `handler` is kept
@@ -217,7 +217,8 @@ export const metaTools = [
   {
     name: "execute_tools",
     description:
-      "Execute one or more tools in a single call. Runs them concurrently (bounded) and returns a `results` array in the same order as `executions`. A single tool failing does not abort the others — its entry carries an `error` instead of a `result`. For a single tool, pass a one-element `executions` array.",
+      "Execute one or more tools in a single call. Runs them concurrently (bounded) and returns a `results` array in the same order as `executions`. A single tool failing does not abort the others — its entry carries an `error` instead of a `result`. For a single tool, pass a one-element `executions` array. " +
+      "Oversized per-item responses: content[0] is {\"results\":[...]} where each entry is either a normal {result}/{error}, or a truncated stub (truncated:true, continuationId, resultIndex, totalParts, complete, partsIncluded) when that item alone exceeded ~60k chars. For stubs with partsIncluded:true, following content blocks are that item's continuation envelopes — concatenate chunk fields for that continuationId in ascending part order, then JSON.parse (do not concat across items). At most MAX_OVERFLOW_ITEMS oversized items include parts eagerly; stubs with partsIncluded:false need continue_tool_result (omit part). Small siblings stay inline in content[0].",
     inputSchema: z.object({
       executions: z
         .array(z.object({ tool: z.string(), args: z.record(z.unknown()).default({}) }))
@@ -311,13 +312,17 @@ export const metaTools = [
   {
     name: "continue_tool_result",
     description:
-      "Fetch the next chunk of an oversized tool result. When a tools/call response includes truncated:true and a continuationId, call this with that continuationId and the next part number (see nextPart / instruction). Repeat until hasMore is false, then concatenate every chunk field in order to reconstruct the full JSON.",
+      "Re-fetch overflow parts by continuationId if a prior tools/call response was incomplete or discarded. Oversized results already return every stored part as separate text content blocks (for execute_tools, per oversized results[] item) — concatenate chunk fields for that continuationId in ascending part order; call this only when a part is missing. Omit part to receive all stored parts as separate content blocks; or pass part for a single chunk.",
     inputSchema: z.object({
       continuationId: z.string(),
-      part: z.number().int().positive(),
+      part: z.number().int().positive().optional(),
     }),
-    handler: (ctx: { userId: string }, args: { continuationId: string; part: number }) =>
-      Promise.resolve(getContinuationPart(ctx.userId, args.continuationId, args.part)),
+    handler: (ctx: { userId: string }, args: { continuationId: string; part?: number }) => {
+      const parts = getContinuationParts(ctx.userId, args.continuationId, args.part);
+      if ("error" in parts) return Promise.resolve(parts);
+      // Sentinel: handleMcpRequest expands each envelope into its own content[] text block.
+      return Promise.resolve({ [CONTINUATION_PARTS_KEY]: parts });
+    },
   },
 ] satisfies readonly MetaTool[];
 
@@ -383,9 +388,10 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
       },
       part: {
         type: "number",
-        description: "1-based part number to fetch (use nextPart from the previous response)",
+        description:
+          "Optional 1-based part number. Omit to re-fetch all stored parts as separate content blocks; pass to fetch a single chunk.",
       },
     },
-    required: ["continuationId", "part"],
+    required: ["continuationId"],
   },
 };
