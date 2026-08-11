@@ -7,6 +7,7 @@ import { getToken } from "../auth/tokens";
 import { getUserById } from "../auth/users";
 import { hasValidCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
+import { toolExecutionsTotal, toolExecutionDuration } from "../telemetry/metrics";
 import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
@@ -160,6 +161,9 @@ async function executeSingle(
           success: true,
           duration_ms: Date.now() - start,
         });
+        const durationS = (Date.now() - start) / 1000;
+        toolExecutionsTotal.inc({ integration: targetTool.integration, tool: toolName, success: "true" });
+        toolExecutionDuration.observe({ integration: targetTool.integration, tool: toolName, success: "true" }, durationS);
         return { result };
       } catch (e) {
         const err = e instanceof Error ? e.message : String(e);
@@ -172,6 +176,9 @@ async function executeSingle(
           error: err,
           duration_ms: Date.now() - start,
         });
+        const durationS = (Date.now() - start) / 1000;
+        toolExecutionsTotal.inc({ integration: targetTool.integration, tool: toolName, success: "false" });
+        toolExecutionDuration.observe({ integration: targetTool.integration, tool: toolName, success: "false" }, durationS);
         return { error: err };
       }
     },
