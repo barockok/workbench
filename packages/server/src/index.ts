@@ -343,23 +343,24 @@ async function main() {
   console.log(`Server running on port ${config.PORT}`);
 }
 
-const clusterWorkers = config.CLUSTER_WORKERS;
-if (clusterWorkers > 0) {
+if (config.CLUSTER_ENABLED) {
   const isPostgres =
     config.DATABASE_URL.startsWith("postgres://") ||
     config.DATABASE_URL.startsWith("postgresql://");
   if (!isPostgres) {
     console.error(
-      "[cluster] CLUSTER_WORKERS requires a PostgreSQL DATABASE_URL." +
+      "[cluster] CLUSTER_ENABLED requires a PostgreSQL DATABASE_URL." +
       " SQLite cannot be safely shared across processes."
     );
     process.exit(1);
   }
 
   const { default: cluster } = await import("node:cluster");
+  const { availableParallelism } = await import("node:os");
+  const numWorkers = availableParallelism();
   if (cluster.isPrimary) {
-    console.log(`[cluster] primary ${process.pid} — forking ${clusterWorkers} workers`);
-    for (let i = 0; i < clusterWorkers; i++) cluster.fork();
+    console.log(`[cluster] primary ${process.pid} — forking ${numWorkers} workers`);
+    for (let i = 0; i < numWorkers; i++) cluster.fork();
     cluster.on("exit", (worker, code) => {
       console.warn(`[cluster] worker ${worker.process.pid} exited (code=${code}), restarting`);
       cluster.fork();
