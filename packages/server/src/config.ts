@@ -40,6 +40,12 @@ const configSchema = z.object({
   JOTS_MAX_BYTES: z.coerce.number().int().positive().default(5_242_880),
   JOTS_MAX_FILES: z.coerce.number().int().positive().default(1000),
   JOTS_UPLOAD_TTL_SECONDS: z.coerce.number().int().positive().default(300),
+  // Maximum connections per worker pool. With CLUSTER_ENABLED the total
+  // connection count is PG_POOL_MAX × worker count — keep this low enough
+  // that (workers × PG_POOL_MAX) stays well under Postgres max_connections.
+  PG_POOL_MAX: z.coerce.number().int().positive().default(2),
+  // Milliseconds to wait for a free pool slot before rejecting. 0 = unlimited.
+  PG_CONNECT_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(5000),
   // Enable cluster mode — forks os.availableParallelism() worker processes.
   // Requires a PostgreSQL DATABASE_URL — SQLite cannot be shared across processes.
   CLUSTER_ENABLED: z
