@@ -8,14 +8,14 @@ import { PostgresAdapter } from "./db-postgres";
  * URL selects PostgreSQL; anything else is treated as a SQLite file path, which
  * keeps every existing deployment working untouched.
  */
-export function createDb(url: string): DbAdapter {
+export function createDb(url: string, pgPoolMax?: number, pgConnectTimeoutMs?: number): DbAdapter {
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
-    return new PostgresAdapter(url);
+    return new PostgresAdapter(url, pgPoolMax, pgConnectTimeoutMs);
   }
   return new SqliteAdapter(url);
 }
 
-export const db: DbAdapter = createDb(config.DATABASE_URL);
+export const db: DbAdapter = createDb(config.DATABASE_URL, config.PG_POOL_MAX, config.PG_CONNECT_TIMEOUT_MS);
 
 const SQLITE_SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (

@@ -17,6 +17,7 @@ import { startProfileDiskReaper } from "./auth/profile-disk";
 import { authorizeCdpFrame } from "./auth/cdp-authz";
 import cluster from "node:cluster";
 import { availableParallelism } from "node:os";
+import { db } from "./db.js";
 import "./telemetry/tracing";
 import { metricsRegistry, httpRequestsTotal, httpRequestDuration } from "./telemetry/metrics";
 
@@ -365,8 +366,20 @@ if (config.CLUSTER_ENABLED) {
       cluster.fork();
     });
   } else {
+    registerShutdown();
     main().catch(console.error);
   }
 } else {
+  registerShutdown();
   main().catch(console.error);
+}
+
+function registerShutdown() {
+  const shutdown = async (signal: string) => {
+    console.log(`[shutdown] ${signal} received — draining connection pool`);
+    await db.close();
+    process.exit(0);
+  };
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT",  () => shutdown("SIGINT"));
 }
