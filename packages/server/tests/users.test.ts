@@ -27,6 +27,22 @@ describe("users", () => {
     const userId = await verifyApiKey("invalid");
     expect(userId).toBeNull();
   });
+
+  // Rows minted before api_key_sha existed carry only a bcrypt hash. They must
+  // keep verifying, and the sha must get backfilled so the next call is indexed.
+  it("verifies a legacy bcrypt-only key and backfills its sha", async () => {
+    const { apiKey } = await createUser("alice");
+    await db.run("UPDATE users SET api_key_sha = NULL WHERE id = ?", ["alice"]);
+
+    expect(await verifyApiKey(apiKey)).toBe("alice");
+
+    const row = await db.get<{ api_key_sha: string | null }>(
+      "SELECT api_key_sha FROM users WHERE id = ?",
+      ["alice"]
+    );
+    expect(row?.api_key_sha).toBeTruthy();
+    expect(await verifyApiKey(apiKey)).toBe("alice");
+  });
 });
 
 describe("api key management for existing users", () => {
