@@ -1,37 +1,23 @@
-# a-workbench v0.23.0
+# a-workbench v0.23.2
 
-_2026-08-11_
+_2026-08-14_
 
-Headline: **Prometheus metrics, cluster mode, and improved observability.**
+Headline: **API key verification is now O(1) — indexed SHA-256 lookup replaces a full-table bcrypt scan.**
 
-## Features
+## Performance
 
-- **`GET /metrics` — Prometheus scrape endpoint.** `prom-client` registry with default Node.js process metrics plus four custom metric families:
-  - `workbench_http_requests_total{method, route, status}`
-  - `workbench_http_request_duration_seconds{method, route, status}` (5ms–5s buckets)
-  - `workbench_tool_executions_total{integration, tool, success}`
-  - `workbench_tool_execution_duration_seconds{integration, tool, success}` (50ms–30s buckets)
+- **`verifyApiKey` — indexed lookup via `api_key_sha`.** Every `/mcp` request previously scanned every row in `users` and ran `bcrypt.compareSync` against each hash. At 100 users this blocked the event loop for about 2.8 seconds per request. The MCP handshake needs two requests, so a cold connect cost about 9.2 seconds on staging. A new `api_key_sha` column stores a SHA-256 of each key. An index on that column makes lookup a single `SELECT WHERE api_key_sha = ?`. The old bcrypt path is kept as a fallback for legacy rows (minted before this version) and is removed automatically on first successful verify.
 
-  Scrape at `GET /metrics` — no auth required (ops endpoint, protect at the network layer).
+  SHA-256 (no work factor) is the right choice for this column: keys are `crypto.randomBytes(32)`, server-minted, never user-chosen. 256 bits of entropy makes a preimage attack on the stored digest infeasible.
 
-- **Cluster mode via `CLUSTER_ENABLED`.** Set `CLUSTER_ENABLED=true` to fork `os.availableParallelism()` worker processes and use all available CPU cores. The server refuses to start in cluster mode with a SQLite `DATABASE_URL` — requires PostgreSQL. Workers auto-restart on crash.
-
-  ```env
-  CLUSTER_ENABLED=true
-  DATABASE_URL=postgres://user:pass@host:5432/workbench
-  ```
+  Schema migration runs automatically at startup (`ALTER TABLE users ADD COLUMN api_key_sha TEXT` + partial index). No manual step is needed. OAuth Bearer and session JWT callers are not affected — they verify via signature, not a DB scan.
 
 ## Fixes
 
-- **Request URLs no longer redacted in access logs.** `req.url` was censored as a precaution against tokens-in-URLs, a pattern that was already removed. Hiding routes made request tracing impossible with no remaining security benefit.
-
-- **Structured tool execution log lines.** Every `execute_tool` / `execute_tools` call now emits a JSON log line with `user_id`, `integration`, `tool`, `success`, and `duration_ms`. Uses pino level conventions (30 = info, 50 = error).
+- **`resolve.ts`: missing `await` on `verifyApiKey`.** The caller did not await the async function. It received a Promise object, which is always truthy. The system may have accepted any API key header before this fix. The `await` is now present and auth is correctly enforced.
 
 ## Commits
 
-- `feat(metrics): add Prometheus /metrics endpoint` (7ef2651)
-- `feat(cluster): CLUSTER_WORKERS env to fork N worker processes` (24a0a2a)
-- `refactor(cluster): CLUSTER_ENABLED flag, workers = availableParallelism()` (e24476f)
-- `fix(logging): unredact req.url, add structured tool execution logs` (a4994e6)
+- `perf(auth): index api key lookup instead of bcrypt-scanning all users` (64cf524)
 
-**Full diff:** https://github.com/barockok/workbench/compare/v0.22.0...v0.23.0
+**Full diff:** https://github.com/barockok/workbench/compare/v0.23.1...v0.23.2
