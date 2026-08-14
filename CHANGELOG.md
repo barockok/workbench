@@ -4,6 +4,17 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.23.2
+
+_2026-08-14_
+
+Headline: **API key verification is now O(1) — indexed SHA-256 lookup replaces a full-table bcrypt scan.**
+
+- **perf(auth):** `verifyApiKey` now does a single indexed `SELECT` on a new `api_key_sha` column instead of scanning every user row with `bcrypt.compareSync`. Schema migration (column + partial index) runs at startup. Legacy rows backfill lazily on first successful verify.
+- **fix:** Missing `await` on `verifyApiKey` in `resolve.ts` — Promise object was always truthy; any API key may have been silently accepted before this fix.
+
+---
+
 # a-workbench v0.22.0
 
 _2026-08-06_
