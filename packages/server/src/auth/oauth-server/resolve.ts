@@ -9,7 +9,7 @@ export async function resolveMcpUser(headers: {
 }): Promise<string | null> {
   const apiKey = headers["x-workbench-api-key"];
   if (apiKey) {
-    const u = verifyApiKey(apiKey);
+    const u = await verifyApiKey(apiKey);
     if (u) return u;
   }
   const auth = headers.authorization;
