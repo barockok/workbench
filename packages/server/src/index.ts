@@ -15,8 +15,12 @@ import { resolveMcpUser } from "./auth/oauth-server/resolve";
 import { startBrowserReaper } from "./auth/browser-session";
 import { startProfileDiskReaper } from "./auth/profile-disk";
 import { authorizeCdpFrame } from "./auth/cdp-authz";
+import cluster from "node:cluster";
+import { availableParallelism } from "node:os";
+import { db } from "./db.js";
 import { startOverflowReaper } from "./mcp/result-overflow";
 import "./telemetry/tracing";
+import { metricsRegistry, httpRequestsTotal, httpRequestDuration } from "./telemetry/metrics";
 
 // Session JWT (Authorization: Bearer) — used by the portal and the CDP WS frame.
 async function getUserIdFromAuth(auth?: string): Promise<string | null> {
@@ -32,14 +36,13 @@ async function getUserIdFromAuth(auth?: string): Promise<string | null> {
 async function main() {
   const app = Fastify({
     logger: {
-      // Defense in depth: even though tokens are no longer in URLs, redact
-      // anything that ever lands in this category so a future regression
-      // can't leak them into access logs.
+      // Redact secrets from logs. req.url is intentionally NOT redacted —
+      // tokens were once in URLs but no longer are; keeping the URL visible
+      // is necessary for request tracing.
       redact: {
         paths: [
           "req.headers.authorization",
           'req.headers["x-workbench-api-key"]',
-          "req.url",
           'req.query.token',
           'req.query.cdpToken',
         ],
@@ -75,6 +78,29 @@ async function main() {
   await registerOAuthRedirectRoute(app);
   startBrowserReaper();
   startProfileDiskReaper();
+
+  // HTTP metrics — track every request except /metrics itself.
+  app.addHook("onRequest", async (request) => {
+    (request as { _metricStart?: number })._metricStart = Date.now();
+  });
+  app.addHook("onResponse", async (request, reply) => {
+    const start = (request as { _metricStart?: number })._metricStart;
+    if (!start) return;
+    const route = request.routerPath ?? request.url;
+    if (route === "/metrics") return;
+    const labels = {
+      method: request.method,
+      route,
+      status: String(reply.statusCode),
+    };
+    httpRequestsTotal.inc(labels);
+    httpRequestDuration.observe(labels, (Date.now() - start) / 1000);
+  });
+
+  app.get("/metrics", async (_request, reply) => {
+    reply.header("Content-Type", metricsRegistry.contentType);
+    return metricsRegistry.metrics();
+  });
 
   // Reject the WS upgrade itself when the Origin header doesn't match the
   // portal — blocks Cross-Site WebSocket Hijacking. Applies BEFORE the
@@ -321,4 +347,41 @@ async function main() {
   console.log(`Server running on port ${config.PORT}`);
 }
 
-main().catch(console.error);
+if (config.CLUSTER_ENABLED) {
+  const isPostgres =
+    config.DATABASE_URL.startsWith("postgres://") ||
+    config.DATABASE_URL.startsWith("postgresql://");
+  if (!isPostgres) {
+    console.error(
+      "[cluster] CLUSTER_ENABLED requires a PostgreSQL DATABASE_URL." +
+      " SQLite cannot be safely shared across processes."
+    );
+    process.exit(1);
+  }
+
+  const numWorkers = availableParallelism();
+  if (cluster.isPrimary) {
+    console.log(`[cluster] primary ${process.pid} — forking ${numWorkers} workers`);
+    for (let i = 0; i < numWorkers; i++) cluster.fork();
+    cluster.on("exit", (worker, code) => {
+      console.warn(`[cluster] worker ${worker.process.pid} exited (code=${code}), restarting`);
+      cluster.fork();
+    });
+  } else {
+    registerShutdown();
+    main().catch(console.error);
+  }
+} else {
+  registerShutdown();
+  main().catch(console.error);
+}
+
+function registerShutdown() {
+  const shutdown = async (signal: string) => {
+    console.log(`[shutdown] ${signal} received — draining connection pool`);
+    await db.close();
+    process.exit(0);
+  };
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT",  () => shutdown("SIGINT"));
+}

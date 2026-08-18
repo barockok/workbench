@@ -1,6 +1,6 @@
 {
   "name": "@a-workbench/server",
-  "version": "0.22.0",
+  "version": "0.23.2",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -27,6 +27,7 @@
     "bcryptjs": "^2.4",
     "better-sqlite3": "^11.5",
     "pg": "^8.21.0",
+    "prom-client": "^15.1",
     "fastify": "^4.28",
     "jose": "^6.1",
     "playwright": "^1.44",

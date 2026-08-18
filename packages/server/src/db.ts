@@ -8,14 +8,14 @@ import { PostgresAdapter } from "./db-postgres";
  * URL selects PostgreSQL; anything else is treated as a SQLite file path, which
  * keeps every existing deployment working untouched.
  */
-export function createDb(url: string): DbAdapter {
+export function createDb(url: string, pgPoolMax?: number, pgConnectTimeoutMs?: number): DbAdapter {
   if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
-    return new PostgresAdapter(url);
+    return new PostgresAdapter(url, pgPoolMax, pgConnectTimeoutMs);
   }
   return new SqliteAdapter(url);
 }
 
-export const db: DbAdapter = createDb(config.DATABASE_URL);
+export const db: DbAdapter = createDb(config.DATABASE_URL, config.PG_POOL_MAX, config.PG_CONNECT_TIMEOUT_MS);
 
 const SQLITE_SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
@@ -176,6 +176,7 @@ async function initSqliteSchema(db: DbAdapter): Promise<void> {
     "ALTER TABLE pending_auth ADD COLUMN config TEXT",
     "ALTER TABLE oauth_refresh_tokens ADD COLUMN created_at INTEGER",
     "ALTER TABLE users ADD COLUMN keycloak_sub TEXT",
+    "ALTER TABLE users ADD COLUMN api_key_sha TEXT",
   ]) {
     try {
       await db.exec(stmt);
@@ -187,6 +188,11 @@ async function initSqliteSchema(db: DbAdapter): Promise<void> {
   try {
     await db.exec(
       "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_keycloak_sub ON users(keycloak_sub) WHERE keycloak_sub IS NOT NULL"
+    );
+  } catch { /* already exists */ }
+  try {
+    await db.exec(
+      "CREATE INDEX IF NOT EXISTS idx_users_api_key_sha ON users(api_key_sha) WHERE api_key_sha IS NOT NULL"
     );
   } catch { /* already exists */ }
 }
@@ -205,7 +211,9 @@ async function initPostgresSchema(db: DbAdapter): Promise<void> {
     ALTER TABLE pending_auth ADD COLUMN IF NOT EXISTS config TEXT;
     ALTER TABLE oauth_refresh_tokens ADD COLUMN IF NOT EXISTS created_at INTEGER;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS keycloak_sub TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS api_key_sha TEXT;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_keycloak_sub ON users(keycloak_sub) WHERE keycloak_sub IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_users_api_key_sha ON users(api_key_sha) WHERE api_key_sha IS NOT NULL;
   `);
 }
 

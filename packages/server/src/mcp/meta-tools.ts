@@ -7,6 +7,7 @@ import { getToken } from "../auth/tokens";
 import { getUserById } from "../auth/users";
 import { hasValidCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
+import { toolExecutionsTotal, toolExecutionDuration } from "../telemetry/metrics";
 import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
@@ -153,17 +154,31 @@ async function executeSingle(
       try {
         const toolCtx = await createContext(userId, targetTool.integration);
         const result = await targetTool.handler(toolCtx, parsedArgs as Record<string, unknown>);
+        const duration_ms = Date.now() - start;
         await auditLogger.log({
           user_id: userId,
           integration: targetTool.integration,
           tool: toolName,
           action: "EXECUTE",
           success: true,
-          duration_ms: Date.now() - start,
+          duration_ms,
         });
+        console.log(JSON.stringify({
+          level: 30,
+          msg: "tool executed",
+          user_id: userId,
+          integration: targetTool.integration,
+          tool: toolName,
+          success: true,
+          duration_ms,
+        }));
+        const durationS = duration_ms / 1000;
+        toolExecutionsTotal.inc({ integration: targetTool.integration, tool: toolName, success: "true" });
+        toolExecutionDuration.observe({ integration: targetTool.integration, tool: toolName, success: "true" }, durationS);
         return { result };
       } catch (e) {
         const err = e instanceof Error ? e.message : String(e);
+        const duration_ms = Date.now() - start;
         await auditLogger.log({
           user_id: userId,
           integration: targetTool.integration,
@@ -171,8 +186,21 @@ async function executeSingle(
           action: "EXECUTE",
           success: false,
           error: err,
-          duration_ms: Date.now() - start,
+          duration_ms,
         });
+        console.log(JSON.stringify({
+          level: 50,
+          msg: "tool execute failed",
+          user_id: userId,
+          integration: targetTool.integration,
+          tool: toolName,
+          success: false,
+          error: err,
+          duration_ms,
+        }));
+        const durationS = duration_ms / 1000;
+        toolExecutionsTotal.inc({ integration: targetTool.integration, tool: toolName, success: "false" });
+        toolExecutionDuration.observe({ integration: targetTool.integration, tool: toolName, success: "false" }, durationS);
         return { error: err };
       }
     },

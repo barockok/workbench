@@ -115,8 +115,8 @@ export class PostgresAdapter implements DbAdapter {
   private pool: Pool;
   private closed = false;
 
-  constructor(url: string) {
-    this.pool = new Pool({ connectionString: url });
+  constructor(url: string, poolMax = 10, connectionTimeoutMillis = 0) {
+    this.pool = new Pool({ connectionString: url, max: poolMax, connectionTimeoutMillis });
   }
 
   async exec(sql: string): Promise<void> {
