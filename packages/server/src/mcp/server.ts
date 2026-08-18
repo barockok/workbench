@@ -4,7 +4,7 @@ import {
   packageResultText,
   packageBatchResultContent,
   encodeEnvelope,
-  MAX_RESULT_CHARS,
+  maxResultChars,
   CONTINUATION_PARTS_KEY,
   type ContinuationEnvelope,
 } from "./result-overflow";
@@ -16,7 +16,7 @@ import {
 // can concatenate without a continue loop. execute_tools packages each
 // results[] item independently. continue_tool_result remains for re-fetch.
 export {
-  MAX_RESULT_CHARS,
+  maxResultChars,
   packageResultText,
   packageResultContent,
   packageBatchResultContent,
