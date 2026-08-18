@@ -27,7 +27,12 @@ const tools: PluginTool[] = [
     name: "browser_navigate",
     description: "Navigate the per-user browser session to a URL. Opens a warm session if none is active. Returns the final url and page title.",
     integration: BROWSER_INTEGRATION_NAME,
-    inputSchema: z.object({ url: z.string().url() }),
+    inputSchema: z.object({
+      url: z.string().url().refine(
+        (u) => /^https?:\/\//i.test(u),
+        { message: "Only http and https URLs are allowed" }
+      ),
+    }),
     handler: async (ctx: any, args: any) => {
       const s = await ensureSession(ctx.userId);
       touch(ctx.userId);
