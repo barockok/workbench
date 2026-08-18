@@ -11,4 +11,5 @@ export default {
     tokenUrl: "https://oauth2.googleapis.com/token",
     scopes: ["https://www.googleapis.com/auth/calendar"],
   },
+  proxy: { baseUrl: "https://www.googleapis.com/calendar/v3" },
 };
