@@ -7,11 +7,25 @@ import { config } from "../config";
 // remains for re-fetch. execute_tools packages each results[] item independently
 // so one large Confluence page does not truncate its siblings.
 // See docs/findings/2026-08-07-mcp-result-overflow-continuation.md
+// and docs/findings/2026-08-13-overflow-token-budget.md
 
-export const MAX_RESULT_CHARS = 60_000;
 // Room for the continuation envelope (metadata + instruction) around each chunk.
 const ENVELOPE_RESERVE = 2_000;
-export const CHUNK_CHARS = MAX_RESULT_CHARS - ENVELOPE_RESERVE;
+
+// Live wire cap — reads config so tests can mutate MAX_RESULT_CHARS.
+export function maxResultChars(): number {
+  return config.MAX_RESULT_CHARS;
+}
+
+// Payload bytes per part (wire cap minus envelope reserve).
+export function chunkChars(): number {
+  return config.MAX_RESULT_CHARS - ENVELOPE_RESERVE;
+}
+
+// Derived part cap: floor(MAX_OVERFLOW_TOKENS / MAX_RESULT_CHARS), at least 1.
+export function maxOverflowParts(): number {
+  return Math.max(1, Math.floor(config.MAX_OVERFLOW_TOKENS / config.MAX_RESULT_CHARS));
+}
 
 // Sentinel: handler return value expanded into one text content block per envelope.
 export const CONTINUATION_PARTS_KEY = "_mcpContinuationParts";
@@ -79,7 +93,7 @@ export type BatchOverflowStub = {
 };
 
 function totalPartsFor(length: number): number {
-  return Math.max(1, Math.ceil(length / CHUNK_CHARS));
+  return Math.max(1, Math.ceil(length / chunkChars()));
 }
 
 type EnvelopeDelivery = "all" | "single";
@@ -93,8 +107,9 @@ function buildEnvelope(
   resultIndex?: number
 ): ContinuationEnvelope {
   const totalParts = totalPartsFor(text.length);
-  const start = (part - 1) * CHUNK_CHARS;
-  const chunk = text.slice(start, start + CHUNK_CHARS);
+  const size = chunkChars();
+  const start = (part - 1) * size;
+  const chunk = text.slice(start, start + size);
   const hasMore = part < totalParts;
   const nextPart = hasMore ? part + 1 : null;
   const itemHint =
@@ -102,17 +117,17 @@ function buildEnvelope(
   let instruction: string;
   const subject = resultIndex !== undefined ? "this item JSON" : "the full tool result JSON";
   if (delivery === "single" && hasMore) {
-    instruction = `Result exceeded ${MAX_RESULT_CHARS} chars${itemHint} (showing part ${part} of ${totalParts}). Call continue_tool_result with continuationId="${continuationId}" and part=${nextPart} for the next chunk, or omit part to re-fetch all stored parts as separate content blocks. Concatenate every chunk field in ascending part order to reconstruct ${subject}.`;
+    instruction = `Result exceeded ${maxResultChars()} chars${itemHint} (showing part ${part} of ${totalParts}). Call continue_tool_result with continuationId="${continuationId}" and part=${nextPart} for the next chunk, or omit part to re-fetch all stored parts as separate content blocks. Concatenate every chunk field in ascending part order to reconstruct ${subject}.`;
   } else if (hasMore) {
     const allParts =
       resultIndex !== undefined
         ? `All available parts for this item are returned as separate text content blocks in this tools/call. Concatenate every chunk field for continuationId="${continuationId}" in ascending part order to reconstruct ${subject}.`
         : `All available parts are returned as separate text content blocks in this tools/call. Concatenate every chunk field in ascending part order to reconstruct ${subject}.`;
-    instruction = `Result exceeded ${MAX_RESULT_CHARS} chars${itemHint} (part ${part} of ${totalParts}). ${allParts} Use continue_tool_result only to re-fetch if a part was discarded (omit part to get all stored parts, or pass part for a single chunk).`;
+    instruction = `Result exceeded ${maxResultChars()} chars${itemHint} (part ${part} of ${totalParts}). ${allParts} Use continue_tool_result only to re-fetch if a part was discarded (omit part to get all stored parts, or pass part for a single chunk).`;
   } else if (complete) {
     instruction = `This is the final chunk${itemHint} (part ${part} of ${totalParts}). Concatenate every chunk field in ascending part order to reconstruct ${subject}.`;
   } else {
-    instruction = `This is the last available chunk${itemHint} (part ${part} of ${totalParts}). Further content was omitted (MAX_OVERFLOW_PARTS=${config.MAX_OVERFLOW_PARTS}). Concatenate every chunk field in ascending part order to reconstruct the available ${resultIndex !== undefined ? "item JSON" : "tool result JSON"}.`;
+    instruction = `This is the last available chunk${itemHint} (part ${part} of ${totalParts}). Further content was omitted (MAX_OVERFLOW_TOKENS=${config.MAX_OVERFLOW_TOKENS}). Concatenate every chunk field in ascending part order to reconstruct the available ${resultIndex !== undefined ? "item JSON" : "tool result JSON"}.`;
   }
   const env: ContinuationEnvelope = {
     truncated: true,
@@ -132,9 +147,10 @@ function buildEnvelope(
 
 // Serialize an envelope to ≤ MAX_RESULT_CHARS JSON (shrinks chunk if needed).
 export function encodeEnvelope(envelope: ContinuationEnvelope): string {
+  const cap = maxResultChars();
   const encoded = JSON.stringify(envelope);
-  if (encoded.length <= MAX_RESULT_CHARS) return encoded;
-  const shrink = encoded.length - MAX_RESULT_CHARS;
+  if (encoded.length <= cap) return encoded;
+  const shrink = encoded.length - cap;
   const shrunk: ContinuationEnvelope = {
     ...envelope,
     chunk: envelope.chunk.slice(0, Math.max(0, envelope.chunk.length - shrink - 8)),
@@ -171,10 +187,10 @@ export function packageResultContent(
   text: string,
   opts?: PackageOpts
 ): string[] {
-  if (text.length <= MAX_RESULT_CHARS) return [text];
+  if (text.length <= maxResultChars()) return [text];
 
-  const maxParts = config.MAX_OVERFLOW_PARTS;
-  const maxStored = maxParts * CHUNK_CHARS;
+  const maxParts = maxOverflowParts();
+  const maxStored = maxParts * chunkChars();
   const complete = text.length <= maxStored;
   const stored = complete ? text : text.slice(0, maxStored);
 
@@ -218,7 +234,7 @@ export function packageBatchResultContent(userId: string, results: unknown[]): s
   for (let i = 0; i < results.length; i++) {
     const item = results[i];
     const text = JSON.stringify(item);
-    if (text.length <= MAX_RESULT_CHARS) {
+    if (text.length <= maxResultChars()) {
       entries.push(item);
       continue;
     }
@@ -236,8 +252,8 @@ export function packageBatchResultContent(userId: string, results: unknown[]): s
       resultIndex: i,
       partsIncluded,
       instruction: partsIncluded
-        ? `execute_tools results[${i}] exceeded ${MAX_RESULT_CHARS} chars (${first.totalParts} parts, complete=${first.complete}). Concatenate every chunk from content blocks with continuationId="${first.continuationId}" in ascending part order, then JSON.parse to get this item ({ result } or { error }). Do not concatenate with other items' chunks. Use continue_tool_result only if a part was discarded.`
-        : `execute_tools results[${i}] exceeded ${MAX_RESULT_CHARS} chars (${first.totalParts} parts, complete=${first.complete}). Parts deferred (MAX_OVERFLOW_ITEMS=${maxEagerItems} eager items already included in this response). Call continue_tool_result with continuationId="${first.continuationId}" (omit part) to fetch all stored parts as separate content blocks, then concatenate chunk fields in ascending part order and JSON.parse. Do not concatenate with other items' chunks.`,
+        ? `execute_tools results[${i}] exceeded ${maxResultChars()} chars (${first.totalParts} parts, complete=${first.complete}). Concatenate every chunk from content blocks with continuationId="${first.continuationId}" in ascending part order, then JSON.parse to get this item ({ result } or { error }). Do not concatenate with other items' chunks. Use continue_tool_result only if a part was discarded.`
+        : `execute_tools results[${i}] exceeded ${maxResultChars()} chars (${first.totalParts} parts, complete=${first.complete}). Parts deferred (MAX_OVERFLOW_ITEMS=${maxEagerItems} eager items already included in this response). Call continue_tool_result with continuationId="${first.continuationId}" (omit part) to fetch all stored parts as separate content blocks, then concatenate chunk fields in ascending part order and JSON.parse. Do not concatenate with other items' chunks.`,
     };
     entries.push(stub);
     if (partsIncluded) overflowBlocks.push(...parts);
@@ -247,7 +263,7 @@ export function packageBatchResultContent(userId: string, results: unknown[]): s
   if (!anyOverflow) {
     return packageResultContent(userId, header);
   }
-  if (header.length <= MAX_RESULT_CHARS) {
+  if (header.length <= maxResultChars()) {
     return [header, ...overflowBlocks];
   }
   // Pathological: many stubs — split the header like any other oversized blob.

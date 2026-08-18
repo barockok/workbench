@@ -5,14 +5,19 @@ import {
   packageBatchResultContent,
   getContinuationPart,
   getContinuationParts,
-  MAX_RESULT_CHARS,
-  CHUNK_CHARS,
+  maxResultChars,
+  chunkChars,
+  maxOverflowParts,
   _clearForTest,
   _setNowForTest,
 } from "../src/mcp/result-overflow";
 import { handleMcpRequest } from "../src/mcp/server";
 import { metaTools } from "../src/mcp/meta-tools";
 import { config } from "../src/config";
+
+// Snapshot of defaults — suites that mutate MAX_RESULT_CHARS must call the getters.
+const MAX_RESULT_CHARS = maxResultChars();
+const CHUNK_CHARS = chunkChars();
 
 describe("packageResultText / continuation", () => {
   beforeEach(() => {
@@ -108,41 +113,66 @@ describe("packageResultText / continuation", () => {
   });
 });
 
-describe("MAX_OVERFLOW_PARTS cap", () => {
-  const original = config.MAX_OVERFLOW_PARTS;
+describe("MAX_OVERFLOW_TOKENS cap", () => {
+  const originalTokens = config.MAX_OVERFLOW_TOKENS;
+  const originalChars = config.MAX_RESULT_CHARS;
 
   beforeEach(() => {
     _clearForTest();
     _setNowForTest(() => Date.now());
-    config.MAX_OVERFLOW_PARTS = 2;
+    config.MAX_RESULT_CHARS = 60_000;
+    // 120k / 60k = 2 parts. Natural size needs 3; keep only 2.
+    config.MAX_OVERFLOW_TOKENS = 2 * config.MAX_RESULT_CHARS;
   });
 
   afterEach(() => {
-    config.MAX_OVERFLOW_PARTS = original;
+    config.MAX_OVERFLOW_TOKENS = originalTokens;
+    config.MAX_RESULT_CHARS = originalChars;
   });
 
   it("caps fetchable parts and marks complete false when more existed", () => {
-    // Natural size needs 3 parts; MAX_OVERFLOW_PARTS=2 keeps only 2.
-    const text = "d".repeat(CHUNK_CHARS * 2 + 100);
+    const size = chunkChars();
+    const text = "d".repeat(size * 2 + 100);
     const env1 = JSON.parse(packageResultText("u1", text));
     expect(env1.totalParts).toBe(2);
     expect(env1.complete).toBe(false);
     expect(env1.hasMore).toBe(true);
-    expect(env1.totalChars).toBe(CHUNK_CHARS * 2);
+    expect(env1.totalChars).toBe(size * 2);
 
     const part2 = getContinuationPart("u1", env1.continuationId, 2);
     expect("error" in part2).toBe(false);
     if ("error" in part2) return;
     expect(part2.hasMore).toBe(false);
     expect(part2.complete).toBe(false);
-    expect(part2.instruction).toContain("MAX_OVERFLOW_PARTS=2");
+    expect(part2.instruction).toContain("MAX_OVERFLOW_TOKENS=120000");
     expect(part2.instruction).toContain("omitted");
 
     expect(getContinuationPart("u1", env1.continuationId, 3)).toEqual({
       error: "part must be an integer from 1 to 2",
     });
 
-    expect(env1.chunk + part2.chunk).toBe(text.slice(0, CHUNK_CHARS * 2));
+    expect(env1.chunk + part2.chunk).toBe(text.slice(0, size * 2));
+  });
+
+  it("defaults to 5 parts at 300000 / 60000", () => {
+    config.MAX_RESULT_CHARS = 60_000;
+    config.MAX_OVERFLOW_TOKENS = 300_000;
+    expect(maxOverflowParts()).toBe(5);
+  });
+
+  it("increases part count when MAX_RESULT_CHARS halves at a fixed token budget", () => {
+    config.MAX_OVERFLOW_TOKENS = 300_000;
+    config.MAX_RESULT_CHARS = 30_000;
+    expect(maxOverflowParts()).toBe(10);
+
+    const size = chunkChars();
+    const text = "g".repeat(size * 10 + 100);
+    const parts = packageResultContent("u1", text);
+    expect(parts).toHaveLength(10);
+    const env1 = JSON.parse(parts[0]);
+    expect(env1.totalParts).toBe(10);
+    expect(env1.complete).toBe(false);
+    expect(env1.totalChars).toBe(size * 10);
   });
 });
 

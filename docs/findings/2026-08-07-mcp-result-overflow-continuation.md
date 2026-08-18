@@ -1,8 +1,9 @@
 # 2026-08-07 — MCP tool result overflow continuation
 
 **Where:** `packages/server/src/mcp/{server.ts,result-overflow.ts,meta-tools.ts}`,
-`config.MAX_OVERFLOW_PARTS`, `config.MAX_OVERFLOW_ITEMS`
-**Status:** current
+`config.MAX_OVERFLOW_PARTS` (replaced), `config.MAX_OVERFLOW_ITEMS`
+**Status:** current — part-count cap **superseded by**
+[2026-08-13 overflow token budget](2026-08-13-overflow-token-budget.md)
 
 ## Problem
 
@@ -38,15 +39,10 @@ page truncated the entire batch (siblings lost / JSON cut mid-structure).
 
 ## Caps
 
-### `MAX_OVERFLOW_PARTS` (default **5**)
+### `MAX_OVERFLOW_PARTS` (removed)
 
-Bounds how many ~58k-char chunks are stored **per overflowed payload** (per batch
-item for `execute_tools`, or the whole result otherwise):
-
-- Store only the first `MAX_OVERFLOW_PARTS * CHUNK_CHARS` characters.
-- Envelope includes `complete: true|false`. When `false`, the last part’s
-  instruction cites `MAX_OVERFLOW_PARTS` and tells the agent the remainder was
-  omitted.
+Replaced by `MAX_OVERFLOW_TOKENS`. See
+[2026-08-13 overflow token budget](2026-08-13-overflow-token-budget.md).
 
 ### `MAX_OVERFLOW_ITEMS` (default **2**)
 
@@ -54,8 +50,8 @@ Bounds how many oversized `execute_tools` items get eager multi-content parts in
 **one** `tools/call`. Further overflowed items are still stored and stubbed with
 `partsIncluded: false`; the agent must call `continue_tool_result` (omit `part`)
 for those. Prevents N parallel large pages from exploding a single response
-(worst case ≈ `MAX_OVERFLOW_ITEMS × MAX_OVERFLOW_PARTS × ~58k` chars of eager
-chunks, plus a small header).
+(worst case ≈ `MAX_OVERFLOW_ITEMS × (MAX_OVERFLOW_TOKENS / MAX_RESULT_CHARS) × ~58k`
+chars of eager chunks, plus a small header).
 
 ## Notes
 
