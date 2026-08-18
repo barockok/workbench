@@ -9,6 +9,13 @@ export interface Integration {
   // dir (served via /api/integrations/:name/logo).
   logo?: string;
   categories?: string[];
+  // When set, enables the curl proxy for this integration. The agent can call
+  // curl_session to mint a short-lived token and then hit /c/<name>/... to
+  // proxy arbitrary API calls with the user's stored credential injected.
+  proxy?: {
+    // API base URL, e.g. "https://api.github.com". Trailing slash is stripped.
+    baseUrl: string;
+  };
 }
 
 export interface OAuthConfig {

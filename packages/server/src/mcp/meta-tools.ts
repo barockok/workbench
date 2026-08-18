@@ -12,6 +12,7 @@ import { config } from "../config";
 import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
+import { signCurlToken } from "../auth/curl-session";
 import { ensureSession, navigate } from "../auth/browser-session";
 
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
@@ -335,6 +336,38 @@ export const metaTools = [
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
+  {
+    name: "curl_session",
+    description:
+      "Mint a short-lived proxy token (15 min) for one or more integrations. Use the returned token as a Bearer header to make arbitrary API calls via the /c/<integration>/<path> transparent proxy — the proxy injects the user's real credential. Only integrations that have curl proxy enabled are accepted.",
+    inputSchema: z.object({
+      integrations: z.array(z.string()).min(1),
+    }),
+    handler: async (ctx: { userId: string }, args: { integrations: string[] }) => {
+      const EXPIRES_SECONDS = 900;
+      const errors: string[] = [];
+      for (const name of args.integrations) {
+        const integ = registry.getIntegration(name);
+        if (!integ) { errors.push(`${name}: integration not found`); continue; }
+        if (!integ.proxy) { errors.push(`${name}: curl proxy not enabled`); continue; }
+        const isConnected =
+          integ.auth.type === "none"
+            ? true
+            : integ.auth.type === "cookie"
+              ? await hasValidCookies(ctx.userId, name)
+              : !!(await getToken(ctx.userId, name));
+        if (!isConnected) errors.push(`${name}: not connected`);
+      }
+      if (errors.length) return { error: errors.join("; ") };
+      const token = await signCurlToken(ctx.userId, args.integrations, EXPIRES_SECONDS);
+      return {
+        token,
+        expiresIn: EXPIRES_SECONDS,
+        proxyBaseUrl: `${config.SERVER_PUBLIC_URL}/c`,
+        usage: `Send requests to ${config.SERVER_PUBLIC_URL}/c/<integration>/<path> with Authorization: Bearer <token>`,
+      };
+    },
+  },
 ] satisfies readonly MetaTool[];
 
 // JSON Schema descriptions for the meta-tools, surfaced via MCP `tools/list`.
@@ -389,5 +422,16 @@ export const metaToolSchemas: Record<(typeof metaTools)[number]["name"], Record<
     type: "object",
     properties: { integration: { type: "string", description: "Integration name" } },
     required: ["integration"],
+  },
+  curl_session: {
+    type: "object",
+    properties: {
+      integrations: {
+        type: "array",
+        items: { type: "string" },
+        description: "Integration names to include in the session (e.g. [\"github\"])",
+      },
+    },
+    required: ["integrations"],
   },
 };
