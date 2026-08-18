@@ -14,4 +14,5 @@ export default {
       "https://www.googleapis.com/auth/drive.file",
     ],
   },
+  proxy: { baseUrl: "https://slides.googleapis.com/v1" },
 };
