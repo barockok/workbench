@@ -23,4 +23,6 @@ export default {
       "offline_access",
     ],
   },
+  // ctx.http() auto-resolves "cloud-id" to the real Atlassian cloud id.
+  proxy: { baseUrl: "https://api.atlassian.com/ex/confluence/cloud-id/wiki" },
 };

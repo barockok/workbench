@@ -1,8 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { Readable } from "node:stream";
 import { verifyCurlToken } from "../auth/curl-session";
-import { createContext } from "../plugins/context";
+import { createContext, type ToolContext } from "../plugins/context";
 import { registry } from "../plugins/registry";
+
+type IntegrationProxy = NonNullable<ReturnType<typeof registry.getIntegration>>["proxy"];
 
 // Headers that must not be forwarded between client ↔ proxy ↔ upstream.
 const REQUEST_HOP_BY_HOP = new Set([
@@ -26,6 +28,32 @@ const RESPONSE_HOP_BY_HOP = new Set([
   "keep-alive",
   "upgrade",
 ]);
+
+// Resolve the proxy base URL for an integration. Static integrations return
+// proxy.baseUrl directly (Atlassian's "cloud-id" placeholder is resolved
+// transparently by ctx.http). Dynamic integrations read per-connection config
+// stored at connect time.
+async function resolveProxyBaseUrl(proxy: NonNullable<IntegrationProxy>, ctx: ToolContext, name: string): Promise<string> {
+
+  if (proxy.baseUrl) return proxy.baseUrl.replace(/\/$/, "");
+
+  const cfg = ctx.getConfig();
+
+  if (proxy.resolver === "instance-url") {
+    const instanceUrl = (cfg.instanceUrl as string | undefined)?.replace(/\/$/, "");
+    if (!instanceUrl) throw new Error(`No instanceUrl in connection config for ${name}`);
+    return `${instanceUrl}${proxy.pathPrefix ?? ""}`;
+  }
+
+  if (proxy.resolver === "newrelic-region") {
+    const region = (cfg.region as string | undefined)?.toUpperCase();
+    return region === "EU"
+      ? "https://api.eu.newrelic.com/graphql"
+      : "https://api.newrelic.com/graphql";
+  }
+
+  throw new Error(`Cannot resolve proxy base URL for ${name}`);
+}
 
 export async function registerCurlProxy(app: FastifyInstance): Promise<void> {
   await app.register(async (scope) => {
@@ -66,14 +94,25 @@ export async function registerCurlProxy(app: FastifyInstance): Promise<void> {
           return reply.code(400).send({ error: `Integration "${integration}" does not support curl proxy` });
         }
 
-        // 4. Build the target URL, preserving the original query string.
-        const base = integ.proxy.baseUrl.replace(/\/$/, "");
+        // 4. Create context (needed for token refresh + dynamic base URL resolution).
+        const ctx = await createContext(session.userId, integration);
+
+        // 5. Resolve the base URL (static from manifest or dynamic from connection config).
+        let base: string;
+        try {
+          base = await resolveProxyBaseUrl(integ.proxy, ctx, integration);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return reply.code(502).send({ error: `Cannot resolve proxy base URL: ${msg}` });
+        }
+
+        // 6. Build the target URL, preserving the original query string.
         const rawUrl = request.url; // e.g. "/c/github/repos/owner/repo?page=2"
         const qIdx = rawUrl.indexOf("?");
         const qs = qIdx >= 0 ? rawUrl.slice(qIdx) : "";
         const targetUrl = tail ? `${base}/${tail}${qs}` : `${base}${qs}`;
 
-        // 5. Build the forwarded header set (strip hop-by-hop + auth).
+        // 7. Build the forwarded header set (strip hop-by-hop + auth).
         const forwardHeaders: Record<string, string> = {};
         for (const [key, value] of Object.entries(request.headers)) {
           if (REQUEST_HOP_BY_HOP.has(key.toLowerCase())) continue;
@@ -84,9 +123,9 @@ export async function registerCurlProxy(app: FastifyInstance): Promise<void> {
           }
         }
 
-        // 6. Forward the request. createContext handles token refresh and
-        //    injects the real credential (oauth2 Bearer / apikey / cookie).
-        const ctx = await createContext(session.userId, integration);
+        // 8. Forward the request. ctx.http handles token refresh and injects
+        //    the real credential (oauth2 Bearer / apikey / cookie). For
+        //    Atlassian integrations it also auto-resolves "cloud-id" in the URL.
         const hasBody = !["GET", "HEAD", "OPTIONS"].includes(request.method);
         const rawBody = request.body as Buffer | undefined;
 
@@ -102,7 +141,7 @@ export async function registerCurlProxy(app: FastifyInstance): Promise<void> {
           return reply.code(502).send({ error: `Upstream request failed: ${msg}` });
         }
 
-        // 7. Forward the response (stream body, no buffering).
+        // 9. Forward the response (stream body, no buffering).
         reply.code(upstream.status);
         for (const [key, value] of upstream.headers) {
           if (!RESPONSE_HOP_BY_HOP.has(key.toLowerCase())) {
