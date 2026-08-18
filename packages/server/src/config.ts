@@ -52,6 +52,20 @@ const configSchema = z.object({
     .enum(["true", "false", "1", "0"])
     .default("false")
     .transform((v) => v === "true" || v === "1"),
+  // Per-block MCP content[] wire cap. Part count is derived as
+  // floor(MAX_OVERFLOW_TOKENS / MAX_RESULT_CHARS), so changing this size
+  // does not require retuning the token budget.
+  MAX_RESULT_CHARS: z.coerce.number().int().min(3_000).default(60_000),
+  // Total character budget per overflowed payload (same units as MAX_RESULT_CHARS).
+  // Default 300000 / 60000 = 5 parts, matching the old MAX_OVERFLOW_PARTS=5.
+  MAX_OVERFLOW_TOKENS: z.coerce.number().int().positive().default(300_000),
+  // Max oversized execute_tools results[] items that get eager multi-content
+  // parts in the same tools/call. Further overflowed items are still stored +
+  // stubbed; the agent fetches them via continue_tool_result.
+  MAX_OVERFLOW_ITEMS: z.coerce.number().int().positive().default(2),
+}).refine((c) => c.MAX_OVERFLOW_TOKENS >= c.MAX_RESULT_CHARS, {
+  message: "MAX_OVERFLOW_TOKENS must be >= MAX_RESULT_CHARS",
+  path: ["MAX_OVERFLOW_TOKENS"],
 });
 
 export const config = configSchema.parse(process.env);

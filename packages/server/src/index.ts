@@ -18,6 +18,7 @@ import { authorizeCdpFrame } from "./auth/cdp-authz";
 import cluster from "node:cluster";
 import { availableParallelism } from "node:os";
 import { db } from "./db.js";
+import { startOverflowReaper } from "./mcp/result-overflow";
 import "./telemetry/tracing";
 import { metricsRegistry, httpRequestsTotal, httpRequestDuration } from "./telemetry/metrics";
 
@@ -335,6 +336,7 @@ async function main() {
 
   await registerJotRoutes(app);
   startUploadReaper();
+  startOverflowReaper();
 
   // Serve the built portal (static + SPA fallback). Registered last so API,
   // MCP, and the CDP WS routes take precedence and the SPA fallback only
