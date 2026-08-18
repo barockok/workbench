@@ -11,4 +11,5 @@ export default {
     tokenUrl: "https://bitbucket.org/site/oauth2/access_token",
     scopes: ["repository", "repository:write", "pullrequest:write", "pipeline", "pipeline:write", "account"],
   },
+  proxy: { baseUrl: "https://api.bitbucket.org/2.0" },
 };

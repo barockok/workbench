@@ -15,4 +15,5 @@ export default {
       "https://www.googleapis.com/auth/drive.file",
     ],
   },
+  proxy: { baseUrl: "https://sheets.googleapis.com/v4" },
 };
