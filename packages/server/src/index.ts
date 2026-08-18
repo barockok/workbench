@@ -8,6 +8,7 @@ import { registerOAuthRoutes } from "./api/oauth-routes";
 import { registerOAuthRedirectRoute } from "./api/oauth-redirect";
 import { registerPortal } from "./portal";
 import { registerJotRoutes } from "./jots/routes";
+import { registerCurlProxy } from "./api/curl-proxy";
 import { startUploadReaper } from "./jots/pending";
 import { loadPlugins } from "./plugins/loader";
 import { verifySession } from "./auth/session";
@@ -333,6 +334,7 @@ async function main() {
     reply.send(result);
   });
 
+  await registerCurlProxy(app);
   await registerJotRoutes(app);
   startUploadReaper();
 
