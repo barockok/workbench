@@ -12,9 +12,20 @@ export interface Integration {
   // When set, enables the curl proxy for this integration. The agent can call
   // curl_session to mint a short-lived token and then hit /c/<name>/... to
   // proxy arbitrary API calls with the user's stored credential injected.
+  //
+  // Either `baseUrl` (static) or `resolver` (dynamic, resolved server-side
+  // from per-connection config at request time) must be set.
   proxy?: {
-    // API base URL, e.g. "https://api.github.com". Trailing slash is stripped.
-    baseUrl: string;
+    // Static API base URL, e.g. "https://api.github.com". May also be a
+    // template using "cloud-id" as a placeholder for Atlassian integrations
+    // — ctx.http() resolves it automatically.
+    baseUrl?: string;
+    // Dynamic resolver name. The proxy resolves the real base URL at request
+    // time using per-connection config stored at connect time.
+    resolver?: "instance-url" | "newrelic-region";
+    // Path suffix appended to the resolved instance URL (used with
+    // resolver: "instance-url"), e.g. "/api/v4".
+    pathPrefix?: string;
   };
 }
 

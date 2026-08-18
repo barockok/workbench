@@ -39,4 +39,6 @@ export default {
       },
     ],
   },
+  // Base URL resolved at request time from the per-connection region config.
+  proxy: { resolver: "newrelic-region" },
 };
