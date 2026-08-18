@@ -11,4 +11,7 @@ export default {
     tokenUrl: "https://github.com/login/oauth/access_token",
     scopes: ["repo", "read:user", "read:org", "issues", "pull_requests"],
   },
+  proxy: {
+    baseUrl: "https://api.github.com",
+  },
 };
