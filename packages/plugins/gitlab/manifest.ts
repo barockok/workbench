@@ -20,4 +20,6 @@ export default {
       default: "https://gitlab.com",
     },
   },
+  // Base URL resolved at request time from the per-connection instanceUrl.
+  proxy: { resolver: "instance-url", pathPrefix: "/api/v4" },
 };
