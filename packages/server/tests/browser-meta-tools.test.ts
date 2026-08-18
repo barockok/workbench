@@ -49,6 +49,16 @@ describe("browser plugin tools", () => {
     expect(out).toEqual({ url: "https://e.com", title: "E" });
   });
 
+  it("browser_navigate schema rejects non-http(s) protocols", () => {
+    const schema = tool("browser_navigate").inputSchema;
+    expect(() => schema.parse({ url: "file:///proc/self/environ" })).toThrow();
+    expect(() => schema.parse({ url: "ftp://example.com" })).toThrow();
+    expect(() => schema.parse({ url: "data:text/html,<script>" })).toThrow();
+    expect(() => schema.parse({ url: "javascript:alert(1)" })).toThrow();
+    expect(() => schema.parse({ url: "http://example.com" })).not.toThrow();
+    expect(() => schema.parse({ url: "https://example.com" })).not.toThrow();
+  });
+
   it("browser_screenshot forwards opts and returns the helper result", async () => {
     shotMock.mockResolvedValue({ _mcpImage: { data: "B64", mimeType: "image/jpeg" } });
     const out = await (tool("browser_screenshot").handler as any)({ userId: "u1" }, { maxWidth: 800 });
