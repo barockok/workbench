@@ -1,23 +1,15 @@
-# a-workbench v0.23.2
+# a-workbench v0.23.3
 
-_2026-08-14_
+_2026-08-18_
 
-Headline: **API key verification is now O(1) — indexed SHA-256 lookup replaces a full-table bcrypt scan.**
+Headline: **Security fix — `browser_navigate` now rejects non-HTTP(S) URLs.**
 
-## Performance
+## Security
 
-- **`verifyApiKey` — indexed lookup via `api_key_sha`.** Every `/mcp` request previously scanned every row in `users` and ran `bcrypt.compareSync` against each hash. At 100 users this blocked the event loop for about 2.8 seconds per request. The MCP handshake needs two requests, so a cold connect cost about 9.2 seconds on staging. A new `api_key_sha` column stores a SHA-256 of each key. An index on that column makes lookup a single `SELECT WHERE api_key_sha = ?`. The old bcrypt path is kept as a fallback for legacy rows (minted before this version) and is removed automatically on first successful verify.
-
-  SHA-256 (no work factor) is the right choice for this column: keys are `crypto.randomBytes(32)`, server-minted, never user-chosen. 256 bits of entropy makes a preimage attack on the stored digest infeasible.
-
-  Schema migration runs automatically at startup (`ALTER TABLE users ADD COLUMN api_key_sha TEXT` + partial index). No manual step is needed. OAuth Bearer and session JWT callers are not affected — they verify via signature, not a DB scan.
-
-## Fixes
-
-- **`resolve.ts`: missing `await` on `verifyApiKey`.** The caller did not await the async function. It received a Promise object, which is always truthy. The system may have accepted any API key header before this fix. The `await` is now present and auth is correctly enforced.
+- **`browser_navigate`: block `file://` and other non-HTTP(S) protocols.** The tool previously accepted any syntactically valid URL, including `file://`. An agent or malicious prompt could navigate to `file:///proc/self/environ` and read the pod's environment (secrets, tokens, API keys) via `browser_read_text`. A Zod `.refine()` now allowlists only `http:` and `https:` — any other scheme (`file://`, `ftp://`, `data:`, `javascript:`, etc.) is rejected before the handler runs.
 
 ## Commits
 
-- `perf(auth): index api key lookup instead of bcrypt-scanning all users` (64cf524)
+- `security: block non-http(s) protocols in browser_navigate` (9fdf1fa)
 
-**Full diff:** https://github.com/barockok/workbench/compare/v0.23.1...v0.23.2
+**Full diff:** https://github.com/barockok/workbench/compare/v0.23.2...v0.23.3
