@@ -11,4 +11,5 @@ export default {
     tokenUrl: "https://app.asana.com/-/oauth_token",
     scopes: ["default"],
   },
+  proxy: { baseUrl: "https://app.asana.com/api/1.0" },
 };

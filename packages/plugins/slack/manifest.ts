@@ -30,4 +30,5 @@ export default {
       "search:read",
     ],
   },
+  proxy: { baseUrl: "https://slack.com/api" },
 };

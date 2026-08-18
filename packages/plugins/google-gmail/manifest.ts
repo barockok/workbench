@@ -11,4 +11,5 @@ export default {
     tokenUrl: "https://oauth2.googleapis.com/token",
     scopes: ["https://www.googleapis.com/auth/gmail.modify"],
   },
+  proxy: { baseUrl: "https://gmail.googleapis.com/gmail/v1" },
 };
