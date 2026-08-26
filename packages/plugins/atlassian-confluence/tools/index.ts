@@ -140,17 +140,29 @@ export const createPage = {
 export const searchPages = {
   name: "confluence_search_pages",
   description:
-    "Full-text search Confluence pages. Returns up to `limit` (default 10) slim rows: id, title, spaceKey, version, url. Use confluence_get_page with an id to read content.",
+    "Search Confluence pages. Pass `query` for plain full-text, or `cql` for a raw CQL expression (space/label/date/title filters, boolean logic, ORDER BY) — e.g. `space = ENG AND label = \"adr\" ORDER BY lastmodified DESC`. Exactly one of the two is required; `cql` wins if both are given. A malformed CQL string returns an upstream error, not an empty list. Returns up to `limit` (default 10, max 100) slim rows: id, title, spaceKey, version, url. Use confluence_get_page with an id to read content.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
-    query: z.string(),
-    limit: z.number().default(10),
+    query: z.string().optional(),
+    // Raw CQL, passed through untouched. Mirrors how jira_search_issues fronts
+    // JQL: where the product has a query language, expose it rather than
+    // silently flattening it to a text match.
+    cql: z.string().optional(),
+    limit: z.number().int().min(1).max(100).default(10),
   }),
   handler: async (ctx: any, args: any) => {
     // v2 has no full-text search; use the supported generic CQL search endpoint
     // (search:confluence scope). Page hits nest their content under `content`.
+    if (!args.cql && !args.query) {
+      throw new Error("confluence_search_pages: pass either `query` (full text) or `cql`");
+    }
     const params = new URLSearchParams();
-    params.set("cql", `type=page AND text ~ "${escapeCql(args.query)}"`);
+    // A caller-supplied CQL string is already a complete expression — don't wrap
+    // it in `type=page`, which would override an explicit `type=` of their own.
+    params.set(
+      "cql",
+      args.cql ? args.cql : `type=page AND text ~ "${escapeCql(args.query)}"`
+    );
     params.set("limit", String(args.limit));
     params.set("expand", "content.space,content.version");
     const res = await ctx.http(`${SEARCH}?${params}`);
@@ -177,10 +189,37 @@ export const searchPages = {
   },
 };
 
+// Attachments — and the diagrams/images macros reference — never appear in the
+// storage-format body. A section that is "just a draw.io diagram" reads as an
+// empty gap, with nothing telling the consumer content was there. List them
+// alongside the body so the gap is visible and fetchable.
+//
+// Best-effort: a page is still usable without this. Returns undefined when the
+// call fails (e.g. a token minted before read:attachment:confluence was added)
+// so callers can tell "couldn't look" from [] "confirmed none".
+async function fetchAttachments(ctx: any, pageId: string): Promise<any[] | undefined> {
+  try {
+    const res = await ctx.http(`${V2}/pages/${pageId}/attachments?limit=100`);
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    if (!Array.isArray(data?.results)) return undefined;
+    return data.results.map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      mediaType: a.mediaType,
+      fileSize: a.fileSize,
+      downloadUrl: a.downloadLink,
+      url: a.webuiLink,
+    }));
+  } catch {
+    return undefined;
+  }
+}
+
 export const getPage = {
   name: "confluence_get_page",
   description:
-    "Get a Confluence page by ID, including its body (storage XHTML), version number, and space. Returns { id, title, spaceKey, version, body, url }. The version number is required by confluence_update_page.",
+    "Get a Confluence page by ID, including its body (storage XHTML), version number, and space. Returns { id, title, spaceKey, version, body, url, attachments }. `attachments` lists files embedded in or attached to the page (diagrams, images) — these never appear in the body, so a section that is only a diagram looks empty without them; each has a downloadUrl. It is omitted entirely if the attachment lookup failed, as opposed to [] for a page with none. The version number is required by confluence_update_page.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     // v2 ids are 64-bit — long numeric strings; don't assume 9 digits.
@@ -190,10 +229,16 @@ export const getPage = {
     expand: z.string().optional(),
   }),
   handler: async (ctx: any, args: any) => {
-    const res = await ctx.http(`${V2}/pages/${args.pageId}?body-format=storage`);
+    // Fire both together — the attachment list is independent of the body, and
+    // fetchAttachments never throws, so a 404 page just discards it.
+    const [res, attachments] = await Promise.all([
+      ctx.http(`${V2}/pages/${args.pageId}?body-format=storage`),
+      fetchAttachments(ctx, args.pageId),
+    ]);
     if (res.status === 404) return { error: `Page ${args.pageId} not found` };
     const data = await readJson(res, "confluence_get_page");
-    return slimPage(ctx, data);
+    const page = await slimPage(ctx, data);
+    return attachments === undefined ? page : { ...page, attachments };
   },
 };
 
