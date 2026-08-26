@@ -339,7 +339,7 @@ export const metaTools = [
   {
     name: "curl_session",
     description:
-      "Mint a short-lived proxy token (15 min) for one or more integrations. Use the returned token as a Bearer header to make arbitrary API calls via the /c/<integration>/<path> transparent proxy — the proxy injects the user's real credential. Only integrations that have curl proxy enabled are accepted.",
+      "HIGH RISK — do not call without explicit user approval. Mints a short-lived (15 min) proxy token granting ARBITRARY API calls (GET/POST/PUT/PATCH/DELETE), including destructive writes, against the listed integration(s) — the proxy injects the user's real credential transparently at /c/<integration>/<path>, so anything reachable via that credential is reachable through this token. Before invoking, tell the user exactly which integration(s) and what action you intend to perform, and wait for their explicit go-ahead; do not mint speculatively or as a default first step. Only integrations that have curl proxy enabled are accepted.",
     inputSchema: z.object({
       integrations: z.array(z.string()).min(1),
     }),
