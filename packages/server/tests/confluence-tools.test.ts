@@ -170,6 +170,40 @@ describe("confluence_search_pages (v2 → CQL search)", () => {
     expect(searchPages.inputSchema.safeParse({ query: "a", limit: 100 }).success).toBe(true);
   });
 
+  // `hasMore` on its own is a dead end: it tells the agent results were
+  // truncated and gives it no way to advance. Hand back the cursor too.
+  it("returns nextCursor lifted from _links.next when more pages exist", async () => {
+    const { ctx } = routedCtx([
+      ["/rest/api/search", {
+        results: [],
+        size: 10,
+        _links: { next: "/wiki/rest/api/search?cql=type%3Dpage&cursor=abc123&limit=10" },
+      }],
+    ]);
+    const out = await searchPages.handler(ctx, { query: "a", limit: 10 });
+    expect(out.hasMore).toBe(true);
+    expect(out.nextCursor).toBe("abc123");
+  });
+
+  it("omits nextCursor on the last page", async () => {
+    const { ctx } = routedCtx([["/rest/api/search", { results: [], size: 1, _links: {} }]]);
+    const out = await searchPages.handler(ctx, { query: "a", limit: 10 });
+    expect(out.hasMore).toBe(false);
+    expect(out.nextCursor).toBeUndefined();
+  });
+
+  it("forwards a caller's cursor to the search endpoint", async () => {
+    const { ctx, urls } = routedCtx([["/rest/api/search", { results: [] }]]);
+    await searchPages.handler(ctx, { query: "a", limit: 10, cursor: "abc123" });
+    expect(new URL(urls[0]).searchParams.get("cursor")).toBe("abc123");
+  });
+
+  it("sends no cursor param on a first-page call", async () => {
+    const { ctx, urls } = routedCtx([["/rest/api/search", { results: [] }]]);
+    await searchPages.handler(ctx, { query: "a", limit: 10 });
+    expect(new URL(urls[0]).searchParams.has("cursor")).toBe(false);
+  });
+
   // A malformed CQL string must surface the upstream 400, not an empty list —
   // that is what converts P1 from silently-wrong to loudly-broken.
   it("throws on an upstream CQL error rather than returning empty results", async () => {
@@ -263,7 +297,85 @@ describe("confluence_list_spaces (v2)", () => {
     expect(urls[0]).toContain("/wiki/api/v2/spaces");
     expect(out.results[0]).toEqual({ id: "98765", key: "ENG", name: "Engineering", url: "/spaces/ENG" });
     expect(out.hasMore).toBe(true);
+    // hasMore without the cursor to act on it is a dead end — assert they ship together.
+    expect(out.nextCursor).toBe("abc");
   });
+
+  it("omits nextCursor on the last page", async () => {
+    const { ctx } = routedCtx([["/api/v2/spaces", { results: [], _links: {} }]]);
+    const out = await listSpaces.handler(ctx, { limit: 25 });
+    expect(out.hasMore).toBe(false);
+    expect(out.nextCursor).toBeUndefined();
+  });
+
+  it("caps limit at the v2 ceiling so a bad value fails loudly instead of as an upstream 400", () => {
+    expect(listSpaces.inputSchema.safeParse({ limit: 250 }).success).toBe(true);
+    expect(listSpaces.inputSchema.safeParse({ limit: 251 }).success).toBe(false);
+    expect(listSpaces.inputSchema.safeParse({ limit: 0 }).success).toBe(false);
+    expect(listSpaces.inputSchema.safeParse({ limit: 1.5 }).success).toBe(false);
+    expect(listSpaces.inputSchema.safeParse({}).data?.limit).toBe(25);
+  });
+
+  it("forwards a caller's cursor to the v2 spaces endpoint", async () => {
+    const { ctx, urls } = routedCtx([["/api/v2/spaces", { results: [] }]]);
+    await listSpaces.handler(ctx, { limit: 25, cursor: "abc" });
+    expect(new URL(urls[0]).searchParams.get("cursor")).toBe("abc");
+  });
+
+  it("sends no cursor param on a first-page call", async () => {
+    const { ctx, urls } = routedCtx([["/api/v2/spaces", { results: [] }]]);
+    await listSpaces.handler(ctx, { limit: 25 });
+    expect(new URL(urls[0]).searchParams.has("cursor")).toBe(false);
+  });
+});
+
+// The pairing the review asked for, pinned across both paginated tools at once:
+// whenever hasMore is true a usable nextCursor must come with it, and a cursor
+// handed back must actually reach the wire on the follow-up call. A regression
+// that drops one half — hasMore with no cursor, or a cursor silently ignored —
+// strands the agent mid-iteration, which is exactly the failure being fixed.
+describe("pagination contract (search + list_spaces)", () => {
+  const cases = [
+    {
+      name: "confluence_search_pages",
+      route: "/rest/api/search",
+      next: "/wiki/rest/api/search?cql=type%3Dpage&cursor=pg2&limit=10",
+      call: (ctx: any, extra: any = {}) => searchPages.handler(ctx, { query: "a", limit: 10, ...extra }),
+    },
+    {
+      name: "confluence_list_spaces",
+      route: "/api/v2/spaces",
+      next: "/wiki/api/v2/spaces?cursor=pg2&limit=25",
+      call: (ctx: any, extra: any = {}) => listSpaces.handler(ctx, { limit: 25, ...extra }),
+    },
+  ];
+
+  for (const c of cases) {
+    it(`${c.name}: hasMore implies a nextCursor that round-trips to the next call`, async () => {
+      const first = routedCtx([[c.route, { results: [], _links: { next: c.next } }]]);
+      const page1 = await c.call(first.ctx);
+
+      expect(page1.hasMore).toBe(true);
+      expect(typeof page1.nextCursor).toBe("string");
+      expect(page1.nextCursor).toBeTruthy();
+
+      // Feed it straight back — the whole point is that the agent can iterate.
+      const second = routedCtx([[c.route, { results: [], _links: {} }]]);
+      const page2 = await c.call(second.ctx, { cursor: page1.nextCursor });
+      expect(new URL(second.urls[0]).searchParams.get("cursor")).toBe(page1.nextCursor);
+      expect(page2.hasMore).toBe(false);
+      expect(page2.nextCursor).toBeUndefined();
+    });
+
+    it(`${c.name}: a malformed _links.next yields no cursor rather than a bogus one`, async () => {
+      const { ctx } = routedCtx([[c.route, { results: [], _links: { next: "/wiki/api/v2/spaces" } }]]);
+      const out = await c.call(ctx);
+      // hasMore still reflects the envelope; the cursor is simply absent, so the
+      // caller retries rather than paging with garbage.
+      expect(out.hasMore).toBe(true);
+      expect(out.nextCursor).toBeUndefined();
+    });
+  }
 });
 
 describe("confluence_update_page (v2)", () => {

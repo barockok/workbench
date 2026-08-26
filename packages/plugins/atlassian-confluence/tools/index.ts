@@ -20,6 +20,20 @@ function escapeCql(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+// Pull the next-page cursor out of a paginated envelope's `_links.next`.
+//
+// Read the cursor Atlassian handed us rather than constructing one: `next` is a
+// relative URL (`/wiki/rest/api/search?cql=...&cursor=...`), and lifting the
+// param verbatim keeps this correct if the spelling ever changes. Returns
+// undefined on the last page, so the field drops out of the response entirely.
+function nextCursor(data: any): string | undefined {
+  const next = data?._links?.next;
+  if (typeof next !== "string") return undefined;
+  const qs = next.split("?")[1];
+  if (!qs) return undefined;
+  return new URLSearchParams(qs).get("cursor") ?? undefined;
+}
+
 // Surface the real upstream status + body on failure instead of returning a 4xx
 // envelope as if it were a success. Throwing is caught by the executor and
 // reported to the MCP client as { error } (see mcp/meta-tools.ts).
@@ -140,7 +154,7 @@ export const createPage = {
 export const searchPages = {
   name: "confluence_search_pages",
   description:
-    "Search Confluence pages. Pass `query` for plain full-text, or `cql` for a raw CQL expression (space/label/date/title filters, boolean logic, ORDER BY) — e.g. `space = ENG AND label = \"adr\" ORDER BY lastmodified DESC`. Exactly one of the two is required; `cql` wins if both are given. A malformed CQL string returns an upstream error, not an empty list. Returns up to `limit` (default 10, max 100) slim rows: id, title, spaceKey, version, url. Use confluence_get_page with an id to read content.",
+    "Search Confluence pages. Pass `query` for plain full-text, or `cql` for a raw CQL expression (space/label/date/title filters, boolean logic, ORDER BY) — e.g. `space = ENG AND label = \"adr\" ORDER BY lastmodified DESC`. Exactly one of the two is required; `cql` wins if both are given. A malformed CQL string returns an upstream error, not an empty list. Returns up to `limit` (default 10, max 100) slim rows: id, title, spaceKey, version, url. Results are truncated at `limit`: when `hasMore` is true the response also carries `nextCursor` — call again with the same query and `cursor` set to it to get the following page. Use confluence_get_page with an id to read content.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     query: z.string().optional(),
@@ -149,6 +163,8 @@ export const searchPages = {
     // silently flattening it to a text match.
     cql: z.string().optional(),
     limit: z.number().int().min(1).max(100).default(10),
+    // Opaque — pass back the `nextCursor` from a previous call, unmodified.
+    cursor: z.string().optional(),
   }),
   handler: async (ctx: any, args: any) => {
     // v2 has no full-text search; use the supported generic CQL search endpoint
@@ -164,6 +180,7 @@ export const searchPages = {
       args.cql ? args.cql : `type=page AND text ~ "${escapeCql(args.query)}"`
     );
     params.set("limit", String(args.limit));
+    if (args.cursor) params.set("cursor", args.cursor);
     params.set("expand", "content.space,content.version");
     const res = await ctx.http(`${SEARCH}?${params}`);
     const data = await readJson(res, "confluence_search_pages");
@@ -183,8 +200,11 @@ export const searchPages = {
       }),
       size: data.size,
       // v2-style cursor pagination: the generic search envelope still exposes
-      // `_links.next`, so report whether another page exists.
+      // `_links.next`, so report whether another page exists — and hand back the
+      // cursor to reach it, since `hasMore` alone leaves the caller stuck
+      // knowing results were truncated with no way to advance.
       hasMore: Boolean(data._links?.next),
+      nextCursor: nextCursor(data),
     };
   },
 };
@@ -245,14 +265,19 @@ export const getPage = {
 export const listSpaces = {
   name: "confluence_list_spaces",
   description:
-    "List Confluence spaces (up to `limit`, default 25). Returns slim rows: key, name, id, url. Space keys are needed by confluence_create_page.",
+    "List Confluence spaces (up to `limit`, default 25). Returns slim rows: key, name, id, url. Results are truncated at `limit`: when `hasMore` is true the response also carries `nextCursor` — call again with `cursor` set to it for the following page. Space keys are needed by confluence_create_page.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
-    limit: z.number().default(25),
+    // 250 is the v2 /spaces ceiling. Rejecting out-of-range here costs a
+    // round-trip less than an opaque upstream 400 and names the bad field.
+    limit: z.number().int().min(1).max(250).default(25),
+    // Opaque — pass back the `nextCursor` from a previous call, unmodified.
+    cursor: z.string().optional(),
   }),
   handler: async (ctx: any, args: any) => {
     const params = new URLSearchParams();
     params.set("limit", String(args.limit));
+    if (args.cursor) params.set("cursor", args.cursor);
     const res = await ctx.http(`${V2}/spaces?${params}`);
     const data = await readJson(res, "confluence_list_spaces");
     if (!Array.isArray(data?.results)) return data;
@@ -269,6 +294,7 @@ export const listSpaces = {
       })),
       // v2 spaces is cursor-paginated via _links.next, not start/limit offsets.
       hasMore: Boolean(data._links?.next),
+      nextCursor: nextCursor(data),
     };
   },
 };
