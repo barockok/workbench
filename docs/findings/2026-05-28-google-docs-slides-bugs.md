@@ -106,6 +106,6 @@ This fix should be committed to main.
 
 ## Verification Artifacts
 
-- **Created doc:** `1tZuL_NOOQXm2FezMUX7PjZPBIFBInZ6WkKOF7O0Nelg` ("staging Test Doc - google-docs")
-- **Created presentation:** `17ROb1HMawEZeprDO4tE02i2vwAHrQFwW58_qwrpjksQ` ("staging Test Slides - google-slides")
+- **Created doc:** `1tZuL_NOOQXm2FezMUX7PjZPBIFBInZ6WkKOF7O0Nelg` ("Test Doc - google-docs")
+- **Created presentation:** `17ROb1HMawEZeprDO4tE02i2vwAHrQFwW58_qwrpjksQ` ("Test Slides - google-slides")
 - **OAuth tokens:** Stored for both integrations, verified via `/api/connections`
