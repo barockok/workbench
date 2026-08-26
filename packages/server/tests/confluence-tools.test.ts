@@ -141,6 +141,114 @@ describe("confluence_search_pages (v2 → CQL search)", () => {
     });
     expect(out.hasMore).toBe(false);
   });
+
+  // The whole point of F1: a caller-built CQL string must reach Confluence
+  // intact. Previously it landed in `query` and was matched as literal text —
+  // near-zero hits, no error, so callers concluded "nothing found".
+  it("passes a caller's cql through verbatim, without the type=page wrapper", async () => {
+    const { ctx, urls } = routedCtx([["/rest/api/search", { results: [] }]]);
+    const cql = 'space = ENG AND label = "adr" ORDER BY lastmodified DESC';
+    await searchPages.handler(ctx, { cql, limit: 5 });
+    expect(new URL(urls[0]).searchParams.get("cql")).toBe(cql);
+  });
+
+  it("prefers cql over query when both are given", async () => {
+    const { ctx, urls } = routedCtx([["/rest/api/search", { results: [] }]]);
+    await searchPages.handler(ctx, { query: "ignored", cql: "label = \"adr\"", limit: 5 });
+    const sent = new URL(urls[0]).searchParams.get("cql")!;
+    expect(sent).toBe('label = "adr"');
+    expect(sent).not.toContain("ignored");
+  });
+
+  it("rejects a call with neither query nor cql", async () => {
+    const { ctx } = routedCtx([["/rest/api/search", { results: [] }]]);
+    await expect(searchPages.handler(ctx, { limit: 5 })).rejects.toThrow(/query|cql/);
+  });
+
+  it("caps limit so a bad value fails loudly instead of scanning unbounded", () => {
+    expect(searchPages.inputSchema.safeParse({ query: "a", limit: 500 }).success).toBe(false);
+    expect(searchPages.inputSchema.safeParse({ query: "a", limit: 100 }).success).toBe(true);
+  });
+
+  // A malformed CQL string must surface the upstream 400, not an empty list —
+  // that is what converts P1 from silently-wrong to loudly-broken.
+  it("throws on an upstream CQL error rather than returning empty results", async () => {
+    const { ctx } = routedCtx([["/rest/api/search", { message: "Could not parse cql" }]], 400);
+    await expect(searchPages.handler(ctx, { cql: "space = = ENG", limit: 5 })).rejects.toThrow(
+      /400/
+    );
+  });
+});
+
+describe("confluence_get_page attachments", () => {
+  it("lists attachments alongside the body so diagram-only sections aren't silent gaps", async () => {
+    const { ctx, urls } = routedCtx([
+      // Ordered before the page route: both URLs share the /pages/123 prefix.
+      ["/pages/123/attachments", {
+        results: [
+          {
+            id: "att1",
+            title: "architecture.drawio.png",
+            mediaType: "image/png",
+            fileSize: 20480,
+            downloadLink: "/download/attachments/123/architecture.drawio.png",
+            webuiLink: "/pages/viewpageattachments.action?pageId=123",
+          },
+        ],
+      }],
+      ["/api/v2/pages/123", {
+        id: "123",
+        title: "T",
+        spaceId: "98765",
+        version: { number: 7 },
+        body: { storage: { value: "<p>see diagram</p>" } },
+      }],
+      ["/api/v2/spaces/98765", { id: "98765", key: "ENG" }],
+    ]);
+    const out = await getPage.handler(ctx, { pageId: "123" });
+
+    expect(urls.some((u) => u.includes("/pages/123/attachments"))).toBe(true);
+    expect(out.attachments).toEqual([
+      {
+        id: "att1",
+        title: "architecture.drawio.png",
+        mediaType: "image/png",
+        fileSize: 20480,
+        downloadUrl: "/download/attachments/123/architecture.drawio.png",
+        url: "/pages/viewpageattachments.action?pageId=123",
+      },
+    ]);
+    expect(out.body).toBe("<p>see diagram</p>");
+  });
+
+  // Models a token minted before read:attachment:confluence: the page reads
+  // fine, only the attachment call 403s. The page must still come back, with
+  // `attachments` absent rather than a misleading [].
+  it("omits attachments when the lookup 403s, keeping the page usable", async () => {
+    const http = vi.fn(async (url: string) => {
+      if (url.includes("/attachments")) {
+        return { ok: false, status: 403, json: async () => ({}), text: async () => "" };
+      }
+      if (url.includes("/spaces/")) {
+        return { ok: true, status: 200, json: async () => ({ id: "98765", key: "ENG" }) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: "123",
+          title: "T",
+          spaceId: "98765",
+          version: { number: 7 },
+          body: { storage: { value: "<p>hi</p>" } },
+        }),
+      };
+    });
+    const out = await getPage.handler({ http, userId: "u-403" } as any, { pageId: "123" });
+
+    expect(out).toMatchObject({ id: "123", title: "T", body: "<p>hi</p>" });
+    expect("attachments" in out).toBe(false);
+  });
 });
 
 describe("confluence_list_spaces (v2)", () => {

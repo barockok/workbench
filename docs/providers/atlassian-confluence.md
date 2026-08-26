@@ -2,10 +2,10 @@
 
 Plugin: `packages/plugins/atlassian-confluence`
 Auth type: OAuth 2.0 (3LO — three-legged)
-Last verified against official docs: 2026-05-29
+Last verified against official docs: 2026-08-19
 
-Scopes used (from `manifest.ts`):
-`read:confluence-content.summary`, `write:confluence-content`, `search:confluence`, `read:confluence-space.summary`
+Scopes used (from `manifest.ts`) — **granular**, not classic:
+`read:page:confluence`, `write:page:confluence`, `delete:page:confluence`, `read:space:confluence`, `read:attachment:confluence`, `search:confluence`, `offline_access`
 
 ---
 
@@ -19,29 +19,23 @@ Add the **Confluence API** (not Jira) and configure these scopes:
 
 | Scope | Grants | Needed for |
 |---|---|---|
-| `read:confluence-content.summary` | Read page summaries (title, IDs, metadata) without rendered body | `confluence_get_page`, `confluence_search_pages` |
-| `write:confluence-content` | Create, update, delete pages and content | `confluence_create_page`, `confluence_update_page`, `confluence_delete_page` |
-| `search:confluence` | CQL search across content | `confluence_search_pages`, `confluence_list_spaces` (via CQL fallback — see below) |
-| `read:confluence-space.summary` | Read space metadata (key, name, type) | future-proofing; granted on the app, even though the plugin currently lists spaces via CQL |
+| `read:page:confluence` | Read pages, incl. storage-format body | `confluence_get_page`, `confluence_search_pages` |
+| `write:page:confluence` | Create and update pages | `confluence_create_page`, `confluence_update_page` |
+| `delete:page:confluence` | Delete pages | `confluence_delete_page` |
+| `read:space:confluence` | Read space metadata (id, key, name) | `confluence_list_spaces`, and the internal spaceKey↔spaceId resolver every page tool uses |
+| `read:attachment:confluence` | List a page's attachments | the `attachments` array on `confluence_get_page` |
+| `search:confluence` | CQL search across content | `confluence_search_pages` |
+| `offline_access` | Issue a refresh token | keeping the connection alive past ~1h |
 
-> Sensitive scopes (`read:confluence-content.all` for full body, attachments) require additional review for distribution. Stay on `.summary` unless you really need rendered HTML.
+### Granular scopes only — do not mix in classic ones
 
-### Classic vs granular scopes (and why `list_spaces` doesn't use Confluence v2)
+Confluence's v2 REST API (`/wiki/api/v2/pages`, `/wiki/api/v2/spaces`) requires **granular** scopes. The classic `read:confluence-content.summary` family only authorizes the **v1 content API, which Atlassian removed** — see [the v1 removal finding](../findings/2026-06-12-confluence-v1-content-get-removed.md) and [the v2 migration](../findings/2026-06-22-confluence-v2-migration.md). This plugin is fully on v2 + granular.
 
-Confluence's v2 REST API (`/wiki/api/v2/spaces`, `/wiki/api/v2/pages`, …) requires **granular scopes** such as `read:space:confluence`. The developer console exposes those under a **Granular scopes** tab in *Edit Confluence API*, but the checkboxes are **disabled while any classic scope is selected** — an OAuth 2.0 (3LO) app cannot mix classic and granular at the same time.
+In the developer console the granular checkboxes live under a **Granular scopes** tab in *Edit Confluence API*, and they are **disabled while any classic scope is selected** — a 3LO app cannot hold both models at once. Untick every classic row first.
 
-This plugin is on classic scopes. To get a list of spaces without switching the entire scope model:
+Only `confluence_search_pages` still calls a v1 path: `/wiki/rest/api/search` (CQL). That endpoint is not part of the removal and needs `search:confluence`, which is itself granular.
 
-- `confluence_list_spaces` does **not** call `/wiki/api/v2/spaces`.
-- It calls `/wiki/rest/api/search?cql=type=space`, which only needs `search:confluence` (already granted). Response is the standard CQL `results[]` envelope; each hit carries a `space` object with `key`, `name`, `type`, `_links.self`.
-
-If you ever decide to flip the app to granular scopes:
-1. In Atlassian developer console → Permissions → Confluence API → *Edit Scopes* → **Granular scopes** tab, untick every classic row first, then tick the granular equivalents (`read:page:confluence`, `read:space:confluence`, `write:page:confluence`, etc.).
-2. Update `manifest.ts` to request the granular scope names.
-3. Update every confluence plugin tool to call `/wiki/api/v2/...` endpoints (currently the tools call `/wiki/rest/api/...`).
-4. Clear stored tokens; users must re-consent.
-
-That's a coordinated swap, not a partial edit — don't half-do it.
+**Changing this scope list forces every existing user to reconnect.** Refresh does not re-request scopes, so an old token keeps working with whatever it was minted for — it just silently lacks the new capability (a token from before `read:attachment:confluence` gets a page with the `attachments` field omitted, not an error).
 
 ### Callback URL
 
@@ -51,17 +45,14 @@ https://<your-a-workbench-host>/api/auth/atlassian-confluence/callback
 
 ### Cloud ID endpoint differs
 
-Confluence API base after resolving `cloudid`:
-```
-https://api.atlassian.com/ex/confluence/<cloudid>/wiki/rest/api/...
-```
-(Note the `/wiki/` prefix that Confluence requires.)
-
-For the newer Confluence v2 REST API:
+Confluence API base after resolving `cloudid` — note the `/wiki/` prefix Confluence requires:
 ```
 https://api.atlassian.com/ex/confluence/<cloudid>/wiki/api/v2/...
 ```
-(v2 requires granular scopes — see the classic vs granular section above. The current plugin uses v1 endpoints throughout.)
+Everything except search runs on v2. Search alone stays on the v1 CQL path:
+```
+https://api.atlassian.com/ex/confluence/<cloudid>/wiki/rest/api/search
+```
 
 The plugin auto-resolves cloudid via `/oauth/token/accessible-resources` — same as Jira.
 
