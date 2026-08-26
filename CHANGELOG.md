@@ -4,6 +4,17 @@ All notable changes to a-workbench, newest first. The latest release also lives 
 
 ---
 
+# a-workbench v0.24.0
+
+_2026-08-26_
+
+Headline: **Curl proxy — transparent API access via short-lived session tokens.**
+
+- **`curl_session` + `/c/<integration>/<path>` proxy:** 15-min bearer token unlocks direct REST access (GET/POST/PUT/PATCH/DELETE) to any curl-proxy-enabled integration, with the real credential injected transparently. Enabled on asana, bitbucket, confluence, jira, github, gitlab, google-*, newrelic, slack; dynamic base-URL resolvers for jira/confluence/gitlab/newrelic.
+- **High-risk guardrail:** tool description now warns the calling agent and requires explicit user approval before minting (prompt-level only, no hard gate yet).
+
+---
+
 # a-workbench v0.23.2
 
 _2026-08-14_
