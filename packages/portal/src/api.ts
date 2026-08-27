@@ -41,6 +41,7 @@ export interface ApiKeyField {
   secret?: boolean;
   options?: string[];
   optional?: boolean;
+  multiline?: boolean;
 }
 
 export interface IntegrationSummary {

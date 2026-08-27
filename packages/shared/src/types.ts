@@ -91,6 +91,9 @@ export interface ApiKeyField {
   // When true the field may be left blank at connect time (e.g. a default
   // account id tools fall back to). Non-optional fields are required.
   optional?: boolean;
+  // When true renders a multiline textarea (e.g. for JSON arrays). Works with
+  // secret fields as well — still encrypted but shown as a textbox.
+  multiline?: boolean;
 }
 
 export interface CookieConfig {

@@ -67,6 +67,17 @@ export default function ApiKeyAuthModal({ integration, displayName, fields, onCl
                     <option key={o} value={o}>{o}</option>
                   ))}
                 </select>
+              ) : f.multiline ? (
+                <textarea
+                  id={`apikey-${f.key}`}
+                  className="session-transfer-paste"
+                  rows={6}
+                  style={{ fontFamily: "monospace", resize: "vertical" }}
+                  autoComplete="off"
+                  placeholder={f.placeholder}
+                  value={values[f.key] ?? ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                />
               ) : (
                 <input
                   id={`apikey-${f.key}`}
