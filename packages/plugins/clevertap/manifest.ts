@@ -3,6 +3,7 @@ export default {
   version: "1.0.0",
   displayName: "CleverTap",
   description: "Mobile analytics — profiles, events, campaigns, and reports (read-only).",
+  logo: "logo.svg",
   categories: ["analytics", "marketing"],
   auth: {
     type: "apikey" as const,
