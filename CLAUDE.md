@@ -66,6 +66,11 @@ git config core.hooksPath .githooks
 If publishing existing history, also purge stray blobs (e.g. committed `node_modules`)
 with `git filter-repo`.
 
+## Releases
+
+- Every release ships a hand-written `docs/releases/<tag>.md` with decent markdown notes — group by category (Features / Fixes), explain the *why* not just the commit subject, link findings docs when relevant. The release workflow prefers this file over auto-generated git-log dumps.
+- **Release candidates.** Anything touching Docker image, DB schema, auth, or proxy goes out as `vX.Y.Z-rc.N` first. The RC publishes as a GitHub pre-release (auto-detected from the `-` in the tag) so `latest` Docker tag never moves; pull it explicitly with `vX.Y.Z-rc.N`. Soak, then `scripts/promote-rc.sh vX.Y.Z-rc.N` to bump, tag, and push the stable release. Notes live under the *stable* name (`docs/releases/vX.Y.Z.md`) from the first RC onward. Tag and `package.json` must always agree — `release.yml` fails the build otherwise. Full procedure: `.claude/skills/release-prep/SKILL.md`.
+
 ## Project Structure
 
 ```
