@@ -1,15 +1,17 @@
 name: Release
 
 # Push a v* tag to cut a release: builds the Docker image (chromium baked in),
-# pushes it to GHCR, and creates a GitHub Release from RELEASE_NOTES.md.
+# pushes it to GHCR, and creates a GitHub Release from docs/releases/<tag>.md.
+# RC tags (vX.Y.Z-rc.N) publish as pre-releases and never become `latest`.
 on:
   push:
     tags:
       - "v*.*.*"
+      - "v*.*.*-*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to (re)build, e.g. v0.1.0"
+        description: "Existing tag to (re)build, e.g. v0.24.0"
         required: true
 
 permissions:
@@ -17,7 +19,6 @@ permissions:
   packages: write # push to GHCR via GITHUB_TOKEN
 
 # Run JavaScript actions on Node 24 ahead of the 2026-06-16 forced migration
-# (checkout, setup-node, docker/*, action-gh-release still declare Node 20).
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -33,6 +34,20 @@ jobs:
       - name: Resolve version
         id: v
         run: echo "version=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      # Tag and package.json MUST agree — Docker tag is from the git tag while
+      # the app reports version from package.json. A mismatch ships a release
+      # whose reported version doesn't match the tag, so fail fast here.
+      - name: Verify tag matches package.json version
+        env:
+          REF_NAME: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          PKG_VERSION="$(grep -m1 '"version"' package.json | sed -E 's/.*"version": *"([^"]+)".*/\1/')"
+          if [ "v${PKG_VERSION}" != "${REF_NAME}" ]; then
+            echo "::error::tag ${REF_NAME} != package.json v${PKG_VERSION}"; exit 1
+          fi
+          echo "tag and package.json agree on ${REF_NAME}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,6 +66,33 @@ jobs:
         env:
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
 
+      - name: Generate changelog
+        env:
+          REF_NAME: ${{ github.event.inputs.tag || github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          NOTES_FILE="docs/releases/${REF_NAME}.md"
+          if [ -f "$NOTES_FILE" ]; then
+            echo "Using hand-written notes from $NOTES_FILE"
+            cp "$NOTES_FILE" RELEASE_NOTES.md
+          else
+            echo "No $NOTES_FILE — generating from git log"
+            PREV=$(git tag --sort=-v:refname | grep -v "^${REF_NAME}$" | head -n1 || true)
+            {
+              echo "## What changed"
+              echo
+              if [ -n "$PREV" ]; then
+                git log --pretty=tformat:'- %s (%h)' "${PREV}..${REF_NAME}"
+                echo
+                echo "**Full diff:** https://github.com/${REPO}/compare/${PREV}...${REF_NAME}"
+              else
+                git log --pretty=tformat:'- %s (%h)' "${REF_NAME}"
+              fi
+            } > RELEASE_NOTES.md
+          fi
+          cat RELEASE_NOTES.md
+
       - name: Lowercase image name
         id: img
         run: echo "repo=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
@@ -65,19 +107,37 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.img.outputs.repo }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ !contains(github.event.inputs.tag || github.ref_name, '-') }}
+
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ghcr.io/${{ steps.img.outputs.repo }}:${{ steps.v.outputs.version }}
-            ghcr.io/${{ steps.img.outputs.repo }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Create GitHub Release
+      # Repo may have immutable-releases policy: create as draft first
+      # (assets can still attach) then flip published, per GitHub's fix.
+      - name: Create GitHub release (draft)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.v.outputs.version }}
+          name: ${{ steps.v.outputs.version }}
           body_path: RELEASE_NOTES.md
+          draft: true
+          prerelease: ${{ contains(steps.v.outputs.version, '-') }}
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ steps.v.outputs.version }}" --draft=false --repo "${{ github.repository }}"
