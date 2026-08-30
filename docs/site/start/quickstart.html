@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quickstart — a-workbench Docs</title>
+<meta name="description" content="Run a-workbench locally, mint an API key, and point an MCP client at it.">
+<meta property="og:title" content="Quickstart — a-workbench">
+<meta property="og:description" content="Run a-workbench locally, mint an API key, and point an MCP client at it.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab active" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Introduction</p><ul><li><a class="" href="../index.html">What is a-workbench?</a></li><li><a class="active" href="quickstart.html">Quickstart</a></li><li><a class="" href="how-it-works.html">How it works</a></li><li><a class="" href="concepts.html">Core concepts</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Connect an agent</p><ul><li><a class="" href="connect-claude-code.html">Claude Code</a></li><li><a class="" href="connect-other-clients.html">Other MCP clients</a></li><li><a class="" href="first-connection.html">Your first integration</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Introduction</p>
+          <h1>Quickstart</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Run a-workbench locally, mint an API key, and point an MCP client at it.</p>
+      <p>This gets you from a clone to an agent calling <code>list_integrations</code> against your own
+server. It takes two secrets, one <code>.env</code> file, and one command.</p>
+<p>You need Node 20 or 22 (what CI and the Docker image build against) and npm 10.</p>
+<div class="steps">
+
+<h3 id="clone-and-install">Clone and install<a class="anchor" href="#clone-and-install" aria-label="Link to Clone and install">#</a></h3>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">git clone https://github.com/barockok/workbench.git
+cd workbench
+npm install</code></pre></div>
+<h3 id="generate-the-two-required-secrets">Generate the two required secrets<a class="anchor" href="#generate-the-two-required-secrets" aria-label="Link to Generate the two required secrets">#</a></h3>
+<p>Boot fails without these. The config schema is parsed at import time, so a missing
+or short value crashes the process before anything else runs.</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Requirement</th><th>Generate with</th></tr></thead><tbody>
+<tr><td><code>ENCRYPTION_KEY</code></td><td>exactly 64 hex characters (32 bytes)</td><td><code>openssl rand -hex 32</code></td></tr>
+<tr><td><code>SESSION_SECRET</code></td><td>at least 32 characters</td><td><code>openssl rand -base64 32</code></td></tr>
+</tbody></table></div>
+<div class="tabs" id="tabs-2onyjl"><div class="tab-bar"><button type="button" class="tab active" data-i="0">macOS / Linux</button><button type="button" class="tab" data-i="1">Windows</button><button type="button" class="tab" data-i="2">Node, any platform</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">macOS / Linux</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cp .env.example .env
+printf 'ENCRYPTION_KEY=%s\n' &quot;$(openssl rand -hex 32)&quot; &gt;&gt; .env
+printf 'SESSION_SECRET=%s\n' &quot;$(openssl rand -base64 32)&quot; &gt;&gt; .env</code></pre></div>
+</div><div class="tab-panel" data-i="1"><div class="code" data-lang="powershell"><div class="code-bar"><span class="code-lang">Windows</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-powershell">Copy-Item .env.example .env
+$bytes = New-Object byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+&quot;ENCRYPTION_KEY=$(($bytes | ForEach-Object { $_.ToString('x2') }) -join '')&quot; | Add-Content .env
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+&quot;SESSION_SECRET=$([Convert]::ToBase64String($bytes))&quot; | Add-Content .env</code></pre></div>
+</div><div class="tab-panel" data-i="2"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">Node, any platform</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cp .env.example .env
+node -e &quot;const c=require('crypto');console.log('ENCRYPTION_KEY='+c.randomBytes(32).toString('hex'));console.log('SESSION_SECRET='+c.randomBytes(32).toString('base64'))&quot; &gt;&gt; .env</code></pre></div>
+</div></div>
+
+<p><code>ENCRYPTION_KEY</code> is the AES-256-GCM key for every stored token and cookie bundle,
+read once at module load. Changing it later makes every existing credential
+undecryptable and requires a restart.</p>
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">Do not lose or rotate `ENCRYPTION_KEY` casually</span></div><div class="callout-body"><p>There is no re-encryption path. If you change it, every user has to reconnect
+every integration. Back it up with the same care as the database.</p>
+</div></div>
+
+<h3 id="set-the-dev-ports">Set the dev ports<a class="anchor" href="#set-the-dev-ports" aria-label="Link to Set the dev ports">#</a></h3>
+<p>The Vite dev server binds port 3000 with <code>strictPort</code>, and proxies <code>/api</code> to the
+server on 3001. So the server must move off 3000, and <code>PORTAL_URL</code> must name the
+portal&#39;s real origin — it is half of the WebSocket origin allowlist, and a wrong
+value makes browser-session capture fail with a 403.</p>
+<p>Append to <code>.env</code>:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cat &gt;&gt; .env &lt;&lt;'EOF'
+PORT=3001
+PORTAL_URL=http://localhost:3000
+SERVER_PUBLIC_URL=http://localhost:3001
+EOF</code></pre></div>
+<h3 id="start-the-dev-servers">Start the dev servers<a class="anchor" href="#start-the-dev-servers" aria-label="Link to Start the dev servers">#</a></h3>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run dev</code></pre></div>
+<p>This runs the server (<code>tsx watch</code>, loading <code>.env</code> from the repo root) and the portal
+(Vite) together. The portal is at <a href="http://localhost:3000" target="_blank" rel="noopener">http://localhost:3000<span class="ext" aria-hidden="true">↗</span></a>, the API and <code>/mcp</code> at
+<a href="http://localhost:3001" target="_blank" rel="noopener">http://localhost:3001<span class="ext" aria-hidden="true">↗</span></a>.</p>
+<h3 id="get-an-api-key">Get an API key<a class="anchor" href="#get-an-api-key" aria-label="Link to Get an API key">#</a></h3>
+<p>The portal has no local password login — it authenticates through Google or
+Keycloak SSO. Pick whichever path fits.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`.env.example` ships placeholder Google credentials</span></div><div class="callout-body"><p>It sets <code>GOOGLE_CLIENT_ID=your-google-oauth-client-id</code> and a matching secret, and
+the copy above carries them into your <code>.env</code>. Any non-empty <code>GOOGLE_CLIENT_ID</code>
+makes <code>/api/auth/providers</code> advertise <code>google</code>, so the portal renders a sign-in
+button that cannot work. If you are not configuring Google, blank both lines.</p>
+</div></div>
+
+
+<div class="tabs" id="tabs-uz75rd"><div class="tab-bar"><button type="button" class="tab active" data-i="0">No SSO configured</button><button type="button" class="tab" data-i="1">Portal with SSO</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">No SSO configured</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash"># Seeds a user and mints an API key directly against the database.
+cd packages/server
+npx tsx --env-file=../../.env scripts/seed-local-user.ts
+# user:    local-dev-user
+# api key: 4f3a…</code></pre></div>
+</div><div class="tab-panel" data-i="1"><div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">Portal with SSO</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-text">1. Set GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (or the three KEYCLOAK_* vars) in .env
+   and restart. The Google redirect URI to register is
+   ${SERVER_PUBLIC_URL}/api/auth/google/callback
+2. Open http://localhost:3000 and sign in.
+3. In the API key panel, mint a key and copy it — it is shown once on mint,
+   and can be re-revealed later from the same panel.</code></pre></div>
+</div></div>
+
+<p>Re-running the seed script for the same user rotates the key. The plaintext is
+stored encrypted so the portal can reveal it again; the server also keeps a hash
+for lookup.</p>
+<h3 id="point-an-mcp-client-at-mcp">Point an MCP client at <code>/mcp</code><a class="anchor" href="#point-an-mcp-client-at-mcp" aria-label="Link to Point an MCP client at /mcp">#</a></h3>
+<p>The whole MCP surface is <code>POST /mcp</code>. Write a <code>.mcp.json</code> in your project:</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;workbench&quot;: {
+      &quot;url&quot;: &quot;http://localhost:3001/mcp&quot;,
+      &quot;headers&quot;: { &quot;x-workbench-api-key&quot;: &quot;YOUR_API_KEY&quot; }
+    }
+  }
+}</code></pre></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The API key goes in its own header</span></div><div class="callout-body"><p><code>x-workbench-api-key</code> is checked first and separately. An API key sent as
+<code>Authorization: Bearer</code> will not authenticate — that header is reserved for an
+OAuth access token or a portal session JWT.</p>
+</div></div>
+
+<h3 id="verify">Verify<a class="anchor" href="#verify" aria-label="Link to Verify">#</a></h3>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">export KEY=&lt;the api key from the previous step&gt;
+
+curl -s http://localhost:3001/mcp \
+  -H 'content-type: application/json' \
+  -H &quot;x-workbench-api-key: $KEY&quot; \
+  -d '{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/list&quot;}'</code></pre></div>
+<p>You should get exactly nine tools back: <code>search_tools</code>, <code>get_tool_schema</code>,
+<code>execute_tools</code>, <code>whoami</code>, <code>list_integrations</code>, <code>connect</code>, <code>wait_for_connection</code>,
+<code>get_auth_url</code>, <code>curl_session</code>. An unauthenticated call returns 401 with a
+<code>WWW-Authenticate</code> header pointing at the OAuth metadata.</p>
+</div>
+
+<h2 id="next">Next<a class="anchor" href="#next" aria-label="Link to Next">#</a></h2>
+<div class="cards" data-cols="2"><a class="card" href="connect-claude-code.html"><span class="card-title">Connect Claude Code</span><span class="card-desc">The `.mcp.json` shape, OAuth vs API key, and what breaks.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="connect-other-clients.html"><span class="card-title">Other MCP clients</span><span class="card-desc">Transport, token models, OAuth 2.1 discovery.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="first-connection.html"><span class="card-title">Your first integration</span><span class="card-desc">Agent-side connect, wait, search, execute.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="how-it-works.html"><span class="card-title">How it works</span><span class="card-desc">What just happened, in detail.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="../index.html"><span class="pn-dir">Previous</span><span class="pn-label">What is a-workbench?</span></a><a class="pn pn-next" href="how-it-works.html"><span class="pn-dir">Next</span><span class="pn-label">How it works</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/start/quickstart.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h3"><a href="#clone-and-install">Clone and install</a></li><li class="toc-h3"><a href="#generate-the-two-required-secrets">Generate the two required secrets</a></li><li class="toc-h3"><a href="#set-the-dev-ports">Set the dev ports</a></li><li class="toc-h3"><a href="#start-the-dev-servers">Start the dev servers</a></li><li class="toc-h3"><a href="#get-an-api-key">Get an API key</a></li><li class="toc-h3"><a href="#point-an-mcp-client-at-mcp">Point an MCP client at /mcp</a></li><li class="toc-h3"><a href="#verify">Verify</a></li><li class="toc-h2"><a href="#next">Next</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build plugins — a-workbench Docs</title>
+<meta name="description" content="A plugin is a directory with a manifest and a set of tools. This section covers the contract, the context a handler receives, and how the server finds your code.">
+<meta property="og:title" content="Build plugins — a-workbench">
+<meta property="og:description" content="A plugin is a directory with a manifest and a set of tools. This section covers the contract, the context a handler receives, and how the server finds your code.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-landing">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab active" href="index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Getting started</p><ul><li><a class="active" href="index.html">Plugin overview</a></li><li><a class="" href="writing-a-plugin.html">Write your first plugin</a></li><li><a class="" href="loading.html">Loading and reloading</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Reference</p><ul><li><a class="" href="manifest.html">Manifest reference</a></li><li><a class="" href="context.html">Plugin context API</a></li><li><a class="" href="auth-modes.html">Auth modes</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Getting started</p>
+          <h1>Build plugins</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">A plugin is a directory with a manifest and a set of tools. This section covers the contract, the context a handler receives, and how the server finds your code.</p>
+      <p>A plugin adds an integration to your workbench: a name, an auth method, and a set
+of tools an agent can call. The 16 shipped integrations are plugins, and yours
+loads through exactly the same path — no fork, no PR, no rebuild.</p>
+<h2 id="the-two-file-contract">The two-file contract<a class="anchor" href="#the-two-file-contract" aria-label="Link to The two-file contract">#</a></h2>
+<p>A plugin on disk is a directory with two import targets. Both filenames are
+hardcoded in the loader:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">my-internal-tool/          ← directory name must equal manifest.name
+├── manifest.ts            ← default-exports an Integration object
+├── logo.svg               ← optional, referenced by manifest.logo
+└── tools/
+    └── index.ts           ← exports one object per tool</code></pre></div>
+<p><code>manifest.ts</code> default-exports an <code>Integration</code> — the identity, the auth method,
+the portal presentation, and optionally the curl-proxy base URL. See the
+<a href="manifest.html">manifest reference</a>.</p>
+<p><code>tools/index.ts</code> exports tool objects. The loader inspects <strong>every</strong> export of
+that module and keeps the ones that look like a tool: an object with a <code>name</code>, a
+<code>handler</code> function, and an <code>inputSchema</code> that is a Zod schema. Re-export barrels
+work, which is how the Google plugins are laid out
+(<code>export { … } from &quot;./gmail&quot;</code>).</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">export const search = {
+  name: &quot;internal_search&quot;,
+  description: &quot;Full-text search the internal knowledge base&quot;,
+  integration: &quot;my-internal-tool&quot;,
+  inputSchema: z.object({ query: z.string() }),
+  handler: async (ctx: any, args: any) =&gt; {
+    const res = await ctx.http(`https://internal.example.com/api/search?q=${args.query}`);
+    return res.json();
+  },
+};</code></pre></div>
+<p>The handler receives a <code>ToolContext</code> — four members, and no more. It carries the
+user id, the decrypted token, an authenticated <code>fetch</code>, and the per-connection
+config. See the <a href="context.html">context reference</a>.</p>
+<h2 id="where-plugins-live">Where plugins live<a class="anchor" href="#where-plugins-live" aria-label="Link to Where plugins live">#</a></h2>
+<p>There are two kinds of location, and they are equivalent at runtime — same
+registration call, same auth injection, same MCP exposure. The difference is
+purely deployment.</p>
+<div class="table-wrap"><table><thead><tr><th>Kind</th><th>Location</th><th>Ships with</th></tr></thead><tbody>
+<tr><td>Built-in</td><td><code>packages/plugins/&lt;name&gt;/</code></td><td>The repo and the Docker image</td></tr>
+<tr><td>External</td><td><code>$PLUGINS_DIR/&lt;name&gt;/</code></td><td>Whatever you bind-mount at runtime</td></tr>
+</tbody></table></div>
+<p>Two names are reserved: <code>browser</code> and <code>jots</code> are internal plugins registered from
+server source, and a disk directory using either name is refused.</p>
+<h2 id="how-the-server-finds-them">How the server finds them<a class="anchor" href="#how-the-server-finds-them" aria-label="Link to How the server finds them">#</a></h2>
+<p><code>loadPlugins()</code> runs once at boot. Internal plugins first, then the built-ins by
+a hardcoded list, then everything in <code>PLUGINS_DIR</code>.</p>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart TD
+  A[Server boot] --&gt; B[registerInternalPlugins]
+  B --&gt; C[browser + jots]
+  B --&gt; D{plugins base path found?}
+  D -- no --&gt; G
+  D -- yes --&gt; E[Loop over the 16 built-in names]
+  E --&gt; F[import manifest.ts + tools/index.ts]
+  F --&gt; G[Resolve PLUGINS_DIR to an absolute path]
+  G --&gt; H{directory exists?}
+  H -- no --&gt; Z[Done]
+  H -- yes --&gt; I[Scan every subdirectory]
+  I --&gt; J{name is a built-in?}
+  J -- yes --&gt; I
+  J -- no --&gt; K{name is browser or jots?}
+  K -- yes --&gt; L[Skip: reserved name]
+  K -- no --&gt; M[import manifest.ts + tools/index.ts]
+  M --&gt; N[registry.register]
+  N --&gt; Z</pre></div>
+<p>Each import is individually try/caught, so a plugin that throws on import is
+absent from the catalog rather than fatal to the server. Registration overwrites
+by name — for integrations and for tools, which share one flat global namespace.
+Details and the failure modes are in <a href="loading.html">loading and reloading</a>.</p>
+<h2 id="where-to-go-next">Where to go next<a class="anchor" href="#where-to-go-next" aria-label="Link to Where to go next">#</a></h2>
+<div class="cards" data-cols="2"><a class="card" href="writing-a-plugin.html"><span class="card-title">Write your first plugin</span><span class="card-desc">Build a complete working plugin from nothing, load it, connect it, and call it from an agent.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="manifest.html"><span class="card-title">Manifest reference</span><span class="card-desc">Every field of the `Integration` interface, including `proxy` and the self-hosted `instance` block.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="context.html"><span class="card-title">Plugin context API</span><span class="card-desc">`userId`, `getToken()`, `http()`, `getConfig()`, and the host-guard rules you must not rely on.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="auth-modes.html"><span class="card-title">Auth modes</span><span class="card-desc">`oauth2`, `apikey`, `cookie`, `none`: when to use each and the exact manifest shape.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="loading.html"><span class="card-title">Loading and reloading</span><span class="card-desc">Discovery order, skip rules, `PLUGINS_DIR`, and mounting a plugin directory in Docker or Kubernetes.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="../integrations/jots.html"><span class="pn-dir">Previous</span><span class="pn-label">Jots</span></a><a class="pn pn-next" href="writing-a-plugin.html"><span class="pn-dir">Next</span><span class="pn-label">Write your first plugin</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/plugins/index.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-two-file-contract">The two-file contract</a></li><li class="toc-h2"><a href="#where-plugins-live">Where plugins live</a></li><li class="toc-h2"><a href="#how-the-server-finds-them">How the server finds them</a></li><li class="toc-h2"><a href="#where-to-go-next">Where to go next</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

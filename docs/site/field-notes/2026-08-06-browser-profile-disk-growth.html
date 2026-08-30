@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser profiles grow without bound — nothing ever reclaims them — a-workbench Docs</title>
+<meta name="description" content="Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.">
+<meta property="og:title" content="Browser profiles grow without bound — nothing ever reclaims them — a-workbench">
+<meta property="og:description" content="Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab active" href="index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">About field notes</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Findings</p><ul><li><a class="" href="2026-08-18-browser-navigate-file-protocol-ssrf.html">browser_navigate accepts file:// URLs — filesystem read via agent prompt</a></li><li><a class="" href="2026-08-06-postgres-dialect-gotchas.html">2026-08-06 — PostgreSQL support: what the adapter has to paper over</a></li><li><a class="active" href="2026-08-06-browser-profile-disk-growth.html">Browser profiles grow without bound — nothing ever reclaims them</a></li><li><a class="" href="2026-08-03-bitbucket-pr-author-reviewer-bug.html">Bitbucket PR Author Cannot Be Added as Reviewer</a></li><li><a class="" href="2026-06-22-confluence-v2-migration.html">Confluence integration migrated from REST v1 → v2</a></li><li><a class="" href="2026-06-18-apikey-auth-and-newrelic.html">2026-06-18 — API-key auth path + New Relic (NerdGraph) plugin</a></li><li><a class="" href="2026-06-14-slack-file-download.html">Slack file download: auth-walled URLs + Bearer host scoping</a></li><li><a class="" href="2026-06-14-self-hosted-instance-oauth.html">2026-06-14 — Per-connection instance URL for self-hosted OAuth (GitLab)</a></li><li><a class="" href="2026-06-14-github-token-form-encoded.html">GitHub token exchange returns form-urlencoded → JSON parse error</a></li><li><a class="" href="2026-06-14-ci-pipeline-triggers.html">Triggering CI: GitHub Actions, GitLab Pipelines, Bitbucket Pipelines</a></li><li><a class="" href="2026-06-12-builtin-tools-round-review.html">Built-in tools round review — raw passthrough everywhere, several broken/bloated tools</a></li><li><a class="" href="2026-06-12-builtin-tools-coverage-gaps.html">Built-in tools coverage gaps — create-but-can't-follow-up pattern</a></li><li><a class="" href="2026-06-11-slack-user-token-oauth.html">Slack OAuth: user tokens need `user_scope`, nest under `authed_user`, and errors hide in 200s</a></li><li><a class="" href="2026-06-10-empty-json-body-bodyless-post.html">Bodyless POST must not declare `Content-Type: application/json`</a></li><li><a class="" href="2026-06-09-chromium-singleton-lock-stale.html">Stale Chromium SingletonLock blocks capture after pod rollout</a></li><li><a class="" href="2026-05-31-root-chromium-no-sandbox.html">Cookie-auth capture fails in container — chromium as root needs `--no-sandbox`</a></li><li><a class="" href="2026-05-31-mcp-oauth.html">MCP OAuth 2.1 — SSO resumption + two-token model</a></li><li><a class="" href="2026-05-31-cookie-domain-scoping.html">Cookie capture/replay across subdomains — scope cookies to the target host</a></li><li><a class="" href="2026-05-30-relative-plugins-dir-import.html">Relative PLUGINS_DIR breaks dynamic plugin import in container</a></li><li><a class="" href="2026-05-30-capture-zero-cookies-marks-connected.html">Finding: cookie capture with zero cookies marked the session CONNECTED</a></li><li><a class="" href="2026-05-30-abandoned-cookie-session-leak.html">Finding: abandoned cookie login sessions leak chromium + tmpdir</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Findings</p>
+          <h1>Browser profiles grow without bound — nothing ever reclaims them</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      
+      <p><strong>Date:</strong> 2026-08-06
+<strong>Symptom that started this:</strong> cookie-auth connect felt slow.
+<strong>What it actually was:</strong> the profile volume was 88% full and still climbing.</p>
+<h2 id="the-hypothesis-that-was-wrong">The hypothesis that was wrong<a class="anchor" href="#the-hypothesis-that-was-wrong" aria-label="Link to The hypothesis that was wrong">#</a></h2>
+<p>The first theory was storage: profiles sit on a network-backed volume, and
+<code>--disable-dev-shm-usage</code> (added 2026-05-31, see
+<a href="2026-05-31-root-chromium-no-sandbox.html">root chromium needs --no-sandbox</a>)
+pushes chromium&#39;s scratch I/O from <code>/dev/shm</code> onto that volume, so every launch
+pays network-storage latency.</p>
+<p>Measured on the running instance before changing anything:</p>
+<div class="table-wrap"><table><thead><tr><th>Probe</th><th>Result</th></tr></thead><tbody>
+<tr><td>filesystem type</td><td><code>ext4</code> on a local block device — not a network mount</td></tr>
+<tr><td>sequential write</td><td>256 MB/s</td></tr>
+<tr><td>small-file write</td><td>~11 ms including fork/exec</td></tr>
+</tbody></table></div>
+<p>Storage speed was never the problem. Recorded here so the theory doesn&#39;t get
+revived: the flag is fine, the volume is fine.</p>
+<h2 id="what-the-same-probe-found-instead">What the same probe found instead<a class="anchor" href="#what-the-same-probe-found-instead" aria-label="Link to What the same probe found instead">#</a></h2>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">9.8G volume, 8.6G in browser profiles, 1.2G free
+141 profiles, ~61 MB average</code></pre></div>
+<p>Per-profile breakdown of a representative 437 MB profile:</p>
+<div class="table-wrap"><table><thead><tr><th>Path</th><th>Size</th><th>Kind</th></tr></thead><tbody>
+<tr><td><code>Default/Cache</code> + <code>Default/Code Cache</code></td><td>392 MB</td><td>regenerable</td></tr>
+<tr><td><code>Safe Browsing</code> (profile root)</td><td>~21 MB</td><td>regenerable, and identical in every profile</td></tr>
+<tr><td><code>IndexedDB</code> + <code>Local Storage</code> + <code>History</code> + <code>Cookies</code></td><td>~4 MB</td><td><strong>the reason the profile is persistent at all</strong></td></tr>
+</tbody></table></div>
+<p>Across 141 profiles the Safe Browsing blocklist alone accounted for 2.85 G —
+one third of the volume — storing the same phishing list 141 times for a headless
+browser nobody browses with.</p>
+<p>Every profile had been touched within 60 days, so this is not a graveyard of
+abandoned profiles that a staleness sweep would clear. It is the working set,
+and it grew ~143 MB/day against 1.2 G of headroom.</p>
+<h2 id="root-cause">Root cause<a class="anchor" href="#root-cause" aria-label="Link to Root cause">#</a></h2>
+<p>Grep of every deletion path in the repo:</p>
+<ul>
+<li><code>resetBrowserProfile()</code> (<code>auth/cookie.ts</code>) is the only function that deletes a
+persistent profile directory, and its only caller is a manual, user-triggered
+API route.</li>
+<li><code>closeBrowserSession()</code> kills the process and drops the in-memory session. It
+does not touch disk.</li>
+<li><code>reapIdleSessions()</code> only calls <code>closeBrowserSession()</code>.</li>
+</ul>
+<p>Nothing automatically reclaims profile disk. It has been that way since profiles
+became persistent.</p>
+<h3 id="this-is-a-regression-of-an-already-fixed-bug">This is a regression of an already-fixed bug<a class="anchor" href="#this-is-a-regression-of-an-already-fixed-bug" aria-label="Link to This is a regression of an already-fixed bug">#</a></h3>
+<p><a href="2026-05-30-abandoned-cookie-session-leak.html">2026-05-30 abandoned cookie session leak</a>
+fixed a leak of <code>mkdtempSync</code> session directories by adding a reaper. The
+architecture then moved from throwaway temp dirs to persistent per-user profiles
+(<code>userProfileDir</code>) — and the reaper was never extended to cover them. The same
+leak came back wearing different clothes: a disk leak instead of a process leak.</p>
+<p>The lesson generalizes: when a resource changes lifetime from &quot;per session&quot; to
+&quot;per user&quot;, its cleanup path has to be re-derived, not inherited.</p>
+<h2 id="fix">Fix<a class="anchor" href="#fix" aria-label="Link to Fix">#</a></h2>
+<p>Three layers, cheapest first:</p>
+<ol>
+<li><strong>Don&#39;t download what we don&#39;t use.</strong> <code>--disable-background-networking</code>
+(this is what pulls the Safe Browsing list and component updates),
+<code>--disable-component-update</code>, <code>--disable-client-side-phishing-detection</code>,
+<code>--disable-sync</code>, <code>--disable-breakpad</code>, plus <code>--disk-cache-size</code> to cap the
+HTTP cache. Stops ~2.9 G of the growth at the source.</li>
+<li><strong>Trim on process exit.</strong> When a chromium exits, delete the regenerable parts
+of its profile — caches, shader caches, Safe Browsing, crash dumps — and keep
+cookies, local storage, IndexedDB and history. Nobody gets logged out. Hooked
+on the process <code>exit</code> event rather than inside <code>closeBrowserSession</code> so a
+crashed or reaped browser is cleaned up on the same path.</li>
+<li><strong>Sweep periodically.</strong> <code>reapProfileDisk()</code> trims every profile that has no
+live session, and deletes whole profiles unused past
+<code>BROWSER_PROFILE_TTL_DAYS</code> (default 30, <code>0</code> disables). Deletion is the only
+destructive step — it logs that user out of every cookie-auth integration —
+so its default is deliberately far more conservative than the trim.</li>
+</ol>
+<p>Profiles with a live session are skipped: chromium holds the user-data-dir open.</p>
+<h3 id="staleness-must-not-be-read-from-the-directory-mtime">Staleness must not be read from the directory mtime<a class="anchor" href="#staleness-must-not-be-read-from-the-directory-mtime" aria-label="Link to Staleness must not be read from the directory mtime">#</a></h3>
+<p>Trimming a profile mutates its directory mtime, so a reaper that reads the
+directory&#39;s own mtime keeps resetting the clock and never expires anything. The
+sweep reads <code>Default/Cookies</code> / <code>Default/Preferences</code> instead — files chromium
+writes when the profile is genuinely used and the trim never touches.</p>
+<h2 id="also-added-per-stage-spawn-timings">Also added: per-stage spawn timings<a class="anchor" href="#also-added-per-stage-spawn-timings" aria-label="Link to Also added: per-stage spawn timings">#</a></h2>
+<p>The investigation started with &quot;connect is slow&quot; and no way to tell where the
+time went. <code>spawnProfileChromium</code> now returns <code>prepareMs</code> / <code>devtoolsMs</code> /
+<code>targetMs</code> / <code>totalMs</code> and logs them. A total is unactionable; the split
+distinguishes chromium&#39;s own startup from our polling and from page load.</p>
+<h2 id="config">Config<a class="anchor" href="#config" aria-label="Link to Config">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Env</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>BROWSER_PROFILE_TTL_DAYS</code></td><td><code>30</code></td><td>delete a profile unused this long; <code>0</code> = never</td></tr>
+<tr><td><code>BROWSER_PROFILE_REAP_INTERVAL_SECONDS</code></td><td><code>3600</code></td><td>sweep interval</td></tr>
+<tr><td><code>BROWSER_DISK_CACHE_MB</code></td><td><code>32</code></td><td>per-profile HTTP cache cap</td></tr>
+<tr><td><code>BROWSER_PROFILES_DIR</code></td><td><em>(unset)</em></td><td><strong>see below</strong></td></tr>
+</tbody></table></div>
+<h2 id="deployment-note-the-latent-failure-this-exposed">Deployment note — the latent failure this exposed<a class="anchor" href="#deployment-note-the-latent-failure-this-exposed" aria-label="Link to Deployment note — the latent failure this exposed">#</a></h2>
+<p><code>BROWSER_PROFILES_DIR</code> was unset, so <code>profilesBaseDir()</code> falls back to
+<code>dirname(DATABASE_URL)/browser-profiles</code>. Profiles therefore land on the same
+volume as the SQLite token database — not by anyone&#39;s decision, just by default.
+When that volume fills, SQLite writes fail and <strong>every</strong> connection breaks, for
+reasons that have nothing to do with browsers.</p>
+<p>Set <code>BROWSER_PROFILES_DIR</code> to a separate volume in any deployment where the
+token database matters. The cleanup above buys headroom; separating the volumes
+is what removes the shared-fate failure mode.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="2026-08-06-postgres-dialect-gotchas.html"><span class="pn-dir">Previous</span><span class="pn-label">2026-08-06 — PostgreSQL support: what the adapter has to paper over</span></a><a class="pn pn-next" href="2026-08-03-bitbucket-pr-author-reviewer-bug.html"><span class="pn-dir">Next</span><span class="pn-label">Bitbucket PR Author Cannot Be Added as Reviewer</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/field-notes/2026-08-06-browser-profile-disk-growth.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-hypothesis-that-was-wrong">The hypothesis that was wrong</a></li><li class="toc-h2"><a href="#what-the-same-probe-found-instead">What the same probe found instead</a></li><li class="toc-h2"><a href="#root-cause">Root cause</a></li><li class="toc-h3"><a href="#this-is-a-regression-of-an-already-fixed-bug">This is a regression of an already-fixed bug</a></li><li class="toc-h2"><a href="#fix">Fix</a></li><li class="toc-h3"><a href="#staleness-must-not-be-read-from-the-directory-mtime">Staleness must not be read from the directory mtime</a></li><li class="toc-h2"><a href="#also-added-per-stage-spawn-timings">Also added: per-stage spawn timings</a></li><li class="toc-h2"><a href="#config">Config</a></li><li class="toc-h2"><a href="#deployment-note-the-latent-failure-this-exposed">Deployment note — the latent failure this exposed</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>
