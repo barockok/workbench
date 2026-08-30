@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitHub — a-workbench Docs</title>
+<meta name="description" content="Connect GitHub so an agent can work with repositories, issues, pull requests, code review, and Actions.">
+<meta property="og:title" content="GitHub — a-workbench">
+<meta property="og:description" content="Connect GitHub so an agent can work with repositories, issues, pull requests, code review, and Actions.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab active" href="index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">All integrations</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Atlassian</p><ul><li><a class="" href="atlassian-jira.html">Jira</a></li><li><a class="" href="atlassian-confluence.html">Confluence</a></li><li><a class="" href="atlassian-bitbucket.html">Bitbucket</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Code hosting</p><ul><li><a class="active" href="github.html">GitHub</a></li><li><a class="" href="gitlab.html">GitLab</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Google Workspace</p><ul><li><a class="" href="google.html">Setup &amp; scopes</a></li><li><a class="" href="google-tools.html">Gmail, Drive, Docs &amp; more</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Other services</p><ul><li><a class="" href="slack.html">Slack</a></li><li><a class="" href="asana.html">Asana</a></li><li><a class="" href="newrelic.html">New Relic</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Built in</p><ul><li><a class="" href="browser.html">Browser</a></li><li><a class="" href="jots.html">Jots</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Code hosting</p>
+          <h1>GitHub</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Connect GitHub so an agent can work with repositories, issues, pull requests, code review, and Actions.</p>
+      <p>The GitHub integration is the largest code-hosting surface in the catalog: repository and file reads, the whole issue lifecycle, the whole pull-request review loop including formal review verdicts, code and issue search, and GitHub Actions run control.</p>
+<h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Plugin id</td><td><code>github</code></td></tr>
+<tr><td>Auth</td><td>OAuth 2.0 (OAuth App, user-to-server)</td></tr>
+<tr><td>Tools</td><td>28</td></tr>
+<tr><td>Authorization URL</td><td><code>https://github.com/login/oauth/authorize</code></td></tr>
+<tr><td>Token URL</td><td><code>https://github.com/login/oauth/access_token</code></td></tr>
+<tr><td>Proxy base</td><td><code>https://api.github.com</code></td></tr>
+</tbody></table></div>
+<p>This is an OAuth App, not a GitHub App: one callback URL and classic scope strings. Whether its user tokens expire is a property of the app on GitHub&#39;s side, not of this server — see <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s OAuth App documentation<span class="ext" aria-hidden="true">↗</span></a>. The server refreshes a token when the provider gave it an expiry and a refresh token.</p>
+<h2 id="set-up-the-oauth-app">Set up the OAuth app<a class="anchor" href="#set-up-the-oauth-app" aria-label="Link to Set up the OAuth app">#</a></h2>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">The console steps are GitHub's UI, not this server's</span></div><div class="callout-body"><p>Menu names, labels, and page URLs below come from GitHub&#39;s console and change
+without notice. If what you see differs, follow <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s own documentation<span class="ext" aria-hidden="true">↗</span></a> — the values this server needs (the callback URL and the scopes in the tables
+below) are unaffected.</p>
+</div></div>
+
+
+<div class="steps">
+
+<h3 id="create-the-app">Create the app<a class="anchor" href="#create-the-app" aria-label="Link to Create the app">#</a></h3>
+<p>Personal: <a href="https://github.com/settings/developers" target="_blank" rel="noopener">github.com/settings/developers<span class="ext" aria-hidden="true">↗</span></a> → <strong>OAuth Apps</strong> → <strong>New OAuth App</strong>.</p>
+<p>Organization (better for team deployments): <code>https://github.com/organizations/&lt;ORG&gt;/settings/applications</code> → <strong>OAuth Apps</strong> → <strong>New OAuth App</strong>.</p>
+<h3 id="fill-in-the-fields">Fill in the fields<a class="anchor" href="#fill-in-the-fields" aria-label="Link to Fill in the fields">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td>Application name</td><td>your deployment name</td></tr>
+<tr><td>Homepage URL</td><td><code>https://&lt;your-workbench-host&gt;</code></td></tr>
+<tr><td>Authorization callback URL</td><td><code>https://&lt;your-workbench-host&gt;/api/auth/plugin/github/callback</code></td></tr>
+<tr><td>Enable Device Flow</td><td>leave off</td></tr>
+</tbody></table></div>
+<p>An OAuth App accepts exactly one callback URL. For local development register a second app with <code>http://localhost:3000/api/auth/plugin/github/callback</code>.</p>
+<h3 id="generate-the-secret">Generate the secret<a class="anchor" href="#generate-the-secret" aria-label="Link to Generate the secret">#</a></h3>
+<p>Copy the <strong>Client ID</strong> from the app page, then <strong>Generate a new client secret</strong> and copy it — GitHub shows it once.</p>
+</div>
+
+<h2 id="scopes">Scopes<a class="anchor" href="#scopes" aria-label="Link to Scopes">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Scope</th><th>What it is for</th></tr></thead><tbody>
+<tr><td><code>repo</code></td><td>Full control of public and private repositories: contents, commits, issues, pull requests, and Actions</td></tr>
+<tr><td><code>read:user</code></td><td>Read the authenticated user&#39;s profile</td></tr>
+<tr><td><code>read:org</code></td><td>Read organization and team membership</td></tr>
+<tr><td><code>issues</code></td><td>Requested by the manifest; see the note below</td></tr>
+<tr><td><code>pull_requests</code></td><td>Requested by the manifest; see the note below</td></tr>
+</tbody></table></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`issues` and `pull_requests` are not classic OAuth App scopes</span></div><div class="callout-body"><p>GitHub&#39;s classic scope list has no separate <code>issues</code> or <code>pull_requests</code> entries — <code>repo</code> covers both. GitHub ignores the unknown strings, so the flow works, but do not treat them as the thing granting issue or PR access. If you ever migrate this integration to a GitHub App, they become real fine-grained permissions and the mapping changes.</p>
+</div></div>
+
+<p><code>repo</code> is broad. It is what the file-write, Actions, and private-repo tools need, and GitHub offers no narrower classic scope that keeps them working.</p>
+<h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...</code></pre></div>
+<h2 id="connect">Connect<a class="anchor" href="#connect" aria-label="Link to Connect">#</a></h2>
+<p>Portal: Connections → <strong>Connect</strong> on the GitHub card.</p>
+<p>Agent:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">connect({ integration: &quot;github&quot; })
+wait_for_connection({ connectionId })</code></pre></div>
+<h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>github_list_repos</code></td><td>The authenticated user&#39;s repositories as slim rows</td></tr>
+<tr><td><code>github_get_repo</code></td><td>One repository&#39;s metadata with URL bloat stripped</td></tr>
+<tr><td><code>github_list_branches</code></td><td>Branch names and protection flags</td></tr>
+<tr><td><code>github_list_commits</code></td><td>Commits newest-first, optionally from a branch or SHA</td></tr>
+<tr><td><code>github_list_releases</code></td><td>Releases newest-first</td></tr>
+<tr><td><code>github_get_content</code></td><td>Read a file (base64 + sha) or list a directory at a ref</td></tr>
+<tr><td><code>github_create_or_update_file</code></td><td>Commit a single file; updating requires its current sha</td></tr>
+<tr><td><code>github_create_issue</code></td><td>Create an issue with optional body and labels</td></tr>
+<tr><td><code>github_list_issues</code></td><td>List issues; rows carry <code>is_pr</code> because GitHub mixes PRs in</td></tr>
+<tr><td><code>github_get_issue</code></td><td>One issue, body truncated to 2000 characters</td></tr>
+<tr><td><code>github_update_issue</code></td><td>Change title, body, state, labels, or assignees</td></tr>
+<tr><td><code>github_add_issue_comment</code></td><td>Comment on an issue or a PR conversation</td></tr>
+<tr><td><code>github_create_pr</code></td><td>Open a pull request from head into base</td></tr>
+<tr><td><code>github_list_prs</code></td><td>List pull requests, default state open</td></tr>
+<tr><td><code>github_get_pr</code></td><td>One PR with merge state and change counts</td></tr>
+<tr><td><code>github_get_pr_diff</code></td><td>Full diff, or a cheap per-file summary with <code>files:true</code></td></tr>
+<tr><td><code>github_list_pr_comments</code></td><td>Conversation comments or inline review comments</td></tr>
+<tr><td><code>github_add_pr_comment</code></td><td>Post a conversation comment or an inline code comment</td></tr>
+<tr><td><code>github_create_pr_review</code></td><td>Submit APPROVE, REQUEST_CHANGES, or COMMENT with a summary</td></tr>
+<tr><td><code>github_merge_pr</code></td><td>Merge the PR into its base branch</td></tr>
+<tr><td><code>github_search_code</code></td><td>Code search; qualifiers in <code>q</code> are forwarded verbatim</td></tr>
+<tr><td><code>github_search_issues</code></td><td>Issue and PR search across GitHub</td></tr>
+<tr><td><code>github_list_workflow_runs</code></td><td>Actions runs, newest first, filterable by branch</td></tr>
+<tr><td><code>github_trigger_workflow</code></td><td>Start a run via <code>workflow_dispatch</code></td></tr>
+<tr><td><code>github_get_workflow_run</code></td><td>Poll one run&#39;s status and conclusion</td></tr>
+<tr><td><code>github_rerun_workflow_run</code></td><td>Re-run all jobs, or only the failed ones</td></tr>
+<tr><td><code>github_cancel_workflow_run</code></td><td>Cancel an in-progress run</td></tr>
+<tr><td><code>github_get_clone_url</code></td><td>Mint <code>https://x-access-token:&lt;token&gt;@github.com/...</code> for clone, pull, or push</td></tr>
+</tbody></table></div>
+<h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The clone URL embeds a live credential</span></div><div class="callout-body"><p><code>github_get_clone_url</code> returns the user&#39;s real access token inside a URL string. It works for push because <code>repo</code> covers write. Mint it immediately before use, and keep it out of files, git remotes, and shell history.</p>
+</div></div>
+
+<p><code>github_trigger_workflow</code> needs the workflow to declare <code>on: workflow_dispatch</code>, and GitHub answers with 204 and no run id. Poll <code>github_list_workflow_runs</code> to find the run you just started.</p>
+<p><code>github_create_or_update_file</code> requires the file&#39;s current sha when updating. Read it with <code>github_get_content</code> first; a stale sha is rejected.</p>
+<p>GitHub&#39;s token endpoint returns <code>application/x-www-form-urlencoded</code> by default, which breaks a naive JSON parse of the token response. The server sends <code>Accept: application/json</code> on the exchange, so this is already handled — worth knowing if you are debugging a connect failure against a fork or proxy.</p>
+<p>A 403 mentioning organization SAML enforcement is not a scope problem — no change to the scope table fixes it. The user has to authorize their token for that organization on GitHub&#39;s side; <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s documentation on SAML and authorized tokens<span class="ext" aria-hidden="true">↗</span></a> has the current procedure.</p>
+<p>GitHub rate-limits OAuth calls per user and applies separate secondary limits to bursts of writes. The current numbers are in <a href="https://docs.github.com/en/rest" target="_blank" rel="noopener">GitHub&#39;s REST API documentation<span class="ext" aria-hidden="true">↗</span></a>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="atlassian-bitbucket.html"><span class="pn-dir">Previous</span><span class="pn-label">Bitbucket</span></a><a class="pn pn-next" href="gitlab.html"><span class="pn-dir">Next</span><span class="pn-label">GitLab</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/integrations/github.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#set-up-the-oauth-app">Set up the OAuth app</a></li><li class="toc-h3"><a href="#create-the-app">Create the app</a></li><li class="toc-h3"><a href="#fill-in-the-fields">Fill in the fields</a></li><li class="toc-h3"><a href="#generate-the-secret">Generate the secret</a></li><li class="toc-h2"><a href="#scopes">Scopes</a></li><li class="toc-h2"><a href="#server-configuration">Server configuration</a></li><li class="toc-h2"><a href="#connect">Connect</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

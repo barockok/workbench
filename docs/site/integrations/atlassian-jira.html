@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jira — a-workbench Docs</title>
+<meta name="description" content="Connect Atlassian Jira Cloud so an agent can create, search, update, comment on, and transition issues.">
+<meta property="og:title" content="Jira — a-workbench">
+<meta property="og:description" content="Connect Atlassian Jira Cloud so an agent can create, search, update, comment on, and transition issues.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab active" href="index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">All integrations</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Atlassian</p><ul><li><a class="active" href="atlassian-jira.html">Jira</a></li><li><a class="" href="atlassian-confluence.html">Confluence</a></li><li><a class="" href="atlassian-bitbucket.html">Bitbucket</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Code hosting</p><ul><li><a class="" href="github.html">GitHub</a></li><li><a class="" href="gitlab.html">GitLab</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Google Workspace</p><ul><li><a class="" href="google.html">Setup &amp; scopes</a></li><li><a class="" href="google-tools.html">Gmail, Drive, Docs &amp; more</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Other services</p><ul><li><a class="" href="slack.html">Slack</a></li><li><a class="" href="asana.html">Asana</a></li><li><a class="" href="newrelic.html">New Relic</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Built in</p><ul><li><a class="" href="browser.html">Browser</a></li><li><a class="" href="jots.html">Jots</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Atlassian</p>
+          <h1>Jira</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Connect Atlassian Jira Cloud so an agent can create, search, update, comment on, and transition issues.</p>
+      <p>The Jira integration gives an agent the issue lifecycle: discover projects, search with JQL, read an issue in full, create one, assign it, comment on it, and move it through its workflow. Descriptions and comments are plain text — the plugin wraps and unwraps Atlassian Document Format for you.</p>
+<h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Plugin id</td><td><code>atlassian-jira</code></td></tr>
+<tr><td>Auth</td><td>OAuth 2.0 (3LO)</td></tr>
+<tr><td>Tools</td><td>12</td></tr>
+<tr><td>Authorization URL</td><td><code>https://auth.atlassian.com/authorize</code></td></tr>
+<tr><td>Token URL</td><td><code>https://auth.atlassian.com/oauth/token</code></td></tr>
+<tr><td>Proxy base</td><td><code>https://api.atlassian.com/ex/jira/cloud-id</code></td></tr>
+</tbody></table></div>
+<p>The literal <code>cloud-id</code> in the proxy base is a placeholder. At request time the server calls <code>/oauth/token/accessible-resources</code> with the user&#39;s token, substitutes the real cloud id, and caches it per user for the life of the process.</p>
+<h2 id="set-up-the-oauth-app">Set up the OAuth app<a class="anchor" href="#set-up-the-oauth-app" aria-label="Link to Set up the OAuth app">#</a></h2>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">The console steps are Atlassian's UI, not this server's</span></div><div class="callout-body"><p>Menu names, labels, and page URLs below come from Atlassian&#39;s console and change
+without notice. If what you see differs, follow <a href="https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/" target="_blank" rel="noopener">Atlassian&#39;s own documentation<span class="ext" aria-hidden="true">↗</span></a> — the values this server needs (the callback URL and the scopes in the tables
+below) are unaffected.</p>
+</div></div>
+
+
+<div class="steps">
+
+<h3 id="create-the-app">Create the app<a class="anchor" href="#create-the-app" aria-label="Link to Create the app">#</a></h3>
+<p>Open <a href="https://developer.atlassian.com/console/myapps/" target="_blank" rel="noopener">developer.atlassian.com/console/myapps<span class="ext" aria-hidden="true">↗</span></a> → <strong>Create</strong> → <strong>OAuth 2.0 integration</strong>. Name it, accept the terms, create.</p>
+<h3 id="add-the-jira-api-and-its-scopes">Add the Jira API and its scopes<a class="anchor" href="#add-the-jira-api-and-its-scopes" aria-label="Link to Add the Jira API and its scopes">#</a></h3>
+<p>Left menu → <strong>Permissions</strong> → <strong>Jira API</strong> → <strong>Add</strong>, then <strong>Configure</strong>. Tick every scope in the table below.</p>
+<h3 id="set-the-callback-url">Set the callback URL<a class="anchor" href="#set-the-callback-url" aria-label="Link to Set the callback URL">#</a></h3>
+<p>Left menu → <strong>Authorization</strong> → <strong>Configure</strong> next to OAuth 2.0 (3LO). Paste exactly:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">https://&lt;your-workbench-host&gt;/api/auth/plugin/atlassian-jira/callback</code></pre></div>
+<p>Atlassian accepts <code>http://localhost</code> for development:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">http://localhost:3000/api/auth/plugin/atlassian-jira/callback</code></pre></div>
+<h3 id="copy-the-credentials">Copy the credentials<a class="anchor" href="#copy-the-credentials" aria-label="Link to Copy the credentials">#</a></h3>
+<p>Left menu → <strong>Settings</strong> → <strong>Authentication details</strong>. Copy the <strong>Client ID</strong> and reveal the <strong>Secret</strong>.</p>
+<h3 id="distribute-only-if-others-will-connect">Distribute (only if others will connect)<a class="anchor" href="#distribute-only-if-others-will-connect" aria-label="Link to Distribute (only if others will connect)">#</a></h3>
+<p>Apps default to Development status, where only you can install. <strong>Distribution</strong> → switch to <strong>Sharing</strong>, supply a privacy policy URL, save.</p>
+</div>
+
+<h2 id="scopes">Scopes<a class="anchor" href="#scopes" aria-label="Link to Scopes">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Scope</th><th>What it is for</th></tr></thead><tbody>
+<tr><td><code>read:jira-work</code></td><td>Read issues, projects, comments, and workflow transitions</td></tr>
+<tr><td><code>write:jira-work</code></td><td>Create and edit issues, apply transitions, post comments</td></tr>
+<tr><td><code>read:board-scope:jira-software</code></td><td>Read agile boards via <code>/rest/agile/1.0/board</code> — backs <code>jira_get_boards</code></td></tr>
+<tr><td><code>read:me</code></td><td>Identify the authorizing account at callback time</td></tr>
+<tr><td><code>read:jira-user</code></td><td>Search user profiles — backs <code>jira_search_users</code></td></tr>
+<tr><td><code>offline_access</code></td><td>Issue a refresh token; without it the connection dies at the first access-token expiry</td></tr>
+</tbody></table></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`read:board-scope:jira-software` cannot be granted on a 3LO app</span></div><div class="callout-body"><p>As of this writing the Jira Software API is not among the API rows the console lets you add to a standard OAuth 2.0 (3LO) app — check <a href="https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/" target="_blank" rel="noopener">Atlassian&#39;s 3LO documentation<span class="ext" aria-hidden="true">↗</span></a> for the current list, which is Atlassian&#39;s to change. The manifest requests the scope so it works the moment Atlassian exposes it; until then <code>jira_get_boards</code> returns <code>Unauthorized; scope does not match</code>. Every other Jira tool is unaffected.</p>
+</div></div>
+
+<h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">ATLASSIAN_JIRA_CLIENT_ID=...
+ATLASSIAN_JIRA_CLIENT_SECRET=...</code></pre></div>
+<p>If you register one Atlassian app covering both Jira and Confluence, you still set both variable pairs to the same values — the server derives the prefix from the plugin name and never falls back to a shared <code>ATLASSIAN_*</code> pair.</p>
+<h2 id="connect">Connect<a class="anchor" href="#connect" aria-label="Link to Connect">#</a></h2>
+<p>From the portal: sign in, open Connections, press <strong>Connect</strong> on the Jira card, approve the Atlassian consent screen.</p>
+<p>From an agent:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">connect({ integration: &quot;atlassian-jira&quot; })
+→ { connectionId, type: &quot;oauth2&quot;, url }
+
+wait_for_connection({ connectionId })
+→ { status: &quot;CONNECTED&quot; }</code></pre></div>
+<p>Open the returned <code>url</code> to consent. The pending connection expires after <code>CONNECT_TTL_SECONDS</code> (default 600).</p>
+<h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>jira_list_projects</code></td><td>List visible projects as <code>{ key, id, name, projectTypeKey }</code>; the way to discover a project key</td></tr>
+<tr><td><code>jira_create_issue</code></td><td>Create an issue and return <code>{ id, key, self }</code>; issue type defaults to Task</td></tr>
+<tr><td><code>jira_search_issues</code></td><td>JQL search returning slim rows plus a <code>nextPageToken</code> for paging</td></tr>
+<tr><td><code>jira_get_issue</code></td><td>One issue in detail, description flattened from ADF to plain text</td></tr>
+<tr><td><code>jira_update_issue</code></td><td>Change summary, description, assignee, or labels — only the fields you pass</td></tr>
+<tr><td><code>jira_get_transitions</code></td><td>List the transitions currently legal for an issue, with their ids</td></tr>
+<tr><td><code>jira_transition_issue</code></td><td>Apply a transition id to move an issue&#39;s status</td></tr>
+<tr><td><code>jira_add_comment</code></td><td>Add a plain-text comment, wrapped in ADF automatically</td></tr>
+<tr><td><code>jira_get_comments</code></td><td>Read a comment thread oldest-first, ADF flattened to plain text</td></tr>
+<tr><td><code>jira_search_users</code></td><td>Find users by name or email; returns the <code>accountId</code> assignment needs</td></tr>
+<tr><td><code>jira_get_boards</code></td><td>List agile boards, optionally filtered by project key</td></tr>
+<tr><td><code>jira_project_types</code></td><td>List the site&#39;s project types with icons stripped</td></tr>
+</tbody></table></div>
+<h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
+<p>Transition ids are not stable identifiers. They vary per workflow <em>and</em> per the issue&#39;s current status, so <code>jira_get_transitions</code> must be called against the same issue immediately before <code>jira_transition_issue</code>.</p>
+<p>When Atlassian returns a new refresh token on a refresh, the server stores it and discards the old one — so an out-of-band copy of a refresh token goes stale as soon as the server rotates it. If no new token comes back, the existing one is kept.</p>
+<p>A 401 against <code>&lt;site&gt;.atlassian.net</code> in a debugging session usually means the cloud id was not resolved. Tools always go through <code>api.atlassian.com/ex/jira/&lt;cloud-id&gt;/</code>; the direct site host is not usable with a 3LO token.</p>
+<p>If Jira answers <code>403 OAUTH_2_FORBIDDEN</code>, check the connecting user&#39;s project and issue permissions in Jira before touching the scope list; the scopes the server requests are the ones in the table above and are fixed at the manifest. Atlassian defines what the code means — see <a href="https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/" target="_blank" rel="noopener">their 3LO documentation<span class="ext" aria-hidden="true">↗</span></a>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="index.html"><span class="pn-dir">Previous</span><span class="pn-label">All integrations</span></a><a class="pn pn-next" href="atlassian-confluence.html"><span class="pn-dir">Next</span><span class="pn-label">Confluence</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/integrations/atlassian-jira.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#set-up-the-oauth-app">Set up the OAuth app</a></li><li class="toc-h3"><a href="#create-the-app">Create the app</a></li><li class="toc-h3"><a href="#add-the-jira-api-and-its-scopes">Add the Jira API and its scopes</a></li><li class="toc-h3"><a href="#set-the-callback-url">Set the callback URL</a></li><li class="toc-h3"><a href="#copy-the-credentials">Copy the credentials</a></li><li class="toc-h3"><a href="#distribute-only-if-others-will-connect">Distribute (only if others will connect)</a></li><li class="toc-h2"><a href="#scopes">Scopes</a></li><li class="toc-h2"><a href="#server-configuration">Server configuration</a></li><li class="toc-h2"><a href="#connect">Connect</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

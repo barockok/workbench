@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker &amp; Compose — a-workbench Docs</title>
+<meta name="description" content="What the image contains, how the Compose file is wired, mounting external plugins, and running behind a reverse proxy.">
+<meta property="og:title" content="Docker &amp; Compose — a-workbench">
+<meta property="og:description" content="What the image contains, how the Compose file is wired, mounting external plugins, and running behind a reverse proxy.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab active" href="install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Running the server</p><ul><li><a class="" href="install.html">Install</a></li><li><a class="active" href="docker.html">Docker &amp; Compose</a></li><li><a class="" href="database.html">Database</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Production</p><ul><li><a class="" href="portal-sso.html">Portal SSO</a></li><li><a class="" href="security.html">Security model</a></li><li><a class="" href="observability.html">Observability</a></li><li><a class="" href="releases.html">Releases &amp; upgrades</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Running the server</p>
+          <h1>Docker &amp; Compose</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">What the image contains, how the Compose file is wired, mounting external plugins, and running behind a reverse proxy.</p>
+      <p>Released images are published to GHCR as <code>ghcr.io/&lt;owner&gt;/&lt;repo&gt;</code> (the repository
+path lowercased), tagged with the git tag. <code>latest</code> moves only on stable
+releases — see <a href="releases.html">releases and upgrades</a>.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Published images are `linux/amd64` only</span></div><div class="callout-body"><p>The release workflow&#39;s build step passes no <code>platforms:</code>, so GHCR gets a
+single-architecture image from the <code>amd64</code> GitHub runner. ARM hosts — Apple
+Silicon, Graviton — get emulation at best. Build locally on the target
+architecture instead.</p>
+</div></div>
+
+<h2 id="what-the-image-builds">What the image builds<a class="anchor" href="#what-the-image-builds" aria-label="Link to What the image builds">#</a></h2>
+<p>Two stages, both <code>node:20-bookworm-slim</code>. Debian on both sides is deliberate:
+<code>better-sqlite3</code> is a native module and Playwright&#39;s chromium targets glibc, so an
+Alpine/musl stage would break the native ABI when <code>node_modules</code> is copied across.</p>
+<p>The builder stage installs <code>python3 make g++</code> (for a native-dep build if no
+prebuild matches), copies only the four <code>package.json</code> files plus the lockfile for
+a cacheable <code>npm ci</code>, then runs <code>npm run build</code>.</p>
+<p>The runtime stage copies:</p>
+<div class="table-wrap"><table><thead><tr><th>From</th><th>To in image</th></tr></thead><tbody>
+<tr><td><code>packages/server/dist</code></td><td><code>/app/server</code></td></tr>
+<tr><td><code>node_modules</code></td><td><code>/app/node_modules</code></td></tr>
+<tr><td><code>packages/portal/dist</code></td><td><code>/app/portal</code></td></tr>
+<tr><td><code>packages/plugins</code></td><td><code>/app/plugins</code></td></tr>
+</tbody></table></div>
+<p>It then deletes <code>node_modules/@a-workbench</code> and re-materializes
+<code>@a-workbench/shared</code> as a real package — the workspace symlinks dangle because
+<code>packages/</code> is not shipped. Chromium is baked in with
+<code>npx playwright install --with-deps chromium</code> and made world-readable so any
+runtime uid can execute it. <code>tsx@4.19.4</code> is installed globally.</p>
+<div class="table-wrap"><table><thead><tr><th></th><th>Value</th></tr></thead><tbody>
+<tr><td>Exposed port</td><td>3000</td></tr>
+<tr><td>Command</td><td><code>tsx server/index.js</code></td></tr>
+<tr><td><code>NODE_ENV</code></td><td><code>production</code></td></tr>
+<tr><td><code>PLAYWRIGHT_BROWSERS_PATH</code></td><td><code>/ms-playwright</code></td></tr>
+</tbody></table></div>
+<p>The entrypoint runs the <em>built JavaScript</em> through <code>tsx</code> because plugins are
+<code>import()</code>ed as <code>.ts</code> files at runtime.</p>
+<p>The image has no <code>USER</code> directive, so the process runs as root. That is why
+chromium is always spawned with <code>--no-sandbox</code> and <code>--disable-dev-shm-usage</code> —
+chromium refuses to start as root otherwise.</p>
+<h2 id="healthcheck">Healthcheck<a class="anchor" href="#healthcheck" aria-label="Link to Healthcheck">#</a></h2>
+<p>There isn&#39;t one. The Dockerfile declares no <code>HEALTHCHECK</code>, and the server exposes
+no <code>/health</code>, <code>/healthz</code>, or <code>/readyz</code> route.</p>
+<p>The only probe-able HTTP endpoint is <code>GET /metrics</code>, which is unauthenticated. Use
+that or a plain TCP check on the listen port for orchestrator liveness probes. See
+<a href="observability.html">observability</a>.</p>
+<h2 id="compose-services">Compose services<a class="anchor" href="#compose-services" aria-label="Link to Compose services">#</a></h2>
+<p><code>docker-compose.yml</code> defines two services.</p>
+<p><strong><code>a-workbench</code></strong> — <code>build: .</code>, published on <code>3000:3000</code>.</p>
+<ul>
+<li><code>env_file: [.env]</code> pulls SSO credentials <em>and</em> every per-plugin OAuth
+credential. Without them <code>/authorize</code> and <code>connect(&lt;plugin&gt;)</code> fail with
+<code>&quot;&lt;X&gt; not configured&quot;</code>.</li>
+<li>An <code>environment:</code> block sets six values so a developer <code>.env</code> cannot leak into
+the container and break the port mapping or the data volume: <code>PORT=3000</code>,
+<code>NODE_ENV=production</code>, <code>DATABASE_URL=/data/tokens.db</code>, <code>SERVER_PUBLIC_URL</code> and
+<code>PORTAL_URL</code> (both defaulting to <code>http://localhost:3000</code>), and
+<code>PLUGINS_DIR=/app/custom-plugins</code>.</li>
+<li>Volumes: <code>./data:/data</code> for the database and everything derived from its
+directory, plus <code>../custom-plugins:/app/custom-plugins:ro</code>.</li>
+<li>No healthcheck, no restart policy, no <code>depends_on</code>.</li>
+</ul>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The committed Compose file cannot run a published release</span></div><div class="callout-body"><p>The service declares <code>build: .</code> and <strong>no <code>image:</code> key</strong>, so <code>docker compose pull</code>
+skips it entirely and <code>docker compose up -d</code> builds from your working tree. To
+run a GHCR tag you have to add an <code>image:</code> key — see
+<a href="releases.html">the upgrade procedure</a>.</p>
+</div></div>
+
+<p><strong><code>sample-oauth</code></strong> — built from <code>Dockerfile.sample-oauth</code> on <code>3002:3002</code> with
+<code>NODE_ENV=development</code>. A test OAuth provider for contributors, not something to
+run in production.</p>
+<p>There is <strong>no <code>postgres</code> service</strong>. If you want PostgreSQL, bring your own and
+point <code>DATABASE_URL</code> at it — see <a href="database.html">database</a>.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The committed Compose file carries someone's local overrides</span></div><div class="callout-body"><p>One comment in <code>docker-compose.yml</code> is marked &quot;LOCAL ONLY (do not commit)&quot; and
+was committed anyway: the override <code>PLUGINS_DIR=/app/custom-plugins</code>. The bind
+mount it goes with, <code>../custom-plugins:/app/custom-plugins:ro</code>, is unmarked but
+just as local — its source is a <em>sibling of the repository</em>, so on any machine
+without that directory Docker creates it (owned by root) and you get an empty
+read-only mount rather than an error. The external-plugin pass then finds
+nothing there. Delete both lines, or create the directory, before using the file
+as-is.</p>
+</div></div>
+
+<p>One more Compose gap: <code>SESSION_SECRET</code> is not in the <code>environment:</code> block, so it
+has to come from <code>.env</code>. With <code>NODE_ENV=production</code> forced on and no value
+supplied, the empty default fails the 32-character minimum and the container exits
+at import.</p>
+<h2 id="mounting-an-external-plugins-directory">Mounting an external plugins directory<a class="anchor" href="#mounting-an-external-plugins-directory" aria-label="Link to Mounting an external plugins directory">#</a></h2>
+<p>Loading happens in two independent passes, and only the second one is governed by
+<code>PLUGINS_DIR</code>.</p>
+<div class="table-wrap"><table><thead><tr><th>Pass</th><th>Where it looks</th><th>Controlled by</th></tr></thead><tbody>
+<tr><td>Built-ins</td><td>The first of <code>../plugins</code>, <code>../../plugins</code>, <code>./plugins</code> that exists, relative to the process working directory</td><td>Nothing — <code>PLUGINS_DIR</code> is not consulted</td></tr>
+<tr><td>External</td><td><code>PLUGINS_DIR</code>, resolved to an absolute path before <code>import()</code></td><td><code>PLUGINS_DIR</code></td></tr>
+</tbody></table></div>
+<p>So pointing <code>PLUGINS_DIR</code> somewhere else does not unload the built-ins, and it
+cannot be used to relocate them either. In the image the working directory is
+<code>/app</code>, so the built-in probe finds <code>/app/plugins</code>; <code>PLUGINS_DIR</code> defaults to
+<code>./plugins</code>, which resolves to that same directory, which is why the default
+configuration loads the built-ins once rather than twice — the external pass skips
+built-in directory names. The loader also refuses to load a directory named
+<code>browser</code> or <code>jots</code> (reserved for the internal plugins).</p>
+<p>To add your own plugins, mount them somewhere else and point <code>PLUGINS_DIR</code> there:</p>
+<div class="tabs" id="tabs-m358cg"><div class="tab-bar"><button type="button" class="tab active" data-i="0">docker-compose</button><button type="button" class="tab" data-i="1">docker run</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">docker-compose</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">services:
+  a-workbench:
+    image: ghcr.io/&lt;owner&gt;/&lt;repo&gt;:v0.24.0
+    ports:
+      - &quot;3000:3000&quot;
+    env_file: [.env]
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DATABASE_URL=/data/tokens.db
+      - PLUGINS_DIR=/app/custom-plugins
+      - SERVER_PUBLIC_URL=https://workbench.example.com
+      - PORTAL_URL=https://workbench.example.com
+    volumes:
+      - ./data:/data
+      - ./custom-plugins:/app/custom-plugins:ro</code></pre></div>
+</div><div class="tab-panel" data-i="1"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">docker run</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker run -d --name a-workbench \
+  -p 3000:3000 \
+  --env-file .env \
+  -e DATABASE_URL=/data/tokens.db \
+  -e PLUGINS_DIR=/app/custom-plugins \
+  -e SERVER_PUBLIC_URL=https://workbench.example.com \
+  -e PORTAL_URL=https://workbench.example.com \
+  -v &quot;$PWD/data:/data&quot; \
+  -v &quot;$PWD/custom-plugins:/app/custom-plugins:ro&quot; \
+  ghcr.io/&lt;owner&gt;/&lt;repo&gt;:v0.24.0</code></pre></div>
+</div></div>
+
+<p>Keeping the mount inside the repository directory means the file works for anyone
+who clones it. If you set <code>PLUGINS_DIR</code> to a directory that does not exist, the
+loader returns quietly and only the built-ins are registered.</p>
+<h2 id="behind-a-reverse-proxy">Behind a reverse proxy<a class="anchor" href="#behind-a-reverse-proxy" aria-label="Link to Behind a reverse proxy">#</a></h2>
+<p>The server binds <code>0.0.0.0</code> on <code>PORT</code> and serves the portal itself — the built SPA
+comes from <code>PORTAL_DIST_DIR</code> (<code>/app/portal</code> in the image), registered last so
+<code>/api</code>, <code>/mcp</code>, and <code>/.well-known</code> 404s stay JSON and only genuine client routes
+fall through to <code>index.html</code>. A single origin therefore serves the portal, the
+HTTP API, the MCP endpoint, and the curl proxy.</p>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  A[Agent / MCP client] --&gt;|POST /mcp| P[Reverse proxy TLS]
+  B[Browser portal] --&gt;|/api, wss CDP| P
+  C[OAuth provider] --&gt;|redirect /api/auth/...| P
+  P --&gt;|HTTP :3000| S[a-workbench]
+  S --&gt; D[(Database)]
+  S --&gt; X[Chromium profiles]</pre></div>
+<p>Set both public URLs to the externally reachable origin:</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Set to</th><th>Why it matters</th></tr></thead><tbody>
+<tr><td><code>SERVER_PUBLIC_URL</code></td><td>The public origin of the server, e.g. <code>https://workbench.example.com</code></td><td>Base for every OAuth redirect URI, the MCP protected-resource and authorization-server metadata, the <code>iss</code>/<code>aud</code> of OAuth access tokens, and whether the <code>awb_oauth_binding</code> cookie gets <code>Secure</code> (it does only when the value starts with <code>https://</code>)</td></tr>
+<tr><td><code>PORTAL_URL</code></td><td>The origin the browser loads the portal from — the same value, when the server serves the SPA</td><td>SSO and connect redirect target, and half of the WebSocket <code>Origin</code> allowlist</td></tr>
+</tbody></table></div>
+<p>The allowlist for the CDP live-view WebSockets is exactly the set
+<code>{PORTAL_URL, SERVER_PUBLIC_URL}</code>. Anything else is rejected with a 403 on the
+upgrade.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Only the incoming `Origin` is normalized — the allowlist is compared verbatim</span></div><div class="callout-body"><p>The browser&#39;s <code>Origin</code> header is reduced to <code>protocol//host</code> before the lookup,
+but <code>PORTAL_URL</code> and <code>SERVER_PUBLIC_URL</code> go into the set exactly as you wrote
+them. A trailing slash, a path suffix, or an explicit default port
+(<code>https://workbench.example.com:443</code>) can therefore never match any real origin,
+and every CDP upgrade 403s. Set both variables to a bare scheme-and-host origin
+with no trailing slash.</p>
+</div></div>
+
+<p>If cookie capture or the live browser view fails with a 403 behind your proxy,
+check the two variables for that exact shape first, then check that they match the
+origin the browser is actually using.</p>
+<p>Your proxy must also forward WebSocket upgrades for <code>/api/auth/cookie/:integration/cdp</code>
+and <code>/api/browser-session/cdp</code>, and preserve the <code>Origin</code> header.</p>
+<p>Run TLS at the proxy. The server speaks plain HTTP.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="install.html"><span class="pn-dir">Previous</span><span class="pn-label">Install</span></a><a class="pn pn-next" href="database.html"><span class="pn-dir">Next</span><span class="pn-label">Database</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/docker.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#what-the-image-builds">What the image builds</a></li><li class="toc-h2"><a href="#healthcheck">Healthcheck</a></li><li class="toc-h2"><a href="#compose-services">Compose services</a></li><li class="toc-h2"><a href="#mounting-an-external-plugins-directory">Mounting an external plugins directory</a></li><li class="toc-h2"><a href="#behind-a-reverse-proxy">Behind a reverse proxy</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

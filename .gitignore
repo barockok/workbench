@@ -21,6 +21,8 @@ packages/plugins/**/*.d.ts
 
 # Handoff scratch
 .handoff
+temp/
+.playwright-mcp/
 
 # macOS
 .DS_Store

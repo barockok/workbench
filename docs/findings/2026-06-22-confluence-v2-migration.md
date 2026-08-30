@@ -4,7 +4,7 @@
 **Where:** `packages/plugins/atlassian-confluence/{tools/index.ts,manifest.ts}`
 **Status:** done — all page/space ops now run on Confluence Cloud REST **v2**.
 Supersedes the v1 `get_page` CQL workaround in
-[2026-06-12 confluence v1 content GET removed](2026-06-12-confluence-v1-content-get-removed.md).
+the earlier v1 content-API finding (now folded into this one).
 
 ## Why
 

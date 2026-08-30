@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database schema — a-workbench Docs</title>
+<meta name="description" content="Every table and column, what writes it, and where the SQLite and PostgreSQL backends differ.">
+<meta property="og:title" content="Database schema — a-workbench">
+<meta property="og:description" content="Every table and column, what writes it, and where the SQLite and PostgreSQL backends differ.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab active" href="meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">API</p><ul><li><a class="" href="meta-tools.html">MCP meta-tools</a></li><li><a class="" href="mcp-endpoint.html">MCP endpoint</a></li><li><a class="" href="http-api.html">HTTP API</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Configuration</p><ul><li><a class="" href="environment.html">Environment variables</a></li><li><a class="active" href="database-schema.html">Database schema</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Project</p><ul><li><a class="" href="tool-catalog.html">Tool catalog</a></li><li><a class="" href="contributing.html">Contributing</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Configuration</p>
+          <h1>Database schema</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Every table and column, what writes it, and where the SQLite and PostgreSQL backends differ.</p>
+      <p>Seven tables. The logical shape is identical on both backends — only the dialect
+differs.</p>
+<p>The backend is chosen from <code>DATABASE_URL</code> alone: a <code>postgres://</code> or <code>postgresql://</code>
+prefix selects PostgreSQL, and <strong>anything else is treated as a SQLite file path</strong>.
+There is no separate driver variable.</p>
+<div class="mermaid-wrap"><pre class="mermaid">erDiagram
+  users ||--o{ connections : &quot;has credentials for&quot;
+  users ||--o{ pending_auth : &quot;starts flows&quot;
+  users ||--o{ audit_log : &quot;generates&quot;
+  users ||--o{ oauth_auth_codes : &quot;authorizes&quot;
+  users ||--o{ oauth_refresh_tokens : &quot;grants&quot;
+  oauth_clients ||--o{ oauth_auth_codes : &quot;redeems&quot;
+  oauth_clients ||--o{ oauth_refresh_tokens : &quot;holds&quot;
+
+  users {
+    TEXT id PK
+    TEXT email UK
+    TEXT google_sub UK
+    TEXT keycloak_sub
+    TEXT api_key_hash
+    TEXT api_key_sha
+    BLOB api_key_enc
+    BOOLEAN is_admin
+    INTEGER created_at
+  }
+  connections {
+    INTEGER id PK
+    TEXT user_id FK
+    TEXT integration
+    BLOB access_token
+    BLOB refresh_token
+    INTEGER expires_at
+    TEXT scopes
+    BLOB cookies
+    TEXT config
+    INTEGER created_at
+    INTEGER updated_at
+  }
+  pending_auth {
+    TEXT state PK
+    TEXT user_id
+    TEXT integration
+    INTEGER expires_at
+    TEXT session_data
+    TEXT code_verifier
+    TEXT config
+  }
+  audit_log {
+    INTEGER id PK
+    TEXT user_id
+    TEXT integration
+    TEXT tool
+    TEXT action
+    BOOLEAN success
+    TEXT error
+    INTEGER duration_ms
+    INTEGER created_at
+  }
+  oauth_clients {
+    TEXT client_id PK
+    TEXT client_name
+    TEXT redirect_uris
+    INTEGER created_at
+  }
+  oauth_auth_codes {
+    TEXT code PK
+    TEXT client_id FK
+    TEXT user_id FK
+    TEXT redirect_uri
+    TEXT code_challenge
+    TEXT scope
+    TEXT resource
+    INTEGER expires_at
+  }
+  oauth_refresh_tokens {
+    TEXT token_hash PK
+    TEXT client_id FK
+    TEXT user_id FK
+    TEXT scope
+    INTEGER created_at
+    INTEGER expires_at
+  }</pre></div>
+<p>The relationships are logical. There are <strong>no foreign-key constraints</strong> in the DDL —
+<code>user_id</code> and <code>client_id</code> are plain TEXT columns.</p>
+<p>Every timestamp is a Unix time in <strong>seconds</strong>, stored as an INTEGER.</p>
+<h2 id="users"><code>users</code><a class="anchor" href="#users" aria-label="Link to users">#</a></h2>
+<p>Identity. One row per person, created on first SSO login or by the local seed script.</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Stores</th><th>Written by</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>TEXT PK</td><td>A random UUID, or the id passed to the seed script</td><td>SSO callbacks, seed script</td></tr>
+<tr><td><code>email</code></td><td>TEXT UNIQUE</td><td>Verified email from the ID token; the join key when linking an existing account to a new provider</td><td>SSO callbacks</td></tr>
+<tr><td><code>google_sub</code></td><td>TEXT UNIQUE</td><td>Google subject claim</td><td>Google SSO callback</td></tr>
+<tr><td><code>keycloak_sub</code></td><td>TEXT</td><td>Keycloak subject claim. Has a unique partial index rather than a column constraint</td><td>Keycloak SSO callback</td></tr>
+<tr><td><code>api_key_hash</code></td><td>TEXT</td><td>bcrypt hash of the API key (cost 10). The legacy path, still checked</td><td>API-key mint</td></tr>
+<tr><td><code>api_key_sha</code></td><td>TEXT</td><td>SHA-256 of the API key — the indexed fast lookup. Backfilled on a legacy bcrypt hit</td><td>API-key mint and verify</td></tr>
+<tr><td><code>api_key_enc</code></td><td>BLOB / BYTEA</td><td>AES-256-GCM ciphertext of the plaintext key, so the owner can reveal it again</td><td>API-key mint</td></tr>
+<tr><td><code>is_admin</code></td><td>BOOLEAN</td><td>Defaults FALSE</td><td>—</td></tr>
+<tr><td><code>created_at</code></td><td>INTEGER</td><td>Row creation time</td><td>schema default</td></tr>
+</tbody></table></div>
+<h2 id="connections"><code>connections</code><a class="anchor" href="#connections" aria-label="Link to connections">#</a></h2>
+<p>The source of truth for &quot;is this user connected to this integration&quot;. One row per
+user × integration, enforced by <code>UNIQUE(user_id, integration)</code>. Writes are upserts on
+that pair.</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Stores</th><th>Written by</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>INTEGER PK</td><td>autoincrement / serial</td><td>—</td></tr>
+<tr><td><code>user_id</code></td><td>TEXT NOT NULL</td><td>Owner</td><td>token store, cookie store</td></tr>
+<tr><td><code>integration</code></td><td>TEXT NOT NULL</td><td>Plugin name</td><td>token store, cookie store</td></tr>
+<tr><td><code>access_token</code></td><td>BLOB / BYTEA</td><td>AES-256-GCM ciphertext. For an OAuth connection the provider access token; for an API-key connection the secret field; for a cookie connection the literal sentinel <code>&quot;cookie-auth&quot;</code></td><td>OAuth callback, API-key connect, cookie capture</td></tr>
+<tr><td><code>refresh_token</code></td><td>BLOB / BYTEA</td><td>AES-256-GCM ciphertext, when the provider issued one</td><td>OAuth callback, lazy refresh</td></tr>
+<tr><td><code>expires_at</code></td><td>INTEGER</td><td>Access-token expiry. Refresh triggers 30 seconds early</td><td>OAuth callback, lazy refresh</td></tr>
+<tr><td><code>scopes</code></td><td>TEXT</td><td>Granted scopes, <strong>not encrypted</strong></td><td>OAuth callback</td></tr>
+<tr><td><code>cookies</code></td><td>BLOB / BYTEA</td><td>AES-256-GCM ciphertext of the captured cookie bundle</td><td>cookie capture, session import</td></tr>
+<tr><td><code>config</code></td><td>TEXT</td><td>Per-connection JSON settings — the self-hosted <code>instanceUrl</code>, or the non-secret API-key fields such as a New Relic region. <strong>Not encrypted</strong></td><td>OAuth connect with an instance, API-key connect</td></tr>
+<tr><td><code>created_at</code>, <code>updated_at</code></td><td>INTEGER</td><td>Timestamps</td><td>schema defaults</td></tr>
+</tbody></table></div>
+<p>The upsert uses <code>COALESCE(excluded.config, connections.config)</code>, so a token refresh
+that re-stores without a config never wipes a stored instance origin.</p>
+<p>Disconnecting deletes the whole row. No provider-side revocation is attempted.</p>
+<h2 id="pending_auth"><code>pending_auth</code><a class="anchor" href="#pending_auth" aria-label="Link to pending_auth">#</a></h2>
+<p>In-flight handshake state, minutes-lived. One table serves three unrelated flows,
+discriminated by the <code>integration</code> column:</p>
+<div class="table-wrap"><table><thead><tr><th><code>integration</code> value</th><th>Flow</th></tr></thead><tbody>
+<tr><td><code>&lt;plugin name&gt;</code></td><td>A plugin OAuth handshake — holds the PKCE verifier and the chosen instance origin</td></tr>
+<tr><td><code>google-sso</code> / <code>keycloak-sso</code></td><td>Portal login</td></tr>
+<tr><td><code>__oauth_authorize__</code></td><td>The MCP OAuth <code>/authorize</code> ticket</td></tr>
+</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Stores</th></tr></thead><tbody>
+<tr><td><code>state</code></td><td>TEXT PK</td><td>The random state value, or the authorize ticket</td></tr>
+<tr><td><code>user_id</code></td><td>TEXT NOT NULL</td><td>Owner. Empty string for an authorize ticket, which has no user yet</td></tr>
+<tr><td><code>integration</code></td><td>TEXT NOT NULL</td><td>Flow discriminator, above</td></tr>
+<tr><td><code>expires_at</code></td><td>INTEGER NOT NULL</td><td>600 seconds out for both plugin OAuth and the authorize ticket</td></tr>
+<tr><td><code>session_data</code></td><td>TEXT</td><td>For an authorize ticket: the validated request as JSON — client, redirect URI, code challenge, scope, state, resource, and the CSRF binding</td></tr>
+<tr><td><code>code_verifier</code></td><td>TEXT</td><td>The PKCE verifier, held server-side</td></tr>
+<tr><td><code>config</code></td><td>TEXT</td><td>Carries <code>{&quot;instanceUrl&quot;: …}</code> through a self-hosted flow, then copied to <code>connections.config</code></td></tr>
+</tbody></table></div>
+<p>Rows are single-use: verifying a state deletes it, and redeeming an authorize ticket
+deletes it unconditionally whether or not the binding check passes. Expired rows are
+swept opportunistically whenever a new one is created.</p>
+<h2 id="audit_log"><code>audit_log</code><a class="anchor" href="#audit_log" aria-label="Link to audit_log">#</a></h2>
+<p>Every tool execution, success or failure.</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Stores</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>INTEGER PK</td><td>autoincrement / serial</td></tr>
+<tr><td><code>user_id</code></td><td>TEXT NOT NULL</td><td>Who ran it</td></tr>
+<tr><td><code>integration</code></td><td>TEXT</td><td>Owning plugin</td></tr>
+<tr><td><code>tool</code></td><td>TEXT</td><td>Tool name</td></tr>
+<tr><td><code>action</code></td><td>TEXT NOT NULL</td><td><code>EXECUTE</code> for tool runs</td></tr>
+<tr><td><code>success</code></td><td>BOOLEAN NOT NULL</td><td>Outcome</td></tr>
+<tr><td><code>error</code></td><td>TEXT</td><td>Failure message, when any</td></tr>
+<tr><td><code>duration_ms</code></td><td>INTEGER</td><td>Wall-clock duration</td></tr>
+<tr><td><code>created_at</code></td><td>INTEGER</td><td>Unix seconds</td></tr>
+</tbody></table></div>
+<p>Indexes: <code>idx_audit_user(user_id, created_at)</code> and
+<code>idx_audit_integration(integration, created_at)</code>.</p>
+<p>Rows are written by the audit logger when <code>AUDIT_LOG_DEST=sqlite</code> — which, despite the
+name, writes to whichever backend is configured. The other destinations write nothing
+here.</p>
+<p>Nothing prunes this table. Plan retention yourself.</p>
+<h2 id="oauth_clients"><code>oauth_clients</code><a class="anchor" href="#oauth_clients" aria-label="Link to oauth_clients">#</a></h2>
+<p>MCP clients registered through <code>POST /register</code>.</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Stores</th></tr></thead><tbody>
+<tr><td><code>client_id</code></td><td>TEXT PK</td><td>16 random bytes in hex</td></tr>
+<tr><td><code>client_name</code></td><td>TEXT</td><td>Optional display name from the registration</td></tr>
+<tr><td><code>redirect_uris</code></td><td>TEXT NOT NULL</td><td>JSON array. <code>/authorize</code> requires an exact member match</td></tr>
+<tr><td><code>created_at</code></td><td>INTEGER</td><td>Registration time</td></tr>
+</tbody></table></div>
+<p>No client secret column exists — every registered client is public.</p>
+<h2 id="oauth_auth_codes"><code>oauth_auth_codes</code><a class="anchor" href="#oauth_auth_codes" aria-label="Link to oauth_auth_codes">#</a></h2>
+<p>MCP authorization codes. 32 random bytes, <strong>60-second TTL</strong>.</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Stores</th></tr></thead><tbody>
+<tr><td><code>code</code></td><td>TEXT PK</td><td>The code</td></tr>
+<tr><td><code>client_id</code></td><td>TEXT NOT NULL</td><td>Checked at redemption</td></tr>
+<tr><td><code>user_id</code></td><td>TEXT NOT NULL</td><td>The authenticated user</td></tr>
+<tr><td><code>redirect_uri</code></td><td>TEXT NOT NULL</td><td>Checked exactly at redemption</td></tr>
+<tr><td><code>code_challenge</code></td><td>TEXT NOT NULL</td><td>S256 challenge, compared in constant time</td></tr>
+<tr><td><code>scope</code></td><td>TEXT</td><td>Defaults to <code>mcp</code></td></tr>
+<tr><td><code>resource</code></td><td>TEXT</td><td>Defaults to <code>&lt;SERVER_PUBLIC_URL&gt;/mcp</code></td></tr>
+<tr><td><code>expires_at</code></td><td>INTEGER NOT NULL</td><td>60 seconds out</td></tr>
+</tbody></table></div>
+<p>The row is deleted on any lookup hit, before the checks run — a code cannot be
+replayed even by a failed attempt. Revoking an agent also deletes its outstanding
+codes.</p>
+<h2 id="oauth_refresh_tokens"><code>oauth_refresh_tokens</code><a class="anchor" href="#oauth_refresh_tokens" aria-label="Link to oauth_refresh_tokens">#</a></h2>
+<p>Rotating refresh tokens, 30-day TTL.</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Type</th><th>Stores</th></tr></thead><tbody>
+<tr><td><code>token_hash</code></td><td>TEXT PK</td><td>SHA-256 hex of the token. The token itself is never stored</td></tr>
+<tr><td><code>client_id</code></td><td>TEXT NOT NULL</td><td>Owning MCP client</td></tr>
+<tr><td><code>user_id</code></td><td>TEXT NOT NULL</td><td>The user who authorized it</td></tr>
+<tr><td><code>scope</code></td><td>TEXT</td><td>Granted scope</td></tr>
+<tr><td><code>created_at</code></td><td>INTEGER</td><td>Carried forward across rotations, so &quot;connected since&quot; survives</td></tr>
+<tr><td><code>expires_at</code></td><td>INTEGER NOT NULL</td><td>30 days out</td></tr>
+</tbody></table></div>
+<p>This table is what <code>GET /api/agents</code> reads: live rows grouped by <code>client_id</code>, joined
+to <code>oauth_clients</code> for the name, reporting the earliest <code>created_at</code> and latest
+<code>expires_at</code>. The grouping query is dialect-aware — <code>STRING_AGG</code> on PostgreSQL,
+<code>GROUP_CONCAT</code> on SQLite.</p>
+<p>Rotation runs SELECT, DELETE, INSERT in one transaction, and single-use is enforced by
+the DELETE affecting exactly one row.</p>
+<h2 id="schema-initialisation">Schema initialisation<a class="anchor" href="#schema-initialisation" aria-label="Link to Schema initialisation">#</a></h2>
+<p>There is <strong>no versioned migration table</strong>. Schema setup is one idempotent function
+that dispatches on the adapter&#39;s dialect, and it is a deliberate explicit call at
+startup rather than an import side effect — which is what lets the test suite stand up
+a throwaway database of either dialect against the exact production DDL.</p>
+<ul>
+<li><strong>SQLite</strong> runs the <code>CREATE TABLE IF NOT EXISTS</code> block, then eleven bare
+<code>ALTER TABLE … ADD COLUMN</code> statements in a try/catch that swallows only
+<code>duplicate column name</code> and rethrows anything else.</li>
+<li><strong>PostgreSQL</strong> runs the same tables, then one <code>ADD COLUMN IF NOT EXISTS</code> batch —
+no try/catch needed on 9.6 and later.</li>
+</ul>
+<p>The eleven added columns are the ones marked as migrations above: <code>users.email</code>,
+<code>users.google_sub</code>, <code>users.api_key_enc</code>, <code>users.keycloak_sub</code>, <code>users.api_key_sha</code>,
+<code>connections.cookies</code>, <code>connections.config</code>, <code>pending_auth.session_data</code>,
+<code>pending_auth.code_verifier</code>, <code>pending_auth.config</code>, and
+<code>oauth_refresh_tokens.created_at</code>. Two partial indexes follow:
+<code>idx_users_keycloak_sub</code> (unique, <code>WHERE keycloak_sub IS NOT NULL</code>) and
+<code>idx_users_api_key_sha</code>.</p>
+<h2 id="where-the-two-backends-differ">Where the two backends differ<a class="anchor" href="#where-the-two-backends-differ" aria-label="Link to Where the two backends differ">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Concern</th><th>SQLite</th><th>PostgreSQL</th></tr></thead><tbody>
+<tr><td>Autoincrement PK</td><td><code>INTEGER PRIMARY KEY AUTOINCREMENT</code></td><td><code>SERIAL</code></td></tr>
+<tr><td>Binary columns</td><td><code>BLOB</code></td><td><code>BYTEA</code></td></tr>
+<tr><td>Timestamp default</td><td><code>unixepoch()</code></td><td><code>EXTRACT(EPOCH FROM NOW())::INTEGER</code></td></tr>
+<tr><td>Added columns</td><td>Eleven <code>ADD COLUMN</code> in try/catch</td><td>One <code>ADD COLUMN IF NOT EXISTS</code> batch</td></tr>
+<tr><td>Placeholders</td><td><code>?</code> natively</td><td><code>?</code> rewritten to <code>$1, $2, …</code> before execution</td></tr>
+<tr><td>BOOLEAN binding</td><td>Accepts <code>1</code>/<code>0</code></td><td><strong>Rejects <code>1</code>/<code>0</code></strong> — must bind a real boolean</td></tr>
+<tr><td>Transactions</td><td>Serialized in-process through a queue</td><td>Pinned to one pooled client</td></tr>
+</tbody></table></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Three portability traps</span></div><div class="callout-body"><p><strong>BOOLEAN:</strong> PostgreSQL rejects <code>1</code>/<code>0</code> for a BOOLEAN column. <code>audit_log.success</code>
+and <code>users.is_admin</code> must be bound as real booleans.</p>
+<p><strong>Placeholders:</strong> <code>?</code> is rewritten by a hand-written SQL scanner, not a regex, so it
+correctly skips string literals, quoted identifiers, dollar-quoted strings, comments,
+and the JSONB <code>?</code>, <code>?|</code>, <code>?&amp;</code> operators. A blind global replace would corrupt those
+statements invisibly.</p>
+<p><strong>Transactions:</strong> on PostgreSQL a transaction is pinned to one pooled client. A
+stray call on the shared handle inside a transaction callback silently takes a
+<em>different</em> connection and executes outside the transaction. Always use the executor
+the transaction hands you.</p>
+</div></div>
+
+<p><code>better-sqlite3</code> is synchronous while the adapter interface is async, so an <code>await</code>
+inside a SQLite transaction callback yields the loop and a second caller could issue
+<code>BEGIN</code> mid-transaction. The SQLite adapter chains transactions through a promise
+queue that stays alive across rejections. Only transactions are serialized — single
+statements are already atomic.</p>
+<h2 id="migrating-sqlite-to-postgresql">Migrating SQLite to PostgreSQL<a class="anchor" href="#migrating-sqlite-to-postgresql" aria-label="Link to Migrating SQLite to PostgreSQL">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run migrate:sqlite-to-postgres -w @a-workbench/server   # dry run by default</code></pre></div>
+<p>The script applies the production schema to the target first, diffs source and target
+columns and reports any source-only columns it will not copy, refuses a non-empty
+target unless <code>--allow-nonempty</code>, copies everything in one transaction with
+<code>INSERT … ON CONFLICT DO NOTHING</code>, resyncs every <code>SERIAL</code> sequence with <code>setval</code>, and
+verifies row counts per table. Nothing is written without <code>--apply</code>.</p>
+<p><code>pending_auth</code> and <code>oauth_auth_codes</code> hold short-lived handshake state; <code>--skip</code> them
+unless the cutover is immediate. The script does not cut over — that is a separate
+<code>DATABASE_URL</code> change.</p>
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">`ENCRYPTION_KEY` must not change during migration</span></div><div class="callout-body"><p>Ciphertext is copied verbatim. A different key on the new deployment makes every
+migrated token and cookie bundle undecryptable.</p>
+</div></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="environment.html"><span class="pn-dir">Previous</span><span class="pn-label">Environment variables</span></a><a class="pn pn-next" href="tool-catalog.html"><span class="pn-dir">Next</span><span class="pn-label">Tool catalog</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/reference/database-schema.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#users">users</a></li><li class="toc-h2"><a href="#connections">connections</a></li><li class="toc-h2"><a href="#pending_auth">pending_auth</a></li><li class="toc-h2"><a href="#audit_log">audit_log</a></li><li class="toc-h2"><a href="#oauth_clients">oauth_clients</a></li><li class="toc-h2"><a href="#oauth_auth_codes">oauth_auth_codes</a></li><li class="toc-h2"><a href="#oauth_refresh_tokens">oauth_refresh_tokens</a></li><li class="toc-h2"><a href="#schema-initialisation">Schema initialisation</a></li><li class="toc-h2"><a href="#where-the-two-backends-differ">Where the two backends differ</a></li><li class="toc-h2"><a href="#migrating-sqlite-to-postgresql">Migrating SQLite to PostgreSQL</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

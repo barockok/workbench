@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting — a-workbench Docs</title>
+<meta name="description" content="Symptoms you are likely to hit, what causes them, and the fix — from MCP client config through container boot to provider quirks.">
+<meta property="og:title" content="Troubleshooting — a-workbench">
+<meta property="og:description" content="Symptoms you are likely to hit, what causes them, and the fix — from MCP client config through container boot to provider quirks.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab active" href="discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Working with tools</p><ul><li><a class="" href="discovering-tools.html">Discovering tools</a></li><li><a class="" href="executing-tools.html">Executing tools</a></li><li><a class="" href="curl-session.html">Raw API calls</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Authentication</p><ul><li><a class="" href="oauth-connections.html">OAuth connections</a></li><li><a class="" href="api-key-connections.html">API-key connections</a></li><li><a class="" href="browser-sessions.html">Browser sessions</a></li><li><a class="" href="self-hosted-instances.html">Self-hosted instances</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Operating</p><ul><li><a class="" href="jots.html">Jots file store</a></li><li><a class="active" href="troubleshooting.html">Troubleshooting</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Operating</p>
+          <h1>Troubleshooting</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Symptoms you are likely to hit, what causes them, and the fix — from MCP client config through container boot to provider quirks.</p>
+      <p>Most of what follows was found the hard way in production and written down in the
+project&#39;s field notes. The table is the index; the sections below carry the detail.</p>
+<h2 id="symptom-index">Symptom index<a class="anchor" href="#symptom-index" aria-label="Link to Symptom index">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead><tbody>
+<tr><td><code>MCP config is not a valid JSON</code>; server absent from <code>claude mcp list</code></td><td>Syntax error, usually a trailing comma, in <code>.mcp.json</code></td><td>Validate with <code>python3 -m json.tool .mcp.json</code>, remove the comma</td></tr>
+<tr><td>Server listed but <code>mcp__workbench__*</code> tools missing</td><td>Config edited but not reloaded</td><td>Restart the session</td></tr>
+<tr><td><code>401</code> with <code>WWW-Authenticate: Bearer</code> on <code>/mcp</code></td><td>No or invalid credential</td><td>Complete the OAuth flow, or check the API-key header</td></tr>
+<tr><td>Authorized but every call 401s</td><td>API key sent as <code>Authorization: Bearer</code></td><td>Move it to the <code>x-workbench-api-key</code> header</td></tr>
+<tr><td>Calls succeed but hit the wrong data</td><td>Two similarly-named servers in the config</td><td>Check the exact <code>url</code> in <code>claude mcp list</code></td></tr>
+<tr><td><code>Tool not found: execute_tool</code></td><td><code>execute_tool</code> (singular) does not exist</td><td>Use <code>execute_tools</code> with a one-element <code>executions</code> array</td></tr>
+<tr><td>Container boots, every integration missing, 14× <code>ERR_MODULE_NOT_FOUND</code></td><td>Relative <code>PLUGINS_DIR</code> reaching <code>import()</code> as a bare specifier</td><td>Fixed in the loader; if you see it, you are on an old build</td></tr>
+<tr><td>Cookie capture fails, <code>fetch failed</code> on the CDP port</td><td>Chromium refuses to run as root without <code>--no-sandbox</code></td><td>Passed unconditionally now; check the captured stderr tail</td></tr>
+<tr><td>Chromium exits code 21, &quot;profile appears to be in use … on another computer&quot;</td><td>Stale <code>SingletonLock</code> on a shared volume after an unclean pod exit</td><td>Cleared before every spawn; check volume permissions if it persists</td></tr>
+<tr><td>Volume fills; <code>tokens.db</code> writes fail</td><td>Browser profiles growing unbounded</td><td>Disk-discipline flags, cache trim, and the profile reaper — see below</td></tr>
+<tr><td>Portal capture or cancel returns 400 <code>FST_ERR_CTP_EMPTY_JSON_BODY</code></td><td>A bodyless POST declaring <code>Content-Type: application/json</code></td><td>Send no content-type on bodyless POSTs</td></tr>
+<tr><td>Slack tool &quot;succeeds&quot; but nothing happened</td><td>Slack returns HTTP 200 with <code>{&quot;ok&quot;:false}</code></td><td>Read <code>ok</code> in the result payload, not the transport status</td></tr>
+<tr><td>GitHub connect fails with <code>Unexpected token</code> during token exchange</td><td>GitHub returns form-urlencoded unless asked otherwise</td><td><code>Accept: application/json</code> is sent now; check you are on a current build</td></tr>
+<tr><td>Confluence page operations return 410</td><td>The removed v1 content API, or v1 scopes</td><td>Reconnect for the v2 granular scopes</td></tr>
+<tr><td>PostgreSQL insert fails on a BOOLEAN column</td><td><code>1</code>/<code>0</code> bound where PostgreSQL wants a real boolean</td><td>Bind a JavaScript boolean</td></tr>
+<tr><td>Integration shows CONNECTED but every call fails</td><td>Connected means &quot;a credential is stored&quot;, not &quot;it works&quot;</td><td>See the last section</td></tr>
+</tbody></table></div>
+<h2 id="mcp-client-configuration">MCP client configuration<a class="anchor" href="#mcp-client-configuration" aria-label="Link to MCP client configuration">#</a></h2>
+<h3 id="invalid-mcpjson-drops-the-server-silently">Invalid <code>.mcp.json</code> drops the server silently<a class="anchor" href="#invalid-mcpjson-drops-the-server-silently" aria-label="Link to Invalid .mcp.json drops the server silently">#</a></h3>
+<p>A single trailing comma invalidates the file, and the client then drops the <strong>whole</strong>
+server — it does not appear in <code>claude mcp list</code> at all. The only signal is:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">[Failed to parse] Project config (shared via .mcp.json)
+  └ [Error] MCP config is not a valid JSON</code></pre></div>
+<p>Validate before debugging anything else:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">python3 -m json.tool .mcp.json</code></pre></div>
+<p>Two valid shapes:</p>
+<div class="tabs" id="tabs-94jx9l"><div class="tab-bar"><button type="button" class="tab active" data-i="0">OAuth browser login</button><button type="button" class="tab" data-i="1">API key</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">OAuth browser login</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;workbench&quot;: {
+      &quot;url&quot;: &quot;https://workbench.example.com/mcp&quot;
+    }
+  }
+}</code></pre></div>
+</div><div class="tab-panel" data-i="1"><div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">API key</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;workbench&quot;: {
+      &quot;url&quot;: &quot;https://workbench.example.com/mcp&quot;,
+      &quot;headers&quot;: { &quot;x-workbench-api-key&quot;: &quot;YOUR_API_KEY&quot; }
+    }
+  }
+}</code></pre></div>
+</div></div>
+
+<p>If <code>workbench</code> is missing from <code>claude mcp list</code>, stop — it is a config problem, not an
+auth problem.</p>
+<h3 id="the-config-is-not-auto-reloaded">The config is not auto-reloaded<a class="anchor" href="#the-config-is-not-auto-reloaded" aria-label="Link to The config is not auto-reloaded">#</a></h3>
+<p>Edits to <code>.mcp.json</code> do not take effect in a running session. Restarting the session is
+the only way to pick them up. A server that loads but shows no <code>mcp__workbench__*</code> tools
+is almost always a stale session rather than a broken server.</p>
+<h3 id="the-two-credentials-are-not-interchangeable">The two credentials are not interchangeable<a class="anchor" href="#the-two-credentials-are-not-interchangeable" aria-label="Link to The two credentials are not interchangeable">#</a></h3>
+<p><code>Authorization: Bearer</code> carries an OAuth access token or a portal session JWT. The API
+key travels in its own <code>x-workbench-api-key</code> header and is checked first. An API key
+pasted into a <code>Bearer</code> header does not authenticate — it is not tried there.</p>
+<p>Verify the endpoint directly:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl -s https://workbench.example.com/mcp \
+  -H 'content-type: application/json' \
+  -H &quot;x-workbench-api-key: $KEY&quot; \
+  -d '{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/list&quot;}'</code></pre></div>
+<p>Nine tools back means the credential works and the problem is client-side.</p>
+<h3 id="the-oauth-redirect-fails-on-a-remote-session">The OAuth redirect fails on a remote session<a class="anchor" href="#the-oauth-redirect-fails-on-a-remote-session" aria-label="Link to The OAuth redirect fails on a remote session">#</a></h3>
+<p>Signing in over SSH often leaves the browser unable to reach the client&#39;s local callback
+listener. Copy the <strong>full</strong> <code>localhost:…/callback?code=…</code> URL out of the address bar and
+hand it to the client&#39;s completion tool — the workbench&#39;s own
+<code>/oauth/callback</code> landing page exists for exactly this, and does no server-side work
+beyond rendering the URL for copying.</p>
+<h3 id="two-workbenches-one-name">Two workbenches, one name<a class="anchor" href="#two-workbenches-one-name" aria-label="Link to Two workbenches, one name">#</a></h3>
+<p>A hosted aggregator and your self-hosted staging server are independent: separate
+accounts, separate authorizations, separate connections. <code>claude mcp list</code> shows the
+exact <code>url</code> — check it before concluding a connection vanished.</p>
+<h2 id="server-boot-and-container">Server boot and container<a class="anchor" href="#server-boot-and-container" aria-label="Link to Server boot and container">#</a></h2>
+<h3 id="err_module_not_found-for-every-plugin"><code>ERR_MODULE_NOT_FOUND</code> for every plugin<a class="anchor" href="#err_module_not_found-for-every-plugin" aria-label="Link to ERR_MODULE_NOT_FOUND for every plugin">#</a></h3>
+<p><strong>Symptom:</strong> the container boots, <code>list_integrations</code> returns almost nothing, and the log
+carries one <code>ERR_MODULE_NOT_FOUND</code> per plugin directory.</p>
+<p><strong>Cause:</strong> <code>PLUGINS_DIR</code> defaults to <code>./plugins</code>. A relative path reaches Node&#39;s dynamic
+<code>import()</code> as a <em>bare specifier</em>, so <code>plugins/slack/manifest.ts</code> is resolved as the npm
+package <code>plugins</code> — which does not exist.</p>
+<p><strong>Fix:</strong> the loader now resolves <code>PLUGINS_DIR</code> to an absolute path before importing, and
+skips built-in directories on the external pass (in the container image, <code>PLUGINS_DIR</code>
+and the built-in path are the same directory). If you see this, you are running a build
+from before that fix.</p>
+<p>Related: a directory named <code>browser</code> or <code>jots</code> under <code>PLUGINS_DIR</code> is refused with
+<code>name reserved for internal plugin</code>, because registration overwrites by name and those
+two internal plugins carry filesystem and browser access that must not be shadowed.</p>
+<p>A plugin that fails to load is logged and <strong>skipped</strong> — the server still boots, and the
+integration is simply absent. Grep the boot log for <code>Failed to load</code> when an integration
+is unexpectedly missing. Match on that prefix, not the full sentence: the shipped
+integrations all go through the built-in pass, which logs
+<code>Failed to load built-in plugin &lt;name&gt;</code>, while a directory under <code>PLUGINS_DIR</code> logs
+<code>Failed to load plugin &lt;dir&gt;</code>.</p>
+<h3 id="chromium-will-not-start-as-root">Chromium will not start as root<a class="anchor" href="#chromium-will-not-start-as-root" aria-label="Link to Chromium will not start as root">#</a></h3>
+<p><strong>Symptom:</strong> cookie capture fails with <code>fetch failed</code> against the CDP port; Chromium
+appears to start and die.</p>
+<p><strong>Cause:</strong> the container image has no <code>USER</code> directive, so the process runs as root, and
+Chromium refuses to run as root without <code>--no-sandbox</code>.</p>
+<p><strong>Fix:</strong> <code>--no-sandbox</code> and <code>--disable-dev-shm-usage</code> are passed unconditionally at
+spawn. The spawn path also captures the last 4KB of Chromium&#39;s stderr, so a launch
+failure reports a real reason instead of a CDP connection timeout — read that tail
+before guessing.</p>
+<h3 id="stale-singletonlock-after-a-pod-rollout">Stale <code>SingletonLock</code> after a pod rollout<a class="anchor" href="#stale-singletonlock-after-a-pod-rollout" aria-label="Link to Stale SingletonLock after a pod rollout">#</a></h3>
+<p><strong>Symptom:</strong> Chromium exits code 21 with <em>&quot;profile appears to be in use by another
+Chromium process … on another computer&quot;</em>, before DevTools comes up. Typically right
+after a rolling deploy, an OOM kill, or any SIGKILL.</p>
+<p><strong>Cause:</strong> Chromium writes <code>SingletonLock</code> into the profile as a symlink encoding
+<code>&lt;hostname&gt;-&lt;pid&gt;</code>. On a shared volume — a Kubernetes PVC, say — a pod that died
+uncleanly leaves one behind naming a host that no longer exists. The next pod sees it and
+refuses to start.</p>
+<p><strong>Fix:</strong> <code>SingletonLock</code>, <code>SingletonSocket</code> and <code>SingletonCookie</code> are removed before
+every spawn. This is safe unconditionally because same-process sessions are already
+serialised through the profile lock, so any file found there is stale by definition.</p>
+<h3 id="browser-profiles-fill-the-volume">Browser profiles fill the volume<a class="anchor" href="#browser-profiles-fill-the-volume" aria-label="Link to Browser profiles fill the volume">#</a></h3>
+<p><strong>Symptom:</strong> the volume holding <code>tokens.db</code> reaches capacity. Profiles are the bulk of
+it, and a large share is duplicated Safe Browsing blocklists — one per profile.</p>
+<p><strong>Cause:</strong> persistent per-user profiles were introduced without anything reclaiming them.</p>
+<p><strong>Fixes, all shipped and layered:</strong></p>
+<ul>
+<li>Spawn flags disable background networking (the blocklist download), component updates,
+client-side phishing detection, sync and crash reporting, and cap the disk cache at
+<code>BROWSER_DISK_CACHE_MB</code>.</li>
+<li>Caches are trimmed on the Chromium <code>exit</code> event, so a crashed browser is cleaned up
+the same as a closed one.</li>
+<li>A reaper sweeps every <code>BROWSER_PROFILE_REAP_INTERVAL_SECONDS</code>, trimming caches
+everywhere and deleting whole profiles idle past <code>BROWSER_PROFILE_TTL_DAYS</code>, skipping
+any with a live session.</li>
+</ul>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The profile reaper deletes, and the default is 30 days</span></div><div class="callout-body"><p><code>BROWSER_PROFILE_TTL_DAYS</code> defaults to <code>30</code>. A profile untouched that long is removed,
+logging that user out of every cookie integration. Set it to <code>0</code> to keep only cache
+trimming. See <a href="browser-sessions.html">Browser sessions</a>.</p>
+</div></div>
+
+<p>One theory worth not re-testing: slow storage was measured and ruled out as a cause of
+capture latency. The problem was disk consumption, not disk speed.</p>
+<h2 id="requests-and-providers">Requests and providers<a class="anchor" href="#requests-and-providers" aria-label="Link to Requests and providers">#</a></h2>
+<h3 id="400-fst_err_ctp_empty_json_body-on-a-bodyless-post">400 <code>FST_ERR_CTP_EMPTY_JSON_BODY</code> on a bodyless POST<a class="anchor" href="#400-fst_err_ctp_empty_json_body-on-a-bodyless-post" aria-label="Link to 400 FST_ERR_CTP_EMPTY_JSON_BODY on a bodyless POST">#</a></h3>
+<p><strong>Symptom:</strong></p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;statusCode&quot;: 400, &quot;code&quot;: &quot;FST_ERR_CTP_EMPTY_JSON_BODY&quot;,
+  &quot;error&quot;: &quot;Bad Request&quot;,
+  &quot;message&quot;: &quot;Body cannot be empty when content-type is set to 'application/json'&quot; }</code></pre></div>
+<p><strong>Cause:</strong> several endpoints — cookie capture and cancel among them — derive everything
+from the authenticated user and the route parameter, so they take no body. A client that
+still sends <code>Content-Type: application/json</code> with an empty body is rejected by Fastify&#39;s
+JSON parser <em>before the handler runs</em>.</p>
+<p><strong>Fix:</strong> send no <code>Content-Type</code> on a bodyless POST. If you are calling the API yourself,
+send only the auth header.</p>
+<h3 id="slack-returns-http-200-with-quotokquot-false">Slack returns HTTP 200 with <code>{&quot;ok&quot;: false}</code><a class="anchor" href="#slack-returns-http-200-with-quotokquot-false" aria-label="Link to Slack returns HTTP 200 with {&amp;quot;ok&amp;quot;: false}">#</a></h3>
+<p>Slack&#39;s Web API signals failure in the body, not the status line. A permissions problem,
+a bad channel id, or a revoked token all come back as <code>200 OK</code> with <code>{&quot;ok&quot;: false, &quot;error&quot;: &quot;…&quot;}</code>.</p>
+<p>This has two consequences:</p>
+<ul>
+<li><strong>In tool results</strong>, the handler passes the payload through. <code>{&quot;result&quot;: {&quot;ok&quot;: false, &quot;error&quot;: &quot;not_in_channel&quot;}}</code> is a <em>successful</em> execution carrying a failure. Read <code>ok</code>.</li>
+<li><strong>In the OAuth exchange</strong>, the same envelope would otherwise look like a valid token
+response. The connect path checks for it explicitly and raises
+<code>Slack token exchange failed: &lt;error&gt;</code>.</li>
+</ul>
+<p>Two more Slack shapes worth knowing: the manifest&#39;s scopes are sent as <strong>user</strong> scopes,
+not bot scopes — put them in the User Token Scopes box when configuring the app, and the
+token arrives nested under <code>authed_user.access_token</code>. And <code>slack_download_file</code> treats
+an HTML response as <code>not_authed_or_not_found</code>, because Slack answers an unauthorized
+file request with a login page at status 200 rather than a 403.</p>
+<h3 id="github-token-exchange-throws-unexpected-token">GitHub token exchange throws <code>Unexpected token</code><a class="anchor" href="#github-token-exchange-throws-unexpected-token" aria-label="Link to GitHub token exchange throws Unexpected token">#</a></h3>
+<p><strong>Symptom:</strong> connecting GitHub fails during the code exchange with a JSON parse error.</p>
+<p><strong>Cause:</strong> GitHub&#39;s token endpoint returns <code>application/x-www-form-urlencoded</code> by
+default. Calling <code>.json()</code> on that response throws.</p>
+<p><strong>Fix:</strong> the exchange sends <code>Accept: application/json</code>. This is shipped; seeing it now
+means an old build.</p>
+<h3 id="confluence-operations-return-410">Confluence operations return 410<a class="anchor" href="#confluence-operations-return-410" aria-label="Link to Confluence operations return 410">#</a></h3>
+<p><strong>Cause:</strong> Atlassian removed the v1 content API. The integration was migrated to REST v2
+(<code>/wiki/api/v2/pages</code> and <code>/spaces</code>), which needs different, granular scopes:
+<code>read:page:confluence</code>, <code>write:page:confluence</code>, <code>delete:page:confluence</code>,
+<code>read:space:confluence</code>, plus <code>search:confluence</code> and <code>offline_access</code>.</p>
+<p><strong>Fix:</strong> update the scopes on your Atlassian app, then <strong>have users reconnect</strong> — an
+existing connection still carries the old scope grant, and a scope change does not
+apply retroactively. The MCP tool names and arguments did not change; search still uses
+CQL.</p>
+<p>The same reconnect requirement applies to any scope addition. Bitbucket&#39;s pipeline tools
+need <code>pipeline</code> and <code>pipeline:write</code>, which existing connections do not have.</p>
+<h3 id="postgresql-rejects-1-and-0-for-a-boolean-column">PostgreSQL rejects <code>1</code> and <code>0</code> for a BOOLEAN column<a class="anchor" href="#postgresql-rejects-1-and-0-for-a-boolean-column" aria-label="Link to PostgreSQL rejects 1 and 0 for a BOOLEAN column">#</a></h3>
+<p><strong>Symptom:</strong> an insert that works on SQLite fails on PostgreSQL.</p>
+<p><strong>Cause:</strong> SQLite stores booleans as integers and accepts <code>1</code>/<code>0</code> anywhere. PostgreSQL&#39;s
+<code>BOOLEAN</code> type rejects an integer.</p>
+<p><strong>Fix:</strong> bind a real JavaScript boolean. The audit writer does this deliberately for
+<code>audit_log.success</code>, and the SQLite adapter converts on the way in — so one binding works
+on both backends.</p>
+<p>Adjacent PostgreSQL traps in the same area, if you are writing queries:</p>
+<ul>
+<li><code>?</code> is not always a placeholder. String literals, quoted identifiers, dollar-quoted
+strings and the JSONB <code>?</code>, <code>?|</code>, <code>?&amp;</code> operators all contain one. The adapter uses a
+real SQL scanner rather than a regex for this reason.</li>
+<li>A pooled connection breaks read-then-write atomicity. Inside a transaction, use the
+executor the adapter hands you — a stray top-level <code>db.run()</code> takes a <em>different</em>
+pooled client and runs outside the transaction.</li>
+</ul>
+<h2 id="connected-but-not-working">Connected but not working<a class="anchor" href="#connected-but-not-working" aria-label="Link to Connected but not working">#</a></h2>
+<p><code>list_integrations</code> reporting <code>connected: true</code> means only that a credential is stored —
+a token row exists, or a cookie bundle has at least one live cookie. It does not mean the
+credential still works. Common gaps:</p>
+<div class="table-wrap"><table><thead><tr><th>What is stored</th><th>What is wrong</th></tr></thead><tbody>
+<tr><td>A valid token</td><td>The grant lacks a scope the tool needs. Reconnect after fixing scopes</td></tr>
+<tr><td>A token with no refresh token</td><td>It works until it expires, then fails with <code>Token expired and no refresh_token stored</code>. Add the provider&#39;s offline-access scope and reconnect</td></tr>
+<tr><td>A cookie bundle with one live cookie</td><td>The <em>session</em> cookie expired and only a long-lived one remains. Recapture</td></tr>
+<tr><td>A token for the wrong instance</td><td>A self-hosted connection missing <code>instanceUrl</code> fails the curl proxy with 502 and sends tools to the cloud. Reconnect through the instance prompt</td></tr>
+<tr><td>A revoked token</td><td>Revoking the app at the provider does not notify the workbench. Disconnect and reconnect</td></tr>
+</tbody></table></div>
+<p>Disconnecting deletes only the local row — no provider-side revocation is attempted, so
+clearing a bad state locally does not invalidate the token at the provider.</p>
+<p>For the audit trail behind a failing tool, <code>audit_log</code> carries one row per execution with
+the integration, tool, success flag and error, including the executions that never
+reached a handler. A <code>SAFEPARSE_ERROR</code> row there means a plugin&#39;s schema is malformed and
+that tool ran with unvalidated arguments and no defaults applied — see
+<a href="executing-tools.html">Executing tools</a>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="jots.html"><span class="pn-dir">Previous</span><span class="pn-label">Jots file store</span></a><a class="pn pn-next" href="../integrations/index.html"><span class="pn-dir">Next</span><span class="pn-label">All integrations</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/guides/troubleshooting.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#symptom-index">Symptom index</a></li><li class="toc-h2"><a href="#mcp-client-configuration">MCP client configuration</a></li><li class="toc-h3"><a href="#invalid-mcpjson-drops-the-server-silently">Invalid .mcp.json drops the server silently</a></li><li class="toc-h3"><a href="#the-config-is-not-auto-reloaded">The config is not auto-reloaded</a></li><li class="toc-h3"><a href="#the-two-credentials-are-not-interchangeable">The two credentials are not interchangeable</a></li><li class="toc-h3"><a href="#the-oauth-redirect-fails-on-a-remote-session">The OAuth redirect fails on a remote session</a></li><li class="toc-h3"><a href="#two-workbenches-one-name">Two workbenches, one name</a></li><li class="toc-h2"><a href="#server-boot-and-container">Server boot and container</a></li><li class="toc-h3"><a href="#err_module_not_found-for-every-plugin">ERR_MODULE_NOT_FOUND for every plugin</a></li><li class="toc-h3"><a href="#chromium-will-not-start-as-root">Chromium will not start as root</a></li><li class="toc-h3"><a href="#stale-singletonlock-after-a-pod-rollout">Stale SingletonLock after a pod rollout</a></li><li class="toc-h3"><a href="#browser-profiles-fill-the-volume">Browser profiles fill the volume</a></li><li class="toc-h2"><a href="#requests-and-providers">Requests and providers</a></li><li class="toc-h3"><a href="#400-fst_err_ctp_empty_json_body-on-a-bodyless-post">400 FST_ERR_CTP_EMPTY_JSON_BODY on a bodyless POST</a></li><li class="toc-h3"><a href="#slack-returns-http-200-with-quotokquot-false">Slack returns HTTP 200 with {&amp;quot;ok&amp;quot;: false}</a></li><li class="toc-h3"><a href="#github-token-exchange-throws-unexpected-token">GitHub token exchange throws Unexpected token</a></li><li class="toc-h3"><a href="#confluence-operations-return-410">Confluence operations return 410</a></li><li class="toc-h3"><a href="#postgresql-rejects-1-and-0-for-a-boolean-column">PostgreSQL rejects 1 and 0 for a BOOLEAN column</a></li><li class="toc-h2"><a href="#connected-but-not-working">Connected but not working</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>
