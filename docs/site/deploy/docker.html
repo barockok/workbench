@@ -162,7 +162,7 @@ configuration loads the built-ins once rather than twice — the external pass s
 built-in directory names. The loader also refuses to load a directory named
 <code>browser</code> or <code>jots</code> (reserved for the internal plugins).</p>
 <p>To add your own plugins, mount them somewhere else and point <code>PLUGINS_DIR</code> there:</p>
-<div class="tabs" id="tabs-m358cg"><div class="tab-bar"><button type="button" class="tab active" data-i="0">docker-compose</button><button type="button" class="tab" data-i="1">docker run</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">docker-compose</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">services:
+<div class="tabs" id="tabs-deploy-docker-0"><div class="tab-bar"><button type="button" class="tab active" data-i="0">docker-compose</button><button type="button" class="tab" data-i="1">docker run</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">docker-compose</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">services:
   a-workbench:
     image: ghcr.io/&lt;owner&gt;/&lt;repo&gt;:v0.24.0
     ports:

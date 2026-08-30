@@ -164,11 +164,14 @@ function postprocess(html, marked) {
 }
 
 // :::tabs blocks are handled before markdown, producing raw HTML.
-function extractTabs(src, marked) {
+// The id must be derived, not random: the build has to be byte-for-byte
+// reproducible or CI cannot tell a stale commit from a fresh one.
+function extractTabs(src, marked, pagePath) {
+  let n = 0;
   return src.replace(/^:::tabs\s*\n([\s\S]*?)^:::\s*$/gm, (_, inner) => {
     const parts = [...inner.matchAll(/^```(\S+)?[ \t]*(?:\[([^\]]+)\])?\n([\s\S]*?)^```\s*$/gm)];
     if (!parts.length) return inner;
-    const id = 'tabs-' + Math.random().toString(36).slice(2, 8);
+    const id = 'tabs-' + pagePath.replace(/[^a-z0-9]+/gi, '-') + '-' + n++;
     const buttons = parts
       .map(
         (p, i) =>
@@ -435,7 +438,7 @@ for (const page of pages) {
     return `](${href(page.path, target)}${hash || ''})`;
   });
 
-  md = extractTabs(md, marked);
+  md = extractTabs(md, marked, page.path);
   md = extractCards(md);
   md = extractSteps(md);
   md = preprocess(md);

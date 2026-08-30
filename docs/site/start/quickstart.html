@@ -77,7 +77,7 @@ or short value crashes the process before anything else runs.</p>
 <tr><td><code>ENCRYPTION_KEY</code></td><td>exactly 64 hex characters (32 bytes)</td><td><code>openssl rand -hex 32</code></td></tr>
 <tr><td><code>SESSION_SECRET</code></td><td>at least 32 characters</td><td><code>openssl rand -base64 32</code></td></tr>
 </tbody></table></div>
-<div class="tabs" id="tabs-2onyjl"><div class="tab-bar"><button type="button" class="tab active" data-i="0">macOS / Linux</button><button type="button" class="tab" data-i="1">Windows</button><button type="button" class="tab" data-i="2">Node, any platform</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">macOS / Linux</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cp .env.example .env
+<div class="tabs" id="tabs-start-quickstart-0"><div class="tab-bar"><button type="button" class="tab active" data-i="0">macOS / Linux</button><button type="button" class="tab" data-i="1">Windows</button><button type="button" class="tab" data-i="2">Node, any platform</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">macOS / Linux</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cp .env.example .env
 printf 'ENCRYPTION_KEY=%s\n' &quot;$(openssl rand -hex 32)&quot; &gt;&gt; .env
 printf 'SESSION_SECRET=%s\n' &quot;$(openssl rand -base64 32)&quot; &gt;&gt; .env</code></pre></div>
 </div><div class="tab-panel" data-i="1"><div class="code" data-lang="powershell"><div class="code-bar"><span class="code-lang">Windows</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-powershell">Copy-Item .env.example .env
@@ -123,7 +123,7 @@ button that cannot work. If you are not configuring Google, blank both lines.</p
 </div></div>
 
 
-<div class="tabs" id="tabs-uz75rd"><div class="tab-bar"><button type="button" class="tab active" data-i="0">No SSO configured</button><button type="button" class="tab" data-i="1">Portal with SSO</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">No SSO configured</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash"># Seeds a user and mints an API key directly against the database.
+<div class="tabs" id="tabs-start-quickstart-1"><div class="tab-bar"><button type="button" class="tab active" data-i="0">No SSO configured</button><button type="button" class="tab" data-i="1">Portal with SSO</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">No SSO configured</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash"># Seeds a user and mints an API key directly against the database.
 cd packages/server
 npx tsx --env-file=../../.env scripts/seed-local-user.ts
 # user:    local-dev-user
