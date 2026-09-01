@@ -1,6 +1,6 @@
 {
   "site": {
-    "name": "a-workbench",
+    "name": "workbench",
     "description": "Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.",
     "repo": "https://github.com/barockok/workbench",
     "domain": "github.io",
@@ -18,7 +18,7 @@
           "items": [
             {
               "path": "index",
-              "label": "What is a-workbench?",
+              "label": "What is workbench?",
               "layout": "landing"
             },
             {

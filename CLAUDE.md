@@ -1,4 +1,4 @@
-# a-workbench
+# workbench
 
 Self-hosted MCP tool aggregator for AI agents. Connects to SaaS tools via per-user OAuth. Extensible via plugin SDK.
 

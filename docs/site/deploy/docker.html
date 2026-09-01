@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Docker &amp; Compose — a-workbench Docs</title>
+<title>Docker &amp; Compose — workbench Docs</title>
 <meta name="description" content="What the image contains, how the Compose file is wired, mounting external plugins, and running behind a reverse proxy.">
-<meta property="og:title" content="Docker &amp; Compose — a-workbench">
+<meta property="og:title" content="Docker &amp; Compose — workbench">
 <meta property="og:description" content="What the image contains, how the Compose file is wired, mounting external plugins, and running behind a reverse proxy.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="../index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -84,8 +84,8 @@ a cacheable <code>npm ci</code>, then runs <code>npm run build</code>.</p>
 <tr><td><code>packages/portal/dist</code></td><td><code>/app/portal</code></td></tr>
 <tr><td><code>packages/plugins</code></td><td><code>/app/plugins</code></td></tr>
 </tbody></table></div>
-<p>It then deletes <code>node_modules/@a-workbench</code> and re-materializes
-<code>@a-workbench/shared</code> as a real package — the workspace symlinks dangle because
+<p>It then deletes <code>node_modules/@workbench</code> and re-materializes
+<code>@workbench/shared</code> as a real package — the workspace symlinks dangle because
 <code>packages/</code> is not shipped. Chromium is baked in with
 <code>npx playwright install --with-deps chromium</code> and made world-readable so any
 runtime uid can execute it. <code>tsx@4.19.4</code> is installed globally.</p>
@@ -108,7 +108,7 @@ that or a plain TCP check on the listen port for orchestrator liveness probes. S
 <a href="observability.html">observability</a>.</p>
 <h2 id="compose-services">Compose services<a class="anchor" href="#compose-services" aria-label="Link to Compose services">#</a></h2>
 <p><code>docker-compose.yml</code> defines two services.</p>
-<p><strong><code>a-workbench</code></strong> — <code>build: .</code>, published on <code>3000:3000</code>.</p>
+<p><strong><code>workbench</code></strong> — <code>build: .</code>, published on <code>3000:3000</code>.</p>
 <ul>
 <li><code>env_file: [.env]</code> pulls SSO credentials <em>and</em> every per-plugin OAuth
 credential. Without them <code>/authorize</code> and <code>connect(&lt;plugin&gt;)</code> fail with
@@ -163,7 +163,7 @@ built-in directory names. The loader also refuses to load a directory named
 <code>browser</code> or <code>jots</code> (reserved for the internal plugins).</p>
 <p>To add your own plugins, mount them somewhere else and point <code>PLUGINS_DIR</code> there:</p>
 <div class="tabs" id="tabs-deploy-docker-0"><div class="tab-bar"><button type="button" class="tab active" data-i="0">docker-compose</button><button type="button" class="tab" data-i="1">docker run</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">docker-compose</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">services:
-  a-workbench:
+  workbench:
     image: ghcr.io/&lt;owner&gt;/&lt;repo&gt;:v0.24.0
     ports:
       - &quot;3000:3000&quot;
@@ -178,7 +178,7 @@ built-in directory names. The loader also refuses to load a directory named
     volumes:
       - ./data:/data
       - ./custom-plugins:/app/custom-plugins:ro</code></pre></div>
-</div><div class="tab-panel" data-i="1"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">docker run</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker run -d --name a-workbench \
+</div><div class="tab-panel" data-i="1"><div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">docker run</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker run -d --name workbench \
   -p 3000:3000 \
   --env-file .env \
   -e DATABASE_URL=/data/tokens.db \
@@ -203,7 +203,7 @@ HTTP API, the MCP endpoint, and the curl proxy.</p>
   A[Agent / MCP client] --&gt;|POST /mcp| P[Reverse proxy TLS]
   B[Browser portal] --&gt;|/api, wss CDP| P
   C[OAuth provider] --&gt;|redirect /api/auth/...| P
-  P --&gt;|HTTP :3000| S[a-workbench]
+  P --&gt;|HTTP :3000| S[workbench]
   S --&gt; D[(Database)]
   S --&gt; X[Chromium profiles]</pre></div>
 <p>Set both public URLs to the externally reachable origin:</p>
@@ -233,7 +233,7 @@ and <code>/api/browser-session/cdp</code>, and preserve the <code>Origin</code> 
     <nav class="prevnext"><a class="pn pn-prev" href="install.html"><span class="pn-dir">Previous</span><span class="pn-label">Install</span></a><a class="pn pn-next" href="database.html"><span class="pn-dir">Next</span><span class="pn-label">Database</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/docker.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 

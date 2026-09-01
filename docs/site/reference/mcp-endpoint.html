@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP endpoint — a-workbench Docs</title>
+<title>MCP endpoint — workbench Docs</title>
 <meta name="description" content="How POST /mcp works — transport, the two credentials it accepts, the JSON-RPC methods it answers, and the OAuth 2.1 discovery surface around it.">
-<meta property="og:title" content="MCP endpoint — a-workbench">
+<meta property="og:title" content="MCP endpoint — workbench">
 <meta property="og:description" content="How POST /mcp works — transport, the two credentials it accepts, the JSON-RPC methods it answers, and the OAuth 2.1 discovery surface around it.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="../index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -83,7 +83,7 @@ only case — the server replies <strong>202 Accepted with an empty body</strong
 both are HS256 signed with the same <code>SESSION_SECRET</code>. They are separated by audience
 and by a <code>token_type</code> claim:</p>
 <div class="table-wrap"><table><thead><tr><th>Token</th><th><code>aud</code></th><th><code>iss</code></th><th>Distinguishing claim</th><th>TTL</th></tr></thead><tbody>
-<tr><td>Portal session JWT</td><td><code>a-workbench</code></td><td><code>a-workbench</code></td><td><code>email</code></td><td>24 hours</td></tr>
+<tr><td>Portal session JWT</td><td><code>workbench</code></td><td><code>workbench</code></td><td><code>email</code></td><td>24 hours</td></tr>
 <tr><td>OAuth 2.1 access token</td><td><code>&lt;SERVER_PUBLIC_URL&gt;/mcp</code></td><td><code>SERVER_PUBLIC_URL</code></td><td><code>token_type: &quot;oauth&quot;</code>, plus <code>scope</code> and <code>client_id</code></td><td><code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code>, default 3600</td></tr>
 </tbody></table></div>
 <p>The access-token verifier rejects anything without <code>token_type === &quot;oauth&quot;</code> and
@@ -96,7 +96,7 @@ OAuth 2.1 access token authenticates <code>/mcp</code> and nothing else.</p>
 <p>An unauthenticated request gets HTTP 401 with a challenge header pointing at the
 protected-resource metadata, and a JSON-RPC error body echoing the request <code>id</code>
 (or <code>null</code>):</p>
-<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">WWW-Authenticate: Bearer realm=&quot;a-workbench&quot;, resource_metadata=&quot;&lt;SERVER_PUBLIC_URL&gt;/.well-known/oauth-protected-resource&quot;</code></pre></div>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">WWW-Authenticate: Bearer realm=&quot;workbench&quot;, resource_metadata=&quot;&lt;SERVER_PUBLIC_URL&gt;/.well-known/oauth-protected-resource&quot;</code></pre></div>
 <div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
   &quot;jsonrpc&quot;: &quot;2.0&quot;,
   &quot;id&quot;: 1,
@@ -110,7 +110,7 @@ protected-resource metadata, and a JSON-RPC error body echoing the request <code
 below without any manual configuration.</p>
 <h2 id="json-rpc-methods">JSON-RPC methods<a class="anchor" href="#json-rpc-methods" aria-label="Link to JSON-RPC methods">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Method</th><th>Behaviour</th></tr></thead><tbody>
-<tr><td><code>initialize</code></td><td>Echoes the client&#39;s <code>params.protocolVersion</code>, defaulting to <code>2025-06-18</code>. Returns <code>capabilities: { tools: {} }</code> and <code>serverInfo: { name: &quot;a-workbench&quot;, version: &quot;0.1.0&quot; }</code></td></tr>
+<tr><td><code>initialize</code></td><td>Echoes the client&#39;s <code>params.protocolVersion</code>, defaulting to <code>2025-06-18</code>. Returns <code>capabilities: { tools: {} }</code> and <code>serverInfo: { name: &quot;workbench&quot;, version: &quot;0.1.0&quot; }</code></td></tr>
 <tr><td><code>notifications/initialized</code> / <code>initialized</code></td><td>No result — HTTP 202, empty body</td></tr>
 <tr><td><code>tools/list</code></td><td>The nine meta-tools, each <code>{ name, description, inputSchema }</code>. Plugin tools are never listed</td></tr>
 <tr><td><code>tools/call</code></td><td>Runs one meta-tool. See below</td></tr>
@@ -144,7 +144,7 @@ anywhere inside an <code>execute_tools</code> <code>{ results: [{ result }] }</c
 becomes image blocks instead, and the text block is dropped. This is how
 <code>browser_screenshot</code> returns a picture.</p>
 <h2 id="oauth-21-discovery-surface">OAuth 2.1 discovery surface<a class="anchor" href="#oauth-21-discovery-surface" aria-label="Link to OAuth 2.1 discovery surface">#</a></h2>
-<p>a-workbench is both the protected resource and its own authorization server. All of
+<p>workbench is both the protected resource and its own authorization server. All of
 the following are unauthenticated.</p>
 <h3 id="metadata">Metadata<a class="anchor" href="#metadata" aria-label="Link to Metadata">#</a></h3>
 <p><code>GET /.well-known/oauth-protected-resource</code></p>
@@ -187,7 +187,7 @@ client&#39;s registered list (no prefix matching); and <code>code_challenge</cod
 request has to survive a round trip through Google SSO. It does that with a ticket.</p>
 <div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
   participant C as MCP client
-  participant W as a-workbench
+  participant W as workbench
   participant G as Google SSO
   C-&gt;&gt;W: GET /authorize (PKCE S256)
   W-&gt;&gt;W: stash request under a ticket
@@ -245,7 +245,7 @@ a tighter revocation window.</p>
     <nav class="prevnext"><a class="pn pn-prev" href="meta-tools.html"><span class="pn-dir">Previous</span><span class="pn-label">MCP meta-tools</span></a><a class="pn pn-next" href="http-api.html"><span class="pn-dir">Next</span><span class="pn-label">HTTP API</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/reference/mcp-endpoint.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 

@@ -3,7 +3,7 @@ title: Contributing
 description: Local setup, the checks that must pass, the commit rules the hooks enforce, and how releases are cut.
 ---
 
-a-workbench is a TypeScript monorepo orchestrated with Turbo, and it is a **public
+workbench is a TypeScript monorepo orchestrated with Turbo, and it is a **public
 repository** — history is published too, so a leak in any commit is permanent. Read
 the hygiene rules below before your first commit, not after.
 
@@ -70,7 +70,7 @@ The main `tsconfig.json` covers only `src/`, so the build never type-checks the 
 suite. There is a separate task for that, and CI runs it:
 
 ```bash
-npm run typecheck:tests -w @a-workbench/server
+npm run typecheck:tests -w @workbench/server
 ```
 
 The database-adapter suite skips its PostgreSQL half unless `TEST_POSTGRES_URL` points
@@ -178,9 +178,9 @@ each plugin actually implements and compares them against a reference catalog of
 tools per app, so you can see where the catalog is thin before picking work.
 
 ```bash
-npm run gap -w @a-workbench/server            # terminal bar chart
-npm run gap -w @a-workbench/server -- markdown  # markdown table
-npm run gap -w @a-workbench/server -- json      # machine-readable
+npm run gap -w @workbench/server            # terminal bar chart
+npm run gap -w @workbench/server -- markdown  # markdown table
+npm run gap -w @workbench/server -- json      # machine-readable
 ```
 
 The report gives overall coverage, a per-app table of current versus target tool counts

@@ -5,7 +5,7 @@ description: The nine words the rest of the documentation assumes you know.
 
 ## Integration
 
-One third-party service, as a-workbench sees it: a name, a version, a declared auth
+One third-party service, as workbench sees it: a name, a version, a declared auth
 mode, an optional logo and categories, and an optional proxy base URL. `github`,
 `slack`, `atlassian-jira`, `newrelic` are integrations. Sixteen ship on disk; two
 more (`browser`, `jots`) are built into the server.

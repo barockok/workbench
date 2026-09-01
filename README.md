@@ -1,6 +1,6 @@
 <div align="center">
 
-# a-workbench
+# workbench
 
 **Self-hosted MCP tool aggregator.** One endpoint, per-user OAuth, 178 tools across 16 integrations — behind 9 meta-tools.
 
@@ -18,7 +18,7 @@
 
 ---
 
-Give an agent one MCP endpoint instead of sixteen. a-workbench holds a separate
+Give an agent one MCP endpoint instead of sixteen. workbench holds a separate
 OAuth connection per user per provider, encrypts every token at rest, and exposes
 every integration through a fixed set of nine meta-tools — so the agent's tool
 list stays the same size whether one integration is connected or all of them.

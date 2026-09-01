@@ -8,7 +8,7 @@ GitLab is the shipped example: `gitlab.com` and `gitlab.example.com` speak the s
 `/api/v4`, but they are separate deployments with separate accounts and separate OAuth
 applications.
 
-a-workbench handles this **per connection**. One user can connect to `gitlab.com` while
+workbench handles this **per connection**. One user can connect to `gitlab.com` while
 another connects to the company instance, against the same plugin, at the same time.
 
 ## Why one cloud OAuth app cannot authorize a self-hosted instance

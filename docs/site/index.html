@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>What is a-workbench? — a-workbench Docs</title>
+<title>What is workbench? — workbench Docs</title>
 <meta name="description" content="A self-hosted MCP server that puts 178 SaaS tools behind 9 meta-tools, with per-user OAuth for every integration.">
-<meta property="og:title" content="What is a-workbench? — a-workbench">
+<meta property="og:title" content="What is workbench? — workbench">
 <meta property="og:description" content="A self-hosted MCP server that puts 178 SaaS tools behind 9 meta-tools, with per-user OAuth for every integration.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -45,7 +45,7 @@
 
 <div class="shell">
   <aside class="sidebar" aria-label="Documentation navigation">
-    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Introduction</p><ul><li><a class="active" href="index.html">What is a-workbench?</a></li><li><a class="" href="start/quickstart.html">Quickstart</a></li><li><a class="" href="start/how-it-works.html">How it works</a></li><li><a class="" href="start/concepts.html">Core concepts</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Connect an agent</p><ul><li><a class="" href="start/connect-claude-code.html">Claude Code</a></li><li><a class="" href="start/connect-other-clients.html">Other MCP clients</a></li><li><a class="" href="start/first-connection.html">Your first integration</a></li></ul></div></div>
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Introduction</p><ul><li><a class="active" href="index.html">What is workbench?</a></li><li><a class="" href="start/quickstart.html">Quickstart</a></li><li><a class="" href="start/how-it-works.html">How it works</a></li><li><a class="" href="start/concepts.html">Core concepts</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Connect an agent</p><ul><li><a class="" href="start/connect-claude-code.html">Claude Code</a></li><li><a class="" href="start/connect-other-clients.html">Other MCP clients</a></li><li><a class="" href="start/first-connection.html">Your first integration</a></li></ul></div></div>
   </aside>
 
   <main id="main" class="content">
@@ -53,7 +53,7 @@
       <div class="page-head">
         <div>
           <p class="eyebrow">Introduction</p>
-          <h1>What is a-workbench?</h1>
+          <h1>What is workbench?</h1>
         </div>
         <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
           <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">A self-hosted MCP server that puts 178 SaaS tools behind 9 meta-tools, with per-user OAuth for every integration.</p>
-      <p>a-workbench is a self-hosted MCP server that sits between your agent and the SaaS
+      <p>workbench is a self-hosted MCP server that sits between your agent and the SaaS
 tools it needs. It ships 16 integrations and 178 tools, holds a separate OAuth
 connection per user per provider, and exposes all of it through <strong>9 meta-tools</strong> —
 so the agent&#39;s tool list stays the same size whether you have loaded one
@@ -94,7 +94,7 @@ response.</p>
 five of them and the agent is carrying several hundred tool definitions before it
 has done any work — context spent on descriptions it will not use, and a harder
 selection problem when it picks one.</p>
-<p>a-workbench advertises only the 9 meta-tools. Everything else is reached by name:</p>
+<p>workbench advertises only the 9 meta-tools. Everything else is reached by name:</p>
 <ol>
 <li><code>search_tools</code> finds candidates by keyword.</li>
 <li><code>get_tool_schema</code> returns the JSON Schema for one tool&#39;s arguments.</li>
@@ -123,7 +123,7 @@ a half-response as complete.</p>
     <nav class="prevnext"><span></span><a class="pn pn-next" href="start/quickstart.html"><span class="pn-dir">Next</span><span class="pn-label">Quickstart</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/index.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 

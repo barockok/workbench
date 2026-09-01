@@ -294,7 +294,7 @@ statements are already atomic.
 ## Migrating SQLite to PostgreSQL
 
 ```bash
-npm run migrate:sqlite-to-postgres -w @a-workbench/server   # dry run by default
+npm run migrate:sqlite-to-postgres -w @workbench/server   # dry run by default
 ```
 
 The script applies the production schema to the target first, diffs source and target
