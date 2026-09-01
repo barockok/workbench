@@ -39,6 +39,7 @@ export const integrationSchema = z.object({
           secret: z.boolean().optional(),
           options: z.array(z.string()).optional(),
           optional: z.boolean().optional(),
+          multiline: z.boolean().optional(),
         })
       ),
     }),

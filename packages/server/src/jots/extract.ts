@@ -77,8 +77,8 @@ export function extractTarGzToDir(
       activeWs = ws;
       ws.on("error", () => fail("BAD_ARCHIVE"));
       stream.on("error", () => fail("BAD_ARCHIVE"));
-      stream.on("data", (chunk: Buffer) => {
-        bytes += chunk.length;
+      stream.on("data", (chunk: any) => {
+        bytes += (chunk as Buffer).length;
         if (bytes > config.JOTS_MAX_BYTES) {
           ws.destroy();
           fail("TOO_LARGE");
