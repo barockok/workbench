@@ -127,7 +127,7 @@ as one that does not exist, so the endpoint is not an existence oracle.</p>
     A-&gt;&gt;W: execute_tools [github_list_prs]</pre></div>
 <h2 id="what-actually-marks-a-connection-connected">What actually marks a connection CONNECTED<a class="anchor" href="#what-actually-marks-a-connection-connected" aria-label="Link to What actually marks a connection CONNECTED">#</a></h2>
 <p>The provider redirects to <code>GET /api/auth/plugin/&lt;integration&gt;/callback</code> — note the
-<code>/plugin/</code> segment; it exists so provider callbacks cannot collide with the portal&#39;s own
+<code>/plugin/</code> segment. It exists so provider callbacks cannot collide with the portal&#39;s own
 SSO callback. The handler validates the single-use <code>state</code>, exchanges the code (with the
 PKCE verifier held server-side), stores the tokens, and flips the pending record.</p>
 <p>Two details worth knowing:</p>
@@ -166,7 +166,7 @@ integration. Back it up with the same care as the database.</p>
 <h2 id="refresh-and-rotation">Refresh and rotation<a class="anchor" href="#refresh-and-rotation" aria-label="Link to Refresh and rotation">#</a></h2>
 <p>Refresh is <strong>lazy and on use</strong>. There is no background job. When a tool call or a
 proxied request asks for the token, the context checks whether it expires within 30
-seconds; if so it posts <code>grant_type=refresh_token</code> to the provider&#39;s token endpoint,
+seconds. If it is, the server posts <code>grant_type=refresh_token</code> to the provider&#39;s token endpoint,
 recomputes the expiry, and re-stores.</p>
 <ul>
 <li>If the provider does not return a new refresh token, the old one is kept.</li>
@@ -231,7 +231,7 @@ every issued token at once, including portal sessions.</p>
 </div></div>
 
 <p>Revoking an agent does not touch your provider connections. The client loses access to
-your workbench; your GitHub and Jira tokens stay stored.</p>
+your workbench. Your GitHub and Jira tokens stay stored.</p>
 
     </article>
     <nav class="prevnext"><a class="pn pn-prev" href="curl-session.html"><span class="pn-dir">Previous</span><span class="pn-label">Raw API calls</span></a><a class="pn pn-next" href="api-key-connections.html"><span class="pn-dir">Next</span><span class="pn-label">API-key connections</span></a></nav>

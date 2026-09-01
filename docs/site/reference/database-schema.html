@@ -310,7 +310,7 @@ columns and reports any source-only columns it will not copy, refuses a non-empt
 target unless <code>--allow-nonempty</code>, copies everything in one transaction with
 <code>INSERT … ON CONFLICT DO NOTHING</code>, resyncs every <code>SERIAL</code> sequence with <code>setval</code>, and
 verifies row counts per table. Nothing is written without <code>--apply</code>.</p>
-<p><code>pending_auth</code> and <code>oauth_auth_codes</code> hold short-lived handshake state; <code>--skip</code> them
+<p><code>pending_auth</code> and <code>oauth_auth_codes</code> hold short-lived handshake state. <code>--skip</code> them
 unless the cutover is immediate. The script does not cut over — that is a separate
 <code>DATABASE_URL</code> change.</p>
 <div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">`ENCRYPTION_KEY` must not change during migration</span></div><div class="callout-body"><p>Ciphertext is copied verbatim. A different key on the new deployment makes every

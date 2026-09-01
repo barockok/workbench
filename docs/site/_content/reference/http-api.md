@@ -98,7 +98,7 @@ again.
 | DELETE | `/api/agents/:clientId` | yes | `{ revoked: <count> }` — idempotent |
 
 `configured` reports whether the *operator* has supplied credentials: always true for
-`none`, `cookie`, and `apikey`; true for `oauth2` only when the plugin's client-ID
+`none`, `cookie`, and `apikey`. It is true for `oauth2` only when the plugin's client-ID
 environment variable is set. `connected` reports whether *this user* has a credential.
 
 The logo route is deliberately unauthenticated so a plain `<img src>` works. Path
@@ -106,7 +106,7 @@ traversal is defused by reducing the parameter to its basename.
 
 `/api/agents` lists OAuth clients that hold live refresh tokens on this account —
 which AI clients can reach your workbench — grouped by `client_id`. Revocation
-deletes refresh tokens and outstanding authorization codes; live access tokens
+deletes refresh tokens and outstanding authorization codes. Live access tokens
 survive until their TTL.
 
 ## Connecting an integration

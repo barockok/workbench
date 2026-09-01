@@ -36,8 +36,8 @@ that `jira_create_issue` exists.
 | `query` | string | yes | — | Search keyword |
 
 Returns `{ tools: [{ name, description, integration }] }`. Matching is over both
-name and description; the entry's `integration` is the owning plugin, which you
-pass to `connect` if execution later reports `NOT_CONNECTED`.
+name and description. The entry's `integration` is the owning plugin. Pass it to
+`connect` if execution later reports `NOT_CONNECTED`.
 
 ```json
 { "name": "search_tools", "arguments": { "query": "pull request" } }
@@ -80,7 +80,7 @@ array.*
 
 Returns `{ results: [...] }`, index-aligned with `executions`. Each entry is either
 `{ result }` on success or an error object. A batch runs through a bounded worker
-pool with a concurrency of 8; ordering is preserved regardless of completion order.
+pool with a concurrency of 8. The server preserves ordering regardless of completion order.
 
 Three error shapes can appear inside `results`:
 
@@ -264,7 +264,7 @@ returns `{ error }` with the failures joined by `; `:
 | `<name>: curl proxy not enabled` | The manifest has no `proxy` block |
 | `<name>: not connected` | No stored credential for this user |
 
-> [!DANGER] This token is as powerful as the user's credential
+> [!DANGER] This token can do anything the user's credential can do
 > Anything the stored credential can reach — including destructive writes — is
 > reachable with this token for 15 minutes. Ask the user before minting one, name the
 > integrations and the intended action, and do not mint speculatively.

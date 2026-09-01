@@ -96,7 +96,7 @@ sequenceDiagram
 ## What actually marks a connection CONNECTED
 
 The provider redirects to `GET /api/auth/plugin/<integration>/callback` — note the
-`/plugin/` segment; it exists so provider callbacks cannot collide with the portal's own
+`/plugin/` segment. It exists so provider callbacks cannot collide with the portal's own
 SSO callback. The handler validates the single-use `state`, exchanges the code (with the
 PKCE verifier held server-side), stores the tokens, and flips the pending record.
 
@@ -145,7 +145,7 @@ The key is `ENCRYPTION_KEY`, 64 hex characters, read **once at module load**.
 
 Refresh is **lazy and on use**. There is no background job. When a tool call or a
 proxied request asks for the token, the context checks whether it expires within 30
-seconds; if so it posts `grant_type=refresh_token` to the provider's token endpoint,
+seconds. If it is, the server posts `grant_type=refresh_token` to the provider's token endpoint,
 recomputes the expiry, and re-stores.
 
 - If the provider does not return a new refresh token, the old one is kept.
@@ -232,4 +232,4 @@ your user. It is idempotent — revoking twice returns `{"revoked": 0}`.
 > every issued token at once, including portal sessions.
 
 Revoking an agent does not touch your provider connections. The client loses access to
-your workbench; your GitHub and Jira tokens stay stored.
+your workbench. Your GitHub and Jira tokens stay stored.

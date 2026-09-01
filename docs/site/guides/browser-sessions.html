@@ -145,7 +145,7 @@ replayed across a redirect hop to somewhere else.</p>
 <h3 id="liveness-is-quotat-least-one-live-cookiequot">Liveness is &quot;at least one live cookie&quot;<a class="anchor" href="#liveness-is-quotat-least-one-live-cookiequot" aria-label="Link to Liveness is &amp;quot;at least one live cookie&amp;quot;">#</a></h3>
 <p>A connection counts as connected when a bundle exists <strong>and at least one cookie in it is
 unexpired</strong> — not when none have expired. Session bundles routinely mix a long-lived
-refresh cookie with short-lived junk; requiring all of them to be live would report every
+refresh cookie with short-lived junk. Requiring all of them to be live would report every
 working session as broken within the hour.</p>
 <h3 id="capture-with-zero-cookies-is-a-hard-failure">Capture with zero cookies is a hard failure<a class="anchor" href="#capture-with-zero-cookies-is-a-hard-failure" aria-label="Link to Capture with zero cookies is a hard failure">#</a></h3>
 <p>If the filter leaves nothing, capture returns <strong>400</strong> with
@@ -227,7 +227,7 @@ a SOCKS5 proxy at all.</li>
 for an <strong><code>http://</code></strong> proxy with <code>CAPTURE_PROXY_USERNAME</code> and <code>CAPTURE_PROXY_PASSWORD</code>
 set alongside <code>CAPTURE_PROXY</code>. <code>CAPTURE_PROXY</code> on its own is enough to route traffic —
 it becomes Chromium&#39;s <code>--proxy-server</code> regardless. It is the <em>credential</em> handler that
-needs all three; with only one or two set, the proxy is used but nothing answers its
+needs all three. With only one or two set, the proxy is used but nothing answers its
 auth challenge.</li>
 <li>For SOCKS5, use IP allow-listing at the proxy instead of credentials.</li>
 </ul>

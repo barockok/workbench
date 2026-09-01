@@ -113,7 +113,7 @@ npx tsx --env-file=../../.env scripts/seed-local-user.ts
 :::
 
 Re-running the seed script for the same user rotates the key. The plaintext is
-stored encrypted so the portal can reveal it again; the server also keeps a hash
+stored encrypted so the portal can reveal it again. The server also keeps a hash
 for lookup.
 
 ### Point an MCP client at `/mcp`

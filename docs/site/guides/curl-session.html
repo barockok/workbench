@@ -61,18 +61,18 @@
         </button>
       </div>
       <p class="lede">Mint a short-lived proxy token that forwards arbitrary HTTP requests to a provider's API with your credential injected.</p>
-      <p>The tool catalog is wide but not complete. GitHub alone has hundreds of endpoints; the
+      <p>The tool catalog is wide but not complete. GitHub alone has hundreds of endpoints, and the
 plugin wraps 28 of them. When the endpoint you need has no tool, <code>curl_session</code> is the
-escape hatch: it mints a 15-minute token that lets you send <strong>any</strong> HTTP request to that
+escape hatch. It mints a 15-minute token that lets you send <strong>any</strong> HTTP request to that
 provider&#39;s API through the workbench, with your real credential attached server-side.</p>
 <p>You never see the credential. The proxy injects it.</p>
 <div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">This tool is deliberately marked HIGH RISK in its own description</span></div><div class="callout-body"><p><code>curl_session</code> grants arbitrary GET/POST/PUT/PATCH/DELETE against the named
 integrations, including destructive writes. Anything reachable with the user&#39;s
 credential is reachable through the minted token. The tool description instructs the
 calling agent to name the integrations and the intended action, and to wait for
-explicit user approval, before invoking it — and not to mint speculatively or as a
-default first step. An MCP client that surfaces tool descriptions will show this to
-the user; one that does not, will not. As the operator, treat a minted curl session as
+explicit user approval, before invoking it. It also instructs the agent not to mint
+speculatively or as a default first step. An MCP client that surfaces tool
+descriptions shows this to the user. One that does not, does not. As the operator, treat a minted curl session as
 a consent event worth auditing.</p>
 </div></div>
 
@@ -83,7 +83,7 @@ a consent event worth auditing.</p>
 <tr><td>You want a permanent capability</td><td>Write a plugin tool instead</td></tr>
 </tbody></table></div>
 <p>Prefer a tool where one exists. Tool calls get argument validation, per-tool audit
-entries, and per-tool metrics; a proxied request gets an HTTP request log and nothing
+entries, and per-tool metrics. A proxied request gets an HTTP request log and nothing
 tool-shaped.</p>
 <h2 id="minting-a-session">Minting a session<a class="anchor" href="#minting-a-session" aria-label="Link to Minting a session">#</a></h2>
 <div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/call&quot;,&quot;params&quot;:{
@@ -149,7 +149,7 @@ token is refreshed and re-stored transparently on a proxied call, exactly as it 
 on a tool call.</p>
 <h2 id="how-the-target-base-is-resolved">How the target base is resolved<a class="anchor" href="#how-the-target-base-is-resolved" aria-label="Link to How the target base is resolved">#</a></h2>
 <p>An integration is proxy-capable only if its manifest declares a <code>proxy</code> block. Fifteen
-of the sixteen shipped plugins do; <code>httpbin-cookie</code> does not.</p>
+of the sixteen shipped plugins do. <code>httpbin-cookie</code> does not.</p>
 <h3 id="static-baseurl">Static <code>baseUrl</code><a class="anchor" href="#static-baseurl" aria-label="Link to Static baseUrl">#</a></h3>
 <p>Most integrations pin one base:</p>
 <div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">proxy: { baseUrl: &quot;https://api.github.com&quot; }</code></pre></div>

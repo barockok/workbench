@@ -161,7 +161,7 @@ curl -s -X POST https://your-workbench.example.com/token \
 Refresh the same way with `grant_type=refresh_token`, `refresh_token`, and
 `client_id`. **Refresh tokens rotate on every redemption** — you always get a new
 one back, and the presented one is burned. They live 30 days. An unrecognized
-grant type is a 400 `unsupported_grant_type`; a bad code or refresh token is a 400
+grant type is a 400 `unsupported_grant_type`. A bad code or refresh token is a 400
 `invalid_grant`.
 
 > [!WARNING] `/register` is open

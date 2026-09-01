@@ -168,10 +168,10 @@ token is required and no client secret is ever issued. It takes
 
 ### PKCE and the state-ticket SSO resumption
 
-`GET /authorize` validates, in order: the `client_id` resolves to a registered
-client; `response_type` is `code`; the `redirect_uri` is an exact member of that
-client's registered list (no prefix matching); and `code_challenge` is present with
-`code_challenge_method=S256`. PKCE is mandatory and `plain` is rejected.
+`GET /authorize` validates four things, in order. The `client_id` resolves to a
+registered client. `response_type` is `code`. The `redirect_uri` is an exact member
+of that client's registered list, with no prefix matching. `code_challenge` is
+present with `code_challenge_method=S256`. PKCE is mandatory and `plain` is rejected.
 
 The problem it then solves: the user is not logged in yet, and the authorization
 request has to survive a round trip through Google SSO. It does that with a ticket.
@@ -193,15 +193,15 @@ sequenceDiagram
 ```
 
 The validated authorization request is stored as a pending row keyed by a random
-ticket with a 600-second TTL; `scope` defaults to `mcp` and `resource` to
+ticket with a 600-second TTL. `scope` defaults to `mcp`, and `resource` to
 `<SERVER_PUBLIC_URL>/mcp`. The server also sets an `awb_oauth_binding` cookie —
 httpOnly, `SameSite=Lax`, `Max-Age=600`, and `Secure` when `SERVER_PUBLIC_URL` is
 https — and appends the ticket to the SSO state as `<ssoState>.<ticket>`.
 
 On the Google callback the ticket row is looked up and **deleted unconditionally**,
-so it is single-use whatever the outcome. The binding cookie is compared to the
-stored value with a constant-time comparison; a missing or mismatched binding is
-the login-CSRF guard and aborts the resumption. If resumption fails the callback
+so it is single-use whatever the outcome. The server compares the binding cookie to the
+stored value with a constant-time comparison. A missing or mismatched binding is
+the login-CSRF guard, and aborts the resumption. If resumption fails the callback
 falls through to a normal portal login rather than erroring, and the cookie is
 cleared either way.
 

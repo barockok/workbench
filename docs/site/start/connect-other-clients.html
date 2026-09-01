@@ -173,7 +173,7 @@ code whether or not the exchange then succeeds.</p>
 <p>Refresh the same way with <code>grant_type=refresh_token</code>, <code>refresh_token</code>, and
 <code>client_id</code>. <strong>Refresh tokens rotate on every redemption</strong> — you always get a new
 one back, and the presented one is burned. They live 30 days. An unrecognized
-grant type is a 400 <code>unsupported_grant_type</code>; a bad code or refresh token is a 400
+grant type is a 400 <code>unsupported_grant_type</code>. A bad code or refresh token is a 400
 <code>invalid_grant</code>.</p>
 <div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`/register` is open</span></div><div class="callout-body"><p>Dynamic client registration requires no initial access token and is not rate
 limited. If your workbench is internet-facing, put it behind whatever ingress

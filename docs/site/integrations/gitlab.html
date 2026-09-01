@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">Connect gitlab.com or a self-hosted GitLab instance for projects, merge requests, and CI pipelines.</p>
-      <p>The GitLab integration is the only one that lets each user choose which server they are connecting to. Projects, files, issues, merge requests with inline review, and CI pipelines all work the same against gitlab.com and against a self-hosted instance — the difference is a per-connection instance URL that the server swaps into every API call and every OAuth endpoint.</p>
+      <p>The GitLab integration is the only one that lets each user choose which server they are connecting to. Projects, files, issues, merge requests with inline review, and CI pipelines work the same against gitlab.com and against a self-hosted instance. The difference is a per-connection instance URL. The server swaps that URL into every API call and every OAuth endpoint.</p>
 <h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td>Plugin id</td><td><code>gitlab</code></td></tr>
@@ -71,11 +71,11 @@
 <tr><td>Token URL</td><td><code>https://gitlab.com/oauth/token</code> (cloud default)</td></tr>
 <tr><td>Proxy base</td><td>Resolved per request: the connection&#39;s instance origin + <code>/api/v4</code></td></tr>
 </tbody></table></div>
-<p>The manifest declares an <code>instance</code> field labelled &quot;GitLab instance URL&quot;, with the default <code>https://gitlab.com</code>. At connect time the portal shows a browser prompt using that label, prefilled with the default; submitting it blank keeps the default.</p>
+<p>The manifest declares an <code>instance</code> field labelled &quot;GitLab instance URL&quot;, with the default <code>https://gitlab.com</code>. At connect time the portal shows a browser prompt using that label, prefilled with the default. Submitting it blank keeps the default.</p>
 <h2 id="how-the-origin-swap-works">How the origin swap works<a class="anchor" href="#how-the-origin-swap-works" aria-label="Link to How the origin swap works">#</a></h2>
-<p>The server keeps the manifest URL&#39;s <strong>path and query</strong> and replaces only the origin. <code>https://gitlab.com/oauth/authorize</code> against an instance of <code>https://gitlab.acme.com</code> becomes <code>https://gitlab.acme.com/oauth/authorize</code>. The same swap applies to the token exchange and to every later refresh, and the chosen origin is stored on the connection so tools build their API base from it.</p>
+<p>The server keeps the manifest URL&#39;s <strong>path and query</strong> and replaces only the origin. <code>https://gitlab.com/oauth/authorize</code> against an instance of <code>https://gitlab.acme.com</code> becomes <code>https://gitlab.acme.com/oauth/authorize</code>. The same swap applies to the token exchange and to every later refresh. The server stores the chosen origin on the connection, and tools build their API base from it.</p>
 <p>An entered instance URL must be <strong>https</strong>, must carry no <code>user:pass@</code> userinfo, and must not be a private, loopback, or link-local literal. Path, query, and fragment are discarded — only the origin survives.</p>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">One cloud OAuth app cannot authorize a self-hosted instance</span></div><div class="callout-body"><p>Every GitLab instance has its own application registry, and OAuth endpoints are per-instance. An application created on gitlab.com is unknown to <code>gitlab.acme.com</code> and vice versa. Register the application on whichever instance your users will connect to. The deployment holds a single <code>GITLAB_CLIENT_ID</code> / <code>GITLAB_CLIENT_SECRET</code> pair, so every instance it talks to must share that client id and secret — practical when you control the instances, not when they are unrelated.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">One cloud OAuth app cannot authorize a self-hosted instance</span></div><div class="callout-body"><p>Every GitLab instance has its own application registry, and OAuth endpoints are per-instance. An application created on gitlab.com is unknown to <code>gitlab.acme.com</code> and vice versa. Register the application on whichever instance your users will connect to. The deployment holds a single <code>GITLAB_CLIENT_ID</code> / <code>GITLAB_CLIENT_SECRET</code> pair. Every instance it talks to must therefore share that client id and secret. That is practical when you control the instances, but not when they are unrelated.</p>
 </div></div>
 
 <h2 id="set-up-the-oauth-app">Set up the OAuth app<a class="anchor" href="#set-up-the-oauth-app" aria-label="Link to Set up the OAuth app">#</a></h2>
@@ -90,7 +90,7 @@ below) are unaffected.</p>
 <h3 id="create-the-application">Create the application<a class="anchor" href="#create-the-application" aria-label="Link to Create the application">#</a></h3>
 <p>Cloud, per user: <a href="https://gitlab.com/-/user_settings/applications" target="_blank" rel="noopener">gitlab.com/-/user_settings/applications<span class="ext" aria-hidden="true">↗</span></a>.
 Cloud, group-owned (better for teams): Group → <strong>Settings → Applications</strong>.
-Self-hosted: the same paths under your instance origin; instance-wide applications live under <strong>Admin → Applications</strong>.</p>
+Self-hosted: the same paths under your instance origin. Instance-wide applications live under <strong>Admin → Applications</strong>.</p>
 <h3 id="fill-in-the-fields">Fill in the fields<a class="anchor" href="#fill-in-the-fields" aria-label="Link to Fill in the fields">#</a></h3>
 <div class="table-wrap"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
 <tr><td>Name</td><td>your deployment name</td></tr>
@@ -160,9 +160,9 @@ wait_for_connection({ connectionId })</code></pre></div>
 <h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
 <p>Issues and merge requests are addressed by <code>iid</code>, the per-project number you see in the UI, not the global <code>id</code>. Mixing them up produces confusing 404s.</p>
 <p>Instance-wide <code>gitlab_search_code</code> depends on GitLab&#39;s advanced search being enabled on the instance — see <a href="https://docs.gitlab.com/" target="_blank" rel="noopener">GitLab&#39;s documentation<span class="ext" aria-hidden="true">↗</span></a> for what that requires on your version and tier. Scoping the search to a <code>project</code> avoids the dependency and is faster.</p>
-<p>A <code>gitlab_approve_mr</code> 404 usually means merge-request approvals are not available on that instance; GitLab gates the feature by tier, so check <a href="https://docs.gitlab.com/" target="_blank" rel="noopener">GitLab&#39;s documentation<span class="ext" aria-hidden="true">↗</span></a> for the instance&#39;s version.</p>
-<p>401s on every call immediately after connecting almost always mean the wrong instance URL was entered, or the application lives on a different instance than the one the user typed.</p>
-<p><code>gitlab_get_clone_url</code> embeds the live access token in the URL. It expires with the token; mint it immediately before use.</p>
+<p>A <code>gitlab_approve_mr</code> 404 usually means merge-request approvals are not available on that instance. GitLab gates the feature by tier. Check <a href="https://docs.gitlab.com/" target="_blank" rel="noopener">GitLab&#39;s documentation<span class="ext" aria-hidden="true">↗</span></a> for the instance&#39;s version.</p>
+<p>401s on every call immediately after connecting almost always mean one of two things. Either the instance URL was wrong, or the application lives on a different instance than the one the user typed.</p>
+<p><code>gitlab_get_clone_url</code> embeds the live access token in the URL. It expires with the token. Mint it immediately before use.</p>
 
     </article>
     <nav class="prevnext"><a class="pn pn-prev" href="github.html"><span class="pn-dir">Previous</span><span class="pn-label">GitHub</span></a><a class="pn pn-next" href="google.html"><span class="pn-dir">Next</span><span class="pn-label">Setup &amp; scopes</span></a></nav>

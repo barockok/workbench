@@ -3,7 +3,7 @@ title: Confluence
 description: Connect Atlassian Confluence Cloud so an agent can read, search, create, update, and delete wiki pages.
 ---
 
-The Confluence integration lets an agent find a page by full-text search, read its body, write a new page into a space, and update or delete an existing one. It runs on Confluence REST v2 (`/wiki/api/v2/pages`, `/wiki/api/v2/spaces`); search stays on the CQL endpoint, which has no v2 equivalent.
+The Confluence integration lets an agent find a page by full-text search and read its body. It can also write a new page into a space, and update or delete an existing one. It runs on Confluence REST v2: `/wiki/api/v2/pages` and `/wiki/api/v2/spaces`. Search stays on the CQL endpoint, which has no v2 equivalent.
 
 ## At a glance
 
@@ -25,7 +25,7 @@ The Confluence integration lets an agent find a page by full-text search, read i
 > without notice. If what you see differs, follow [Atlassian's own documentation](https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/) — the values this server needs (the callback URL and the scopes in the tables
 > below) are unaffected.
 
-The console is the same one Jira uses; only the API and scopes differ.
+The console is the same one Jira uses. Only the API and scopes differ.
 
 :::steps
 ### Create the app
@@ -63,7 +63,7 @@ https://<your-workbench-host>/api/auth/plugin/atlassian-confluence/callback
 | `offline_access` | Issue a refresh token |
 
 > [!WARNING] The classic scopes no longer work
-> `read:confluence-content.summary`, `write:confluence-content`, and `read:confluence-space.summary` authorize the v1 content API. This integration was migrated to REST v2 after v1 page reads stopped working against live sites: an app configured with the classic scopes connects successfully and then fails every page operation. Consult [Atlassian's Confluence REST documentation](https://developer.atlassian.com/cloud/confluence/rest/v2/intro/) for the API's current status. If you are carrying forward an older setup, swap to the granular scope set and have every user reconnect — changing scopes always requires reconsent.
+> `read:confluence-content.summary`, `write:confluence-content`, and `read:confluence-space.summary` authorize the v1 content API. This integration moved to REST v2 after v1 page reads stopped working against live sites. An app configured with the classic scopes connects successfully, then fails every page operation. Consult [Atlassian's Confluence REST documentation](https://developer.atlassian.com/cloud/confluence/rest/v2/intro/) for the API's current status. If you are carrying forward an older setup, swap to the granular scope set and have every user reconnect. Changing scopes always requires reconsent.
 
 ## Server configuration
 
@@ -98,10 +98,10 @@ wait_for_connection({ connectionId })
 
 ## Notes and gotchas
 
-Page bodies are Confluence storage format, which is XHTML. Plain text works for simple pages; anything with structure has to be valid storage-format markup.
+Page bodies are Confluence storage format, which is XHTML. Plain text works for simple pages. Anything with structure has to be valid storage-format markup.
 
-`confluence_update_page` takes the page's **current** version number, not the next one. The API stores version + 1 and rejects a stale number, so read the page with `confluence_get_page` immediately before updating rather than reusing a version from earlier in the conversation.
+`confluence_update_page` takes the page's **current** version number, not the next one. The API stores version + 1 and rejects a stale number. Read the page with `confluence_get_page` immediately before you update it. Do not reuse a version from earlier in the conversation.
 
-Space keys are the human-facing identifier but v2 addresses spaces by numeric id. The plugin resolves key to id internally; you can pass a `spaceId` directly to skip the lookup.
+Space keys are the human-facing identifier but v2 addresses spaces by numeric id. The plugin resolves key to id internally. You can pass a `spaceId` directly to skip the lookup.
 
 Deletion is a move to the space trash. It cannot be undone through this API — recovery is a manual restore in the Confluence UI.

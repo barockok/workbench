@@ -169,7 +169,7 @@ and completed by a server-side callback. The agent never sees the provider token
 <p>The callback path is <code>/api/auth/plugin/:integration/callback</code> for every plugin —
 the <code>/plugin/</code> segment exists so it cannot collide with the portal&#39;s own
 <code>/api/auth/google/callback</code>. That is the URL to register in a provider console.</p>
-<p>PKCE is used on every plugin OAuth flow, confidential clients included; the
+<p>PKCE is used on every plugin OAuth flow, confidential clients included. The
 verifier stays server-side. Each plugin has its own client credentials, named from
 the plugin in upper snake case — <code>google-gmail</code> becomes <code>GOOGLE_GMAIL_CLIENT_ID</code>
 and <code>GOOGLE_GMAIL_CLIENT_SECRET</code>. An unset secret with a set ID is valid and means
@@ -179,7 +179,7 @@ a public, PKCE-only client.</p>
 belongs to another user. The pending record is in-process, so it is not shared
 across cluster workers.</p>
 <p>Not every auth mode goes through <code>connect</code>. API-key integrations are connected
-from the portal, which renders the manifest&#39;s declared fields and posts them;
+from the portal, which renders the manifest&#39;s declared fields and posts them.
 there is no agent-side path. Cookie integrations return a portal login URL the
 user opens to sign in live and capture a session.</p>
 <h2 id="what-the-portal-is-for">What the portal is for<a class="anchor" href="#what-the-portal-is-for" aria-label="Link to What the portal is for">#</a></h2>
@@ -190,7 +190,7 @@ user opens to sign in live and capture a session.</p>
 <li>Connect and disconnect integrations, including the API-key and cookie flows the
 agent has no access to.</li>
 <li>See which MCP clients hold live refresh tokens on the account, and revoke one.
-Revocation deletes refresh tokens and outstanding authorization codes; access
+Revocation deletes refresh tokens and outstanding authorization codes. Access
 tokens already issued are self-contained JWTs and lapse at their TTL.</li>
 <li>Drive a live browser session for cookie capture, over an origin-gated CDP
 WebSocket proxy.</li>

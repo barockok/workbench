@@ -10,7 +10,7 @@ the hygiene rules below before your first commit, not after.
 ## Setup
 
 You need Node 20 or 22 — the two versions CI builds against — and npm 10. The
-published Docker image is Node 20 only; both Dockerfile stages are
+published Docker image is Node 20 only. Both Dockerfile stages are
 `node:20-bookworm-slim`.
 
 ```bash
@@ -26,8 +26,8 @@ npm run dev
 `tsx watch` (loading `.env` from the repo root), the portal under Vite, and the sample
 OAuth provider.
 
-`.env` needs at minimum `ENCRYPTION_KEY` and `SESSION_SECRET`; see
-[environment variables](environment.md) for how to generate them and what else you can
+`.env` needs at minimum `ENCRYPTION_KEY` and `SESSION_SECRET`. See
+[environment variables](environment.md) for how to generate them, and what else you can
 set.
 
 To get a working account without configuring SSO:
@@ -104,7 +104,7 @@ git diff --cached | grep -inIE '<company>|<internal-project>|@(icloud|gmail)\.co
 ## Commits
 
 Use [Conventional Commits](https://www.conventionalcommits.org/). Scope is the
-affected package or plugin; keep the subject under about 72 characters.
+affected package or plugin. Keep the subject under about 72 characters.
 
 ```
 feat(slack): add reaction tool
@@ -185,8 +185,8 @@ npm run gap -w @workbench/server -- json      # machine-readable
 
 The report gives overall coverage, a per-app table of current versus target tool counts
 with the named missing tools, a "key gaps" list, and a suggested next set of plugins to
-build. Current counts come from scanning each plugin's `tools/` directory; the targets
-live in `packages/server/src/gap/catalog.ts` — update that file as the reference
+build. Current counts come from scanning each plugin's `tools/` directory. The targets
+live in `packages/server/src/gap/catalog.ts`. Update that file as the reference
 platform changes.
 
 ## Releases

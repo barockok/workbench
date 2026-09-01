@@ -3,7 +3,7 @@ title: GitHub
 description: Connect GitHub so an agent can work with repositories, issues, pull requests, code review, and Actions.
 ---
 
-The GitHub integration is the largest code-hosting surface in the catalog: repository and file reads, the whole issue lifecycle, the whole pull-request review loop including formal review verdicts, code and issue search, and GitHub Actions run control.
+The GitHub integration is the largest code-hosting surface in the catalog. It covers repository and file reads, the whole issue lifecycle, and the whole pull-request review loop, including formal review verdicts. It also covers code and issue search, and GitHub Actions run control.
 
 ## At a glance
 
@@ -16,7 +16,7 @@ The GitHub integration is the largest code-hosting surface in the catalog: repos
 | Token URL | `https://github.com/login/oauth/access_token` |
 | Proxy base | `https://api.github.com` |
 
-This is an OAuth App, not a GitHub App: one callback URL and classic scope strings. Whether its user tokens expire is a property of the app on GitHub's side, not of this server — see [GitHub's OAuth App documentation](https://docs.github.com/en/apps/oauth-apps). The server refreshes a token when the provider gave it an expiry and a refresh token.
+This is an OAuth App, not a GitHub App. It has one callback URL and classic scope strings. Whether its user tokens expire is a property of the app on GitHub's side, not of this server. See [GitHub's OAuth App documentation](https://docs.github.com/en/apps/oauth-apps). The server refreshes a token when the provider gave it an expiry and a refresh token.
 
 ## Set up the OAuth app
 
@@ -121,10 +121,10 @@ wait_for_connection({ connectionId })
 
 `github_trigger_workflow` needs the workflow to declare `on: workflow_dispatch`, and GitHub answers with 204 and no run id. Poll `github_list_workflow_runs` to find the run you just started.
 
-`github_create_or_update_file` requires the file's current sha when updating. Read it with `github_get_content` first; a stale sha is rejected.
+`github_create_or_update_file` requires the file's current sha when updating. Read it with `github_get_content` first. A stale sha is rejected.
 
-GitHub's token endpoint returns `application/x-www-form-urlencoded` by default, which breaks a naive JSON parse of the token response. The server sends `Accept: application/json` on the exchange, so this is already handled — worth knowing if you are debugging a connect failure against a fork or proxy.
+GitHub's token endpoint returns `application/x-www-form-urlencoded` by default, which breaks a naive JSON parse of the token response. The server sends `Accept: application/json` on the exchange, so this is already handled. It is worth knowing if you are debugging a connect failure against a fork or a proxy.
 
-A 403 mentioning organization SAML enforcement is not a scope problem — no change to the scope table fixes it. The user has to authorize their token for that organization on GitHub's side; [GitHub's documentation on SAML and authorized tokens](https://docs.github.com/en/apps/oauth-apps) has the current procedure.
+A 403 mentioning organization SAML enforcement is not a scope problem — no change to the scope table fixes it. The user has to authorize their token for that organization on GitHub's side. [GitHub's documentation on SAML and authorized tokens](https://docs.github.com/en/apps/oauth-apps) has the current procedure.
 
 GitHub rate-limits OAuth calls per user and applies separate secondary limits to bursts of writes. The current numbers are in [GitHub's REST API documentation](https://docs.github.com/en/rest).
