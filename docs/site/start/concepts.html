@@ -168,11 +168,14 @@ and wait for explicit approval before calling it.</p>
 <h2 id="jot">Jot<a class="anchor" href="#jot" aria-label="Link to Jot">#</a></h2>
 <p>A static site the agent can deploy and host: <code>deploy_jot</code> returns a single-use
 upload URL, you push a gzip tarball, and it is served at <code>/j/&lt;name&gt;/</code>. Names are
-global and creator-locked, and a jot can be password-gated.</p>
+global and creator-locked, and a jot can be password-gated. <code>update_jot</code> patches a
+live jot instead of replacing it, so a single data file can be refreshed on its own;
+<code>list_jot_files</code> shows what a jot currently holds.</p>
 <p>Jots are served on an opaque origin under a sandbox CSP, so a jot&#39;s JavaScript
 cannot read app cookies or make credentialed same-origin calls to <code>/api</code> or <code>/mcp</code>.
-One consequence is worth planning for: <strong>a jot cannot fetch its own data files</strong> —
-it has to be self-contained.</p>
+One consequence is worth planning for: <strong>by default a jot cannot fetch its own data
+files</strong> — it has to be self-contained, or opt into <code>cors: true</code>, which is public-jot
+only and does not weaken the sandbox.</p>
 <p>Defaults are 5 MiB decompressed, 1000 files, and a 5-minute upload token, all
 configurable.</p>
 <p><strong>Why it matters:</strong> it is how an agent gives you a rendered artifact — a report, a

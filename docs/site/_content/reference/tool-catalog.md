@@ -349,20 +349,31 @@ user, shared with cookie capture rather than exclusive with it.
 
 ## jots (internal)
 
-Three tools for hosting static files. Also `auth: none`.
+Five tools for hosting static files. Also `auth: none`.
 
 | Tool | Purpose |
 |---|---|
-| `deploy_jot` | Returns `{ uploadUrl, token, expiresAt, maxBytes }` for a gzip-tarball upload |
+| `deploy_jot` | Returns `{ uploadUrl, token, expiresAt, maxBytes }` for a gzip-tarball upload that replaces the jot |
+| `update_jot` | Same, in patch mode: the archive is overlaid onto the live jot, plus an optional `delete` list |
+| `list_jot_files` | List a jot's files — path, bytes, updatedAt |
 | `list_jots` | List the caller's own jots — never anyone else's |
 | `delete_jot` | Delete a jot you own |
 
 `deploy_jot` rejects an invalid name (`INVALID_NAME`), `access: "password"` without a
 password (`PASSWORD_REQUIRED`), and a name already owned by another user
 (`JOT_NAME_TAKEN` — names are global and creator-locked). Passwords are hashed before
-the token is minted. `delete_jot` returns `FORBIDDEN` for another owner's jot and
-`NOT_FOUND` when it does not exist.
+the token is minted. `update_jot`, `list_jot_files`, and `delete_jot` return `FORBIDDEN`
+for another owner's jot and `NOT_FOUND` when it does not exist; `update_jot` also
+rejects a `delete` entry that escapes the jot or names the manifest (`INVALID_PATH`).
+
+A patch inherits `access` and the password hash from the live jot, so it cannot change
+gating, and its archive needs no root `index.html` — the live one is retained.
+
+Both tools accept `cors: true`, which on a **public** jot serves its files with
+`Access-Control-Allow-Origin: *` so the page can fetch its own data. The sandbox CSP is
+unchanged; the flag is ignored on password jots.
 
 Limits come from configuration: `JOTS_MAX_BYTES` (5 MiB), `JOTS_MAX_FILES` (1000), and
 `JOTS_UPLOAD_TTL_SECONDS` (300, single use). An archive with no root `index.html` is
-rejected with `NO_INDEX`.
+rejected with `NO_INDEX`. A patch is re-measured after the merge, so one that pushes the
+tree over either cap is rejected with `TOO_LARGE` / `TOO_MANY_FILES`.

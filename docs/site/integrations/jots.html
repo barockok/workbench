@@ -67,16 +67,18 @@
 <div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td>Plugin id</td><td><code>jots</code></td></tr>
 <tr><td>Auth</td><td>None (internal, always connected)</td></tr>
-<tr><td>Tools</td><td>3</td></tr>
+<tr><td>Tools</td><td>5</td></tr>
 <tr><td>Served at</td><td><code>${SERVER_PUBLIC_URL}/j/&lt;name&gt;/</code></td></tr>
 </tbody></table></div>
 <h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
 <tr><td><code>deploy_jot</code></td><td>Start a deploy; returns an upload URL and a single-use token</td></tr>
+<tr><td><code>update_jot</code></td><td>Start a <strong>partial</strong> update; the archive is overlaid onto the live jot</td></tr>
+<tr><td><code>list_jot_files</code></td><td>List the files inside a jot you own — path, bytes, updated time</td></tr>
 <tr><td><code>list_jots</code></td><td>List the jots you deployed — name, access, URL, updated time</td></tr>
 <tr><td><code>delete_jot</code></td><td>Delete a jot you own by name</td></tr>
 </tbody></table></div>
-<p><code>list_jots</code> returns only the caller&#39;s own jots. <code>delete_jot</code> is ownership-checked: another owner&#39;s jot returns <code>FORBIDDEN</code>, a name that does not exist returns <code>NOT_FOUND</code>.</p>
+<p>Every tool is scoped to the caller: <code>list_jots</code> returns only your own jots, and <code>update_jot</code>, <code>list_jot_files</code>, and <code>delete_jot</code> all return <code>FORBIDDEN</code> for another owner&#39;s jot and <code>NOT_FOUND</code> for a name that does not exist.</p>
 <h2 id="deploy-upload-serve">Deploy, upload, serve<a class="anchor" href="#deploy-upload-serve" aria-label="Link to Deploy, upload, serve">#</a></h2>
 <div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
     participant A as Agent
@@ -93,6 +95,13 @@
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">tar czf - -C &lt;dir&gt; . | curl --data-binary @- \
   -H 'Content-Type: application/gzip' &lt;uploadUrl&gt;</code></pre></div>
 <p>The server extracts the archive to a temporary directory, enforces the limits during extraction, requires a root <code>index.html</code>, and only then publishes — replacing any previous deploy of that name wholesale. A failed upload leaves the existing jot untouched.</p>
+<h2 id="partial-updates">Partial updates<a class="anchor" href="#partial-updates" aria-label="Link to Partial updates">#</a></h2>
+<p><code>update_jot</code> mints the same kind of token in <strong>patch</strong> mode. The server stages a copy of the live tree, applies the token&#39;s <code>delete</code> list, then overlays the uploaded archive on top — so a path that is both deleted and uploaded keeps the uploaded version, and files you never mention survive.</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">tar czf - -C &lt;dir&gt; data.json | curl --data-binary @- \
+  -H 'Content-Type: application/gzip' &lt;uploadUrl&gt;</code></pre></div>
+<p>The archive needs no root <code>index.html</code>; the live one is retained. Call <code>list_jot_files</code> first to see what a jot currently holds.</p>
+<p>A patch reads <code>access</code> and the password hash from the live manifest rather than from the token, so an update can never change a jot&#39;s gating — redeploy for that. Ownership is re-checked when the upload lands, so a jot deleted or reassigned between mint and upload returns 404 or 403.</p>
+<p>The <strong>merged</strong> tree is re-measured against both limits. Extraction only sees the incoming archive, so without that second check a run of patches could walk a jot past <code>JOTS_MAX_BYTES</code> or <code>JOTS_MAX_FILES</code>. An overflowing patch returns 413 and leaves the live jot untouched.</p>
 <h2 id="limits">Limits<a class="anchor" href="#limits" aria-label="Link to Limits">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Limit</th><th>Default</th><th>Env var</th></tr></thead><tbody>
 <tr><td>Decompressed archive size</td><td>5 MiB</td><td><code>JOTS_MAX_BYTES</code></td></tr>
@@ -109,14 +118,19 @@
 <h2 id="sandboxed-serving">Sandboxed serving<a class="anchor" href="#sandboxed-serving" aria-label="Link to Sandboxed serving">#</a></h2>
 <p>Every jot response carries <code>Content-Security-Policy: sandbox allow-scripts allow-forms</code>, plus <code>nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code>, and <code>Cross-Origin-Resource-Policy: same-origin</code>.</p>
 <p>The <code>sandbox</code> directive forces the browser to treat the page as a unique <strong>opaque origin</strong>. Jot JavaScript therefore cannot read the app&#39;s cookies or storage, and cannot make credentialed same-origin requests to <code>/api</code> or <code>/mcp</code>. Uploaded content is untrusted by construction, and this is what keeps it from reaching the rest of the deployment.</p>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">A jot cannot fetch its own files</span></div><div class="callout-body"><p>An opaque origin is cross-origin to itself, so <code>fetch(&#39;./data.json&#39;)</code> from inside a jot fails. Jots must be self-contained: inline the data, the CSS, and the scripts into the page rather than loading them at runtime.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">By default, a jot cannot fetch its own files</span></div><div class="callout-body"><p>An opaque origin is cross-origin to itself, so <code>fetch(&#39;./data.json&#39;)</code> from inside a jot fails. Jots must be self-contained: inline the data, the CSS, and the scripts into the page rather than loading them at runtime — unless you opt into <code>cors</code> below.</p>
 </div></div>
 
 <p><code>allow-scripts</code> and <code>allow-forms</code> are kept so ordinary interactive pages and the unlock form still work.</p>
+<h3 id="opting-into-cross-origin-reads">Opting into cross-origin reads<a class="anchor" href="#opting-into-cross-origin-reads" aria-label="Link to Opting into cross-origin reads">#</a></h3>
+<p><code>deploy_jot</code> and <code>update_jot</code> both accept <code>cors: true</code>, stored on the jot&#39;s manifest. On a <strong>public</strong> jot it serves files with <code>Access-Control-Allow-Origin: *</code> and <code>Cross-Origin-Resource-Policy: cross-origin</code>, and answers preflight <code>OPTIONS</code> requests — which is what lets a page fetch its own JSON. It pairs with <code>update_jot</code>: ship the page once, patch the data file on its own schedule.</p>
+<p>The sandbox is untouched. <code>sandbox allow-scripts allow-forms</code>, <code>nosniff</code>, and <code>X-Frame-Options</code> are still sent, so the page still cannot reach app cookies, storage, <code>/api</code>, or <code>/mcp</code>.</p>
+<p>The trade is that any site can then read that jot&#39;s files. Public jot content is already readable over a plain GET, so this only matters if an unguessable name was doing security work it was never able to do.</p>
+<p>On a password jot the flag is ignored — an opaque-origin fetch sends no cookie, so the request would 401 anyway. A preflight to a jot without <code>cors</code> returns 404, so CORS posture is not discoverable by probing.</p>
 <h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
 <p>The manifest file <code>jot.json</code> is blocked on both upload and serve — the guards compare the final path segment, so <code>jot.json</code> and <code>a/b/jot.json</code> are both refused — and a request for it returns 404 rather than 403 — the server does not confirm it exists.</p>
 <p>Path traversal is rejected on both sides: an archive entry that escapes the root is refused at extraction, and a serve path that resolves outside the jot directory returns 403.</p>
-<p>Each deploy replaces the whole jot. There is no incremental upload and no rollback, so re-upload the complete directory every time.</p>
+<p>Each <strong>deploy</strong> replaces the whole jot, and there is no rollback. <code>update_jot</code> covers the incremental case; anything else means re-uploading the complete directory.</p>
 
     </article>
     <nav class="prevnext"><a class="pn pn-prev" href="browser.html"><span class="pn-dir">Previous</span><span class="pn-label">Browser</span></a><a class="pn pn-next" href="../plugins/index.html"><span class="pn-dir">Next</span><span class="pn-label">Plugin overview</span></a></nav>
@@ -126,7 +140,7 @@
     </footer>
   </main>
 
-  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#deploy-upload-serve">Deploy, upload, serve</a></li><li class="toc-h2"><a href="#limits">Limits</a></li><li class="toc-h2"><a href="#names-ownership-and-access">Names, ownership, and access</a></li><li class="toc-h2"><a href="#sandboxed-serving">Sandboxed serving</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#deploy-upload-serve">Deploy, upload, serve</a></li><li class="toc-h2"><a href="#partial-updates">Partial updates</a></li><li class="toc-h2"><a href="#limits">Limits</a></li><li class="toc-h2"><a href="#names-ownership-and-access">Names, ownership, and access</a></li><li class="toc-h2"><a href="#sandboxed-serving">Sandboxed serving</a></li><li class="toc-h3"><a href="#opting-into-cross-origin-reads">Opting into cross-origin reads</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
 </div>
 
 <div class="search-overlay" hidden>

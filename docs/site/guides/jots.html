@@ -68,9 +68,11 @@ at <code>/j/&lt;name&gt;/</code>.</p>
 need no credential. They live in server source rather than the plugin directory, because
 their handlers write to the filesystem — a capability the plugin context deliberately
 does not expose.</p>
-<h2 id="the-three-tools">The three tools<a class="anchor" href="#the-three-tools" aria-label="Link to The three tools">#</a></h2>
+<h2 id="the-five-tools">The five tools<a class="anchor" href="#the-five-tools" aria-label="Link to The five tools">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Tool</th><th>Does</th></tr></thead><tbody>
-<tr><td><code>deploy_jot</code></td><td>Validates the name and returns an upload URL plus a single-use token</td></tr>
+<tr><td><code>deploy_jot</code></td><td>Validates the name and returns an upload URL plus a single-use token. Publishes the whole site</td></tr>
+<tr><td><code>update_jot</code></td><td>Same, in patch mode: the archive is overlaid onto the live site instead of replacing it</td></tr>
+<tr><td><code>list_jot_files</code></td><td>Lists the files inside a jot you own — path, bytes, updatedAt</td></tr>
 <tr><td><code>list_jots</code></td><td>Lists <strong>your</strong> jots — name, access, url, updatedAt, newest first</td></tr>
 <tr><td><code>delete_jot</code></td><td>Deletes a jot you own; <code>FORBIDDEN</code> for another owner, <code>NOT_FOUND</code> if absent</td></tr>
 </tbody></table></div>
@@ -103,7 +105,58 @@ the gzip stream:</p>
 </div>
 
 <p>The upload replaces any previous deploy of that name wholesale — this is a publish, not
-a merge.</p>
+a merge. To change one file without re-uploading the site, use
+<a href="#updating-one-file"><code>update_jot</code></a> instead.</p>
+<h2 id="updating-one-file">Updating one file<a class="anchor" href="#updating-one-file" aria-label="Link to Updating one file">#</a></h2>
+<p><code>deploy_jot</code> republishes everything. When only one file changes — a <code>data.json</code>
+regenerated weekly, a chart&#39;s dataset, a config blob — <code>update_jot</code> overlays your
+archive onto the live tree and leaves the rest alone.</p>
+<div class="steps">
+
+<h3 id="see-what-is-there">See what is there<a class="anchor" href="#see-what-is-there" aria-label="Link to See what is there">#</a></h3>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;executions&quot;: [ { &quot;tool&quot;: &quot;list_jot_files&quot;,
+  &quot;args&quot;: { &quot;name&quot;: &quot;release-report&quot; } } ] }</code></pre></div>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;result&quot;: {
+    &quot;files&quot;: [
+      { &quot;path&quot;: &quot;data.json&quot;, &quot;bytes&quot;: 4120, &quot;updatedAt&quot;: &quot;2026-08-24T00:05:00.000Z&quot; },
+      { &quot;path&quot;: &quot;index.html&quot;, &quot;bytes&quot;: 18233, &quot;updatedAt&quot;: &quot;2026-08-24T00:05:00.000Z&quot; }
+    ]
+  }
+}</code></pre></div>
+<p>Owner-scoped, like <code>list_jots</code>. The internal manifest is never listed.</p>
+<h3 id="mint-a-patch-token">Mint a patch token<a class="anchor" href="#mint-a-patch-token" aria-label="Link to Mint a patch token">#</a></h3>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;executions&quot;: [ { &quot;tool&quot;: &quot;update_jot&quot;,
+  &quot;args&quot;: { &quot;name&quot;: &quot;release-report&quot; } } ] }</code></pre></div>
+<p>Returns the same <code>{ uploadUrl, token, expiresAt, maxBytes }</code> shape as <code>deploy_jot</code>.</p>
+<h3 id="upload-only-what-changed">Upload only what changed<a class="anchor" href="#upload-only-what-changed" aria-label="Link to Upload only what changed">#</a></h3>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">tar czf - -C ./site data.json \
+  | curl --data-binary @- \
+      -H 'Content-Type: application/gzip' \
+      https://workbench.example.com/j/upload/3a71…</code></pre></div>
+</div>
+
+<p>Pass <code>delete</code> to remove paths — a directory removes its contents:</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;executions&quot;: [ { &quot;tool&quot;: &quot;update_jot&quot;,
+  &quot;args&quot;: { &quot;name&quot;: &quot;release-report&quot;, &quot;delete&quot;: [&quot;last-quarter&quot;, &quot;stale.json&quot;] } } ] }</code></pre></div>
+<p>Deletes are applied to the staged copy <em>before</em> the archive is overlaid, so a path that
+is both deleted and uploaded keeps the uploaded version.</p>
+<p>Two differences from a deploy are worth holding onto:</p>
+<ul>
+<li><strong>No <code>index.html</code> needed in the archive.</strong> The live one is retained, so a patch that
+ships only <code>data.json</code> is fine. A deploy in the same shape would be rejected with
+<code>NO_INDEX</code>.</li>
+<li><strong>Access is inherited, never set.</strong> <code>access</code> and the password hash are read from the
+live jot rather than from the token, so an update cannot change who can read a jot.
+Redeploy for that.</li>
+</ul>
+<p>Ownership is re-checked when the upload lands, not just at mint: a jot that has been
+deleted meanwhile returns 404, and one that changed hands returns 403.</p>
+<p>The <strong>merged</strong> tree is re-measured against both limits. <code>JOTS_MAX_BYTES</code> and
+<code>JOTS_MAX_FILES</code> are enforced during extraction, which only sees the archive — so
+without this check a run of small patches could walk a jot past either cap. A patch that
+would push it over returns 413 (<code>TOO_LARGE</code> or <code>TOO_MANY_FILES</code>) and leaves the live jot
+untouched.</p>
 <h2 id="the-guards-in-order">The guards, in order<a class="anchor" href="#the-guards-in-order" aria-label="Link to The guards, in order">#</a></h2>
 <p><code>deploy_jot</code> checks three things before minting anything, and returns on the first
 failure.</p>
@@ -162,12 +215,33 @@ the password reads the content.</p>
 cannot read the workbench&#39;s cookies or make credentialed same-origin requests to <code>/api</code>
 or <code>/mcp</code>. Responses also carry <code>nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code>, and
 <code>Cross-Origin-Resource-Policy: same-origin</code>.</p>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">A jot cannot fetch its own data files</span></div><div class="callout-body"><p>The opaque origin means same-origin <code>fetch</code> from inside a jot does not work. Pages
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">By default, a jot cannot fetch its own data files</span></div><div class="callout-body"><p>The opaque origin means same-origin <code>fetch</code> from inside a jot does not work. Pages
 must be <strong>self-contained</strong>: inline the data, or embed it as a data URI. Loading
 <code>data.json</code> alongside <code>index.html</code> at runtime will fail. This is the single most
-common surprise when deploying a page that worked locally.</p>
+common surprise when deploying a page that worked locally — see <code>cors</code> below for the
+opt-out.</p>
 </div></div>
 
+<h3 id="letting-a-jot-read-its-own-files">Letting a jot read its own files<a class="anchor" href="#letting-a-jot-read-its-own-files" aria-label="Link to Letting a jot read its own files">#</a></h3>
+<p>Pass <code>cors: true</code> on <code>deploy_jot</code> or <code>update_jot</code> to serve a <strong>public</strong> jot&#39;s files with
+<code>Access-Control-Allow-Origin: *</code> and <code>Cross-Origin-Resource-Policy: cross-origin</code>, and to
+answer preflight <code>OPTIONS</code> requests. That is what makes <code>fetch(&#39;./data.json&#39;)</code> work from
+inside the page.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;executions&quot;: [ { &quot;tool&quot;: &quot;deploy_jot&quot;,
+  &quot;args&quot;: { &quot;name&quot;: &quot;weekly-metrics&quot;, &quot;access&quot;: &quot;public&quot;, &quot;cors&quot;: true } } ] }</code></pre></div>
+<p>This pairs naturally with <code>update_jot</code>: the page ships once, and the weekly data file is
+patched in on its own.</p>
+<p>What it does <em>not</em> do is weaken the sandbox. <code>sandbox allow-scripts allow-forms</code>,
+<code>nosniff</code>, and <code>X-Frame-Options</code> are unchanged, so the page still cannot reach app
+cookies, storage, <code>/api</code>, or <code>/mcp</code>.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`cors: true` makes a jot's files world-readable by other sites</span></div><div class="callout-body"><p>Any origin can read them. A public jot is already readable over a plain GET, so this
+only matters if you were treating an unguessable jot name as a secret — which it never
+was.</p>
+</div></div>
+
+<p>On a <strong>password</strong> jot the flag is stored but ignored: an opaque-origin fetch carries no
+cookie, so the request would be answered with 401 regardless. Preflight requests to a jot
+without <code>cors</code> return 404, so a jot&#39;s CORS posture cannot be discovered by probing.</p>
 <p>Two more serving details:</p>
 <ul>
 <li>The internal manifest file is never served. A request for it returns <strong>404</strong>, not 403,
@@ -183,7 +257,9 @@ so its existence is not confirmed.</li>
 <tr><td><code>JOTS_UPLOAD_TTL_SECONDS</code></td><td><code>300</code></td><td>no</td><td>Lifetime of a mint token</td></tr>
 </tbody></table></div>
 <p>The size and file caps are enforced <em>while extracting</em>, not after, so a zip-bomb-shaped
-archive is stopped partway rather than after filling the disk.</p>
+archive is stopped partway rather than after filling the disk. A patch is measured twice:
+once during extraction, and again on the merged tree, because extraction only ever sees
+the incoming archive.</p>
 <p><code>JOTS_DIR</code> defaulting next to the database means jots and <code>tokens.db</code> share a volume by
 default. On a small volume, point it somewhere with room.</p>
 <h2 id="listing-and-deleting">Listing and deleting<a class="anchor" href="#listing-and-deleting" aria-label="Link to Listing and deleting">#</a></h2>
@@ -211,7 +287,7 @@ is immediate and removes the directory; the name becomes available again.</p>
     </footer>
   </main>
 
-  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-three-tools">The three tools</a></li><li class="toc-h2"><a href="#deploying">Deploying</a></li><li class="toc-h3"><a href="#call-deploy_jot">Call deploy_jot</a></li><li class="toc-h3"><a href="#upload-the-tarball">Upload the tarball</a></li><li class="toc-h3"><a href="#open-it">Open it</a></li><li class="toc-h2"><a href="#the-guards-in-order">The guards, in order</a></li><li class="toc-h2"><a href="#the-upload-token">The upload token</a></li><li class="toc-h2"><a href="#upload-failures">Upload failures</a></li><li class="toc-h2"><a href="#password-protected-jots">Password-protected jots</a></li><li class="toc-h2"><a href="#how-jots-are-served">How jots are served</a></li><li class="toc-h2"><a href="#limits-and-configuration">Limits and configuration</a></li><li class="toc-h2"><a href="#listing-and-deleting">Listing and deleting</a></li></ul></nav></div>
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-five-tools">The five tools</a></li><li class="toc-h2"><a href="#deploying">Deploying</a></li><li class="toc-h3"><a href="#call-deploy_jot">Call deploy_jot</a></li><li class="toc-h3"><a href="#upload-the-tarball">Upload the tarball</a></li><li class="toc-h3"><a href="#open-it">Open it</a></li><li class="toc-h2"><a href="#updating-one-file">Updating one file</a></li><li class="toc-h3"><a href="#see-what-is-there">See what is there</a></li><li class="toc-h3"><a href="#mint-a-patch-token">Mint a patch token</a></li><li class="toc-h3"><a href="#upload-only-what-changed">Upload only what changed</a></li><li class="toc-h2"><a href="#the-guards-in-order">The guards, in order</a></li><li class="toc-h2"><a href="#the-upload-token">The upload token</a></li><li class="toc-h2"><a href="#upload-failures">Upload failures</a></li><li class="toc-h2"><a href="#password-protected-jots">Password-protected jots</a></li><li class="toc-h2"><a href="#how-jots-are-served">How jots are served</a></li><li class="toc-h3"><a href="#letting-a-jot-read-its-own-files">Letting a jot read its own files</a></li><li class="toc-h2"><a href="#limits-and-configuration">Limits and configuration</a></li><li class="toc-h2"><a href="#listing-and-deleting">Listing and deleting</a></li></ul></nav></div>
 </div>
 
 <div class="search-overlay" hidden>

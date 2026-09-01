@@ -13,7 +13,7 @@ Like `browser`, it is an internal plugin: server source rather than `PLUGINS_DIR
 |---|---|
 | Plugin id | `jots` |
 | Auth | None (internal, always connected) |
-| Tools | 3 |
+| Tools | 5 |
 | Served at | `${SERVER_PUBLIC_URL}/j/<name>/` |
 
 ## Tools
@@ -21,10 +21,12 @@ Like `browser`, it is an internal plugin: server source rather than `PLUGINS_DIR
 | Tool | Purpose |
 |---|---|
 | `deploy_jot` | Start a deploy; returns an upload URL and a single-use token |
+| `update_jot` | Start a **partial** update; the archive is overlaid onto the live jot |
+| `list_jot_files` | List the files inside a jot you own — path, bytes, updated time |
 | `list_jots` | List the jots you deployed — name, access, URL, updated time |
 | `delete_jot` | Delete a jot you own by name |
 
-`list_jots` returns only the caller's own jots. `delete_jot` is ownership-checked: another owner's jot returns `FORBIDDEN`, a name that does not exist returns `NOT_FOUND`.
+Every tool is scoped to the caller: `list_jots` returns only your own jots, and `update_jot`, `list_jot_files`, and `delete_jot` all return `FORBIDDEN` for another owner's jot and `NOT_FOUND` for a name that does not exist.
 
 ## Deploy, upload, serve
 
@@ -51,6 +53,21 @@ tar czf - -C <dir> . | curl --data-binary @- \
 
 The server extracts the archive to a temporary directory, enforces the limits during extraction, requires a root `index.html`, and only then publishes — replacing any previous deploy of that name wholesale. A failed upload leaves the existing jot untouched.
 
+## Partial updates
+
+`update_jot` mints the same kind of token in **patch** mode. The server stages a copy of the live tree, applies the token's `delete` list, then overlays the uploaded archive on top — so a path that is both deleted and uploaded keeps the uploaded version, and files you never mention survive.
+
+```bash
+tar czf - -C <dir> data.json | curl --data-binary @- \
+  -H 'Content-Type: application/gzip' <uploadUrl>
+```
+
+The archive needs no root `index.html`; the live one is retained. Call `list_jot_files` first to see what a jot currently holds.
+
+A patch reads `access` and the password hash from the live manifest rather than from the token, so an update can never change a jot's gating — redeploy for that. Ownership is re-checked when the upload lands, so a jot deleted or reassigned between mint and upload returns 404 or 403.
+
+The **merged** tree is re-measured against both limits. Extraction only sees the incoming archive, so without that second check a run of patches could walk a jot past `JOTS_MAX_BYTES` or `JOTS_MAX_FILES`. An overflowing patch returns 413 and leaves the live jot untouched.
+
 ## Limits
 
 | Limit | Default | Env var |
@@ -76,10 +93,20 @@ Every jot response carries `Content-Security-Policy: sandbox allow-scripts allow
 
 The `sandbox` directive forces the browser to treat the page as a unique **opaque origin**. Jot JavaScript therefore cannot read the app's cookies or storage, and cannot make credentialed same-origin requests to `/api` or `/mcp`. Uploaded content is untrusted by construction, and this is what keeps it from reaching the rest of the deployment.
 
-> [!WARNING] A jot cannot fetch its own files
-> An opaque origin is cross-origin to itself, so `fetch('./data.json')` from inside a jot fails. Jots must be self-contained: inline the data, the CSS, and the scripts into the page rather than loading them at runtime.
+> [!WARNING] By default, a jot cannot fetch its own files
+> An opaque origin is cross-origin to itself, so `fetch('./data.json')` from inside a jot fails. Jots must be self-contained: inline the data, the CSS, and the scripts into the page rather than loading them at runtime — unless you opt into `cors` below.
 
 `allow-scripts` and `allow-forms` are kept so ordinary interactive pages and the unlock form still work.
+
+### Opting into cross-origin reads
+
+`deploy_jot` and `update_jot` both accept `cors: true`, stored on the jot's manifest. On a **public** jot it serves files with `Access-Control-Allow-Origin: *` and `Cross-Origin-Resource-Policy: cross-origin`, and answers preflight `OPTIONS` requests — which is what lets a page fetch its own JSON. It pairs with `update_jot`: ship the page once, patch the data file on its own schedule.
+
+The sandbox is untouched. `sandbox allow-scripts allow-forms`, `nosniff`, and `X-Frame-Options` are still sent, so the page still cannot reach app cookies, storage, `/api`, or `/mcp`.
+
+The trade is that any site can then read that jot's files. Public jot content is already readable over a plain GET, so this only matters if an unguessable name was doing security work it was never able to do.
+
+On a password jot the flag is ignored — an opaque-origin fetch sends no cookie, so the request would 401 anyway. A preflight to a jot without `cors` returns 404, so CORS posture is not discoverable by probing.
 
 ## Notes and gotchas
 
@@ -87,4 +114,4 @@ The manifest file `jot.json` is blocked on both upload and serve — the guards 
 
 Path traversal is rejected on both sides: an archive entry that escapes the root is refused at extraction, and a serve path that resolves outside the jot directory returns 403.
 
-Each deploy replaces the whole jot. There is no incremental upload and no rollback, so re-upload the complete directory every time.
+Each **deploy** replaces the whole jot, and there is no rollback. `update_jot` covers the incremental case; anything else means re-uploading the complete directory.
