@@ -255,3 +255,147 @@ describe("jots/routes upload", () => {
     expect((await app.inject({ method: "GET", url: "/j/noindex/" })).statusCode).toBe(404);
   });
 });
+
+describe("jots/routes patch upload", () => {
+  const gz = { "content-type": "application/gzip" };
+
+  const seed = (name: string, extra: { path: string; content: string }[] = []) =>
+    deployJot({
+      name, owner: "u1", access: "public",
+      files: [{ path: "index.html", content: "<h1>site</h1>" }, { path: "data.json", content: '{"v":1}' }, ...extra],
+    });
+
+  it("overlays uploaded files and leaves the rest of the tree alone", async () => {
+    seed("site");
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch" });
+    const body = await tarGz([{ name: "data.json", content: '{"v":2}' }]);
+    const up = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect(up.statusCode).toBe(200);
+    expect((await app.inject({ method: "GET", url: "/j/site/data.json" })).body).toBe('{"v":2}');
+    expect((await app.inject({ method: "GET", url: "/j/site/" })).body).toContain("site");
+  });
+
+  it("accepts a patch whose archive has no index.html", async () => {
+    seed("site");
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch" });
+    const body = await tarGz([{ name: "data.json", content: "{}" }]);
+    expect((await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz })).statusCode).toBe(200);
+  });
+
+  it("applies the delete list", async () => {
+    seed("site", [{ path: "stale/old.txt", content: "x" }]);
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch", deletes: ["stale"] });
+    const body = await tarGz([{ name: "data.json", content: "{}" }]);
+    await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect((await app.inject({ method: "GET", url: "/j/site/stale/old.txt" })).statusCode).toBe(404);
+    expect((await app.inject({ method: "GET", url: "/j/site/" })).statusCode).toBe(200);
+  });
+
+  it("lets an uploaded path win over a delete of the same path", async () => {
+    seed("site");
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch", deletes: ["data.json"] });
+    const body = await tarGz([{ name: "data.json", content: "kept" }]);
+    await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect((await app.inject({ method: "GET", url: "/j/site/data.json" })).body).toBe("kept");
+  });
+
+  it("404s a patch for a jot that no longer exists", async () => {
+    const { token } = mint({ owner: "u1", name: "gone", mode: "patch" });
+    const body = await tarGz([{ name: "data.json", content: "{}" }]);
+    expect((await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz })).statusCode).toBe(404);
+  });
+
+  it("403s a patch by a user who does not own the jot", async () => {
+    seed("site");
+    const { token } = mint({ owner: "u2", name: "site", mode: "patch" });
+    const body = await tarGz([{ name: "data.json", content: "{}" }]);
+    expect((await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz })).statusCode).toBe(403);
+  });
+
+  it("keeps the jot password-gated across a patch", async () => {
+    deployJot({ name: "sec", owner: "u1", access: "password", passwordHash: hashPassword("pw"), files: [{ path: "index.html", content: "secret" }] });
+    const { token } = mint({ owner: "u1", name: "sec", mode: "patch" });
+    const body = await tarGz([{ name: "data.json", content: "{}" }]);
+    await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect(readManifest("sec")?.access).toBe("password");
+    expect((await app.inject({ method: "GET", url: "/j/sec/data.json", headers: { accept: "application/json" } })).statusCode).toBe(401);
+  });
+
+  it("rejects a merged tree over the byte cap", async () => {
+    deployJot({ name: "site", owner: "u1", access: "public", files: [{ path: "index.html", content: "x".repeat(600_000) }] });
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch" });
+    const body = await tarGz([{ name: "big.bin", content: "y".repeat(600_000) }]);
+    const res = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect(res.statusCode).toBe(413);
+    expect(JSON.parse(res.body)).toEqual({ error: "TOO_LARGE" });
+    // the live jot is untouched
+    expect((await app.inject({ method: "GET", url: "/j/site/big.bin" })).statusCode).toBe(404);
+  });
+
+  it("rejects a merged tree over the file-count cap", async () => {
+    const many = Array.from({ length: 1000 }, (_, i) => ({ path: `f${i}.txt`, content: "x" }));
+    deployJot({ name: "site", owner: "u1", access: "public", files: [{ path: "index.html", content: "x" }, ...many] });
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch" });
+    const body = await tarGz([{ name: "one-more.txt", content: "x" }]);
+    const res = await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect(res.statusCode).toBe(413);
+    expect(JSON.parse(res.body)).toEqual({ error: "TOO_MANY_FILES" });
+  });
+
+  it("carries the cors flag from a patch token onto the manifest", async () => {
+    seed("site");
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch", cors: true });
+    const body = await tarGz([{ name: "data.json", content: "{}" }]);
+    await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect(readManifest("site")?.cors).toBe(true);
+  });
+
+  it("preserves an existing cors flag when the patch does not mention it", async () => {
+    deployJot({ name: "site", owner: "u1", access: "public", cors: true, files: [{ path: "index.html", content: "x" }] });
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch" });
+    const body = await tarGz([{ name: "data.json", content: "{}" }]);
+    await app.inject({ method: "POST", url: `/j/upload/${token}`, payload: body, headers: gz });
+    expect(readManifest("site")?.cors).toBe(true);
+  });
+});
+
+describe("jots/routes cors headers", () => {
+  it("sends no cross-origin headers by default", async () => {
+    deployJot({ name: "pub", owner: "u1", access: "public", files: [{ path: "data.json", content: "{}" }] });
+    const res = await app.inject({ method: "GET", url: "/j/pub/data.json" });
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
+
+  it("allows cross-origin reads for a public jot with cors enabled", async () => {
+    deployJot({ name: "pub", owner: "u1", access: "public", cors: true, files: [{ path: "data.json", content: "{}" }] });
+    const res = await app.inject({ method: "GET", url: "/j/pub/data.json" });
+    expect(res.headers["access-control-allow-origin"]).toBe("*");
+    expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+    // the sandbox is not weakened by cors
+    expect(res.headers["content-security-policy"]).toBe("sandbox allow-scripts allow-forms");
+  });
+
+  it("ignores cors on a password jot", async () => {
+    deployJot({ name: "sec", owner: "u1", access: "password", passwordHash: hashPassword("pw"), cors: true, files: [{ path: "index.html", content: "x" }] });
+    const hash = readManifest("sec")!.hash!;
+    const token = makeToken("test-secret-32-chars-long-xxxxxx", "sec", hash);
+    const res = await app.inject({ method: "GET", url: "/j/sec/", headers: { cookie: `${cookieName("sec")}=${token}` } });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("answers a preflight for a cors-enabled public jot", async () => {
+    deployJot({ name: "pub", owner: "u1", access: "public", cors: true, files: [{ path: "data.json", content: "{}" }] });
+    const res = await app.inject({ method: "OPTIONS", url: "/j/pub/data.json", headers: { origin: "https://other.test", "access-control-request-method": "GET" } });
+    expect(res.statusCode).toBe(204);
+    expect(res.headers["access-control-allow-origin"]).toBe("*");
+    expect(String(res.headers["access-control-allow-methods"])).toContain("GET");
+  });
+
+  it("does not answer a preflight for a jot without cors", async () => {
+    deployJot({ name: "pub", owner: "u1", access: "public", files: [{ path: "data.json", content: "{}" }] });
+    const res = await app.inject({ method: "OPTIONS", url: "/j/pub/data.json", headers: { origin: "https://other.test", "access-control-request-method": "GET" } });
+    expect(res.statusCode).toBe(404);
+  });
+});

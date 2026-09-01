@@ -206,8 +206,38 @@ The server extracts the archive and publishes it at `/j/<name>/`, replacing any 
 deploy. The archive's **root must contain an `index.html`** — an upload without one is
 rejected (`NO_INDEX`). Limits: ≤5 MiB decompressed, ≤1000 files; symlinks and
 path-traversal entries are rejected. The upload token is single-use and expires after ~5 minutes — re-call
-`deploy_jot` for a fresh one if it lapses. Jot pages are sandboxed (opaque origin), so
-they must be self-contained (a jot can't fetch its own data files).
+`deploy_jot` for a fresh one if it lapses.
+
+Jot pages are sandboxed onto an **opaque origin**, so their scripts can't reach app
+cookies or `/api`. A side effect is that a page can't fetch its own data files either —
+the request counts as cross-origin. Pass `cors: true` on a **public** jot to allow that,
+which serves its files with `Access-Control-Allow-Origin: *` (so any site can read them
+too). The sandbox itself is not weakened. On a password jot the flag is ignored: an
+opaque-origin fetch sends no cookie, so it would 401 regardless.
+
+## Updating one file in a jot
+
+`deploy_jot` replaces the whole site. To refresh a single file — say a `data.json`
+regenerated weekly — use `update_jot`, which overlays your archive onto the live tree
+and leaves everything else alone:
+
+```bash
+# see what's there first
+list_jot_files({ name: "my-site" })
+# → { files: [{ path: "index.html", ... }, { path: "data.json", ... }] }
+
+update_jot({ name: "my-site" })
+# → { uploadUrl, token, expiresAt, maxBytes }
+
+tar czf - -C ./my-site data.json | curl --data-binary @- -H 'Content-Type: application/gzip' "<uploadUrl>"
+```
+
+Pass `delete: ["stale.json", "old-dir"]` to remove paths; a directory removes its
+contents. A path that is both deleted and uploaded keeps the uploaded version. Unlike a
+deploy, the archive needn't contain an `index.html` — the live one is retained. Access
+and password are inherited from the live jot and can't be changed here; redeploy for
+that. The **merged** tree must still fit the ≤5 MiB / ≤1000 file limits, so a patch that
+pushes it over is rejected (`TOO_LARGE` / `TOO_MANY_FILES`) with the live jot untouched.
 
 ## Connecting from MCP
 

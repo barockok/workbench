@@ -57,4 +57,20 @@ describe("jots/pending", () => {
       stopUploadReaper(); // safe to call when no timer is running
     }).not.toThrow();
   });
+
+  it("defaults mode to replace when unspecified", () => {
+    const { token } = mint({ owner: "u1", name: "site", access: "public" });
+    expect(consume(token)).toMatchObject({ mode: "replace" });
+  });
+
+  it("mints a patch token carrying the delete list", () => {
+    const { token } = mint({ owner: "u1", name: "site", mode: "patch", deletes: ["old.json", "stale/"] });
+    expect(consume(token)).toMatchObject({ mode: "patch", name: "site", deletes: ["old.json", "stale/"] });
+  });
+
+  it("carries the cors flag", () => {
+    const { token } = mint({ owner: "u1", name: "site", access: "public", cors: true });
+    expect(consume(token)).toMatchObject({ cors: true });
+  });
+
 });

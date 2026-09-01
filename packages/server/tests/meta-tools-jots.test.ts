@@ -4,6 +4,7 @@ vi.mock("../src/jots/store", () => ({
   deployJot: vi.fn(),
   listJots: vi.fn(),
   deleteJot: vi.fn(),
+  listJotFiles: vi.fn(),
   readManifest: vi.fn(() => null),
 }));
 vi.mock("../src/jots/pending", () => ({
@@ -79,5 +80,62 @@ describe("jots plugin tools", () => {
     const result = await tool.handler({ userId: "u1" }, { name: "r" });
     expect(store.deleteJot).toHaveBeenCalledWith("r", "u1");
     expect(result).toEqual({ ok: true });
+  });
+});
+
+describe("jots plugin update_jot", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const owned = { access: "public" as const, owner: "u1", createdAt: "t", updatedAt: "t" };
+
+  it("mints a patch token for a jot the caller owns", async () => {
+    vi.mocked(readManifest).mockReturnValue(owned);
+    const result = await findTool("update_jot").handler({ userId: "u1" }, { name: "site" });
+    expect(mint).toHaveBeenCalledWith({ owner: "u1", name: "site", mode: "patch", deletes: [], cors: undefined });
+    expect(result).toMatchObject({ token: "tok123", expiresAt: 42 });
+    expect((result as { uploadUrl: string }).uploadUrl).toMatch(/\/j\/upload\/tok123$/);
+  });
+
+  it("passes the delete list and the cors flag through to the token", async () => {
+    vi.mocked(readManifest).mockReturnValue(owned);
+    await findTool("update_jot").handler({ userId: "u1" }, { name: "site", delete: ["old.json"], cors: true });
+    expect(mint).toHaveBeenCalledWith(expect.objectContaining({ deletes: ["old.json"], cors: true }));
+  });
+
+  it("refuses an unknown jot, a jot owned by someone else, and an invalid name", async () => {
+    vi.mocked(readManifest).mockReturnValue(null);
+    expect(await findTool("update_jot").handler({ userId: "u1" }, { name: "site" })).toEqual({ error: "NOT_FOUND" });
+    vi.mocked(readManifest).mockReturnValue({ ...owned, owner: "u2" });
+    expect(await findTool("update_jot").handler({ userId: "u1" }, { name: "site" })).toEqual({ error: "FORBIDDEN" });
+    expect(await findTool("update_jot").handler({ userId: "u1" }, { name: "BAD" })).toEqual({ error: "INVALID_NAME" });
+    expect(mint).not.toHaveBeenCalled();
+  });
+
+  it("rejects a delete path that escapes the jot or names the manifest", async () => {
+    vi.mocked(readManifest).mockReturnValue(owned);
+    expect(await findTool("update_jot").handler({ userId: "u1" }, { name: "site", delete: ["../etc"] })).toEqual({ error: "INVALID_PATH" });
+    expect(await findTool("update_jot").handler({ userId: "u1" }, { name: "site", delete: ["jot.json"] })).toEqual({ error: "INVALID_PATH" });
+    expect(mint).not.toHaveBeenCalled();
+  });
+});
+
+describe("jots plugin list_jot_files", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns the caller's own jot tree", async () => {
+    vi.mocked(store.listJotFiles).mockReturnValue({ files: [{ path: "data.json", bytes: 2, updatedAt: "t" }] });
+    const result = await findTool("list_jot_files").handler({ userId: "u1" }, { name: "site" });
+    expect(store.listJotFiles).toHaveBeenCalledWith("site", "u1");
+    expect(result).toEqual({ files: [{ path: "data.json", bytes: 2, updatedAt: "t" }] });
+  });
+});
+
+describe("jots plugin deploy_jot cors", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("passes the cors flag to the token", async () => {
+    vi.mocked(readManifest).mockReturnValue(null);
+    await findTool("deploy_jot").handler({ userId: "u1" }, { name: "r", access: "public", cors: true });
+    expect(mint).toHaveBeenCalledWith(expect.objectContaining({ cors: true }));
   });
 });
