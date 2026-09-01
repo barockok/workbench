@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Install — a-workbench Docs</title>
+<title>Install — workbench Docs</title>
 <meta name="description" content="Run the server from source — Node and npm requirements, the workspace layout, the two required secrets, and how to create your first user.">
-<meta property="og:title" content="Install — a-workbench">
+<meta property="og:title" content="Install — workbench">
 <meta property="og:description" content="Run the server from source — Node and npm requirements, the workspace layout, the two required secrets, and how to create your first user.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="../index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">Run the server from source — Node and npm requirements, the workspace layout, the two required secrets, and how to create your first user.</p>
-      <p>a-workbench is an npm workspace monorepo. There is one server process, one React
+      <p>workbench is an npm workspace monorepo. There is one server process, one React
 portal that the server also serves as static files in production, and a set of
 plugin packages the server imports at boot.</p>
 <h2 id="requirements">Requirements<a class="anchor" href="#requirements" aria-label="Link to Requirements">#</a></h2>
@@ -75,11 +75,11 @@ actually built and tested:</p>
 Docker image it is baked in; locally, Playwright installs it as a dependency.</p>
 <h2 id="workspace-layout">Workspace layout<a class="anchor" href="#workspace-layout" aria-label="Link to Workspace layout">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Package</th><th>Name</th><th>What it is</th></tr></thead><tbody>
-<tr><td><code>packages/shared</code></td><td><code>@a-workbench/shared</code></td><td>Types and zod schemas shared by server and portal</td></tr>
-<tr><td><code>packages/server</code></td><td><code>@a-workbench/server</code></td><td>Fastify app: MCP endpoint, HTTP API, auth, plugin loader</td></tr>
-<tr><td><code>packages/portal</code></td><td><code>@a-workbench/portal</code></td><td>Vite + React connection-management UI</td></tr>
+<tr><td><code>packages/shared</code></td><td><code>@workbench/shared</code></td><td>Types and zod schemas shared by server and portal</td></tr>
+<tr><td><code>packages/server</code></td><td><code>@workbench/server</code></td><td>Fastify app: MCP endpoint, HTTP API, auth, plugin loader</td></tr>
+<tr><td><code>packages/portal</code></td><td><code>@workbench/portal</code></td><td>Vite + React connection-management UI</td></tr>
 <tr><td><code>packages/plugins</code></td><td>—</td><td>The 16 built-in integrations, one directory each</td></tr>
-<tr><td><code>packages/sample-oauth</code></td><td><code>@a-workbench/sample-oauth</code></td><td>A throwaway OAuth provider for testing the connect flow</td></tr>
+<tr><td><code>packages/sample-oauth</code></td><td><code>@workbench/sample-oauth</code></td><td>A throwaway OAuth provider for testing the connect flow</td></tr>
 </tbody></table></div>
 <h2 id="commands">Commands<a class="anchor" href="#commands" aria-label="Link to Commands">#</a></h2>
 <p>All four root scripts are thin <code>turbo</code> wrappers.</p>
@@ -93,8 +93,8 @@ Docker image it is baked in; locally, Playwright installs it as a dependency.</p
 so those two values are part of the cache key — a run under a different
 encryption key never reuses a cached result.</p>
 <p>Two server-only scripts are worth knowing:</p>
-<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run typecheck:tests -w @a-workbench/server   # tsconfig.json covers only src/
-npm run test:coverage   -w @a-workbench/server   # what CI runs</code></pre></div>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run typecheck:tests -w @workbench/server   # tsconfig.json covers only src/
+npm run test:coverage   -w @workbench/server   # what CI runs</code></pre></div>
 <h2 id="minimum-viable-configuration">Minimum viable configuration<a class="anchor" href="#minimum-viable-configuration" aria-label="Link to Minimum viable configuration">#</a></h2>
 <p>Two variables are required. Everything else has a default.</p>
 <div class="table-wrap"><table><thead><tr><th>Variable</th><th>Requirement</th><th>Generate with</th></tr></thead><tbody>
@@ -162,7 +162,7 @@ anyone else. <code>npm run dev</code> starts it alongside the server.</p>
     <nav class="prevnext"><a class="pn pn-prev" href="../plugins/auth-modes.html"><span class="pn-dir">Previous</span><span class="pn-label">Auth modes</span></a><a class="pn pn-next" href="docker.html"><span class="pn-dir">Next</span><span class="pn-label">Docker &amp; Compose</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/install.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 

@@ -3,7 +3,7 @@ title: Install
 description: Run the server from source — Node and npm requirements, the workspace layout, the two required secrets, and how to create your first user.
 ---
 
-a-workbench is an npm workspace monorepo. There is one server process, one React
+workbench is an npm workspace monorepo. There is one server process, one React
 portal that the server also serves as static files in production, and a set of
 plugin packages the server imports at boot.
 
@@ -24,11 +24,11 @@ Docker image it is baked in; locally, Playwright installs it as a dependency.
 
 | Package | Name | What it is |
 |---|---|---|
-| `packages/shared` | `@a-workbench/shared` | Types and zod schemas shared by server and portal |
-| `packages/server` | `@a-workbench/server` | Fastify app: MCP endpoint, HTTP API, auth, plugin loader |
-| `packages/portal` | `@a-workbench/portal` | Vite + React connection-management UI |
+| `packages/shared` | `@workbench/shared` | Types and zod schemas shared by server and portal |
+| `packages/server` | `@workbench/server` | Fastify app: MCP endpoint, HTTP API, auth, plugin loader |
+| `packages/portal` | `@workbench/portal` | Vite + React connection-management UI |
 | `packages/plugins` | — | The 16 built-in integrations, one directory each |
-| `packages/sample-oauth` | `@a-workbench/sample-oauth` | A throwaway OAuth provider for testing the connect flow |
+| `packages/sample-oauth` | `@workbench/sample-oauth` | A throwaway OAuth provider for testing the connect flow |
 
 ## Commands
 
@@ -48,8 +48,8 @@ encryption key never reuses a cached result.
 Two server-only scripts are worth knowing:
 
 ```bash
-npm run typecheck:tests -w @a-workbench/server   # tsconfig.json covers only src/
-npm run test:coverage   -w @a-workbench/server   # what CI runs
+npm run typecheck:tests -w @workbench/server   # tsconfig.json covers only src/
+npm run test:coverage   -w @workbench/server   # what CI runs
 ```
 
 ## Minimum viable configuration

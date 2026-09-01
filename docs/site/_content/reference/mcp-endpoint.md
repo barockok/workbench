@@ -36,7 +36,7 @@ and by a `token_type` claim:
 
 | Token | `aud` | `iss` | Distinguishing claim | TTL |
 |---|---|---|---|---|
-| Portal session JWT | `a-workbench` | `a-workbench` | `email` | 24 hours |
+| Portal session JWT | `workbench` | `workbench` | `email` | 24 hours |
 | OAuth 2.1 access token | `<SERVER_PUBLIC_URL>/mcp` | `SERVER_PUBLIC_URL` | `token_type: "oauth"`, plus `scope` and `client_id` | `OAUTH_ACCESS_TOKEN_TTL_SECONDS`, default 3600 |
 
 The access-token verifier rejects anything without `token_type === "oauth"` and
@@ -53,7 +53,7 @@ protected-resource metadata, and a JSON-RPC error body echoing the request `id`
 (or `null`):
 
 ```
-WWW-Authenticate: Bearer realm="a-workbench", resource_metadata="<SERVER_PUBLIC_URL>/.well-known/oauth-protected-resource"
+WWW-Authenticate: Bearer realm="workbench", resource_metadata="<SERVER_PUBLIC_URL>/.well-known/oauth-protected-resource"
 ```
 
 ```json
@@ -75,7 +75,7 @@ below without any manual configuration.
 
 | Method | Behaviour |
 |---|---|
-| `initialize` | Echoes the client's `params.protocolVersion`, defaulting to `2025-06-18`. Returns `capabilities: { tools: {} }` and `serverInfo: { name: "a-workbench", version: "0.1.0" }` |
+| `initialize` | Echoes the client's `params.protocolVersion`, defaulting to `2025-06-18`. Returns `capabilities: { tools: {} }` and `serverInfo: { name: "workbench", version: "0.1.0" }` |
 | `notifications/initialized` / `initialized` | No result — HTTP 202, empty body |
 | `tools/list` | The nine meta-tools, each `{ name, description, inputSchema }`. Plugin tools are never listed |
 | `tools/call` | Runs one meta-tool. See below |
@@ -118,7 +118,7 @@ becomes image blocks instead, and the text block is dropped. This is how
 
 ## OAuth 2.1 discovery surface
 
-a-workbench is both the protected resource and its own authorization server. All of
+workbench is both the protected resource and its own authorization server. All of
 the following are unauthenticated.
 
 ### Metadata
@@ -179,7 +179,7 @@ request has to survive a round trip through Google SSO. It does that with a tick
 ```mermaid
 sequenceDiagram
   participant C as MCP client
-  participant W as a-workbench
+  participant W as workbench
   participant G as Google SSO
   C->>W: GET /authorize (PKCE S256)
   W->>W: stash request under a ticket

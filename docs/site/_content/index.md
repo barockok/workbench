@@ -1,9 +1,9 @@
 ---
-title: What is a-workbench?
+title: What is workbench?
 description: A self-hosted MCP server that puts 178 SaaS tools behind 9 meta-tools, with per-user OAuth for every integration.
 ---
 
-a-workbench is a self-hosted MCP server that sits between your agent and the SaaS
+workbench is a self-hosted MCP server that sits between your agent and the SaaS
 tools it needs. It ships 16 integrations and 178 tools, holds a separate OAuth
 connection per user per provider, and exposes all of it through **9 meta-tools** —
 so the agent's tool list stays the same size whether you have loaded one
@@ -45,7 +45,7 @@ five of them and the agent is carrying several hundred tool definitions before i
 has done any work — context spent on descriptions it will not use, and a harder
 selection problem when it picks one.
 
-a-workbench advertises only the 9 meta-tools. Everything else is reached by name:
+workbench advertises only the 9 meta-tools. Everything else is reached by name:
 
 1. `search_tools` finds candidates by keyword.
 2. `get_tool_schema` returns the JSON Schema for one tool's arguments.

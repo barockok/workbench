@@ -3,7 +3,7 @@ title: Security model
 description: The credentials the server issues and accepts, how third-party tokens are protected at rest, the SSRF posture and its limits, and what the operator is responsible for.
 ---
 
-a-workbench holds other people's credentials. A single deployment stores every
+workbench holds other people's credentials. A single deployment stores every
 user's OAuth tokens and browser cookies for every SaaS tool they connected, and
 hands agents a way to use them. This page is the operator's view of that.
 

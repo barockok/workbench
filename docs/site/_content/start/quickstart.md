@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Run a-workbench locally, mint an API key, and point an MCP client at it.
+description: Run workbench locally, mint an API key, and point an MCP client at it.
 ---
 
 This gets you from a clone to an agent calling `list_integrations` against your own

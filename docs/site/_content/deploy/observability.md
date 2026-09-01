@@ -68,7 +68,7 @@ port is the alternative.
 
 OpenTelemetry is initialized for its side effect at server startup. It registers a
 `NodeTracerProvider` with an `HttpInstrumentation`, under the service name
-`a-workbench`, and the server code wraps operations in spans through a `withSpan`
+`workbench`, and the server code wraps operations in spans through a `withSpan`
 helper that sets OK/ERROR status and records exceptions.
 
 The entire setup is wrapped in try/catch and loaded with `require()` rather than

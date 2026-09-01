@@ -3,7 +3,7 @@ title: OAuth connections
 description: Connecting a user's account to a provider, how tokens are stored and refreshed, and how to revoke access.
 ---
 
-Every OAuth connection in a-workbench is **per user, per integration**. There is one row
+Every OAuth connection in workbench is **per user, per integration**. There is one row
 in `connections` keyed on that pair, holding an encrypted access token and refresh
 token. Connecting GitHub connects *your* GitHub, not the server's.
 

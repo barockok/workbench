@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Static docs generator for a-workbench.
+// Static docs generator for workbench.
 //
 // Reads Markdown from _content/, the nav tree from nav.json, and writes plain
 // static HTML into this directory. No server, no framework: GitHub Pages can
@@ -334,7 +334,7 @@ function layout({ page, title, description, content, headings }) {
 <link rel="icon" href="data:image/svg+xml,${encodeURIComponent(SITE.favicon)}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="${A}assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
