@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal SSO — workbench Docs</title>
+<meta name="description" content="Configuring Google or Keycloak login for the portal — redirect URIs, provider discovery, and the stateless session model.">
+<meta property="og:title" content="Portal SSO — workbench">
+<meta property="og:description" content="Configuring Google or Keycloak login for the portal — redirect URIs, provider discovery, and the stateless session model.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab active" href="install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Running the server</p><ul><li><a class="" href="install.html">Install</a></li><li><a class="" href="docker.html">Docker &amp; Compose</a></li><li><a class="" href="database.html">Database</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Production</p><ul><li><a class="active" href="portal-sso.html">Portal SSO</a></li><li><a class="" href="security.html">Security model</a></li><li><a class="" href="observability.html">Observability</a></li><li><a class="" href="releases.html">Releases &amp; upgrades</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Production</p>
+          <h1>Portal SSO</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Configuring Google or Keycloak login for the portal — redirect URIs, provider discovery, and the stateless session model.</p>
+      <p>The portal has no password login. Users sign in through an OIDC provider, and a
+user row is created on first successful callback. Two providers are supported, and
+both are optional. You can enable either, both, or neither. With neither, the only
+way to create a user is the seed script — see <a href="install.html">install</a>.</p>
+<div class="table-wrap"><table><thead><tr><th>Provider</th><th>Enabled when</th><th>Callback URL</th></tr></thead><tbody>
+<tr><td>Google</td><td><code>GOOGLE_CLIENT_ID</code> is set</td><td><code>${SERVER_PUBLIC_URL}/api/auth/google/callback</code></td></tr>
+<tr><td>Keycloak</td><td>all three <code>KEYCLOAK_*</code> vars are set</td><td><code>${SERVER_PUBLIC_URL}/api/auth/keycloak/callback</code></td></tr>
+</tbody></table></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The redirect URI is a server path, not a portal path</span></div><div class="callout-body"><p>It is built from <code>SERVER_PUBLIC_URL</code> and starts with <code>/api/auth/</code>. Older
+documentation — including the comment in <code>.env.example</code> — describes
+<code>${PORTAL_URL}/auth/google/callback</code>. That value is wrong and will fail with a
+<code>redirect_uri_mismatch</code> in the provider console. The same helper builds the URI
+for both the authorize redirect and the token exchange, so the two are always
+byte-identical. There is nothing to align by hand except what you register with
+the provider.</p>
+</div></div>
+
+<h2 id="google">Google<a class="anchor" href="#google" aria-label="Link to Google">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=...
+SERVER_PUBLIC_URL=https://workbench.example.com</code></pre></div>
+<p>Register <code>https://workbench.example.com/api/auth/google/callback</code> as an authorized
+redirect URI on the OAuth client.</p>
+<p>The flow uses OIDC discovery against
+<code>https://accounts.google.com/.well-known/openid-configuration</code>, requests scopes
+<code>openid email profile</code> with <code>access_type=online</code>, and carries both a <code>state</code> and a
+<code>nonce</code>. The callback verifies the ID token against Google&#39;s JWKS, accepting either
+of Google&#39;s two published issuer spellings — <code>https://accounts.google.com</code> and the
+bare <code>accounts.google.com</code> — with the audience pinned to <code>GOOGLE_CLIENT_ID</code> and 60
+seconds of clock tolerance, then checks the nonce.</p>
+<p>Accounts whose email is not verified are rejected. The server matches a returning user on
+<code>google_sub</code>. Failing that, it links by email address. Failing that, it creates a
+new user.</p>
+<p><code>GOOGLE_CLIENT_ID</code> alone is enough to make the provider appear and to build an
+authorize URL, but without <code>GOOGLE_CLIENT_SECRET</code> the token exchange throws
+&quot;Google OAuth not configured&quot; at the callback. Set both.</p>
+<p>These credentials are for <strong>portal login only</strong>. They are unrelated to the
+<code>GOOGLE_GMAIL_CLIENT_ID</code>-style per-plugin credentials used to connect Google
+integrations.</p>
+<h2 id="keycloak">Keycloak<a class="anchor" href="#keycloak" aria-label="Link to Keycloak">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">KEYCLOAK_ISSUER_URL=https://sso.example.com/realms/engineering
+KEYCLOAK_CLIENT_ID=workbench
+KEYCLOAK_CLIENT_SECRET=...
+SERVER_PUBLIC_URL=https://workbench.example.com</code></pre></div>
+<p>All three must be set — the provider reports itself configured only when none is
+missing. <code>KEYCLOAK_ISSUER_URL</code> must parse as a URL, or boot fails.</p>
+<p>In Keycloak, create a confidential client (client authentication on, standard flow
+enabled) and add <code>https://workbench.example.com/api/auth/keycloak/callback</code> as a
+valid redirect URI. Configuration is read from
+<code>${KEYCLOAK_ISSUER_URL}/.well-known/openid-configuration</code> and cached, so the realm
+must be reachable from the server at first login.</p>
+<p>The flow mirrors Google&#39;s: authorization code, ID token verified against the
+realm&#39;s JWKS with the audience pinned to <code>KEYCLOAK_CLIENT_ID</code>, users linked or
+created on <code>keycloak_sub</code>. It is a confidential-client flow with no PKCE.</p>
+<p>Two behavioural differences to be aware of:</p>
+<ul>
+<li><strong>Email verification is checked more loosely.</strong> Keycloak logins are rejected only
+when the token carries <code>email_verified: false</code>. An absent claim passes. Google
+rejects an absent claim too. Configure the realm to emit the claim if you rely
+on it.</li>
+<li><strong>Keycloak cannot complete an MCP <code>/authorize</code> handshake.</strong> The MCP OAuth
+authorize endpoint hardcodes the Google authorize URL, and the Keycloak callback
+never resumes an authorize ticket. Keycloak works for portal login. Agents
+authorizing over MCP OAuth 2.1 need Google configured. Agents can also
+authenticate with a workbench API key, which is provider-independent.</li>
+</ul>
+<h2 id="provider-discovery">Provider discovery<a class="anchor" href="#provider-discovery" aria-label="Link to Provider discovery">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl https://workbench.example.com/api/auth/providers</code></pre></div>
+<p>Returns the list of enabled providers — <code>&quot;google&quot;</code> when <code>GOOGLE_CLIENT_ID</code> is set,
+<code>&quot;keycloak&quot;</code> when the three Keycloak variables are set. The portal calls this to
+decide which sign-in buttons to render, so an empty list means a login page with
+nothing on it. Use it to check your configuration landed before opening a browser.</p>
+<h2 id="the-session-model">The session model<a class="anchor" href="#the-session-model" aria-label="Link to The session model">#</a></h2>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+  participant B as Browser
+  participant S as workbench
+  participant I as IdP
+  B-&gt;&gt;S: GET /api/auth/google
+  S-&gt;&gt;B: 200 JSON {url} (state, nonce)
+  B-&gt;&gt;I: navigate to url, authorize
+  I-&gt;&gt;S: GET /api/auth/google/callback?code&amp;state
+  S-&gt;&gt;S: verify state + nonce, verify ID token, upsert user
+  S-&gt;&gt;B: 302 PORTAL_URL#token=&lt;session JWT&gt;
+  B-&gt;&gt;B: read fragment, store in localStorage
+  B-&gt;&gt;S: GET /api/connections (Authorization: Bearer)</pre></div>
+<p>Note the first hop: <code>GET /api/auth/google</code> (and <code>/api/auth/keycloak</code>) does not
+redirect. It returns <code>{ url }</code> as JSON — or <strong>503</strong> with an error when the provider
+is unconfigured — and the portal&#39;s fetch reads <code>url</code> and navigates the browser
+there itself. The only route that answers with a 302 to Google is the MCP OAuth
+<code>GET /authorize</code>.</p>
+<p>The session is a stateless <strong>HS256 JWT</strong> signed with <code>SESSION_SECRET</code>. Claims are
+<code>sub</code> (the user id), <code>email</code>, <code>iat</code>, <code>exp</code>, plus <code>aud</code> and <code>iss</code> both set to
+<code>workbench</code>. Verification enforces the audience, the issuer, and 5 seconds of
+clock tolerance. The lifetime is <strong>24 hours</strong>.</p>
+<p>After either callback the server redirects to <code>PORTAL_URL</code> with the token in the
+<strong>URL fragment</strong> — not a query parameter, so it is never sent to the server or
+written to an access log. The portal reads the fragment once, stores the token in
+<code>localStorage</code> under <code>awb_token</code>, and sends it as <code>Authorization: Bearer</code> on every
+API call. The portal session uses no cookies at all.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Logout is client-side only</span></div><div class="callout-body"><p><code>POST /api/auth/logout</code> returns success and revokes nothing. There is no session
+revocation list, so a leaked session JWT stays valid for its full 24 hours.
+Rotating <code>SESSION_SECRET</code> invalidates every session at once — and simultaneously
+every MCP OAuth access token, connect token, curl-session token, and jot unlock
+cookie, since all of them are keyed on the same secret.</p>
+</div></div>
+
+<p>For how the session JWT relates to the other credentials the server accepts, see
+<a href="security.html">the security model</a>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="database.html"><span class="pn-dir">Previous</span><span class="pn-label">Database</span></a><a class="pn pn-next" href="security.html"><span class="pn-dir">Next</span><span class="pn-label">Security model</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/portal-sso.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#google">Google</a></li><li class="toc-h2"><a href="#keycloak">Keycloak</a></li><li class="toc-h2"><a href="#provider-discovery">Provider discovery</a></li><li class="toc-h2"><a href="#the-session-model">The session model</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

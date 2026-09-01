@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP endpoint — workbench Docs</title>
+<meta name="description" content="How POST /mcp works — transport, the two credentials it accepts, the JSON-RPC methods it answers, and the OAuth 2.1 discovery surface around it.">
+<meta property="og:title" content="MCP endpoint — workbench">
+<meta property="og:description" content="How POST /mcp works — transport, the two credentials it accepts, the JSON-RPC methods it answers, and the OAuth 2.1 discovery surface around it.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab active" href="meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">API</p><ul><li><a class="" href="meta-tools.html">MCP meta-tools</a></li><li><a class="active" href="mcp-endpoint.html">MCP endpoint</a></li><li><a class="" href="http-api.html">HTTP API</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Configuration</p><ul><li><a class="" href="environment.html">Environment variables</a></li><li><a class="" href="database-schema.html">Database schema</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Project</p><ul><li><a class="" href="tool-catalog.html">Tool catalog</a></li><li><a class="" href="contributing.html">Contributing</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">API</p>
+          <h1>MCP endpoint</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">How POST /mcp works — transport, the two credentials it accepts, the JSON-RPC methods it answers, and the OAuth 2.1 discovery surface around it.</p>
+      <p><code>POST /mcp</code> is the entire MCP surface. There is no <code>GET /mcp</code>, no SSE stream, and no
+<code>DELETE /mcp</code>.</p>
+<h2 id="transport">Transport<a class="anchor" href="#transport" aria-label="Link to Transport">#</a></h2>
+<p>Plain JSON-RPC 2.0 over HTTP POST. One request, one response.</p>
+<p>There is <strong>no session handling</strong>. <code>Mcp-Session-Id</code> is never read and never emitted.
+Every request is independently authenticated and carries no server-side state from
+the request before it, which is why the server can run in cluster mode behind a
+plain round-robin load balancer.</p>
+<p>When a handler returns nothing — the <code>notifications/initialized</code> notification is the
+only case — the server replies <strong>202 Accepted with an empty body</strong>.</p>
+<h2 id="authenticating">Authenticating<a class="anchor" href="#authenticating" aria-label="Link to Authenticating">#</a></h2>
+<p>Three credentials reach <code>/mcp</code>, resolved strictly in this order:</p>
+<div class="table-wrap"><table><thead><tr><th>Order</th><th>Header</th><th>Credential</th><th>Verifier</th></tr></thead><tbody>
+<tr><td>1</td><td><code>x-workbench-api-key: &lt;hex&gt;</code></td><td>Workbench API key</td><td>API-key verifier (SHA-256 indexed lookup, bcrypt fallback)</td></tr>
+<tr><td>2</td><td><code>Authorization: Bearer &lt;jwt&gt;</code></td><td>OAuth 2.1 access token</td><td>Access-token verifier</td></tr>
+<tr><td>3</td><td><code>Authorization: Bearer &lt;jwt&gt;</code></td><td>Portal session JWT</td><td>Session verifier — tried only if the access-token verify throws</td></tr>
+</tbody></table></div>
+<p>The API key goes in its own header. Do not send it as <code>Bearer</code>.</p>
+<p>The two <code>Bearer</code> tokens are different tokens with different verifiers, even though
+both are HS256 signed with the same <code>SESSION_SECRET</code>. They are separated by audience
+and by a <code>token_type</code> claim:</p>
+<div class="table-wrap"><table><thead><tr><th>Token</th><th><code>aud</code></th><th><code>iss</code></th><th>Distinguishing claim</th><th>TTL</th></tr></thead><tbody>
+<tr><td>Portal session JWT</td><td><code>workbench</code></td><td><code>workbench</code></td><td><code>email</code></td><td>24 hours</td></tr>
+<tr><td>OAuth 2.1 access token</td><td><code>&lt;SERVER_PUBLIC_URL&gt;/mcp</code></td><td><code>SERVER_PUBLIC_URL</code></td><td><code>token_type: &quot;oauth&quot;</code>, plus <code>scope</code> and <code>client_id</code></td><td><code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code>, default 3600</td></tr>
+</tbody></table></div>
+<p>The access-token verifier rejects anything without <code>token_type === &quot;oauth&quot;</code> and
+string <code>sub</code>, <code>scope</code>, and <code>client_id</code> claims.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">An OAuth access token does not work on `/api/*`</span></div><div class="callout-body"><p>The portal API authenticator accepts the API key or a portal session JWT only. An
+OAuth 2.1 access token authenticates <code>/mcp</code> and nothing else.</p>
+</div></div>
+
+<h3 id="the-401-challenge">The 401 challenge<a class="anchor" href="#the-401-challenge" aria-label="Link to The 401 challenge">#</a></h3>
+<p>An unauthenticated request gets HTTP 401 with a challenge header pointing at the
+protected-resource metadata, and a JSON-RPC error body echoing the request <code>id</code>
+(or <code>null</code>):</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">WWW-Authenticate: Bearer realm=&quot;workbench&quot;, resource_metadata=&quot;&lt;SERVER_PUBLIC_URL&gt;/.well-known/oauth-protected-resource&quot;</code></pre></div>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;jsonrpc&quot;: &quot;2.0&quot;,
+  &quot;id&quot;: 1,
+  &quot;error&quot;: {
+    &quot;code&quot;: -32001,
+    &quot;message&quot;: &quot;Unauthorized&quot;,
+    &quot;data&quot;: { &quot;resource_metadata&quot;: &quot;&lt;SERVER_PUBLIC_URL&gt;/.well-known/oauth-protected-resource&quot; }
+  }
+}</code></pre></div>
+<p>An MCP client that implements OAuth 2.1 discovery follows that header into the flow
+below without any manual configuration.</p>
+<h2 id="json-rpc-methods">JSON-RPC methods<a class="anchor" href="#json-rpc-methods" aria-label="Link to JSON-RPC methods">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Method</th><th>Behaviour</th></tr></thead><tbody>
+<tr><td><code>initialize</code></td><td>Echoes the client&#39;s <code>params.protocolVersion</code>, defaulting to <code>2025-06-18</code>. Returns <code>capabilities: { tools: {} }</code> and <code>serverInfo: { name: &quot;workbench&quot;, version: &quot;0.1.0&quot; }</code></td></tr>
+<tr><td><code>notifications/initialized</code> / <code>initialized</code></td><td>No result — HTTP 202, empty body</td></tr>
+<tr><td><code>tools/list</code></td><td>The nine meta-tools, each <code>{ name, description, inputSchema }</code>. Plugin tools are never listed</td></tr>
+<tr><td><code>tools/call</code></td><td>Runs one meta-tool. See below</td></tr>
+<tr><td><code>resources/list</code></td><td><code>{ resources: [] }</code></td></tr>
+<tr><td><code>prompts/list</code></td><td><code>{ prompts: [] }</code></td></tr>
+<tr><td>anything else</td><td><code>{ error: { code: -32601, message: &quot;Method not found: &lt;m&gt;&quot; } }</code></td></tr>
+</tbody></table></div>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">`serverInfo.version` is hardcoded</span></div><div class="callout-body"><p>The handshake reports <code>0.1.0</code> regardless of the released version. Do not use it to
+detect server capabilities.</p>
+</div></div>
+
+<p><code>tools/call</code> returns two protocol-level errors, both <code>-32602</code>:</p>
+<ul>
+<li><code>Tool not found: &lt;name&gt;</code> for a name that is not one of the nine meta-tools.</li>
+<li><code>Invalid arguments: &lt;message&gt;</code> when the meta-tool&#39;s Zod schema rejects the
+arguments.</li>
+</ul>
+<p>Everything else — including plugin tools that fail — comes back as a successful
+result. See <a href="meta-tools.html"><code>execute_tools</code></a>.</p>
+<h2 id="result-rendering-and-the-60000-character-cap">Result rendering and the 60,000-character cap<a class="anchor" href="#result-rendering-and-the-60000-character-cap" aria-label="Link to Result rendering and the 60,000-character cap">#</a></h2>
+<p>A meta-tool&#39;s return value is JSON-stringified into a single <code>{ type: &quot;text&quot; }</code>
+content block, capped at <strong>60,000 characters</strong>. Past the cap the text is truncated
+and this notice is appended:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">…[result truncated: N chars total, showing first 60000. Narrow the request (limit/fields/pagination) to get complete data.]</code></pre></div>
+<p>Truncated output is deliberately no longer valid JSON — a client cannot silently
+parse a half-result as if it were complete. Narrow the request instead: most plugin
+tools take a <code>limit</code>, a page cursor, or a field selector.</p>
+<p>One exception bypasses the text block entirely. If the result carries an
+<code>_mcpImage: { data, mimeType }</code> sentinel — directly, under a <code>{ result }</code> wrapper, or
+anywhere inside an <code>execute_tools</code> <code>{ results: [{ result }] }</code> batch — the content
+becomes image blocks instead, and the text block is dropped. This is how
+<code>browser_screenshot</code> returns a picture.</p>
+<h2 id="oauth-21-discovery-surface">OAuth 2.1 discovery surface<a class="anchor" href="#oauth-21-discovery-surface" aria-label="Link to OAuth 2.1 discovery surface">#</a></h2>
+<p>workbench is both the protected resource and its own authorization server. All of
+the following are unauthenticated.</p>
+<h3 id="metadata">Metadata<a class="anchor" href="#metadata" aria-label="Link to Metadata">#</a></h3>
+<p><code>GET /.well-known/oauth-protected-resource</code></p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;resource&quot;: &quot;&lt;BASE&gt;/mcp&quot;,
+  &quot;authorization_servers&quot;: [&quot;&lt;BASE&gt;&quot;],
+  &quot;bearer_methods_supported&quot;: [&quot;header&quot;],
+  &quot;scopes_supported&quot;: [&quot;mcp&quot;]
+}</code></pre></div>
+<p><code>GET /.well-known/oauth-authorization-server</code></p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;issuer&quot;: &quot;&lt;BASE&gt;&quot;,
+  &quot;authorization_endpoint&quot;: &quot;&lt;BASE&gt;/authorize&quot;,
+  &quot;token_endpoint&quot;: &quot;&lt;BASE&gt;/token&quot;,
+  &quot;registration_endpoint&quot;: &quot;&lt;BASE&gt;/register&quot;,
+  &quot;response_types_supported&quot;: [&quot;code&quot;],
+  &quot;grant_types_supported&quot;: [&quot;authorization_code&quot;, &quot;refresh_token&quot;],
+  &quot;code_challenge_methods_supported&quot;: [&quot;S256&quot;],
+  &quot;token_endpoint_auth_methods_supported&quot;: [&quot;none&quot;],
+  &quot;scopes_supported&quot;: [&quot;mcp&quot;]
+}</code></pre></div>
+<p><code>&lt;BASE&gt;</code> is <code>SERVER_PUBLIC_URL</code>, captured at module load.</p>
+<h3 id="dynamic-client-registration">Dynamic client registration<a class="anchor" href="#dynamic-client-registration" aria-label="Link to Dynamic client registration">#</a></h3>
+<p><code>POST /register</code> implements RFC 7591 for <strong>public clients only</strong>. No initial access
+token is required and no client secret is ever issued. It takes
+<code>{ client_name?, redirect_uris: [] }</code> and answers 201 with the <code>client_id</code>,
+<code>token_endpoint_auth_method: &quot;none&quot;</code>, <code>grant_types: [&quot;authorization_code&quot;, &quot;refresh_token&quot;]</code>, and <code>response_types: [&quot;code&quot;]</code>. A missing or empty
+<code>redirect_uris</code> is 400 <code>invalid_client_metadata</code>.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Registration is open and unrate-limited</span></div><div class="callout-body"><p>Anyone who can reach the server can register a client. Registration alone grants
+nothing — a client still needs a user to complete SSO — but put the server behind a
+network boundary you trust.</p>
+</div></div>
+
+<h3 id="pkce-and-the-state-ticket-sso-resumption">PKCE and the state-ticket SSO resumption<a class="anchor" href="#pkce-and-the-state-ticket-sso-resumption" aria-label="Link to PKCE and the state-ticket SSO resumption">#</a></h3>
+<p><code>GET /authorize</code> validates four things, in order. The <code>client_id</code> resolves to a
+registered client. <code>response_type</code> is <code>code</code>. The <code>redirect_uri</code> is an exact member
+of that client&#39;s registered list, with no prefix matching. <code>code_challenge</code> is
+present with <code>code_challenge_method=S256</code>. PKCE is mandatory and <code>plain</code> is rejected.</p>
+<p>The problem it then solves: the user is not logged in yet, and the authorization
+request has to survive a round trip through Google SSO. It does that with a ticket.</p>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+  participant C as MCP client
+  participant W as workbench
+  participant G as Google SSO
+  C-&gt;&gt;W: GET /authorize (PKCE S256)
+  W-&gt;&gt;W: stash request under a ticket
+  W--&gt;&gt;C: 302 to Google, state=&lt;sso&gt;.&lt;ticket&gt;&lt;br/&gt;Set-Cookie awb_oauth_binding
+  C-&gt;&gt;G: user signs in
+  G--&gt;&gt;W: GET /api/auth/google/callback
+  W-&gt;&gt;W: resumeAuthorize(ticket, user, binding)
+  W--&gt;&gt;C: 302 to redirect_uri?code=…
+  C-&gt;&gt;W: POST /token (code + code_verifier)
+  W--&gt;&gt;C: access_token + refresh_token</pre></div>
+<p>The validated authorization request is stored as a pending row keyed by a random
+ticket with a 600-second TTL. <code>scope</code> defaults to <code>mcp</code>, and <code>resource</code> to
+<code>&lt;SERVER_PUBLIC_URL&gt;/mcp</code>. The server also sets an <code>awb_oauth_binding</code> cookie —
+httpOnly, <code>SameSite=Lax</code>, <code>Max-Age=600</code>, and <code>Secure</code> when <code>SERVER_PUBLIC_URL</code> is
+https — and appends the ticket to the SSO state as <code>&lt;ssoState&gt;.&lt;ticket&gt;</code>.</p>
+<p>On the Google callback the ticket row is looked up and <strong>deleted unconditionally</strong>,
+so it is single-use whatever the outcome. The server compares the binding cookie to the
+stored value with a constant-time comparison. A missing or mismatched binding is
+the login-CSRF guard, and aborts the resumption. If resumption fails the callback
+falls through to a normal portal login rather than erroring, and the cookie is
+cleared either way.</p>
+<p>Authorization codes are 32 random bytes with a <strong>60-second TTL</strong>. Redeeming one
+deletes the row on any lookup hit, then checks <code>client_id</code>, exact <code>redirect_uri</code>,
+and the S256 challenge in constant time.</p>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">Only Google can complete this flow</span></div><div class="callout-body"><p><code>/authorize</code> builds a Google SSO URL. Keycloak works for portal login but cannot
+complete an MCP authorization.</p>
+</div></div>
+
+<h3 id="token-refresh-and-rotation">Token, refresh, and rotation<a class="anchor" href="#token-refresh-and-rotation" aria-label="Link to Token, refresh, and rotation">#</a></h3>
+<p><code>POST /token</code> takes <code>application/x-www-form-urlencoded</code>. There is no client
+authentication — these are public clients — so <code>client_id</code> comes from the body.</p>
+<div class="table-wrap"><table><thead><tr><th><code>grant_type</code></th><th>Body fields</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>authorization_code</code></td><td><code>code</code>, <code>client_id</code>, <code>redirect_uri</code>, <code>code_verifier</code></td><td><code>{ access_token, token_type: &quot;Bearer&quot;, expires_in, refresh_token, scope }</code></td></tr>
+<tr><td><code>refresh_token</code></td><td><code>refresh_token</code>, <code>client_id</code></td><td>A new access token <strong>and a new refresh token</strong></td></tr>
+<tr><td>anything else</td><td>—</td><td>400 <code>unsupported_grant_type</code></td></tr>
+</tbody></table></div>
+<p>Refresh tokens are 32 random bytes, stored only as a SHA-256 hash, with a <strong>30-day</strong>
+TTL. Every redemption rotates them: the rotation runs SELECT, DELETE, INSERT in one
+transaction, and single-use is enforced by the DELETE affecting exactly one row, so
+two concurrent presentations cannot both mint a replacement. The original
+<code>created_at</code> is carried forward across rotations, which is what makes &quot;connected
+since&quot; meaningful in the agents list.</p>
+<p>Presenting another client&#39;s refresh token still burns it — the client-id check runs
+after the committed delete, deliberately.</p>
+<h3 id="revoking-a-client">Revoking a client<a class="anchor" href="#revoking-a-client" aria-label="Link to Revoking a client">#</a></h3>
+<p>A user can see every OAuth client holding live refresh tokens on their account, and
+revoke one, through <code>GET /api/agents</code> and <code>DELETE /api/agents/:clientId</code>.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Revocation is soft</span></div><div class="callout-body"><p>Deleting the refresh tokens stops the client renewing, but access tokens are
+self-contained JWTs and stay valid until they expire — up to
+<code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code>, one hour by default. Lower that value if you need
+a tighter revocation window.</p>
+</div></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="meta-tools.html"><span class="pn-dir">Previous</span><span class="pn-label">MCP meta-tools</span></a><a class="pn pn-next" href="http-api.html"><span class="pn-dir">Next</span><span class="pn-label">HTTP API</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/reference/mcp-endpoint.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#transport">Transport</a></li><li class="toc-h2"><a href="#authenticating">Authenticating</a></li><li class="toc-h3"><a href="#the-401-challenge">The 401 challenge</a></li><li class="toc-h2"><a href="#json-rpc-methods">JSON-RPC methods</a></li><li class="toc-h2"><a href="#result-rendering-and-the-60000-character-cap">Result rendering and the 60,000-character cap</a></li><li class="toc-h2"><a href="#oauth-21-discovery-surface">OAuth 2.1 discovery surface</a></li><li class="toc-h3"><a href="#metadata">Metadata</a></li><li class="toc-h3"><a href="#dynamic-client-registration">Dynamic client registration</a></li><li class="toc-h3"><a href="#pkce-and-the-state-ticket-sso-resumption">PKCE and the state-ticket SSO resumption</a></li><li class="toc-h3"><a href="#token-refresh-and-rotation">Token, refresh, and rotation</a></li><li class="toc-h3"><a href="#revoking-a-client">Revoking a client</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

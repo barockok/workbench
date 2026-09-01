@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manifest reference — workbench Docs</title>
+<meta name="description" content="Every field of the Integration interface that manifest.ts default-exports, required and optional, including the proxy block and self-hosted instance support.">
+<meta property="og:title" content="Manifest reference — workbench">
+<meta property="og:description" content="Every field of the Integration interface that manifest.ts default-exports, required and optional, including the proxy block and self-hosted instance support.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab active" href="index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Getting started</p><ul><li><a class="" href="index.html">Plugin overview</a></li><li><a class="" href="writing-a-plugin.html">Write your first plugin</a></li><li><a class="" href="loading.html">Loading and reloading</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Reference</p><ul><li><a class="active" href="manifest.html">Manifest reference</a></li><li><a class="" href="context.html">Plugin context API</a></li><li><a class="" href="auth-modes.html">Auth modes</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Reference</p>
+          <h1>Manifest reference</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Every field of the Integration interface that manifest.ts default-exports, required and optional, including the proxy block and self-hosted instance support.</p>
+      <p><code>manifest.ts</code> default-exports a single object matching the <code>Integration</code>
+interface. The loader imports it and hands it to <code>registry.register()</code> unchanged
+— there is no validation step, so a typo in a field name is silent.</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">export interface Integration {
+  name: string;
+  version: string;
+  auth: OAuthConfig | ApiKeyConfig | CookieConfig | NoneConfig;
+  displayName?: string;
+  description?: string;
+  logo?: string;
+  categories?: string[];
+  proxy?: {
+    baseUrl?: string;
+    resolver?: &quot;instance-url&quot; | &quot;newrelic-region&quot;;
+    pathPrefix?: string;
+  };
+}</code></pre></div>
+<h2 id="fields">Fields<a class="anchor" href="#fields" aria-label="Link to Fields">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Required</th><th>Default</th><th>What it does</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>Yes</td><td>—</td><td>Integration identity. Must equal the plugin&#39;s directory name. Drives the OAuth env-var prefix, the callback URL, and the registry key.</td></tr>
+<tr><td><code>version</code></td><td>Yes</td><td>—</td><td>Free-form string. Every shipped plugin uses <code>&quot;1.0.0&quot;</code>. Surfaced by <code>list_integrations</code>.</td></tr>
+<tr><td><code>auth</code></td><td>Yes</td><td>—</td><td>One of the four auth configs. See <a href="auth-modes.html">auth modes</a>.</td></tr>
+<tr><td><code>displayName</code></td><td>No</td><td><code>name</code></td><td>Human label shown in the portal.</td></tr>
+<tr><td><code>description</code></td><td>No</td><td>—</td><td>One line shown on the integration card and detail view.</td></tr>
+<tr><td><code>logo</code></td><td>No</td><td>—</td><td>Bare filename in the plugin directory, or a full <code>https://</code> URL.</td></tr>
+<tr><td><code>categories</code></td><td>No</td><td>—</td><td>Strings driving the portal&#39;s category filter, e.g. <code>[&quot;dev&quot;]</code>, <code>[&quot;google&quot;,&quot;ai&quot;]</code>.</td></tr>
+<tr><td><code>proxy</code></td><td>No</td><td>—</td><td>Enables <code>curl_session</code> for this integration. See below.</td></tr>
+</tbody></table></div>
+<h3 id="name"><code>name</code><a class="anchor" href="#name" aria-label="Link to name">#</a></h3>
+<p>The directory name <strong>must</strong> equal <code>name</code>. It is also the prefix the OAuth
+credential resolver uses: kebab-case is uppercased with dashes turned into
+underscores.</p>
+<div class="table-wrap"><table><thead><tr><th>Plugin name</th><th>Env vars</th></tr></thead><tbody>
+<tr><td><code>google-gmail</code></td><td><code>GOOGLE_GMAIL_CLIENT_ID</code> / <code>GOOGLE_GMAIL_CLIENT_SECRET</code></td></tr>
+<tr><td><code>atlassian-jira</code></td><td><code>ATLASSIAN_JIRA_CLIENT_ID</code> / <code>ATLASSIAN_JIRA_CLIENT_SECRET</code></td></tr>
+</tbody></table></div>
+<p>And it is embedded in the redirect URI you register with the provider:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">${SERVER_PUBLIC_URL}/api/auth/plugin/&lt;name&gt;/callback</code></pre></div>
+<p>Renaming the directory after registering the OAuth app breaks the callback.</p>
+<h3 id="logo"><code>logo</code><a class="anchor" href="#logo" aria-label="Link to logo">#</a></h3>
+<p>Resolved two ways:</p>
+<ul>
+<li><strong>Bundled file</strong> — a bare filename such as <code>&quot;logo.svg&quot;</code>, referencing a file in
+the same plugin directory. The server serves it at
+<code>GET /api/integrations/&lt;name&gt;/logo</code>, with the content type derived from the
+extension. Works identically for built-in and external plugins.</li>
+<li><strong>Remote URL</strong> — a full <code>https://…</code> URL, passed through to the portal as-is.
+Simplest for an external plugin that would rather not ship a file.</li>
+</ul>
+<p>Omitted or missing, the portal renders a generic cog mark and logs nothing.
+<code>httpbin-cookie</code> ships without a logo deliberately, to exercise that fallback.</p>
+<h2 id="proxy-enabling-raw-api-calls"><code>proxy</code> — enabling raw API calls<a class="anchor" href="#proxy-enabling-raw-api-calls" aria-label="Link to proxy — enabling raw API calls">#</a></h2>
+<p>When <code>proxy</code> is set, the integration becomes eligible for the <code>curl_session</code>
+meta-tool: an agent can mint a short-lived token and then issue arbitrary
+requests to <code>/c/&lt;name&gt;/&lt;path&gt;</code>, with the user&#39;s stored credential injected by the
+proxy. Without <code>proxy</code>, <code>curl_session</code> rejects the integration with
+<code>curl proxy not enabled</code>.</p>
+<p>Either <code>baseUrl</code> or <code>resolver</code> must be set.</p>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>baseUrl</code></td><td>Static API base, e.g. <code>&quot;https://api.github.com&quot;</code>.</td></tr>
+<tr><td><code>resolver</code></td><td>Dynamic base resolved server-side per request from the connection&#39;s config. One of <code>&quot;instance-url&quot;</code> or <code>&quot;newrelic-region&quot;</code>.</td></tr>
+<tr><td><code>pathPrefix</code></td><td>Path suffix appended to a resolved instance URL. Used with <code>resolver: &quot;instance-url&quot;</code>.</td></tr>
+</tbody></table></div>
+<p>A static base is the common case:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">proxy: { baseUrl: &quot;https://api.github.com&quot; },</code></pre></div>
+<p>A self-hosted integration resolves its base from the instance URL the user gave
+at connect time, then appends the API path:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">// gitlab
+proxy: { resolver: &quot;instance-url&quot;, pathPrefix: &quot;/api/v4&quot; },</code></pre></div>
+<p>New Relic resolves its base from the region stored on the connection:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">// newrelic
+proxy: { resolver: &quot;newrelic-region&quot; },</code></pre></div>
+<h3 id="the-cloud-id-placeholder">The <code>cloud-id</code> placeholder<a class="anchor" href="#the-cloud-id-placeholder" aria-label="Link to The cloud-id placeholder">#</a></h3>
+<p>Atlassian API URLs embed a per-site cloud id that is only discoverable after the
+user connects. Both the manifest and your tool code write the literal string
+<code>cloud-id</code> in that position, and it is substituted at request time:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">// atlassian-jira
+proxy: { baseUrl: &quot;https://api.atlassian.com/ex/jira/cloud-id&quot; },
+
+// atlassian-confluence
+proxy: { baseUrl: &quot;https://api.atlassian.com/ex/confluence/cloud-id/wiki&quot; },</code></pre></div>
+<p><code>ctx.http()</code> performs the same substitution for any URL matching
+<code>https://api.atlassian.com/ex/(jira|confluence)/cloud-id/</code>, resolving the real id
+from Atlassian&#39;s <code>accessible-resources</code> endpoint and caching it per user and
+product. Details in the <a href="context.html">context reference</a>.</p>
+<h2 id="the-auth-block">The <code>auth</code> block<a class="anchor" href="#the-auth-block" aria-label="Link to The auth block">#</a></h2>
+<p>Four shapes, discriminated by <code>type</code>. The full field list, portal behaviour, and
+worked examples for each are in <a href="auth-modes.html">auth modes</a>. This is the type
+surface.</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">export interface OAuthConfig {
+  type: &quot;oauth2&quot;;
+  authorizationUrl: string;
+  tokenUrl: string;
+  scopes: string[];
+  instance?: { label: string; placeholder?: string; default: string };
+}
+
+export interface ApiKeyConfig {
+  type: &quot;apikey&quot;;
+  headerName: string;
+  fields: ApiKeyField[];
+  allowedHosts?: string[];
+}
+
+export interface CookieConfig {
+  type: &quot;cookie&quot;;
+  loginUrl: string;
+  targetDomain: string;
+  cookieDomains?: string[];
+}
+
+export interface NoneConfig { type: &quot;none&quot;; }</code></pre></div>
+<h3 id="authinstance-self-hosted-deployments"><code>auth.instance</code> — self-hosted deployments<a class="anchor" href="#authinstance-self-hosted-deployments" aria-label="Link to auth.instance — self-hosted deployments">#</a></h3>
+<p>Set <code>instance</code> on an <code>oauth2</code> config when the same product runs at customer-chosen
+origins — a private GitLab, for example. The portal then asks for an instance URL
+at connect time.</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">export interface OAuthConfig {
+  // …
+  instance?: {
+    // Portal field label, e.g. &quot;GitLab instance URL&quot;.
+    label: string;
+    // Placeholder shown in the portal input, e.g. &quot;https://gitlab.example.com&quot;.
+    placeholder?: string;
+    // Prefilled default origin, e.g. &quot;https://gitlab.com&quot; (the cloud host).
+    default: string;
+  };
+}</code></pre></div>
+<p>The portal renders this as a native <code>window.prompt</code>: <code>label</code> is the prompt text
+and <code>default</code> is prefilled as the initial value. <code>placeholder</code> is declared on the
+type and sent to the client, but nothing in the portal consumes it — a
+<code>window.prompt</code> has no placeholder. Blank input falls back to <code>default</code>.</p>
+<p><code>authorizationUrl</code> and <code>tokenUrl</code> act as the <strong>cloud default</strong>. For a custom
+instance the server keeps their <em>paths</em> and swaps in the user&#39;s origin — so
+<code>https://gitlab.com/oauth/authorize</code> becomes
+<code>https://gitlab.acme.com/oauth/authorize</code>. The chosen origin is persisted on the
+connection and read back by tools as <code>ctx.getConfig().instanceUrl</code>.</p>
+<p>The GitLab manifest is the shipped example:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">auth: {
+  type: &quot;oauth2&quot;,
+  authorizationUrl: &quot;https://gitlab.com/oauth/authorize&quot;,
+  tokenUrl: &quot;https://gitlab.com/oauth/token&quot;,
+  scopes: [&quot;api&quot;],
+  instance: {
+    label: &quot;GitLab instance URL&quot;,
+    placeholder: &quot;https://gitlab.example.com&quot;,
+    default: &quot;https://gitlab.com&quot;,
+  },
+},</code></pre></div>
+<p>Every GitLab tool builds its API base from that config, falling back to
+<code>https://gitlab.com</code>:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">function origin(ctx: any): string {
+  const u = ctx.getConfig?.()?.instanceUrl;
+  return typeof u === &quot;string&quot; &amp;&amp; u ? u.replace(/\/+$/, &quot;&quot;) : DEFAULT_ORIGIN;
+}</code></pre></div>
+<p>Omit the <code>instance</code> block entirely for cloud-only integrations.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The Zod `integrationSchema` is stale and unused</span></div><div class="callout-body"><p><code>packages/shared/src/schemas.ts</code> exports an <code>integrationSchema</code> that predates
+both <code>proxy</code> and the OAuth <code>instance</code> block, and validates neither. It is not
+called anywhere in the load path — the loader imports your manifest and
+registers it without validation. Treat the TypeScript <code>Integration</code> interface
+as the contract, not that schema.</p>
+</div></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="loading.html"><span class="pn-dir">Previous</span><span class="pn-label">Loading and reloading</span></a><a class="pn pn-next" href="context.html"><span class="pn-dir">Next</span><span class="pn-label">Plugin context API</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/plugins/manifest.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#fields">Fields</a></li><li class="toc-h3"><a href="#name">name</a></li><li class="toc-h3"><a href="#logo">logo</a></li><li class="toc-h2"><a href="#proxy-enabling-raw-api-calls">proxy — enabling raw API calls</a></li><li class="toc-h3"><a href="#the-cloud-id-placeholder">The cloud-id placeholder</a></li><li class="toc-h2"><a href="#the-auth-block">The auth block</a></li><li class="toc-h3"><a href="#authinstance-self-hosted-deployments">auth.instance — self-hosted deployments</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

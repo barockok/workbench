@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security model — workbench Docs</title>
+<meta name="description" content="The credentials the server issues and accepts, how third-party tokens are protected at rest, the SSRF posture and its limits, and what the operator is responsible for.">
+<meta property="og:title" content="Security model — workbench">
+<meta property="og:description" content="The credentials the server issues and accepts, how third-party tokens are protected at rest, the SSRF posture and its limits, and what the operator is responsible for.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab active" href="install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Running the server</p><ul><li><a class="" href="install.html">Install</a></li><li><a class="" href="docker.html">Docker &amp; Compose</a></li><li><a class="" href="database.html">Database</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Production</p><ul><li><a class="" href="portal-sso.html">Portal SSO</a></li><li><a class="active" href="security.html">Security model</a></li><li><a class="" href="observability.html">Observability</a></li><li><a class="" href="releases.html">Releases &amp; upgrades</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Production</p>
+          <h1>Security model</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">The credentials the server issues and accepts, how third-party tokens are protected at rest, the SSRF posture and its limits, and what the operator is responsible for.</p>
+      <p>workbench holds other people&#39;s credentials. A single deployment stores every
+user&#39;s OAuth tokens and browser cookies for every SaaS tool they connected, and
+hands agents a way to use them. This page is the operator&#39;s view of that.</p>
+<p>To report a vulnerability, use the <strong>Report a vulnerability</strong> button under the
+repository&#39;s Security tab. Do not open a public issue.</p>
+<h2 id="the-credentials-in-play">The credentials in play<a class="anchor" href="#the-credentials-in-play" aria-label="Link to The credentials in play">#</a></h2>
+<p>Seven distinct credential types exist. Four of them are HS256 JWTs signed with
+<code>SESSION_SECRET</code> — portal session, MCP OAuth access token, connect token,
+curl-session token — separated by audience and a distinguishing claim rather than
+by key. The jot unlock cookie is keyed on the same secret but is <strong>not</strong> a JWT: it
+is a bare HMAC-SHA256 hex digest over the jot&#39;s name and password hash, with no
+header, no payload, and no expiry claim. The remaining two, the workbench API key
+and the MCP OAuth refresh token, are random opaque strings.</p>
+<div class="table-wrap"><table><thead><tr><th>Credential</th><th>Authenticates</th><th>Where it comes from</th><th>Lifetime</th></tr></thead><tbody>
+<tr><td>Portal session JWT</td><td>The browser portal against <code>/api/*</code>, and <code>/mcp</code> as a fallback</td><td>Google or Keycloak SSO callback, delivered in the URL fragment</td><td>24h</td></tr>
+<tr><td>Workbench API key</td><td>A person or agent against <code>/api/*</code> and <code>/mcp</code>, via <code>x-workbench-api-key</code></td><td><code>POST /api/keys</code>, or the seed script</td><td>Until rotated</td></tr>
+<tr><td>MCP OAuth access token</td><td><code>/mcp</code> only</td><td>The MCP OAuth 2.1 flow: <code>/register</code> → <code>/authorize</code> → <code>/token</code></td><td><code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code>, default 1h</td></tr>
+<tr><td>MCP OAuth refresh token</td><td><code>/token</code> with <code>grant_type=refresh_token</code></td><td>Same flow; rotated on every use</td><td>30 days</td></tr>
+<tr><td>Connect token</td><td>The magic-link connect page and the CDP live-view proxy</td><td>Minted by the <code>connect</code> meta-tool for a cookie integration</td><td><code>CONNECT_TTL_SECONDS</code>, default 600s</td></tr>
+<tr><td>Curl-session token</td><td>The <code>/c/&lt;integration&gt;/&lt;path&gt;</code> proxy, for the integrations named in the token</td><td>Minted by the <code>curl_session</code> meta-tool</td><td>900s — a default parameter on the signer, and the only value any caller passes today</td></tr>
+<tr><td>Jot unlock cookie</td><td>One password-protected jot</td><td>Submitting the jot&#39;s password</td><td><code>Max-Age=2592000</code> (30 days); carries no expiry itself, and is invalidated by a password change</td></tr>
+</tbody></table></div>
+<p>Two boundaries matter operationally:</p>
+<ul>
+<li><strong>An OAuth access token authenticates <code>/mcp</code> and nothing else.</strong> The <code>/api/*</code>
+routes accept only the <code>x-workbench-api-key</code> header or a portal session JWT. An
+agent holding an OAuth token cannot list connections, reveal an API key, or
+disconnect an integration.</li>
+<li><strong>The API key uses a dedicated header,</strong> deliberately not <code>Authorization</code>, so it
+never collides with the two bearer-token types.</li>
+</ul>
+<p><code>/mcp</code> resolves a caller by trying the API-key header first, then the
+<code>Authorization</code> bearer as an OAuth access token, then as a portal session JWT.
+Unauthenticated requests get a 401 with a <code>WWW-Authenticate: Bearer</code> challenge
+pointing at <code>${SERVER_PUBLIC_URL}/.well-known/oauth-protected-resource</code>.</p>
+<p>The MCP OAuth server issues public clients only — dynamic client registration at
+<code>POST /register</code> is unauthenticated and never issues a client secret, PKCE with
+<code>S256</code> is mandatory on <code>/authorize</code>, <code>redirect_uri</code> must match a registered value
+exactly, authorization codes live 60 seconds and are single-use, and refresh
+tokens rotate on every use with single-use enforced inside a database transaction.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`POST /register` is open</span></div><div class="callout-body"><p>Dynamic client registration takes no initial access token and has no rate
+limiting in the application. Anyone who can reach the server can register a
+client id. That alone grants no access — the client still has to complete an SSO
+login to get a code — but if the deployment is internet-facing, rate-limit
+<code>/register</code> at the proxy.</p>
+</div></div>
+
+<p>Users can see and revoke the agents holding refresh tokens on their account:
+<code>GET /api/agents</code> lists them by client, <code>DELETE /api/agents/:clientId</code> deletes
+that client&#39;s refresh tokens and outstanding codes. Revocation is <strong>soft</strong> —
+already-issued access tokens are self-contained JWTs and remain valid until they
+expire, up to <code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code>.</p>
+<h2 id="credentials-at-rest">Credentials at rest<a class="anchor" href="#credentials-at-rest" aria-label="Link to Credentials at rest">#</a></h2>
+<p>Third-party credentials are encrypted with <strong>AES-256-GCM</strong> before they reach the
+database. The layout is a 16-byte IV, a 16-byte auth tag, then the ciphertext. The
+key is <code>ENCRYPTION_KEY</code> decoded from hex, resolved once at module load.</p>
+<div class="table-wrap"><table><thead><tr><th>Stored</th><th>Protection</th></tr></thead><tbody>
+<tr><td>OAuth access and refresh tokens for integrations</td><td>AES-256-GCM ciphertext</td></tr>
+<tr><td>Cookie bundles from browser capture</td><td>AES-256-GCM ciphertext</td></tr>
+<tr><td>API keys supplied for <code>apikey</code> integrations</td><td>AES-256-GCM ciphertext</td></tr>
+<tr><td>Workbench API keys</td><td>bcrypt hash, plus an indexed SHA-256 for lookup, plus an encrypted copy so the owner can re-reveal it</td></tr>
+<tr><td>MCP OAuth refresh tokens</td><td>SHA-256 hex only — the plaintext is never stored</td></tr>
+<tr><td>Jot passwords</td><td>scrypt with a fresh random 16-byte salt per jot, verified in constant time</td></tr>
+<tr><td>Scopes, expiry timestamps, connection <code>config</code></td><td><strong>Not encrypted</strong> — a self-hosted instance origin or a New Relic region is plaintext</td></tr>
+</tbody></table></div>
+<p>There is no local account password anywhere in the system. The only scrypt hashes
+are jot passwords.</p>
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">There is no key rotation path</span></div><div class="callout-body"><p><code>ENCRYPTION_KEY</code> is read once at startup and every stored blob is ciphertext
+under it. Changing it does not re-encrypt anything — it makes every existing
+token, cookie bundle, and API key undecryptable, and every user has to reconnect
+every integration. Back it up with at least the care you give the database, and
+keep it identical across every replica and across a
+<a href="database.html">database migration</a>.</p>
+</div></div>
+
+<p>Storage guidance is the same for both backends. Older documentation described the
+store as &quot;SQLite&quot; and told operators to protect <code>data/tokens.db</code>. <strong>PostgreSQL is
+a first-class backend.</strong> On a PostgreSQL deployment the equivalent duty is to
+restrict network access and role grants on the database, and to protect the
+connection string.</p>
+<h2 id="ssrf-posture-and-its-limits">SSRF posture and its limits<a class="anchor" href="#ssrf-posture-and-its-limits" aria-label="Link to SSRF posture and its limits">#</a></h2>
+<p>Several code paths take a URL that ultimately comes from a user or an agent.</p>
+<div class="table-wrap"><table><thead><tr><th>Path</th><th>Control</th></tr></thead><tbody>
+<tr><td>Self-hosted instance URLs for OAuth plugins</td><td><code>https</code> only; userinfo rejected; private and loopback literals rejected; path and query dropped, only the origin is kept. On top of that, the origin must be the manifest&#39;s cloud default or an entry in <code>&lt;PLUGIN&gt;_ALLOWED_INSTANCES</code></td></tr>
+<tr><td><code>browser_navigate</code></td><td>Protocol allowlist at the schema layer: only <code>http:</code> and <code>https:</code>. Added after <code>file:///proc/self/environ</code> was found to be readable through the browser tools</td></tr>
+<tr><td>Tools that fetch a user-supplied URL (e.g. Drive upload-from-URL)</td><td>Host validation rejecting RFC-1918 and internal addresses</td></tr>
+<tr><td>Cookie-auth <code>ctx.http</code></td><td>The target host must match the manifest&#39;s <code>targetDomain</code> or <code>cookieDomains</code>; only cookies whose own domain matches the host are sent; redirects are <code>manual</code>, so cookies are never replayed across a redirect hop</td></tr>
+<tr><td>API-key <code>ctx.http</code></td><td>If the manifest sets <code>allowedHosts</code>, the target host must equal or be a subdomain of an entry, checked <strong>before</strong> the credential is attached</td></tr>
+</tbody></table></div>
+<p>Two limits to know:</p>
+<ul>
+<li>The private-address check is <strong>literal only, no DNS resolution</strong>. It rejects
+<code>localhost</code>, IPv6 loopback/ULA/link-local, and the IPv4 <code>0.</code>, <code>127.</code>, <code>10.</code>,
+<code>169.254.</code> (including cloud metadata), <code>172.16–31.</code>, <code>192.168.</code> ranges. A
+hostname that resolves into one of those ranges is not caught.</li>
+<li><strong>The OAuth branch of <code>ctx.http</code> has no host allowlist at all.</strong> It attaches the
+user&#39;s bearer token to whatever URL the plugin passes. The API-key branch has no
+host validation either unless the manifest opts in with <code>allowedHosts</code>. This is
+a plugin-trust boundary, not a runtime control — see below.</li>
+</ul>
+<p>The one plugin that intentionally reaches an arbitrary host, <code>slack_download_file</code>,
+allowlists Slack hosts before sending the bearer and drops it on the presigned-CDN
+redirect hop.</p>
+<h2 id="the-internal-plugin-boundary">The internal-plugin boundary<a class="anchor" href="#the-internal-plugin-boundary" aria-label="Link to The internal-plugin boundary">#</a></h2>
+<p>Two integrations, <code>browser</code> and <code>jots</code>, are marked internal. Their handlers reach
+directly into server modules — the shared browser session and the jots filesystem —
+and those modules are deliberately <strong>not</strong> part of the <code>ToolContext</code> that
+third-party plugins receive. A disk plugin gets <code>userId</code>, <code>getToken()</code>,
+<code>getConfig()</code>, and <code>http()</code>, and nothing else. It cannot drive the user&#39;s browser
+or touch the jots store.</p>
+<p>The plugin loader enforces the names as well: a directory in <code>PLUGINS_DIR</code> called
+<code>browser</code> or <code>jots</code> is skipped with an error, so a dropped-in plugin cannot shadow
+an internal capability by taking its name.</p>
+<p>That boundary is the reason to treat plugin installation as a privileged
+operation. A plugin&#39;s <code>ctx.http</code> carries the user&#39;s live credentials for its own
+integration, and on the OAuth branch it chooses the destination. Mount
+<code>PLUGINS_DIR</code> read-only and review what goes in it.</p>
+<h2 id="logging">Logging<a class="anchor" href="#logging" aria-label="Link to Logging">#</a></h2>
+<p>Fastify&#39;s logger redacts <code>Authorization</code>, <code>x-workbench-api-key</code>, <code>?token=</code>, and
+<code>?cdpToken=</code>. <code>req.url</code> is deliberately <strong>not</strong> redacted, for traceability — so
+avoid putting secrets in query strings and be deliberate about who can read the
+logs.</p>
+<p>Tool executions are recorded separately in the audit log, which is configurable —
+see <a href="observability.html">observability</a>.</p>
+<h2 id="operator-responsibilities">Operator responsibilities<a class="anchor" href="#operator-responsibilities" aria-label="Link to Operator responsibilities">#</a></h2>
+<ul>
+<li>Protect <code>ENCRYPTION_KEY</code> and <code>SESSION_SECRET</code>. Losing the encryption key makes
+stored credentials unrecoverable. Disclosing it makes them decryptable.
+Disclosing <code>SESSION_SECRET</code> lets an attacker mint any of the five credentials
+derived from it — the four JWTs and the jot unlock cookie.</li>
+<li>Keep the database on trusted storage: restricted filesystem permissions for a
+SQLite file, restricted network and role grants for PostgreSQL.</li>
+<li>Terminate TLS in front of the server, and set <code>SERVER_PUBLIC_URL</code> to the
+<code>https://</code> origin — the <code>awb_oauth_binding</code> login-CSRF cookie only gets its
+<code>Secure</code> flag when that value starts with <code>https://</code>.</li>
+<li><strong>Set the portal&#39;s own response headers at the proxy.</strong> The server sets security
+headers on exactly two response families: jot responses (a <code>sandbox</code> CSP,
+<code>nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code>, <code>Cross-Origin-Resource-Policy</code>) and the
+OAuth redirect interstitial (its own CSP plus <code>X-Frame-Options: DENY</code>). The
+portal SPA, <code>/api/*</code>, and <code>/mcp</code> get none — no CSP, no HSTS, no frame
+protection. Add <code>Strict-Transport-Security</code>, a <code>Content-Security-Policy</code>, and a
+frame-ancestors or <code>X-Frame-Options</code> policy in front of the server.</li>
+<li>Treat <code>/metrics</code> as internal. It is unauthenticated.</li>
+<li>Rate-limit <code>POST /register</code> at the proxy on an internet-facing deployment.</li>
+<li>Rotate per-plugin OAuth client secrets on your own schedule. The server reads
+them from the environment and never stores them.</li>
+<li>Review anything you put in <code>PLUGINS_DIR</code>, and mount it read-only.</li>
+<li>Remember that <code>BROWSER_PROFILE_TTL_DAYS</code> (default 30) <strong>deletes</strong> an idle
+browser profile, logging that user out of every cookie-auth integration.</li>
+</ul>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="portal-sso.html"><span class="pn-dir">Previous</span><span class="pn-label">Portal SSO</span></a><a class="pn pn-next" href="observability.html"><span class="pn-dir">Next</span><span class="pn-label">Observability</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/security.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-credentials-in-play">The credentials in play</a></li><li class="toc-h2"><a href="#credentials-at-rest">Credentials at rest</a></li><li class="toc-h2"><a href="#ssrf-posture-and-its-limits">SSRF posture and its limits</a></li><li class="toc-h2"><a href="#the-internal-plugin-boundary">The internal-plugin boundary</a></li><li class="toc-h2"><a href="#logging">Logging</a></li><li class="toc-h2"><a href="#operator-responsibilities">Operator responsibilities</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

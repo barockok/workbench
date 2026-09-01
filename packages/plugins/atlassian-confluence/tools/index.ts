@@ -20,20 +20,6 @@ function escapeCql(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-// Pull the next-page cursor out of a paginated envelope's `_links.next`.
-//
-// Read the cursor Atlassian handed us rather than constructing one: `next` is a
-// relative URL (`/wiki/rest/api/search?cql=...&cursor=...`), and lifting the
-// param verbatim keeps this correct if the spelling ever changes. Returns
-// undefined on the last page, so the field drops out of the response entirely.
-function nextCursor(data: any): string | undefined {
-  const next = data?._links?.next;
-  if (typeof next !== "string") return undefined;
-  const qs = next.split("?")[1];
-  if (!qs) return undefined;
-  return new URLSearchParams(qs).get("cursor") ?? undefined;
-}
-
 // Surface the real upstream status + body on failure instead of returning a 4xx
 // envelope as if it were a success. Throwing is caught by the executor and
 // reported to the MCP client as { error } (see mcp/meta-tools.ts).
@@ -154,33 +140,18 @@ export const createPage = {
 export const searchPages = {
   name: "confluence_search_pages",
   description:
-    "Search Confluence pages. Pass `query` for plain full-text, or `cql` for a raw CQL expression (space/label/date/title filters, boolean logic, ORDER BY) — e.g. `space = ENG AND label = \"adr\" ORDER BY lastmodified DESC`. Exactly one of the two is required; `cql` wins if both are given. A malformed CQL string returns an upstream error, not an empty list. Returns up to `limit` (default 10, max 100) slim rows: id, title, spaceKey, version, url. Results are truncated at `limit`: when `hasMore` is true the response also carries `nextCursor` — call again with the same query and `cursor` set to it to get the following page. Use confluence_get_page with an id to read content.",
+    "Full-text search Confluence pages. Returns up to `limit` (default 10) slim rows: id, title, spaceKey, version, url. Use confluence_get_page with an id to read content.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
-    query: z.string().optional(),
-    // Raw CQL, passed through untouched. Mirrors how jira_search_issues fronts
-    // JQL: where the product has a query language, expose it rather than
-    // silently flattening it to a text match.
-    cql: z.string().optional(),
-    limit: z.number().int().min(1).max(100).default(10),
-    // Opaque — pass back the `nextCursor` from a previous call, unmodified.
-    cursor: z.string().optional(),
+    query: z.string(),
+    limit: z.number().default(10),
   }),
   handler: async (ctx: any, args: any) => {
     // v2 has no full-text search; use the supported generic CQL search endpoint
     // (search:confluence scope). Page hits nest their content under `content`.
-    if (!args.cql && !args.query) {
-      throw new Error("confluence_search_pages: pass either `query` (full text) or `cql`");
-    }
     const params = new URLSearchParams();
-    // A caller-supplied CQL string is already a complete expression — don't wrap
-    // it in `type=page`, which would override an explicit `type=` of their own.
-    params.set(
-      "cql",
-      args.cql ? args.cql : `type=page AND text ~ "${escapeCql(args.query)}"`
-    );
+    params.set("cql", `type=page AND text ~ "${escapeCql(args.query)}"`);
     params.set("limit", String(args.limit));
-    if (args.cursor) params.set("cursor", args.cursor);
     params.set("expand", "content.space,content.version");
     const res = await ctx.http(`${SEARCH}?${params}`);
     const data = await readJson(res, "confluence_search_pages");
@@ -200,46 +171,16 @@ export const searchPages = {
       }),
       size: data.size,
       // v2-style cursor pagination: the generic search envelope still exposes
-      // `_links.next`, so report whether another page exists — and hand back the
-      // cursor to reach it, since `hasMore` alone leaves the caller stuck
-      // knowing results were truncated with no way to advance.
+      // `_links.next`, so report whether another page exists.
       hasMore: Boolean(data._links?.next),
-      nextCursor: nextCursor(data),
     };
   },
 };
 
-// Attachments — and the diagrams/images macros reference — never appear in the
-// storage-format body. A section that is "just a draw.io diagram" reads as an
-// empty gap, with nothing telling the consumer content was there. List them
-// alongside the body so the gap is visible and fetchable.
-//
-// Best-effort: a page is still usable without this. Returns undefined when the
-// call fails (e.g. a token minted before read:attachment:confluence was added)
-// so callers can tell "couldn't look" from [] "confirmed none".
-async function fetchAttachments(ctx: any, pageId: string): Promise<any[] | undefined> {
-  try {
-    const res = await ctx.http(`${V2}/pages/${pageId}/attachments?limit=100`);
-    if (!res.ok) return undefined;
-    const data = await res.json();
-    if (!Array.isArray(data?.results)) return undefined;
-    return data.results.map((a: any) => ({
-      id: a.id,
-      title: a.title,
-      mediaType: a.mediaType,
-      fileSize: a.fileSize,
-      downloadUrl: a.downloadLink,
-      url: a.webuiLink,
-    }));
-  } catch {
-    return undefined;
-  }
-}
-
 export const getPage = {
   name: "confluence_get_page",
   description:
-    "Get a Confluence page by ID, including its body (storage XHTML), version number, and space. Returns { id, title, spaceKey, version, body, url, attachments }. `attachments` lists files embedded in or attached to the page (diagrams, images) — these never appear in the body, so a section that is only a diagram looks empty without them; each has a downloadUrl. It is omitted entirely if the attachment lookup failed, as opposed to [] for a page with none. The version number is required by confluence_update_page.",
+    "Get a Confluence page by ID, including its body (storage XHTML), version number, and space. Returns { id, title, spaceKey, version, body, url }. The version number is required by confluence_update_page.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
     // v2 ids are 64-bit — long numeric strings; don't assume 9 digits.
@@ -249,35 +190,24 @@ export const getPage = {
     expand: z.string().optional(),
   }),
   handler: async (ctx: any, args: any) => {
-    // Fire both together — the attachment list is independent of the body, and
-    // fetchAttachments never throws, so a 404 page just discards it.
-    const [res, attachments] = await Promise.all([
-      ctx.http(`${V2}/pages/${args.pageId}?body-format=storage`),
-      fetchAttachments(ctx, args.pageId),
-    ]);
+    const res = await ctx.http(`${V2}/pages/${args.pageId}?body-format=storage`);
     if (res.status === 404) return { error: `Page ${args.pageId} not found` };
     const data = await readJson(res, "confluence_get_page");
-    const page = await slimPage(ctx, data);
-    return attachments === undefined ? page : { ...page, attachments };
+    return slimPage(ctx, data);
   },
 };
 
 export const listSpaces = {
   name: "confluence_list_spaces",
   description:
-    "List Confluence spaces (up to `limit`, default 25). Returns slim rows: key, name, id, url. Results are truncated at `limit`: when `hasMore` is true the response also carries `nextCursor` — call again with `cursor` set to it for the following page. Space keys are needed by confluence_create_page.",
+    "List Confluence spaces (up to `limit`, default 25). Returns slim rows: key, name, id, url. Space keys are needed by confluence_create_page.",
   integration: "atlassian-confluence",
   inputSchema: z.object({
-    // 250 is the v2 /spaces ceiling. Rejecting out-of-range here costs a
-    // round-trip less than an opaque upstream 400 and names the bad field.
-    limit: z.number().int().min(1).max(250).default(25),
-    // Opaque — pass back the `nextCursor` from a previous call, unmodified.
-    cursor: z.string().optional(),
+    limit: z.number().default(25),
   }),
   handler: async (ctx: any, args: any) => {
     const params = new URLSearchParams();
     params.set("limit", String(args.limit));
-    if (args.cursor) params.set("cursor", args.cursor);
     const res = await ctx.http(`${V2}/spaces?${params}`);
     const data = await readJson(res, "confluence_list_spaces");
     if (!Array.isArray(data?.results)) return data;
@@ -294,7 +224,6 @@ export const listSpaces = {
       })),
       // v2 spaces is cursor-paginated via _links.next, not start/limit offsets.
       hasMore: Boolean(data._links?.next),
-      nextCursor: nextCursor(data),
     };
   },
 };

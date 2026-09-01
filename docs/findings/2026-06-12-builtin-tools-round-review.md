@@ -11,7 +11,7 @@
 | `jira_get_boards` | `401 "Unauthorized; scope does not match"` | Agile API (`/rest/agile/1.0/board`) needs `read:board-scope:jira-software`; manifest only grants classic `read:jira-work` family (manifest.ts:12-18) |
 | `jira_search_issues` | Returns `{"issues":[{"id":"139262"}]}` — IDs only, no key/summary/status | New `/rest/api/3/search/jql` endpoint returns bare IDs unless `fields` requested; tool doesn't expose/default a `fields` param |
 | `google_gmail_list` | IDs only (`{id, threadId}`) | Gmail list API natural behavior; tool doesn't follow up with metadata batch or expose `format` — forces N× `google_gmail_get` calls |
-| `confluence_get_page` | 410 Gone | See [2026-06-12 confluence v1 content GET removed](2026-06-12-confluence-v1-content-get-removed.md) |
+| `confluence_get_page` | 410 Gone | v1 content API removed — fixed by [2026-06-22 confluence v2 migration](2026-06-22-confluence-v2-migration.md) |
 
 ## Token-economy offenders (live-measured)
 

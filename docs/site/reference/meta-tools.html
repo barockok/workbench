@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP meta-tools — workbench Docs</title>
+<meta name="description" content="Complete reference for the nine tools workbench exposes over MCP, their parameters, and their response shapes.">
+<meta property="og:title" content="MCP meta-tools — workbench">
+<meta property="og:description" content="Complete reference for the nine tools workbench exposes over MCP, their parameters, and their response shapes.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab active" href="meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">API</p><ul><li><a class="active" href="meta-tools.html">MCP meta-tools</a></li><li><a class="" href="mcp-endpoint.html">MCP endpoint</a></li><li><a class="" href="http-api.html">HTTP API</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Configuration</p><ul><li><a class="" href="environment.html">Environment variables</a></li><li><a class="" href="database-schema.html">Database schema</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Project</p><ul><li><a class="" href="tool-catalog.html">Tool catalog</a></li><li><a class="" href="contributing.html">Contributing</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">API</p>
+          <h1>MCP meta-tools</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Complete reference for the nine tools workbench exposes over MCP, their parameters, and their response shapes.</p>
+      <p><code>tools/list</code> on <code>/mcp</code> returns exactly nine tools, no matter how many plugin tools
+are loaded. Everything else — all 178 plugin tools and the 12 built-in tools — is
+reached through these nine. That is the whole point of the design: your agent&#39;s
+context holds nine schemas instead of 190.</p>
+<p>There is no <code>execute_tool</code> (singular). Single execution is <code>execute_tools</code> with a
+one-element <code>executions</code> array.</p>
+<p>The normal sequence is discover, then inspect, then run:</p>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart LR
+  A[list_integrations] --&gt; B[search_tools]
+  B --&gt; C[get_tool_schema]
+  C --&gt; D[execute_tools]
+  D --&gt;|NOT_CONNECTED| E[connect]
+  E --&gt; F[wait_for_connection]
+  F --&gt; D</pre></div>
+<h2 id="search_tools">search_tools<a class="anchor" href="#search_tools" aria-label="Link to search_tools">#</a></h2>
+<p>Search every registered plugin tool by name or description. This is the entry
+point — plugin tools never appear in <code>tools/list</code>, so this is how an agent learns
+that <code>jira_create_issue</code> exists.</p>
+<p><strong>Description as the client sees it:</strong> <em>Search available tools by name or description</em></p>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>query</code></td><td>string</td><td>yes</td><td>—</td><td>Search keyword</td></tr>
+</tbody></table></div>
+<p>Returns <code>{ tools: [{ name, description, integration }] }</code>. Matching is over both
+name and description. The entry&#39;s <code>integration</code> is the owning plugin. Pass it to
+<code>connect</code> if execution later reports <code>NOT_CONNECTED</code>.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;search_tools&quot;, &quot;arguments&quot;: { &quot;query&quot;: &quot;pull request&quot; } }</code></pre></div>
+<h2 id="get_tool_schema">get_tool_schema<a class="anchor" href="#get_tool_schema" aria-label="Link to get_tool_schema">#</a></h2>
+<p>Fetch one tool&#39;s input schema, converted from the plugin&#39;s Zod schema to portable
+JSON Schema so any MCP client can read it without Zod. A non-Zod schema passes
+through unchanged.</p>
+<p><strong>Description as the client sees it:</strong> <em>Get input schema for a specific tool</em></p>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>tool</code></td><td>string</td><td>yes</td><td>—</td><td>Tool name</td></tr>
+</tbody></table></div>
+<p>Returns <code>{ schema: &lt;JSON Schema&gt; }</code>, or <code>{ error: &quot;Tool not found&quot; }</code> for an
+unknown name.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;get_tool_schema&quot;, &quot;arguments&quot;: { &quot;tool&quot;: &quot;github_create_pr&quot; } }</code></pre></div>
+<h2 id="execute_tools">execute_tools<a class="anchor" href="#execute_tools" aria-label="Link to execute_tools">#</a></h2>
+<p>Run one or more plugin tools. This is the only execution path.</p>
+<p><strong>Description as the client sees it:</strong> <em>Execute one or more tools in a single call.
+Runs them concurrently (bounded) and returns a <code>results</code> array in the same order as
+<code>executions</code>. A single tool failing does not abort the others — its entry carries an
+<code>error</code> instead of a <code>result</code>. For a single tool, pass a one-element <code>executions</code>
+array.</em></p>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>executions</code></td><td>array of objects, min 1</td><td>yes</td><td>—</td><td>Tools to run; results are returned in this same order</td></tr>
+<tr><td><code>executions[].tool</code></td><td>string</td><td>yes</td><td>—</td><td>Tool name returned by <code>search_tools</code></td></tr>
+<tr><td><code>executions[].args</code></td><td>object</td><td>no</td><td><code>{}</code></td><td>Arguments for the tool</td></tr>
+</tbody></table></div>
+<p>Returns <code>{ results: [...] }</code>, index-aligned with <code>executions</code>. Each entry is either
+<code>{ result }</code> on success or an error object. A batch runs through a bounded worker
+pool with a concurrency of 8. The server preserves ordering regardless of completion order.</p>
+<p>Three error shapes can appear inside <code>results</code>:</p>
+<div class="table-wrap"><table><thead><tr><th>Shape</th><th>Cause</th></tr></thead><tbody>
+<tr><td><code>{ error: &quot;Tool not found&quot; }</code></td><td>No tool registered under that name</td></tr>
+<tr><td><code>{ error: &quot;NOT_CONNECTED&quot;, integration, message }</code></td><td>The owning integration has no stored credential — call <code>connect(integration)</code></td></tr>
+<tr><td><code>{ error: &quot;&lt;message&gt;&quot; }</code></td><td>Argument validation failed, or the plugin handler threw</td></tr>
+</tbody></table></div>
+<p>Arguments are validated against the plugin tool&#39;s own Zod schema before the handler
+runs, which is what applies the schema&#39;s <code>.default()</code> values.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;name&quot;: &quot;execute_tools&quot;,
+  &quot;arguments&quot;: {
+    &quot;executions&quot;: [
+      { &quot;tool&quot;: &quot;github_list_prs&quot;, &quot;args&quot;: { &quot;owner&quot;: &quot;acme&quot;, &quot;repo&quot;: &quot;demo-repo&quot; } },
+      { &quot;tool&quot;: &quot;slack_send_message&quot;, &quot;args&quot;: { &quot;channel&quot;: &quot;C123&quot;, &quot;text&quot;: &quot;PRs listed&quot; } }
+    ]
+  }
+}</code></pre></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">A failing tool still returns JSON-RPC success</span></div><div class="callout-body"><p>Only protocol errors (unknown meta-tool, bad meta-tool arguments) come back in the
+JSON-RPC <code>error</code> field. A plugin tool that doesn&#39;t exist, isn&#39;t connected, or
+throws arrives as a successful result whose text content contains
+<code>{&quot;results&quot;:[{&quot;error&quot;: ...}]}</code>. A client that inspects only the JSON-RPC <code>error</code>
+field will read every tool failure as a success.</p>
+</div></div>
+
+<h2 id="whoami">whoami<a class="anchor" href="#whoami" aria-label="Link to whoami">#</a></h2>
+<p>Return the authenticated workbench user behind the current request. Identity only —
+it says nothing about which integrations are connected.</p>
+<p><strong>Description as the client sees it:</strong> <em>Return the current authenticated workbench
+user (id + email). Like /me — identity only, not connected integrations.</em></p>
+<p>No parameters.</p>
+<p>Returns <code>{ id, email }</code>, or <code>{ error: &quot;User not found&quot; }</code>.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;whoami&quot;, &quot;arguments&quot;: {} }</code></pre></div>
+<h2 id="list_integrations">list_integrations<a class="anchor" href="#list_integrations" aria-label="Link to list_integrations">#</a></h2>
+<p>List every registered integration and whether this user is connected to it.</p>
+<p><strong>Description as the client sees it:</strong> <em>List all available integrations and
+connection status</em></p>
+<p>No parameters.</p>
+<p>Returns <code>{ integrations: [{ name, version, connected }] }</code>. <code>connected</code> is <code>true</code>
+for <code>auth.type: &quot;none&quot;</code> integrations, a live-cookie check for cookie integrations,
+and &quot;a stored token exists&quot; for everything else.</p>
+<p>This is deliberately leaner than the portal&#39;s <code>/api/integrations</code> — it carries no
+<code>displayName</code>, <code>logo</code>, <code>authType</code>, or <code>toolCount</code>.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;list_integrations&quot;, &quot;arguments&quot;: {} }</code></pre></div>
+<h2 id="connect">connect<a class="anchor" href="#connect" aria-label="Link to connect">#</a></h2>
+<p>Begin connecting an integration and get back a URL for the user to open.</p>
+<p><strong>Description as the client sees it:</strong> <em>Begin connecting an integration. For oauth2,
+returns a URL (OAuth consent page) and a connectionId; call wait_for_connection
+afterward. For cookie integrations, always returns a portal login URL and a
+connectionId — the user opens it to log in live and click Capture; call
+wait_for_connection afterward.</em></p>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>integration</code></td><td>string</td><td>yes</td><td>—</td><td>Integration name</td></tr>
+</tbody></table></div>
+<p>Response depends on the integration&#39;s declared auth type:</p>
+<div class="table-wrap"><table><thead><tr><th>Auth type</th><th>Response</th></tr></thead><tbody>
+<tr><td><code>oauth2</code></td><td><code>{ connectionId, type: &quot;oauth2&quot;, url }</code> — <code>url</code> is the provider consent page</td></tr>
+<tr><td><code>cookie</code></td><td><code>{ connectionId, type: &quot;cookie&quot;, url }</code> — <code>url</code> is a portal login page carrying a short-lived connect token; it also warms the user&#39;s browser session and navigates it to the login page</td></tr>
+<tr><td><code>none</code></td><td><code>{ error: &quot;&lt;name&gt; is built-in and always connected — no connect needed.&quot; }</code></td></tr>
+<tr><td>unknown</td><td><code>{ error: &quot;Integration not found&quot; }</code></td></tr>
+</tbody></table></div>
+<p>The pending record lives for <code>CONNECT_TTL_SECONDS</code> (default 600).</p>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">API-key integrations do not connect from the agent</span></div><div class="callout-body"><p><code>connect</code> has no <code>apikey</code> branch. An API-key integration falls into the OAuth path
+and errors. Connect those from the portal instead — see
+<a href="../guides/api-key-connections.html">API-key connections</a>.</p>
+</div></div>
+
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;connect&quot;, &quot;arguments&quot;: { &quot;integration&quot;: &quot;github&quot; } }</code></pre></div>
+<h2 id="wait_for_connection">wait_for_connection<a class="anchor" href="#wait_for_connection" aria-label="Link to wait_for_connection">#</a></h2>
+<p>Block until a connection started by <code>connect</code> finishes, so the agent can resume
+without polling logic of its own.</p>
+<p><strong>Description as the client sees it:</strong> <em>Block until a connection started by connect()
+completes. Returns status CONNECTED, TIMEOUT, or EXPIRED.</em></p>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>connectionId</code></td><td>string</td><td>yes</td><td>—</td><td>ID returned by <code>connect()</code></td></tr>
+<tr><td><code>timeoutSec</code></td><td>number (positive integer, max 900)</td><td>no</td><td><code>300</code></td><td>Max seconds to wait</td></tr>
+</tbody></table></div>
+<p>Returns <code>{ status: &quot;CONNECTED&quot; }</code>, <code>{ status: &quot;EXPIRED&quot; }</code>, <code>{ status: &quot;TIMEOUT&quot; }</code>,
+or <code>{ error: &quot;Unknown connectionId&quot; }</code>. It polls once per second. On timeout it reaps
+the pending record before returning.</p>
+<p>A <code>connectionId</code> belonging to a different user returns the same
+<code>Unknown connectionId</code> shape as one that never existed — there is no existence
+oracle.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;wait_for_connection&quot;, &quot;arguments&quot;: { &quot;connectionId&quot;: &quot;…&quot;, &quot;timeoutSec&quot;: 600 } }</code></pre></div>
+<h2 id="get_auth_url">get_auth_url<a class="anchor" href="#get_auth_url" aria-label="Link to get_auth_url">#</a></h2>
+<p>Deprecated alias of <code>connect</code>, kept for older clients. Same parameters, same handler,
+same responses.</p>
+<p><strong>Description as the client sees it:</strong> <em>Deprecated alias of connect(). Get a URL to
+connect an integration.</em></p>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>integration</code></td><td>string</td><td>yes</td><td>—</td><td>Integration name</td></tr>
+</tbody></table></div>
+<p>Prefer <code>connect</code> in new code.</p>
+<h2 id="curl_session">curl_session<a class="anchor" href="#curl_session" aria-label="Link to curl_session">#</a></h2>
+<p>Mint a short-lived proxy token that lets the agent make arbitrary HTTP calls against
+the named integrations through <a href="http-api.html">the curl proxy</a>, which injects the
+user&#39;s real credential.</p>
+<p><strong>Description as the client sees it</strong> (verbatim — the risk language is part of the
+schema an agent reads): <em>HIGH RISK — do not call without explicit user approval.
+Mints a short-lived (15 min) proxy token granting ARBITRARY API calls
+(GET/POST/PUT/PATCH/DELETE), including destructive writes, against the listed
+integration(s) — the proxy injects the user&#39;s real credential transparently at
+/c/&lt;integration&gt;/&lt;path&gt;, so anything reachable via that credential is
+reachable through this token. Before invoking, tell the user exactly which
+integration(s) and what action you intend to perform, and wait for their explicit
+go-ahead; do not mint speculatively or as a default first step. Only integrations
+that have curl proxy enabled are accepted.</em></p>
+<div class="table-wrap"><table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>integrations</code></td><td>array of strings, min 1</td><td>yes</td><td>—</td><td>Integration names to include in the session</td></tr>
+</tbody></table></div>
+<p>On success:</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;token&quot;: &quot;&lt;jwt&gt;&quot;,
+  &quot;expiresIn&quot;: 900,
+  &quot;proxyBaseUrl&quot;: &quot;https://workbench.example.com/c&quot;,
+  &quot;usage&quot;: &quot;Send requests to https://workbench.example.com/c/&lt;integration&gt;/&lt;path&gt; with Authorization: Bearer &lt;token&gt;&quot;
+}</code></pre></div>
+<p><code>expiresIn</code> is a fixed 900 seconds — it is not configurable.</p>
+<p>Validation is all-or-nothing. Every name is checked, and if any fail the whole call
+returns <code>{ error }</code> with the failures joined by <code>; </code>:</p>
+<div class="table-wrap"><table><thead><tr><th>Error fragment</th><th>Cause</th></tr></thead><tbody>
+<tr><td><code>&lt;name&gt;: integration not found</code></td><td>No such integration</td></tr>
+<tr><td><code>&lt;name&gt;: curl proxy not enabled</code></td><td>The manifest has no <code>proxy</code> block</td></tr>
+<tr><td><code>&lt;name&gt;: not connected</code></td><td>No stored credential for this user</td></tr>
+</tbody></table></div>
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">This token can do anything the user's credential can do</span></div><div class="callout-body"><p>Anything the stored credential can reach — including destructive writes — is
+reachable with this token for 15 minutes. Ask the user before minting one, name the
+integrations and the intended action, and do not mint speculatively.</p>
+</div></div>
+
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;curl_session&quot;, &quot;arguments&quot;: { &quot;integrations&quot;: [&quot;github&quot;] } }</code></pre></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="../deploy/releases.html"><span class="pn-dir">Previous</span><span class="pn-label">Releases &amp; upgrades</span></a><a class="pn pn-next" href="mcp-endpoint.html"><span class="pn-dir">Next</span><span class="pn-label">MCP endpoint</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/reference/meta-tools.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#search_tools">search_tools</a></li><li class="toc-h2"><a href="#get_tool_schema">get_tool_schema</a></li><li class="toc-h2"><a href="#execute_tools">execute_tools</a></li><li class="toc-h2"><a href="#whoami">whoami</a></li><li class="toc-h2"><a href="#list_integrations">list_integrations</a></li><li class="toc-h2"><a href="#connect">connect</a></li><li class="toc-h2"><a href="#wait_for_connection">wait_for_connection</a></li><li class="toc-h2"><a href="#get_auth_url">get_auth_url</a></li><li class="toc-h2"><a href="#curl_session">curl_session</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

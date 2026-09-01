@@ -1,0 +1,375 @@
+{
+  "site": {
+    "name": "workbench",
+    "description": "Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.",
+    "repo": "https://github.com/barockok/workbench",
+    "domain": "github.io",
+    "version": "0.24.0",
+    "mark": "w",
+    "favicon": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b1410c'/><text x='16' y='23' font-family='Helvetica,Arial,sans-serif' font-size='19' font-weight='700' fill='white' text-anchor='middle'>w</text></svg>"
+  },
+  "tabs": [
+    {
+      "id": "start",
+      "label": "Get started",
+      "groups": [
+        {
+          "label": "Introduction",
+          "items": [
+            {
+              "path": "index",
+              "label": "What is workbench?",
+              "layout": "landing"
+            },
+            {
+              "path": "start/quickstart",
+              "label": "Quickstart"
+            },
+            {
+              "path": "start/how-it-works",
+              "label": "How it works"
+            },
+            {
+              "path": "start/concepts",
+              "label": "Core concepts"
+            }
+          ]
+        },
+        {
+          "label": "Connect an agent",
+          "items": [
+            {
+              "path": "start/connect-claude-code",
+              "label": "Claude Code"
+            },
+            {
+              "path": "start/connect-other-clients",
+              "label": "Other MCP clients"
+            },
+            {
+              "path": "start/first-connection",
+              "label": "Your first integration"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "guides",
+      "label": "Guides",
+      "groups": [
+        {
+          "label": "Working with tools",
+          "items": [
+            {
+              "path": "guides/discovering-tools",
+              "label": "Discovering tools"
+            },
+            {
+              "path": "guides/executing-tools",
+              "label": "Executing tools"
+            },
+            {
+              "path": "guides/curl-session",
+              "label": "Raw API calls"
+            }
+          ]
+        },
+        {
+          "label": "Authentication",
+          "items": [
+            {
+              "path": "guides/oauth-connections",
+              "label": "OAuth connections"
+            },
+            {
+              "path": "guides/api-key-connections",
+              "label": "API-key connections"
+            },
+            {
+              "path": "guides/browser-sessions",
+              "label": "Browser sessions"
+            },
+            {
+              "path": "guides/self-hosted-instances",
+              "label": "Self-hosted instances"
+            }
+          ]
+        },
+        {
+          "label": "Operating",
+          "items": [
+            {
+              "path": "guides/jots",
+              "label": "Jots file store"
+            },
+            {
+              "path": "guides/troubleshooting",
+              "label": "Troubleshooting"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "integrations",
+      "label": "Integrations",
+      "groups": [
+        {
+          "label": "Overview",
+          "items": [
+            {
+              "path": "integrations/index",
+              "label": "All integrations",
+              "layout": "landing"
+            }
+          ]
+        },
+        {
+          "label": "Atlassian",
+          "items": [
+            {
+              "path": "integrations/atlassian-jira",
+              "label": "Jira",
+              "layout": "wide"
+            },
+            {
+              "path": "integrations/atlassian-confluence",
+              "label": "Confluence",
+              "layout": "wide"
+            },
+            {
+              "path": "integrations/atlassian-bitbucket",
+              "label": "Bitbucket",
+              "layout": "wide"
+            }
+          ]
+        },
+        {
+          "label": "Code hosting",
+          "items": [
+            {
+              "path": "integrations/github",
+              "label": "GitHub",
+              "layout": "wide"
+            },
+            {
+              "path": "integrations/gitlab",
+              "label": "GitLab",
+              "layout": "wide"
+            }
+          ]
+        },
+        {
+          "label": "Google Workspace",
+          "items": [
+            {
+              "path": "integrations/google",
+              "label": "Setup & scopes"
+            },
+            {
+              "path": "integrations/google-tools",
+              "label": "Gmail, Drive, Docs & more",
+              "layout": "wide"
+            }
+          ]
+        },
+        {
+          "label": "Other services",
+          "items": [
+            {
+              "path": "integrations/slack",
+              "label": "Slack",
+              "layout": "wide"
+            },
+            {
+              "path": "integrations/asana",
+              "label": "Asana",
+              "layout": "wide"
+            },
+            {
+              "path": "integrations/newrelic",
+              "label": "New Relic",
+              "layout": "wide"
+            }
+          ]
+        },
+        {
+          "label": "Built in",
+          "items": [
+            {
+              "path": "integrations/browser",
+              "label": "Browser",
+              "layout": "wide"
+            },
+            {
+              "path": "integrations/jots",
+              "label": "Jots",
+              "layout": "wide"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plugins",
+      "label": "Build plugins",
+      "groups": [
+        {
+          "label": "Getting started",
+          "items": [
+            {
+              "path": "plugins/index",
+              "label": "Plugin overview",
+              "layout": "landing"
+            },
+            {
+              "path": "plugins/writing-a-plugin",
+              "label": "Write your first plugin"
+            },
+            {
+              "path": "plugins/loading",
+              "label": "Loading and reloading"
+            }
+          ]
+        },
+        {
+          "label": "Reference",
+          "items": [
+            {
+              "path": "plugins/manifest",
+              "label": "Manifest reference"
+            },
+            {
+              "path": "plugins/context",
+              "label": "Plugin context API"
+            },
+            {
+              "path": "plugins/auth-modes",
+              "label": "Auth modes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deploy",
+      "label": "Deploy",
+      "groups": [
+        {
+          "label": "Running the server",
+          "items": [
+            {
+              "path": "deploy/install",
+              "label": "Install"
+            },
+            {
+              "path": "deploy/docker",
+              "label": "Docker & Compose"
+            },
+            {
+              "path": "deploy/database",
+              "label": "Database"
+            }
+          ]
+        },
+        {
+          "label": "Production",
+          "items": [
+            {
+              "path": "deploy/portal-sso",
+              "label": "Portal SSO"
+            },
+            {
+              "path": "deploy/security",
+              "label": "Security model"
+            },
+            {
+              "path": "deploy/observability",
+              "label": "Observability"
+            },
+            {
+              "path": "deploy/releases",
+              "label": "Releases & upgrades"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reference",
+      "label": "Reference",
+      "groups": [
+        {
+          "label": "API",
+          "items": [
+            {
+              "path": "reference/meta-tools",
+              "label": "MCP meta-tools",
+              "layout": "wide"
+            },
+            {
+              "path": "reference/mcp-endpoint",
+              "label": "MCP endpoint"
+            },
+            {
+              "path": "reference/http-api",
+              "label": "HTTP API",
+              "layout": "wide"
+            }
+          ]
+        },
+        {
+          "label": "Configuration",
+          "items": [
+            {
+              "path": "reference/environment",
+              "label": "Environment variables",
+              "layout": "wide"
+            },
+            {
+              "path": "reference/database-schema",
+              "label": "Database schema",
+              "layout": "wide"
+            }
+          ]
+        },
+        {
+          "label": "Project",
+          "items": [
+            {
+              "path": "reference/tool-catalog",
+              "label": "Tool catalog",
+              "layout": "wide"
+            },
+            {
+              "path": "reference/contributing",
+              "label": "Contributing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "notes",
+      "label": "Field notes",
+      "groups": [
+        {
+          "label": "Overview",
+          "items": [
+            {
+              "path": "field-notes/index",
+              "label": "About field notes",
+              "layout": "landing"
+            }
+          ]
+        },
+        {
+          "label": "Findings",
+          "from": "../findings",
+          "pathPrefix": "field-notes"
+        }
+      ]
+    }
+  ]
+}

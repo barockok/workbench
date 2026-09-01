@@ -5,9 +5,10 @@ Prepare a new release of a-workbench.
 ## Steps
 
 1. **Document Review**
-   - Read `docs/architecture.md` — check for outdated info
-   - Read `docs/how-to-use.md` — verify commands still work
-   - Read `docs/how-to-onboard.md` — check for stale setup steps
+   - Read `docs/site/_content/` — check every page the release touches for
+     outdated info, and verify any command you changed still runs
+   - Rebuild the site (`node docs/site/build.mjs`) and commit the output; the
+     docs CI job fails if the generated HTML is out of date
    - Read `CHANGELOG.md` — the cumulative history; note last version at the top
 
 2. **Determine Version**
@@ -18,7 +19,7 @@ Prepare a new release of a-workbench.
 3. **Generate Release Notes**
    - Run: `git log $(git describe --tags --abbrev=0)..HEAD --oneline`
    - Categorize changes: Features, Fixes, Chores
-   - Write **only this release's** notes to `RELEASE_NOTES.md` (overwrite — it holds the latest version only)
+   - Write this release's notes to `docs/releases/<tag>.md` (one file per release)
    - **Prepend** the same block to `CHANGELOG.md` (newest first; keep all prior versions below). Use a `---` separator between versions.
 
 4. **Update Version**

@@ -8,6 +8,9 @@ import { isValidJotName, safeRelPath, MANIFEST } from "./paths";
 export interface Manifest {
   access: "public" | "password";
   hash?: string;
+  // Opt-in cross-origin reads of this jot's files. Only honored for public
+  // jots — see setJotSecurityHeaders in routes.ts.
+  cors?: boolean;
   owner: string;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +27,7 @@ export interface DeployInput {
   owner: string;
   access: "public" | "password";
   passwordHash?: string;
+  cors?: boolean;
   files: DeployFile[];
 }
 
@@ -57,9 +61,10 @@ export function commitJotDir(input: {
   owner: string;
   access: "public" | "password";
   passwordHash?: string;
+  cors?: boolean;
   srcDir: string;
 }): DeployResult {
-  const { name, owner, access, passwordHash, srcDir } = input;
+  const { name, owner, access, passwordHash, cors, srcDir } = input;
   if (!isValidJotName(name)) return { error: "INVALID_NAME" };
   if (access === "password" && !passwordHash) return { error: "PASSWORD_REQUIRED" };
 
@@ -73,6 +78,7 @@ export function commitJotDir(input: {
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     ...(access === "password" ? { hash: passwordHash } : {}),
+    ...(cors ? { cors: true } : {}),
   };
 
   const finalDir = jotDir(name);
@@ -93,7 +99,7 @@ export function commitJotDir(input: {
 // Decode an inline file array into a tmp dir, then commit it. Retained as a
 // test/seed helper; the deploy_jot MCP tool now uses the upload flow instead.
 export function deployJot(input: DeployInput): DeployResult {
-  const { name, owner, access, passwordHash, files } = input;
+  const { name, owner, access, passwordHash, cors, files } = input;
   if (!isValidJotName(name)) return { error: "INVALID_NAME" };
   if (access === "password" && !passwordHash) return { error: "PASSWORD_REQUIRED" };
   if (!Array.isArray(files) || files.length === 0) return { error: "NO_FILES" };
@@ -123,7 +129,7 @@ export function deployJot(input: DeployInput): DeployResult {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, buf);
   }
-  return commitJotDir({ name, owner, access, passwordHash, srcDir: tmpDir });
+  return commitJotDir({ name, owner, access, passwordHash, cors, srcDir: tmpDir });
 }
 
 export interface JotSummary {
@@ -160,4 +166,38 @@ export function deleteJot(name: string, owner: string): { ok: true } | { error: 
   if (m.owner !== owner) return { error: "FORBIDDEN" };
   fs.rmSync(jotDir(name), { recursive: true, force: true });
   return { ok: true };
+}
+
+export interface JotFile {
+  path: string;
+  bytes: number;
+  updatedAt: string;
+}
+
+// Walk a jot's tree so an agent can see what is there before patching it.
+// Owner-scoped like listJots; the manifest is never reported.
+export function listJotFiles(name: string, owner: string): { files: JotFile[] } | { error: string } {
+  if (!isValidJotName(name)) return { error: "INVALID_NAME" };
+  const m = readManifest(name);
+  if (!m) return { error: "NOT_FOUND" };
+  if (m.owner !== owner) return { error: "FORBIDDEN" };
+
+  const root = jotDir(name);
+  const files: JotFile[] = [];
+  const walk = (dir: string, prefix: string): void => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        walk(path.join(dir, e.name), rel);
+        continue;
+      }
+      if (!e.isFile()) continue;
+      if (rel === MANIFEST) continue;
+      const st = fs.statSync(path.join(dir, e.name));
+      files.push({ path: rel, bytes: st.size, updatedAt: st.mtime.toISOString() });
+    }
+  };
+  walk(root, "");
+  files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return { files: files.slice(0, config.JOTS_MAX_FILES) };
 }

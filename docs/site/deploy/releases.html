@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Releases &amp; upgrades — workbench Docs</title>
+<meta name="description" content="How versions are cut, what the release-candidate convention buys you, what CI does, and how to upgrade a running deployment.">
+<meta property="og:title" content="Releases &amp; upgrades — workbench">
+<meta property="og:description" content="How versions are cut, what the release-candidate convention buys you, what CI does, and how to upgrade a running deployment.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab active" href="install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Running the server</p><ul><li><a class="" href="install.html">Install</a></li><li><a class="" href="docker.html">Docker &amp; Compose</a></li><li><a class="" href="database.html">Database</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Production</p><ul><li><a class="" href="portal-sso.html">Portal SSO</a></li><li><a class="" href="security.html">Security model</a></li><li><a class="" href="observability.html">Observability</a></li><li><a class="active" href="releases.html">Releases &amp; upgrades</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Production</p>
+          <h1>Releases &amp; upgrades</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">How versions are cut, what the release-candidate convention buys you, what CI does, and how to upgrade a running deployment.</p>
+      <p>Releases are cut by pushing a git tag. That is the only trigger — there is no
+manual publish step and no separate changelog job.</p>
+<h2 id="version-and-tag-conventions">Version and tag conventions<a class="anchor" href="#version-and-tag-conventions" aria-label="Link to Version and tag conventions">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Kind</th><th>Tag</th><th>GitHub release</th><th>Docker <code>latest</code></th></tr></thead><tbody>
+<tr><td>Stable</td><td><code>vX.Y.Z</code></td><td>normal release</td><td>moves to this build</td></tr>
+<tr><td>Release candidate</td><td><code>vX.Y.Z-rc.N</code></td><td>pre-release</td><td><strong>does not move</strong></td></tr>
+</tbody></table></div>
+<p>The pre-release flag is derived from the tag containing a hyphen, and the <code>latest</code>
+Docker tag is applied only when the tag contains no hyphen. So the RC convention
+is enforced by the tag&#39;s shape, not by a flag someone has to remember.</p>
+<p>Anything touching the Docker image, the database schema, auth, or the proxy goes
+out as an RC first. Pull it explicitly by tag:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker pull ghcr.io/&lt;owner&gt;/&lt;repo&gt;:v0.25.0-rc.1</code></pre></div>
+<p>Soak it, then promote.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Published images are `linux/amd64` only</span></div><div class="callout-body"><p>The release workflow&#39;s build step sets no <code>platforms:</code>, so GHCR receives a
+single-architecture image built on the GitHub-hosted <code>amd64</code> runner. On Apple
+Silicon or Graviton it runs under emulation if your Docker supports it, and
+fails to start if it does not. Build the image yourself on the target
+architecture (<code>docker build -t workbench .</code>) for ARM hosts.</p>
+</div></div>
+
+
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The tag and `package.json` must agree</span></div><div class="callout-body"><p>The release workflow greps the version out of <code>package.json</code> and fails the build
+when <code>v${version}</code> does not equal the tag being built. The Docker tag comes from
+the git tag while the running app reports <code>package.json</code>, so a mismatch would
+ship a release that lies about its own version.</p>
+</div></div>
+
+<h2 id="release-notes">Release notes<a class="anchor" href="#release-notes" aria-label="Link to Release notes">#</a></h2>
+<p>Every release ships a hand-written <code>docs/releases/&lt;tag&gt;.md</code>. The workflow prefers
+that file and copies it verbatim into the GitHub release body. Without it, the
+release body is an auto-generated <code>git log</code> dump plus a compare link. The range
+runs from the <strong>highest-versioned other tag</strong> to this one — <code>git tag --sort=-v:refname</code>
+with the tag being built filtered out. That is the previous release in the normal
+case, but not when you rebuild an older tag via <code>workflow_dispatch</code>: there the
+range is computed against a <em>newer</em> tag and the log comes out empty or backwards.</p>
+<p>Notes live under the <strong>stable</strong> name — <code>docs/releases/vX.Y.Z.md</code> — from the first
+release candidate onward. That means an RC build itself falls back to the git-log
+changelog. That is fine, because the notes are for the stable release the RC is
+rehearsing.</p>
+<p>Group notes by category, explain why a change was made rather than restating the
+commit subject, and link the relevant findings document when one exists.</p>
+<h2 id="promoting-a-release-candidate">Promoting a release candidate<a class="anchor" href="#promoting-a-release-candidate" aria-label="Link to Promoting a release candidate">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">scripts/promote-rc.sh v0.25.0-rc.1 [--dry-run]</code></pre></div>
+<p>The script strips the <code>-rc.N</code> suffix, bumps <code>package.json</code> to the stable version,
+commits, tags, and — after a <code>[y/N]</code> prompt — pushes <code>main</code> and the tag, which
+fires the release workflow. It refuses to run unless every one of these holds:</p>
+<ul>
+<li>the argument matches <code>vX.Y.Z-rc.N</code></li>
+<li>the RC tag exists and the stable tag does <strong>not</strong></li>
+<li>you are on <code>main</code> with a clean working tree (untracked files ignored)</li>
+<li>the RC tag is an ancestor of <code>HEAD</code> — <code>main</code> has not diverged from what you soaked</li>
+<li><code>docs/releases/&lt;stable&gt;.md</code> exists</li>
+</ul>
+<p>The tag checks run against <strong>local</strong> refs, after a <code>git fetch --tags origin</code>. A
+stable tag you created locally and never pushed still trips the &quot;already exists&quot;
+refusal. Delete it with <code>git tag -d</code> first.</p>
+<p>Before it does anything it prints <code>git log --oneline &lt;rc&gt;..HEAD</code> under the heading
+<code>commits landed since &lt;rc&gt; (these ship untested by the RC build):</code>. Read that
+list. If it is non-empty, the thing you soaked is not the thing you are about to
+release.</p>
+<p>The <code>package.json</code> bump and its commit are <strong>conditional</strong> — skipped when the file
+already holds the stable version, which is the normal case after a repeat run. The
+tag is always created.</p>
+<p><code>--dry-run</code> prints the push commands and exits without tagging. Declining the
+final prompt deletes the local tag but keeps the version-bump commit.</p>
+<h2 id="what-ci-does">What CI does<a class="anchor" href="#what-ci-does" aria-label="Link to What CI does">#</a></h2>
+<p><strong><code>ci.yml</code></strong> runs on pushes and pull requests to <code>main</code>, across a Node 20 and 22
+matrix, with a <code>postgres:16</code> service container. The PostgreSQL half of the
+database adapter suite skips itself without a live server, which would leave the
+backend untested, so CI provides one via <code>TEST_POSTGRES_URL</code>.</p>
+<p>Steps: <code>npm ci</code> → <code>npm run lint</code> → <code>npm run build</code> →
+<code>npm run typecheck:tests -w @workbench/server</code> →
+<code>npm run test:coverage -w @workbench/server</code> → Codecov upload with
+<code>fail_ci_if_error: true</code>.</p>
+<p>Two things to know about that list. <code>npm run lint</code> is a no-op — no package defines
+a <code>lint</code> script, so the turbo task resolves to zero work and exits 0. And the
+separate typecheck step exists because the main <code>tsconfig.json</code> covers only <code>src/</code>,
+so the build never type-checks the test suite.</p>
+<p><strong><code>release.yml</code></strong> runs on a <code>v*.*.*</code> or <code>v*.*.*-*</code> tag push, or via
+<code>workflow_dispatch</code> with a tag input to rebuild an existing tag. It checks out the
+tag with full history, verifies the tag against <code>package.json</code>, builds and tests on
+Node 20, assembles the release notes, builds the image with Buildx and pushes it to
+GHCR with GitHub Actions layer caching, then creates the GitHub release as a draft
+and immediately publishes it — a two-step needed for repositories with an
+immutable-releases policy.</p>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart TD
+  A[push vX.Y.Z-rc.1] --&gt; B[release.yml]
+  B --&gt; C{tag == package.json?}
+  C --&gt;|no| F[fail]
+  C --&gt;|yes| D[build + test]
+  D --&gt; E[push image, tag only]
+  E --&gt; G[GitHub pre-release]
+  G --&gt; H[soak]
+  H --&gt; I[promote-rc.sh]
+  I --&gt; J[push vX.Y.Z]
+  J --&gt; K[release.yml]
+  K --&gt; L[image + latest]
+  L --&gt; M[GitHub release]</pre></div>
+<h2 id="upgrading-a-running-deployment">Upgrading a running deployment<a class="anchor" href="#upgrading-a-running-deployment" aria-label="Link to Upgrading a running deployment">#</a></h2>
+<div class="steps">
+
+<h3 id="read-the-release-notes-first">Read the release notes first<a class="anchor" href="#read-the-release-notes-first" aria-label="Link to Read the release notes first">#</a></h3>
+<p><code>docs/releases/&lt;tag&gt;.md</code> and the linked findings documents are where breaking
+changes and required operator actions are written down.</p>
+<h3 id="back-up-the-database">Back up the database<a class="anchor" href="#back-up-the-database" aria-label="Link to Back up the database">#</a></h3>
+<p>The schema applies additively at boot — <code>CREATE TABLE IF NOT EXISTS</code> plus
+<code>ADD COLUMN</code> — so an upgrade is not reversible by simply running the old image
+against the same database. Take a copy of the SQLite file or a <code>pg_dump</code> first.</p>
+<h3 id="keep-encryption_key-and-session_secret-unchanged">Keep <code>ENCRYPTION_KEY</code> and <code>SESSION_SECRET</code> unchanged<a class="anchor" href="#keep-encryption_key-and-session_secret-unchanged" aria-label="Link to Keep ENCRYPTION_KEY and SESSION_SECRET unchanged">#</a></h3>
+<p>Changing <code>ENCRYPTION_KEY</code> makes every stored credential undecryptable. There is no
+re-encryption path. Changing <code>SESSION_SECRET</code> invalidates every portal session,
+MCP access and refresh token, connect token, curl session, and jot cookie at once.</p>
+<h3 id="move-to-the-new-version-and-restart">Move to the new version and restart<a class="anchor" href="#move-to-the-new-version-and-restart" aria-label="Link to Move to the new version and restart">#</a></h3>
+<p>What this step is depends on how your Compose file gets the image, and the
+committed one is not what most people assume.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`docker compose pull` does not fetch a release with the shipped file</span></div><div class="callout-body"><p>The <code>workbench</code> service in the committed <code>docker-compose.yml</code> declares
+<code>build: .</code> and <strong>no <code>image:</code> key</strong>. Compose skips a service with no <code>image:</code> on
+<code>pull</code> — it prints a &quot;must be built from source&quot; warning and pulls nothing — and
+<code>up -d</code> then rebuilds from whatever is in your local working tree. The published
+GHCR tag is never fetched. Pick one of the two procedures below.</p>
+</div></div>
+
+<p><strong>Running the published image.</strong> Add an <code>image:</code> key naming the GHCR tag and drop
+<code>build:</code>, in an override file so the repo copy stays untouched:</p>
+<div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml"># docker-compose.override.yml
+services:
+  workbench:
+    image: ghcr.io/&lt;owner&gt;/&lt;repo&gt;:v0.25.0</code></pre></div>
+<p><code>&lt;owner&gt;/&lt;repo&gt;</code> is your repository path lowercased — the workflow lowercases
+<code>GITHUB_REPOSITORY</code> before tagging. Then, for each upgrade, edit the tag in that
+file and:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker compose pull &amp;&amp; docker compose up -d</code></pre></div>
+<p>Compose still honours <code>build:</code> from the base file for a <code>docker compose build</code>,
+but with <code>image:</code> present <code>pull</code> and <code>up</code> use the registry copy.</p>
+<p><strong>Building from source.</strong> Check out the release tag and rebuild — there is no
+image to pull:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">git fetch --tags &amp;&amp; git checkout v0.25.0
+docker compose up -d --build</code></pre></div>
+<p>Either way, schema changes apply automatically at boot, before plugins load and
+before routes register. Watch the first few log lines: a configuration validation
+failure aborts the process at import, before it binds a port.</p>
+<h3 id="check-whether-users-must-reconnect">Check whether users must reconnect<a class="anchor" href="#check-whether-users-must-reconnect" aria-label="Link to Check whether users must reconnect">#</a></h3>
+<p>Some releases change the OAuth scopes a plugin requests. Existing stored tokens
+carry the <em>old</em> scope set, so the new tools 401 or 403 until each affected user
+disconnects and reconnects that integration in the portal. This has happened for
+Confluence (the REST v2 migration replaced the classic content scopes with
+granular <code>read|write|delete:page:confluence</code> and <code>read:space:confluence</code>) and for
+Bitbucket (pipeline triggering required adding <code>pipeline</code> and <code>pipeline:write</code>).
+When a release does this, say so in the notes and tell users before they hit it.</p>
+</div>
+
+
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">Rolling back</span></div><div class="callout-body"><p>Rolling the image back is straightforward as long as the schema is only
+additive — the older code ignores columns it does not know about. What does not
+roll back is a <code>DATABASE_URL</code> cutover from SQLite to PostgreSQL, or any change to
+the two secrets. Treat those as one-way.</p>
+</div></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="observability.html"><span class="pn-dir">Previous</span><span class="pn-label">Observability</span></a><a class="pn pn-next" href="../reference/meta-tools.html"><span class="pn-dir">Next</span><span class="pn-label">MCP meta-tools</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/releases.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#version-and-tag-conventions">Version and tag conventions</a></li><li class="toc-h2"><a href="#release-notes">Release notes</a></li><li class="toc-h2"><a href="#promoting-a-release-candidate">Promoting a release candidate</a></li><li class="toc-h2"><a href="#what-ci-does">What CI does</a></li><li class="toc-h2"><a href="#upgrading-a-running-deployment">Upgrading a running deployment</a></li><li class="toc-h3"><a href="#read-the-release-notes-first">Read the release notes first</a></li><li class="toc-h3"><a href="#back-up-the-database">Back up the database</a></li><li class="toc-h3"><a href="#keep-encryption_key-and-session_secret-unchanged">Keep ENCRYPTION_KEY and SESSION_SECRET unchanged</a></li><li class="toc-h3"><a href="#move-to-the-new-version-and-restart">Move to the new version and restart</a></li><li class="toc-h3"><a href="#check-whether-users-must-reconnect">Check whether users must reconnect</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

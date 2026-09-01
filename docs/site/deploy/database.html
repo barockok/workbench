@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database — workbench Docs</title>
+<meta name="description" content="Choosing SQLite or PostgreSQL, what else derives from DATABASE_URL, migrating between them, cluster mode, and the dialect traps that reach operators.">
+<meta property="og:title" content="Database — workbench">
+<meta property="og:description" content="Choosing SQLite or PostgreSQL, what else derives from DATABASE_URL, migrating between them, cluster mode, and the dialect traps that reach operators.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab active" href="install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Running the server</p><ul><li><a class="" href="install.html">Install</a></li><li><a class="" href="docker.html">Docker &amp; Compose</a></li><li><a class="active" href="database.html">Database</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Production</p><ul><li><a class="" href="portal-sso.html">Portal SSO</a></li><li><a class="" href="security.html">Security model</a></li><li><a class="" href="observability.html">Observability</a></li><li><a class="" href="releases.html">Releases &amp; upgrades</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Running the server</p>
+          <h1>Database</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Choosing SQLite or PostgreSQL, what else derives from DATABASE_URL, migrating between them, cluster mode, and the dialect traps that reach operators.</p>
+      <p>One variable selects the backend. <code>DATABASE_URL</code> starting with <code>postgres://</code> or
+<code>postgresql://</code> gets the PostgreSQL adapter. <strong>Anything else is treated as a
+SQLite file path.</strong> There is no separate driver setting.</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">DATABASE_URL=/data/tokens.db                                  # SQLite
+DATABASE_URL=postgres://user:pw@db.internal:5432/workbench    # PostgreSQL</code></pre></div>
+<p>The default is <code>./data/tokens.db</code>. Both backends implement the same adapter
+contract and run the same logical schema, so a deployment can move between them.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The relative default resolves against the process working directory</span></div><div class="callout-body"><p><code>./data/tokens.db</code> is not anchored to the repository root. <code>npm run dev</code> starts
+the server with its cwd set to <code>packages/server</code>, so the file lands at
+<code>packages/server/data/tokens.db</code> — not the repo-root <code>data/</code> that
+<code>docker-compose.yml</code> bind-mounts to <code>/data</code>. The same applies to the other two
+relative defaults, <code>PLUGINS_DIR=./plugins</code> and <code>PORTAL_DIST_DIR=./portal</code>. Use an
+absolute path anywhere it matters. The Compose file does exactly that with
+<code>DATABASE_URL=/data/tokens.db</code>.</p>
+</div></div>
+
+<h2 id="what-else-derives-from-database_url">What else derives from <code>DATABASE_URL</code><a class="anchor" href="#what-else-derives-from-database_url" aria-label="Link to What else derives from DATABASE_URL">#</a></h2>
+<p>When it is a file path, two other directories default to siblings of the database
+file&#39;s own directory:</p>
+<div class="table-wrap"><table><thead><tr><th>Path</th><th>Default</th><th>Override</th></tr></thead><tbody>
+<tr><td>Browser profiles</td><td><code>dirname(DATABASE_URL)/browser-profiles</code></td><td><code>BROWSER_PROFILES_DIR</code></td></tr>
+<tr><td>Jots file store</td><td><code>dirname(DATABASE_URL)/jots</code></td><td><code>JOTS_DIR</code></td></tr>
+</tbody></table></div>
+<p>That matters for two reasons. Chromium profiles grow — they filled a shared volume
+to 88% in production once — so they share a disk budget with the database unless
+you point <code>BROWSER_PROFILES_DIR</code> elsewhere. And when you switch <code>DATABASE_URL</code> to
+a PostgreSQL URL, its dirname is no longer a meaningful filesystem path: set
+<code>BROWSER_PROFILES_DIR</code> and <code>JOTS_DIR</code> explicitly.</p>
+<p>Relocating the directories is only half the answer — these are the knobs that
+bound what they hold:</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Default</th><th>Bounds</th></tr></thead><tbody>
+<tr><td><code>BROWSER_SESSION_TTL_SECONDS</code></td><td><code>300</code></td><td>Idle cutoff before a warm browser session is killed, checked every 30 seconds</td></tr>
+<tr><td><code>BROWSER_PROFILE_TTL_DAYS</code></td><td><code>30</code></td><td>Age at which an unused whole profile is <strong>deleted</strong> — logging that user out of every cookie-auth integration. <code>0</code> disables</td></tr>
+<tr><td><code>BROWSER_PROFILE_REAP_INTERVAL_SECONDS</code></td><td><code>3600</code></td><td>How often the profile disk reaper runs. It also runs once at boot</td></tr>
+<tr><td><code>BROWSER_DISK_CACHE_MB</code></td><td><code>32</code></td><td>Chromium&#39;s <code>--disk-cache-size</code> per profile</td></tr>
+<tr><td><code>JOTS_MAX_BYTES</code></td><td><code>5242880</code> (5 MiB)</td><td>Per-file and total decompressed size cap on a jot upload</td></tr>
+<tr><td><code>JOTS_MAX_FILES</code></td><td><code>1000</code></td><td>Maximum files in one jot archive</td></tr>
+<tr><td><code>JOTS_UPLOAD_TTL_SECONDS</code></td><td><code>300</code></td><td>Lifetime of a single-use upload token</td></tr>
+</tbody></table></div>
+<p>Full validation details are in <a href="../reference/environment.html">environment variables</a>.</p>
+<h2 id="schema">Schema<a class="anchor" href="#schema" aria-label="Link to Schema">#</a></h2>
+<div class="mermaid-wrap"><pre class="mermaid">erDiagram
+  users ||--o{ connections : owns
+  users ||--o{ pending_auth : starts
+  users ||--o{ audit_log : generates
+  users ||--o{ oauth_auth_codes : authorizes
+  users ||--o{ oauth_refresh_tokens : holds
+  oauth_clients ||--o{ oauth_auth_codes : issued_for
+  oauth_clients ||--o{ oauth_refresh_tokens : issued_for
+
+  users {
+    TEXT id PK
+    TEXT email UK
+    TEXT google_sub UK
+    TEXT keycloak_sub UK
+    TEXT api_key_hash
+    TEXT api_key_sha
+    BLOB api_key_enc
+    BOOLEAN is_admin
+    INTEGER created_at
+  }
+  connections {
+    INTEGER id PK
+    TEXT user_id FK
+    TEXT integration
+    BLOB access_token
+    BLOB refresh_token
+    INTEGER expires_at
+    TEXT scopes
+    BLOB cookies
+    TEXT config
+  }
+  pending_auth {
+    TEXT state PK
+    TEXT user_id FK
+    TEXT integration
+    TEXT code_verifier
+    TEXT session_data
+    TEXT config
+    INTEGER expires_at
+  }
+  audit_log {
+    INTEGER id PK
+    TEXT user_id FK
+    TEXT integration
+    TEXT tool
+    TEXT action
+    BOOLEAN success
+    TEXT error
+    INTEGER duration_ms
+    INTEGER created_at
+  }
+  oauth_clients {
+    TEXT client_id PK
+    TEXT client_name
+    TEXT redirect_uris
+  }
+  oauth_auth_codes {
+    TEXT code PK
+    TEXT client_id FK
+    TEXT user_id FK
+    TEXT code_challenge
+    TEXT redirect_uri
+    INTEGER expires_at
+  }
+  oauth_refresh_tokens {
+    TEXT token_hash PK
+    TEXT client_id FK
+    TEXT user_id FK
+    TEXT scope
+    INTEGER expires_at
+  }</pre></div>
+<p>Both <code>google_sub</code> and <code>keycloak_sub</code> are unique, but <code>keycloak_sub</code> gets its
+uniqueness from a <strong>partial</strong> index — <code>WHERE keycloak_sub IS NOT NULL</code> — so any
+number of users can have it unset while no two can share a value.</p>
+<p><code>connections</code> is unique on <code>(user_id, integration)</code> — one credential per user per
+integration. <code>pending_auth</code> carries three different flows discriminated by its
+<code>integration</code> column: a plugin name for plugin OAuth, <code>google-sso</code> / <code>keycloak-sso</code>
+for portal login, and <code>__oauth_authorize__</code> for an MCP authorize ticket.</p>
+<p>Column-level detail is in <a href="../reference/database-schema.html">database schema</a>.</p>
+<h2 id="schema-initialization">Schema initialization<a class="anchor" href="#schema-initialization" aria-label="Link to Schema initialization">#</a></h2>
+<p>There is no versioned migration table. <code>applySchema()</code> dispatches on the adapter&#39;s
+dialect and is idempotent: a <code>CREATE TABLE IF NOT EXISTS</code> block followed by
+additive column adds. On SQLite those are bare <code>ALTER TABLE … ADD COLUMN</code>
+statements in a try/catch that swallows only &quot;duplicate column name&quot; and rethrows
+everything else. On PostgreSQL they are one <code>ADD COLUMN IF NOT EXISTS</code> batch.</p>
+<p>It runs from an explicit <code>initDb()</code> call at boot, before plugins load and before
+routes register — not as an import side effect. There is nothing to run by hand.
+Starting the server against an empty database creates the schema.</p>
+<h2 id="migrating-sqlite-to-postgresql">Migrating SQLite to PostgreSQL<a class="anchor" href="#migrating-sqlite-to-postgresql" aria-label="Link to Migrating SQLite to PostgreSQL">#</a></h2>
+<p>The migration script lives in <code>packages/server/src/migrate/</code> and is a dry run
+unless you pass <code>--apply</code>.</p>
+<div class="steps">
+
+<h3 id="point-it-at-a-source-and-a-target">Point it at a source and a target<a class="anchor" href="#point-it-at-a-source-and-a-target" aria-label="Link to Point it at a source and a target">#</a></h3>
+<p>Source resolution: <code>SOURCE_SQLITE_PATH</code>, else <code>DATABASE_URL</code> when it is a file
+path, else <code>/data/tokens.db</code>. Target: <code>TARGET_DATABASE_URL</code> (must start
+<code>postgres://</code> or <code>postgresql://</code>, or it throws), else the libpq variables
+<code>PGHOST</code>, <code>PGPORT</code> (default 5432), <code>PGUSER</code>, <code>PGPASSWORD</code>, <code>PGDATABASE</code>.</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">export SOURCE_SQLITE_PATH=/data/tokens.db
+export TARGET_DATABASE_URL=postgres://user:pw@db.internal:5432/workbench</code></pre></div>
+<p>Passwords are redacted from the script&#39;s log output.</p>
+<h3 id="dry-run">Dry run<a class="anchor" href="#dry-run" aria-label="Link to Dry run">#</a></h3>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run migrate:sqlite-to-postgres -w @workbench/server</code></pre></div>
+<p>Inside the container the built script is invoked directly:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">tsx server/migrate/sqlite-to-postgres.js</code></pre></div>
+<p>The dry run applies the production schema to the target, diffs source against
+target columns and reports any source-only column that will not be copied, and
+refuses a non-empty target unless you pass <code>--allow-nonempty</code>.</p>
+<h3 id="apply">Apply<a class="anchor" href="#apply" aria-label="Link to Apply">#</a></h3>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run migrate:sqlite-to-postgres -w @workbench/server -- --apply --skip=pending_auth,oauth_auth_codes</code></pre></div>
+<p><code>pending_auth</code> and <code>oauth_auth_codes</code> are minutes-lived handshake state. Skip them
+unless the cutover is immediate.</p>
+<p>The copy is one transaction, batched and rowid-paged, inserting with
+<code>ON CONFLICT DO NOTHING</code>. Afterwards every <code>SERIAL</code> sequence is resynced with
+<code>setval</code> — without that the next insert collides on the primary key — and the row
+count of each target table is verified against the source, throwing on a mismatch.</p>
+<h3 id="cut-over">Cut over<a class="anchor" href="#cut-over" aria-label="Link to Cut over">#</a></h3>
+<p>The script does not switch anything. Change <code>DATABASE_URL</code> to the PostgreSQL URL
+and restart. Set <code>BROWSER_PROFILES_DIR</code> and <code>JOTS_DIR</code> at the same time.</p>
+</div>
+
+
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">`ENCRYPTION_KEY` must not change</span></div><div class="callout-body"><p>Ciphertext is copied verbatim — access tokens, refresh tokens, cookie bundles,
+and the stored API-key copies are all AES-256-GCM blobs. The key is read once at
+module load, so there is no re-encryption path and no rotation story. Migrate
+with the same <code>ENCRYPTION_KEY</code>, and back it up as carefully as the database
+itself. Change it and every user must reconnect every integration.</p>
+</div></div>
+
+<h2 id="cluster-mode">Cluster mode<a class="anchor" href="#cluster-mode" aria-label="Link to Cluster mode">#</a></h2>
+<p><code>CLUSTER_ENABLED=true</code> forks one worker per <code>availableParallelism()</code>. Accepted
+values are exactly <code>true</code>, <code>false</code>, <code>1</code>, <code>0</code> — anything else is a validation error
+at boot, not a falsy value.</p>
+<p><strong>Cluster mode requires PostgreSQL.</strong> With a SQLite <code>DATABASE_URL</code> the process
+prints an explicit message and exits 1. SQLite cannot be safely shared across
+processes.</p>
+<p>Connection budgeting is the thing to get right:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">total connections = PG_POOL_MAX × worker count</code></pre></div>
+<p><code>PG_POOL_MAX</code> defaults to 2 and is <strong>per worker</strong>. On a 16-core host that is 32
+connections from one deployment. Keep the total well under the server&#39;s
+<code>max_connections</code>. <code>PG_CONNECT_TIMEOUT_MS</code> (default 5000, <code>0</code> = unlimited) caps
+how long a request waits for a free pool slot before being rejected.</p>
+<p>Two caveats:</p>
+<ul>
+<li>The primary process reforks a dead worker with no backoff, so a worker
+crash-looping on bad configuration will spin.</li>
+<li>Graceful shutdown — <code>SIGTERM</code>/<code>SIGINT</code> → drain the pool → exit — is registered
+per worker, not on the primary. The primary dies on the default signal
+disposition.</li>
+</ul>
+<p>Some state is per-process and therefore not shared across workers: the SSO nonce
+map and the transient connect-flow records that <code>connect</code> / <code>wait_for_connection</code>
+poll. Sticky routing avoids surprises there.</p>
+<h2 id="postgresql-behaviours-worth-knowing">PostgreSQL behaviours worth knowing<a class="anchor" href="#postgresql-behaviours-worth-knowing" aria-label="Link to PostgreSQL behaviours worth knowing">#</a></h2>
+<p>These are handled inside the adapter, but they explain what you&#39;ll see and why a
+custom query written against the wrong assumption breaks.</p>
+<div class="table-wrap"><table><thead><tr><th>Behaviour</th><th>Consequence</th></tr></thead><tbody>
+<tr><td>PostgreSQL rejects <code>1</code>/<code>0</code> for a <code>BOOLEAN</code> column</td><td><code>audit_log.success</code> and <code>users.is_admin</code> are bound as real booleans; the SQLite adapter converts on the way in</td></tr>
+<tr><td><code>?</code> is not always a placeholder</td><td>The adapter&#39;s parameter rewriter is a hand-written SQL scanner that skips comments, string literals, quoted identifiers and dollar-quoted strings, and leaves the JSONB <code>?</code>, `?</td></tr>
+<tr><td>A transaction is pinned to one pooled client</td><td>Inside a <code>transaction()</code> callback you must use the executor handed to you — a stray call on the shared <code>db</code> silently takes a different connection and runs outside the transaction</td></tr>
+<tr><td>SQLite transactions are serialized in-process</td><td><code>better-sqlite3</code> is synchronous behind an async API, so the SQLite adapter chains transactions through a queue to avoid &quot;cannot start a transaction within a transaction&quot;</td></tr>
+</tbody></table></div>
+<p>The audit log&#39;s <code>sqlite</code> destination writes through the shared adapter, so despite
+the name it inserts into whichever backend is configured, PostgreSQL included.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="docker.html"><span class="pn-dir">Previous</span><span class="pn-label">Docker &amp; Compose</span></a><a class="pn pn-next" href="portal-sso.html"><span class="pn-dir">Next</span><span class="pn-label">Portal SSO</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/database.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#what-else-derives-from-database_url">What else derives from DATABASE_URL</a></li><li class="toc-h2"><a href="#schema">Schema</a></li><li class="toc-h2"><a href="#schema-initialization">Schema initialization</a></li><li class="toc-h2"><a href="#migrating-sqlite-to-postgresql">Migrating SQLite to PostgreSQL</a></li><li class="toc-h3"><a href="#point-it-at-a-source-and-a-target">Point it at a source and a target</a></li><li class="toc-h3"><a href="#dry-run">Dry run</a></li><li class="toc-h3"><a href="#apply">Apply</a></li><li class="toc-h3"><a href="#cut-over">Cut over</a></li><li class="toc-h2"><a href="#cluster-mode">Cluster mode</a></li><li class="toc-h2"><a href="#postgresql-behaviours-worth-knowing">PostgreSQL behaviours worth knowing</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

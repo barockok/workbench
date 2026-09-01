@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Executing tools — workbench Docs</title>
+<meta name="description" content="How execute_tools runs plugin tools, what happens to each one, and every error shape it can return.">
+<meta property="og:title" content="Executing tools — workbench">
+<meta property="og:description" content="How execute_tools runs plugin tools, what happens to each one, and every error shape it can return.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab active" href="discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Working with tools</p><ul><li><a class="" href="discovering-tools.html">Discovering tools</a></li><li><a class="active" href="executing-tools.html">Executing tools</a></li><li><a class="" href="curl-session.html">Raw API calls</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Authentication</p><ul><li><a class="" href="oauth-connections.html">OAuth connections</a></li><li><a class="" href="api-key-connections.html">API-key connections</a></li><li><a class="" href="browser-sessions.html">Browser sessions</a></li><li><a class="" href="self-hosted-instances.html">Self-hosted instances</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Operating</p><ul><li><a class="" href="jots.html">Jots file store</a></li><li><a class="" href="troubleshooting.html">Troubleshooting</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Working with tools</p>
+          <h1>Executing tools</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">How execute_tools runs plugin tools, what happens to each one, and every error shape it can return.</p>
+      <p><code>execute_tools</code> is the only way to run a plugin tool. Everything the catalog offers —
+all 178 tools across 16 plugins, plus the built-in <code>browser</code> and <code>jots</code> tools — is
+reached through this single meta-tool.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">There is no `execute_tool` (singular)</span></div><div class="callout-body"><p>The single-tool variant was collapsed into the batch tool and no longer exists. Calling
+it returns a JSON-RPC error, code <code>-32602</code>, <code>Tool not found: execute_tool</code>. To run one
+tool, pass a one-element <code>executions</code> array.</p>
+</div></div>
+
+<h2 id="the-call-shape">The call shape<a class="anchor" href="#the-call-shape" aria-label="Link to The call shape">#</a></h2>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/call&quot;,&quot;params&quot;:{
+  &quot;name&quot;: &quot;execute_tools&quot;,
+  &quot;arguments&quot;: {
+    &quot;executions&quot;: [
+      { &quot;tool&quot;: &quot;github_list_prs&quot;, &quot;args&quot;: { &quot;owner&quot;: &quot;acme&quot;, &quot;repo&quot;: &quot;demo-repo&quot; } },
+      { &quot;tool&quot;: &quot;jira_search_issues&quot;, &quot;args&quot;: { &quot;jql&quot;: &quot;project = ACME AND status = Open&quot; } }
+    ]
+  }
+}}</code></pre></div>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>executions</code></td><td>yes</td><td>Array, at least one element</td></tr>
+<tr><td><code>executions[].tool</code></td><td>yes</td><td>Tool name from <code>search_tools</code></td></tr>
+<tr><td><code>executions[].args</code></td><td>no</td><td>Object; defaults to <code>{}</code></td></tr>
+</tbody></table></div>
+<p>The response is a <code>results</code> array, <strong>index-aligned with <code>executions</code></strong>:</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;results&quot;: [
+    { &quot;result&quot;: { &quot;…&quot;: &quot;github payload&quot; } },
+    { &quot;error&quot;: &quot;NOT_CONNECTED&quot;, &quot;integration&quot;: &quot;atlassian-jira&quot;,
+      &quot;message&quot;: &quot;atlassian-jira not connected. Use connect('atlassian-jira') to connect.&quot; }
+  ]
+}</code></pre></div>
+<p>Each entry is either <code>{result}</code> or an error object. A failure in one execution never
+aborts the others — this is the point of the batch shape. Executions run concurrently
+through a bounded worker pool with a fixed concurrency of <strong>8</strong>, so a fifty-item batch
+opens at most eight upstream connections at a time. Ordering is preserved regardless,
+because each worker writes to the index it claimed.</p>
+<p>For a single tool, the array has one element:</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;executions&quot;: [ { &quot;tool&quot;: &quot;list_jots&quot;, &quot;args&quot;: {} } ] }</code></pre></div>
+<h2 id="what-happens-to-each-execution">What happens to each execution<a class="anchor" href="#what-happens-to-each-execution" aria-label="Link to What happens to each execution">#</a></h2>
+<p>Per item, in order. The engine never throws — every failure is converted to a returned
+object.</p>
+<div class="steps">
+
+<h3 id="tool-lookup">Tool lookup<a class="anchor" href="#tool-lookup" aria-label="Link to Tool lookup">#</a></h3>
+<p>The registry is looked up by name. Unknown name → <code>{&quot;error&quot;: &quot;Tool not found&quot;}</code>, audit
+logged, done.</p>
+<h3 id="connection-check">Connection check<a class="anchor" href="#connection-check" aria-label="Link to Connection check">#</a></h3>
+<p>The tool&#39;s owning integration is resolved, and its auth type decides:</p>
+<div class="table-wrap"><table><thead><tr><th>Auth type</th><th>Connected when</th></tr></thead><tbody>
+<tr><td><code>none</code></td><td>always — <code>browser</code> and <code>jots</code> need no credential</td></tr>
+<tr><td><code>cookie</code></td><td>a cookie bundle exists and at least one cookie is unexpired</td></tr>
+<tr><td>everything else</td><td>a stored access token exists</td></tr>
+</tbody></table></div>
+<p>Not connected → the <code>NOT_CONNECTED</code> shape below.</p>
+<h3 id="argument-validation">Argument validation<a class="anchor" href="#argument-validation" aria-label="Link to Argument validation">#</a></h3>
+<p>Args are <code>safeParse</code>d against the plugin tool&#39;s own Zod schema — the same schema
+<code>get_tool_schema</code> renders as JSON Schema. This step is not just a guard: it is where
+Zod <code>.default()</code> values get applied, so an optional-with-default field reaches the
+handler with its default rather than <code>undefined</code>. Failure → the invalid-arguments shape
+below.</p>
+<h3 id="context-creation">Context creation<a class="anchor" href="#context-creation" aria-label="Link to Context creation">#</a></h3>
+<p><code>createContext(userId, integration)</code> builds a fresh per-call <code>ctx</code>, carrying
+<code>ctx.userId</code>, <code>ctx.getToken()</code>, <code>ctx.getConfig()</code> and <code>ctx.http()</code>. Token refresh
+happens lazily here — if the stored access token expires within 30 seconds,
+<code>getToken()</code> refreshes and re-stores it before returning.</p>
+<h3 id="handler-run">Handler run<a class="anchor" href="#handler-run" aria-label="Link to Handler run">#</a></h3>
+<p><code>handler(ctx, parsedArgs)</code>. A returned value becomes <code>{result}</code>. A thrown error becomes
+<code>{error: &quot;&lt;message&gt;&quot;}</code>.</p>
+</div>
+
+<p>Every path — including the ones that never reach a handler — writes an audit event with
+<code>action: &quot;EXECUTE&quot;</code>, the user, tool, success flag, error, and duration. <code>integration</code> is
+on all of them but one: when the tool name resolves to nothing, there is no integration
+to record. The
+run path additionally emits a structured JSON log line and increments the
+<code>workbench_tool_executions_total</code> counter and <code>workbench_tool_execution_duration_seconds</code>
+histogram, labelled by integration, tool, and success.</p>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+    participant A as Agent
+    participant M as execute_tools
+    participant E as executeSingle
+    participant P as Plugin handler
+    participant U as Upstream API
+    A-&gt;&gt;M: executions[]
+    loop up to 8 at a time
+        M-&gt;&gt;E: tool, args
+        E-&gt;&gt;E: registry lookup
+        alt unknown tool
+            E--&gt;&gt;M: error Tool not found
+        else
+            E-&gt;&gt;E: connection check
+            alt no credential
+                E--&gt;&gt;M: error NOT_CONNECTED
+            else
+                E-&gt;&gt;E: Zod safeParse (applies defaults)
+                alt invalid args
+                    E--&gt;&gt;M: error Invalid arguments
+                else
+                    E-&gt;&gt;E: createContext (refresh if stale)
+                    E-&gt;&gt;P: handler(ctx, args)
+                    P-&gt;&gt;U: ctx.http with injected credential
+                    U--&gt;&gt;P: response
+                    P--&gt;&gt;E: value
+                    E--&gt;&gt;M: result
+                end
+            end
+        end
+    end
+    M--&gt;&gt;A: results[] in request order</pre></div>
+<h2 id="error-shapes">Error shapes<a class="anchor" href="#error-shapes" aria-label="Link to Error shapes">#</a></h2>
+<p>Three distinct shapes, and the difference matters when you write client code.</p>
+<h3 id="not_connected">NOT_CONNECTED<a class="anchor" href="#not_connected" aria-label="Link to NOT_CONNECTED">#</a></h3>
+<p>The only error shape with extra fields. It is the agent&#39;s cue to start a connection.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;error&quot;: &quot;NOT_CONNECTED&quot;,
+  &quot;integration&quot;: &quot;atlassian-jira&quot;,
+  &quot;message&quot;: &quot;atlassian-jira not connected. Use connect('atlassian-jira') to connect.&quot;
+}</code></pre></div>
+<p>Read <code>integration</code> and pass it to <code>connect</code>, then <code>wait_for_connection</code>. See
+<a href="oauth-connections.html">OAuth connections</a>.</p>
+<h3 id="invalid-arguments">Invalid arguments<a class="anchor" href="#invalid-arguments" aria-label="Link to Invalid arguments">#</a></h3>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;error&quot;: &quot;Invalid arguments for github_list_prs: &lt;zod validation message&gt;&quot; }</code></pre></div>
+<p>The Zod message is passed through verbatim, so it names the failing path and the
+expected type. Fetch the schema with <code>get_tool_schema</code> and retry — do not guess.</p>
+<h3 id="handler-failure">Handler failure<a class="anchor" href="#handler-failure" aria-label="Link to Handler failure">#</a></h3>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;error&quot;: &quot;&lt;whatever the handler threw&gt;&quot; }</code></pre></div>
+<p>Upstream 4xx/5xx responses usually surface here, but not always: many shipped handlers
+pass the upstream JSON through, so an API that returns HTTP 200 with an error body
+lands in <code>{result}</code>, not <code>{error}</code>. Slack is the canonical case — see
+<a href="troubleshooting.html">Troubleshooting</a>.</p>
+<h3 id="the-safeparse_error-path">The SAFEPARSE_ERROR path<a class="anchor" href="#the-safeparse_error-path" aria-label="Link to The SAFEPARSE_ERROR path">#</a></h3>
+<p>There is a fourth outcome that is not an error to the caller at all. If <code>safeParse</code>
+itself <em>throws</em> — which means the plugin&#39;s schema is malformed, not that the arguments
+are bad — the engine does not fail the execution. It records an audit event with
+<code>error: &quot;SAFEPARSE_ERROR: &lt;message&gt;&quot;</code> and <strong>continues with the raw, unvalidated
+arguments</strong>.</p>
+<p>The reasoning is that a broken schema is an author bug, not a caller bug, and silently
+failing every call to that tool would be worse than running it. The consequence for you:
+a tool can occasionally receive arguments no schema checked, and Zod defaults are not
+applied on that path. If a tool behaves as though its defaults vanished, grep the audit
+log for <code>SAFEPARSE_ERROR</code>.</p>
+<h2 id="tool-failures-are-not-json-rpc-errors">Tool failures are not JSON-RPC errors<a class="anchor" href="#tool-failures-are-not-json-rpc-errors" aria-label="Link to Tool failures are not JSON-RPC errors">#</a></h2>
+<p>This trips up clients written against the JSON-RPC error field.</p>
+<div class="table-wrap"><table><thead><tr><th>Failure</th><th>How it arrives</th></tr></thead><tbody>
+<tr><td>Unknown meta-tool name</td><td>JSON-RPC <code>error</code>, code <code>-32602</code>, <code>Tool not found: &lt;name&gt;</code></td></tr>
+<tr><td><code>executions</code> missing or empty</td><td>JSON-RPC <code>error</code>, code <code>-32602</code>, <code>Invalid arguments: &lt;zod message&gt;</code></td></tr>
+<tr><td>Unknown <em>plugin</em> tool</td><td>HTTP 200, JSON-RPC <strong>result</strong>, text contains <code>{&quot;results&quot;:[{&quot;error&quot;:&quot;Tool not found&quot;}]}</code></td></tr>
+<tr><td>Not connected</td><td>HTTP 200, JSON-RPC <strong>result</strong>, <code>NOT_CONNECTED</code> inside <code>results</code></td></tr>
+<tr><td>Handler threw</td><td>HTTP 200, JSON-RPC <strong>result</strong>, <code>{&quot;error&quot;:…}</code> inside <code>results</code></td></tr>
+</tbody></table></div>
+<p>Only protocol-level problems — an unknown meta-tool, or arguments the <em>meta-tool&#39;s</em> own
+schema rejects — become JSON-RPC errors. Everything else is a successful call whose
+payload happens to describe a failure. A client that inspects only the JSON-RPC <code>error</code>
+field will read every tool failure as a success.</p>
+<h2 id="result-size">Result size<a class="anchor" href="#result-size" aria-label="Link to Result size">#</a></h2>
+<p>The whole <code>results</code> array is stringified into one text block and capped at <strong>60,000
+characters</strong>, with a truncation notice appended. Batching amplifies this: eight list
+calls in one <code>execute_tools</code> share one budget. Pass <code>limit</code>/<code>perPage</code> arguments, or
+split the batch, when results are large. See
+<a href="discovering-tools.html">the cap in Discovering tools</a>.</p>
+<p>One exception: if any result carries an <code>_mcpImage</code> sentinel — <code>browser_screenshot</code>
+produces one — the response becomes image content blocks instead, and the text block is
+dropped. The walker finds the sentinel inside an <code>execute_tools</code> batch as well as at the
+top level.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="discovering-tools.html"><span class="pn-dir">Previous</span><span class="pn-label">Discovering tools</span></a><a class="pn pn-next" href="curl-session.html"><span class="pn-dir">Next</span><span class="pn-label">Raw API calls</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/guides/executing-tools.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-call-shape">The call shape</a></li><li class="toc-h2"><a href="#what-happens-to-each-execution">What happens to each execution</a></li><li class="toc-h3"><a href="#tool-lookup">Tool lookup</a></li><li class="toc-h3"><a href="#connection-check">Connection check</a></li><li class="toc-h3"><a href="#argument-validation">Argument validation</a></li><li class="toc-h3"><a href="#context-creation">Context creation</a></li><li class="toc-h3"><a href="#handler-run">Handler run</a></li><li class="toc-h2"><a href="#error-shapes">Error shapes</a></li><li class="toc-h3"><a href="#not_connected">NOT_CONNECTED</a></li><li class="toc-h3"><a href="#invalid-arguments">Invalid arguments</a></li><li class="toc-h3"><a href="#handler-failure">Handler failure</a></li><li class="toc-h3"><a href="#the-safeparse_error-path">The SAFEPARSE_ERROR path</a></li><li class="toc-h2"><a href="#tool-failures-are-not-json-rpc-errors">Tool failures are not JSON-RPC errors</a></li><li class="toc-h2"><a href="#result-size">Result size</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

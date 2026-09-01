@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plugin context API — workbench Docs</title>
+<meta name="description" content="The ToolContext object every handler receives — userId, getToken, http, getConfig — what each does per auth type, and the host guards your plugin is responsible for.">
+<meta property="og:title" content="Plugin context API — workbench">
+<meta property="og:description" content="The ToolContext object every handler receives — userId, getToken, http, getConfig — what each does per auth type, and the host guards your plugin is responsible for.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab active" href="index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Getting started</p><ul><li><a class="" href="index.html">Plugin overview</a></li><li><a class="" href="writing-a-plugin.html">Write your first plugin</a></li><li><a class="" href="loading.html">Loading and reloading</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Reference</p><ul><li><a class="" href="manifest.html">Manifest reference</a></li><li><a class="active" href="context.html">Plugin context API</a></li><li><a class="" href="auth-modes.html">Auth modes</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Reference</p>
+          <h1>Plugin context API</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">The ToolContext object every handler receives — userId, getToken, http, getConfig — what each does per auth type, and the host guards your plugin is responsible for.</p>
+      <p>Every tool handler is called as <code>handler(ctx, args)</code>. <code>ctx</code> is a <code>ToolContext</code>,
+built fresh for the <code>(userId, integration)</code> pair before each execution.</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">export interface ToolContext {
+  userId: string;
+  getToken(): Promise&lt;string&gt;;
+  http(url: string, init?: RequestInit): Promise&lt;Response&gt;;
+  // Per-connection config set at connect time (e.g. { instanceUrl } for a
+  // self-hosted GitLab). Returns {} when none was stored.
+  getConfig(): Record&lt;string, unknown&gt;;
+}</code></pre></div>
+<p>That is the entire surface. There is no database handle, no filesystem, no
+logger, and no browser — the internal <code>browser</code> and <code>jots</code> plugins reach those
+from server source precisely so that plugins cannot.</p>
+<div class="table-wrap"><table><thead><tr><th>Member</th><th>Sync?</th><th>Returns</th></tr></thead><tbody>
+<tr><td><code>userId</code></td><td>—</td><td>The workbench user id as a string.</td></tr>
+<tr><td><code>getToken()</code></td><td>Async</td><td>The decrypted access token, refreshing it first if needed.</td></tr>
+<tr><td><code>http(url, init?)</code></td><td>Async</td><td>A <code>fetch</code> <code>Response</code>, with the user&#39;s credential attached.</td></tr>
+<tr><td><code>getConfig()</code></td><td>Sync</td><td>The per-connection config object, or <code>{}</code>.</td></tr>
+</tbody></table></div>
+<h2 id="ctxuserid"><code>ctx.userId</code><a class="anchor" href="#ctxuserid" aria-label="Link to ctx.userId">#</a></h2>
+<p>The id of the workbench user the tool is running for. Use it to key any per-user
+state your plugin keeps outside the workbench. Never use it as a credential — it
+is an identifier, not a secret.</p>
+<h2 id="ctxgetconfig"><code>ctx.getConfig()</code><a class="anchor" href="#ctxgetconfig" aria-label="Link to ctx.getConfig()">#</a></h2>
+<p>Synchronous, because the connection config is fetched and parsed while the
+context is being built. Returns the JSON object stored on the connection at
+connect time, or <code>{}</code> when nothing was stored or the stored JSON fails to parse
+(the parse failure is swallowed).</p>
+<p>Two things populate it:</p>
+<div class="table-wrap"><table><thead><tr><th>Auth type</th><th>Contents</th></tr></thead><tbody>
+<tr><td><code>oauth2</code> with an <code>instance</code> block</td><td><code>{ instanceUrl }</code> — the origin the user chose.</td></tr>
+<tr><td><code>apikey</code></td><td>Every non-secret field from the manifest&#39;s <code>fields[]</code>, keyed by <code>field.key</code>.</td></tr>
+</tbody></table></div>
+<p>The GitLab plugin reads it on every call, defaulting to the cloud origin:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">function origin(ctx: any): string {
+  const u = ctx.getConfig?.()?.instanceUrl;
+  return typeof u === &quot;string&quot; &amp;&amp; u ? u.replace(/\/+$/, &quot;&quot;) : DEFAULT_ORIGIN;
+}</code></pre></div>
+<p>New Relic reads <code>region</code> and <code>accountId</code> the same way — the secret field
+(<code>apiKey</code>) is <em>not</em> in <code>getConfig()</code>. The server stores it encrypted as the token and
+attached by <code>ctx.http()</code>.</p>
+<h2 id="ctxgettoken"><code>ctx.getToken()</code><a class="anchor" href="#ctxgettoken" aria-label="Link to ctx.getToken()">#</a></h2>
+<p>Returns the decrypted access token. The token is loaded lazily on first call and
+memoised for the life of the context, so calling it repeatedly in one handler is
+free.</p>
+<ul>
+<li>Throws <code>&quot;Not connected&quot;</code> if no token is stored.</li>
+<li>Refreshes when <code>expiresAt - 30s &lt;= now</code>. The 30-second skew means a token about
+to expire mid-flight is refreshed rather than used.</li>
+<li>Refresh is a form-encoded <code>grant_type=refresh_token</code> POST to the resolved token
+URL (the instance-swapped one, for self-hosted integrations). The rotated token
+is persisted, and the previous <code>refresh_token</code> is kept if the provider does not
+return a new one.</li>
+<li>Refresh throws if there is no stored <code>refresh_token</code>, if the integration is not
+<code>oauth2</code>, or if no OAuth client is configured for it.</li>
+</ul>
+<p>Most handlers never call <code>getToken()</code> — <code>ctx.http()</code> does it for them. Call it
+directly only when you need the raw token in a payload, as
+<code>github_get_clone_url</code> does when minting an <code>https://x-access-token:&lt;token&gt;@…</code>
+URL.</p>
+<h2 id="ctxhttpurl-init"><code>ctx.http(url, init)</code><a class="anchor" href="#ctxhttpurl-init" aria-label="Link to ctx.http(url, init)">#</a></h2>
+<p>A <code>fetch</code> wrapper that attaches the user&#39;s credential. <strong>Always use it instead of
+bare <code>fetch</code></strong> — a direct <code>fetch</code> skips authentication, the cookie-domain
+allowlist, and the Atlassian cloud-id resolver.</p>
+<p>Its behaviour branches on the integration&#39;s declared auth type.</p>
+<div class="table-wrap"><table><thead><tr><th>Auth type</th><th>Host check</th><th>Credential</th><th>Redirects</th></tr></thead><tbody>
+<tr><td><code>apikey</code></td><td>Only if <code>allowedHosts</code> is set</td><td><code>headers[headerName] = token</code>, verbatim — no <code>Bearer</code> prefix</td><td>fetch default</td></tr>
+<tr><td><code>cookie</code></td><td>Mandatory, against <code>targetDomain</code> + <code>cookieDomains</code></td><td>A single <code>Cookie</code> header, filtered by expiry and domain</td><td>Forced <code>redirect: &quot;manual&quot;</code></td></tr>
+<tr><td><code>oauth2</code> (and any other type)</td><td><strong>None</strong></td><td><code>Authorization: Bearer &lt;token&gt;</code></td><td>fetch default</td></tr>
+</tbody></table></div>
+<h3 id="apikey"><code>apikey</code><a class="anchor" href="#apikey" aria-label="Link to apikey">#</a></h3>
+<p>Loads the token, then — <strong>only if <code>allowedHosts</code> is non-empty</strong> — checks the URL
+host against it. Matching is case-insensitive, strips a leading dot, and accepts
+an exact host or any subdomain of a listed host. A violation throws
+<code>API-key auth: URL host &lt;host&gt; not in declared allowedHosts</code>.</p>
+<p>The credential is then set as <code>headers[headerName] = token</code> with no
+transformation. If the API expects <code>Authorization: Bearer &lt;key&gt;</code>, bake the
+<code>Bearer </code> prefix into the value the user pastes, or pick a different header.</p>
+<h3 id="cookie"><code>cookie</code><a class="anchor" href="#cookie" aria-label="Link to cookie">#</a></h3>
+<p>The host check here is <strong>mandatory</strong> and runs before anything is sent. The
+allowed set is <code>targetDomain</code> plus every entry of <code>cookieDomains</code>, dot-stripped
+and lowercased, matched as exact host or subdomain. A violation throws
+<code>Cookie auth: URL host &lt;host&gt; not in declared cookieDomains</code>.</p>
+<p>Cookies are then filtered twice — dropping anything expired, then anything whose
+domain does not match the target host — joined into one <code>Cookie</code> header, and the
+request is issued with <code>redirect: &quot;manual&quot;</code> so a redirect can never carry the
+session cookie to another host. Your handler sees the 3xx itself.</p>
+<h3 id="oauth2"><code>oauth2</code><a class="anchor" href="#oauth2" aria-label="Link to oauth2">#</a></h3>
+<p>Calls <code>ctx.getToken()</code> (refreshing if needed) and sets
+<code>Authorization: Bearer &lt;token&gt;</code>. If the URL matches
+<code>https://api.atlassian.com/ex/(jira|confluence)/cloud-id/</code>, the literal <code>cloud-id</code>
+segment is replaced with the real site id, resolved once from
+<code>/oauth/token/accessible-resources</code> and cached per <code>(userId, product)</code> in a
+process-global map for the lifetime of the process.</p>
+<h2 id="security">Security<a class="anchor" href="#security" aria-label="Link to Security">#</a></h2>
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">The oauth2 branch of `ctx.http()` applies no host guard at all</span></div><div class="callout-body"><p>It sends <code>Authorization: Bearer &lt;user&#39;s token&gt;</code> to whatever URL you pass. If any
+part of that URL comes from tool arguments, an agent — or anyone who can
+influence the agent&#39;s input — can point it at a host they control and receive
+the user&#39;s access token. The same applies to <code>apikey</code> when <code>allowedHosts</code> is
+omitted. Guarding the host is the plugin&#39;s job.</p>
+</div></div>
+
+<p>Two shipped plugins accept a URL argument, and both guard it. Copy whichever
+pattern fits.</p>
+<h3 id="allowlist-the-host-then-drop-the-credential-across-redirects">Allowlist the host, then drop the credential across redirects<a class="anchor" href="#allowlist-the-host-then-drop-the-credential-across-redirects" aria-label="Link to Allowlist the host, then drop the credential across redirects">#</a></h3>
+<p><code>slack_download_file</code> takes a Slack file URL. It validates the scheme and host
+<em>before</em> the credentialed request, then walks redirects by hand so the token
+never follows one off Slack:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">function isSlackHost(host: string): boolean {
+  const h = host.toLowerCase().replace(/\.$/, &quot;&quot;);
+  return h === &quot;slack.com&quot; || h === &quot;files.slack.com&quot; || h.endsWith(&quot;.slack.com&quot;);
+}</code></pre></div>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">if (target.protocol !== &quot;https:&quot; || !isSlackHost(target.hostname)) {
+  return { ok: false, error: &quot;invalid_host&quot; };
+}
+
+let url = target.toString();
+let onSlack = true;
+for (let hop = 0; hop &lt; 5; hop++) {
+  const hopRes = onSlack
+    ? await ctx.http(url, { redirect: &quot;manual&quot; })
+    : await fetch(url, { redirect: &quot;manual&quot; });
+  // …
+  onSlack = isSlackHost(next.hostname);
+}</code></pre></div>
+<p>The loop caps the chain at five requests, the first of which is the original
+fetch — so at most four redirects are followed.</p>
+<p>Three things make this work: the host is checked before the first credentialed
+call, <code>redirect: &quot;manual&quot;</code> keeps the hop loop in the plugin&#39;s hands, and the
+moment the next hop leaves Slack the request switches to a plain <code>fetch</code> with no
+<code>Authorization</code> header. It also rejects non-<code>https:</code> redirect targets, and treats
+a <code>text/html</code> response as <code>not_authed_or_not_found</code> rather than handing back
+Slack&#39;s login page as file bytes.</p>
+<h3 id="block-private-address-ranges">Block private address ranges<a class="anchor" href="#block-private-address-ranges" aria-label="Link to Block private address ranges">#</a></h3>
+<p><code>google_drive_upload_from_url</code> fetches an arbitrary user-supplied URL. It cannot
+allowlist a host, so it blocks the SSRF-relevant ranges instead:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">const parsed = new URL(args.url);
+if (parsed.protocol !== &quot;https:&quot;) {
+  throw new Error(&quot;Only https:// URLs are allowed&quot;);
+}
+const host = parsed.hostname.replace(/^\[|\]$/g, &quot;&quot;); // strip IPv6 brackets
+const privateRange =
+  /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.0\.0\.0$)/;
+const privateIPv6 = /^(::1$|fc|fd|fe80)/i;
+if (host === &quot;localhost&quot; || privateRange.test(host) || privateIPv6.test(host)) {
+  throw new Error(&quot;Requests to private or internal addresses are not allowed&quot;);
+}</code></pre></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Known limitation of the private-range check</span></div><div class="callout-body"><p>This is a string test against the hostname, not against the address the name
+resolves to. A public DNS name that resolves to <code>127.0.0.1</code> or an RFC-1918
+address passes it. Prefer a host allowlist whenever the set of legitimate
+destinations is known.</p>
+</div></div>
+
+<h3 id="practical-rules">Practical rules<a class="anchor" href="#practical-rules" aria-label="Link to Practical rules">#</a></h3>
+<ul>
+<li>If every destination is known in advance, hardcode the base URL in the handler
+and take only path components as arguments.</li>
+<li>If a URL must be an argument, validate scheme and host before the first call
+that carries a credential.</li>
+<li>For <code>apikey</code> plugins, set <code>allowedHosts</code> in the manifest. It is the only
+declarative guard available, and New Relic is the shipped precedent —
+<code>allowedHosts: [&quot;api.newrelic.com&quot;, &quot;api.eu.newrelic.com&quot;]</code>.</li>
+<li>Never interpolate an argument into the host portion of a URL template.</li>
+</ul>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="manifest.html"><span class="pn-dir">Previous</span><span class="pn-label">Manifest reference</span></a><a class="pn pn-next" href="auth-modes.html"><span class="pn-dir">Next</span><span class="pn-label">Auth modes</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/plugins/context.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#ctxuserid">ctx.userId</a></li><li class="toc-h2"><a href="#ctxgetconfig">ctx.getConfig()</a></li><li class="toc-h2"><a href="#ctxgettoken">ctx.getToken()</a></li><li class="toc-h2"><a href="#ctxhttpurl-init">ctx.http(url, init)</a></li><li class="toc-h3"><a href="#apikey">apikey</a></li><li class="toc-h3"><a href="#cookie">cookie</a></li><li class="toc-h3"><a href="#oauth2">oauth2</a></li><li class="toc-h2"><a href="#security">Security</a></li><li class="toc-h3"><a href="#allowlist-the-host-then-drop-the-credential-across-redirects">Allowlist the host, then drop the credential across redirects</a></li><li class="toc-h3"><a href="#block-private-address-ranges">Block private address ranges</a></li><li class="toc-h3"><a href="#practical-rules">Practical rules</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>
