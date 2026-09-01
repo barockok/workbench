@@ -9,7 +9,7 @@ see what exists, connect it, wait, find the tool, call it. Every call below is a
 schemas declare.
 
 GitHub is the example because it is `oauth2` — the mode the agent can drive on its
-own. API-key and cookie integrations need a human in the portal; that difference is
+own. API-key and cookie integrations need a human in the portal. That difference is
 covered at the end.
 
 :::steps

@@ -47,7 +47,7 @@ This is the split that matters:
 - **Every other non-blank field** is stored as the connection's `config` JSON, in
   plaintext. Tools read it with `ctx.getConfig()`.
 
-So for New Relic: `apiKey` becomes the encrypted credential; `region` and `accountId`
+So for New Relic, `apiKey` becomes the encrypted credential. `region` and `accountId`
 become `{"region":"US","accountId":"1234567"}` in `config`. The region is what selects
 the US or EU NerdGraph endpoint at request time, both for tools and for the
 [curl proxy](curl-session.md).
@@ -57,7 +57,7 @@ A manifest with no `secret` field is a plugin bug — the connect endpoint retur
 ## Connecting
 
 API-key integrations connect **from the portal**, not from the agent. The `connect`
-meta-tool has no apikey branch; calling it on one falls into the OAuth path and errors.
+meta-tool has no apikey branch. Calling it on one falls into the OAuth path and errors.
 
 In the portal, clicking Connect on an apikey integration fetches its field list and
 opens a modal. Submitting posts to:
@@ -117,7 +117,7 @@ misconstructed URL in a tool cannot leak the key to a third party.
 > attach the user's API key to whatever URL the plugin passes — including one derived
 > from tool arguments. If you are writing an apikey plugin, set `allowedHosts`, or
 > validate the host in the handler before calling `ctx.http()`. The cookie auth branch
-> enforces a host check unconditionally; the apikey branch does not.
+> enforces a host check unconditionally. The apikey branch does not.
 
 ## Reading config in a tool
 

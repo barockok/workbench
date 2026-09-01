@@ -84,8 +84,8 @@ that <code>jira_create_issue</code> exists.</p>
 <tr><td><code>query</code></td><td>string</td><td>yes</td><td>—</td><td>Search keyword</td></tr>
 </tbody></table></div>
 <p>Returns <code>{ tools: [{ name, description, integration }] }</code>. Matching is over both
-name and description; the entry&#39;s <code>integration</code> is the owning plugin, which you
-pass to <code>connect</code> if execution later reports <code>NOT_CONNECTED</code>.</p>
+name and description. The entry&#39;s <code>integration</code> is the owning plugin. Pass it to
+<code>connect</code> if execution later reports <code>NOT_CONNECTED</code>.</p>
 <div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;name&quot;: &quot;search_tools&quot;, &quot;arguments&quot;: { &quot;query&quot;: &quot;pull request&quot; } }</code></pre></div>
 <h2 id="get_tool_schema">get_tool_schema<a class="anchor" href="#get_tool_schema" aria-label="Link to get_tool_schema">#</a></h2>
 <p>Fetch one tool&#39;s input schema, converted from the plugin&#39;s Zod schema to portable
@@ -112,7 +112,7 @@ array.</em></p>
 </tbody></table></div>
 <p>Returns <code>{ results: [...] }</code>, index-aligned with <code>executions</code>. Each entry is either
 <code>{ result }</code> on success or an error object. A batch runs through a bounded worker
-pool with a concurrency of 8; ordering is preserved regardless of completion order.</p>
+pool with a concurrency of 8. The server preserves ordering regardless of completion order.</p>
 <p>Three error shapes can appear inside <code>results</code>:</p>
 <div class="table-wrap"><table><thead><tr><th>Shape</th><th>Cause</th></tr></thead><tbody>
 <tr><td><code>{ error: &quot;Tool not found&quot; }</code></td><td>No tool registered under that name</td></tr>
@@ -237,7 +237,7 @@ returns <code>{ error }</code> with the failures joined by <code>; </code>:</p>
 <tr><td><code>&lt;name&gt;: curl proxy not enabled</code></td><td>The manifest has no <code>proxy</code> block</td></tr>
 <tr><td><code>&lt;name&gt;: not connected</code></td><td>No stored credential for this user</td></tr>
 </tbody></table></div>
-<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">This token is as powerful as the user's credential</span></div><div class="callout-body"><p>Anything the stored credential can reach — including destructive writes — is
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">This token can do anything the user's credential can do</span></div><div class="callout-body"><p>Anything the stored credential can reach — including destructive writes — is
 reachable with this token for 15 minutes. Ask the user before minting one, name the
 integrations and the intended action, and do not mint speculatively.</p>
 </div></div>

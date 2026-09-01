@@ -97,7 +97,7 @@ happens lazily here — if the stored access token expires within 30 seconds,
 
 ### Handler run
 
-`handler(ctx, parsedArgs)`. A returned value becomes `{result}`; a thrown error becomes
+`handler(ctx, parsedArgs)`. A returned value becomes `{result}`. A thrown error becomes
 `{error: "<message>"}`.
 
 :::

@@ -90,7 +90,7 @@ not portal-side.
 
 > [!WARNING] `BROWSER_PROFILE_TTL_DAYS` deletes credentials
 > Deleting a profile logs that user out of **every** cookie-auth integration at once.
-> The 30-day default is deliberately conservative; the cache trim that runs far more
+> The 30-day default is deliberately conservative. The cache trim that runs far more
 > often is free by comparison. Raise it or set `0` if your users connect cookie
 > integrations rarely.
 
@@ -106,7 +106,7 @@ Chromium is spawned.
 | `CAPTURE_PROXY_USERNAME` | string | — | no | Proxy username |
 | `CAPTURE_PROXY_PASSWORD` | string | — | no | Proxy password |
 
-Proxy authentication is armed only when all three are set; the answering handler
+Proxy authentication is armed only when all three are set. The answering handler
 responds to proxy auth challenges specifically, and declines anything else. Because
 they bypass the schema, a typo in one of these names fails silently rather than at
 boot.

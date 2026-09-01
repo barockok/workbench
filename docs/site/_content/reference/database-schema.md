@@ -303,7 +303,7 @@ target unless `--allow-nonempty`, copies everything in one transaction with
 `INSERT … ON CONFLICT DO NOTHING`, resyncs every `SERIAL` sequence with `setval`, and
 verifies row counts per table. Nothing is written without `--apply`.
 
-`pending_auth` and `oauth_auth_codes` hold short-lived handshake state; `--skip` them
+`pending_auth` and `oauth_auth_codes` hold short-lived handshake state. `--skip` them
 unless the cutover is immediate. The script does not cut over — that is a separate
 `DATABASE_URL` change.
 

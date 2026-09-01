@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">Connect New Relic with a User API key so an agent can run NRQL, find entities, and manage dashboards and alerting.</p>
-      <p>New Relic is the one integration that does not use OAuth. The user pastes a User API key, picks a region, and optionally sets a default account id. Every tool then speaks NerdGraph, New Relic&#39;s GraphQL API: NRQL queries, entity search, dashboard reads and widget writes, alert policies and conditions, notification destinations, and tagging.</p>
+      <p>New Relic is the one integration that does not use OAuth. The user pastes a User API key, picks a region, and optionally sets a default account id. Every tool then speaks NerdGraph, New Relic&#39;s GraphQL API. That covers NRQL queries, entity search, dashboard reads and widget writes, alert policies and conditions, notification destinations, and tagging.</p>
 <h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td>Plugin id</td><td><code>newrelic</code></td></tr>
@@ -83,7 +83,7 @@ connection fields below.</p>
 <div class="steps">
 
 <h3 id="generate-a-user-api-key">Generate a User API key<a class="anchor" href="#generate-a-user-api-key" aria-label="Link to Generate a User API key">#</a></h3>
-<p>In New Relic, open the user menu → <strong>API keys</strong> → <strong>Create a key</strong> → key type <strong>User</strong>. Copy it; you cannot read it back later.</p>
+<p>In New Relic, open the user menu → <strong>API keys</strong> → <strong>Create a key</strong> → key type <strong>User</strong>. Copy it. You cannot read it back later.</p>
 <h3 id="note-your-region">Note your region<a class="anchor" href="#note-your-region" aria-label="Link to Note your region">#</a></h3>
 <p>US accounts live on <code>api.newrelic.com</code>, EU accounts on <code>api.eu.newrelic.com</code>. Getting this wrong produces authentication failures against a key that is perfectly valid on the other region.</p>
 <h3 id="find-your-account-id-if-you-want-a-default">Find your account id, if you want a default<a class="anchor" href="#find-your-account-id-if-you-want-a-default" aria-label="Link to Find your account id, if you want a default">#</a></h3>
@@ -99,11 +99,11 @@ connection fields below.</p>
 <tr><td><code>accountId</code></td><td>No</td><td>Numeric default account id. A User API key can span several accounts, so leaving it blank forces each call to pass <code>accountId</code> explicitly.</td></tr>
 </tbody></table></div>
 <h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
-<p>None. API-key integrations have no client id or secret, so no environment variables are involved, and the portal&#39;s Connect button is enabled for this integration on a stock install.</p>
+<p>None. API-key integrations have no client id or secret, so no environment variables are involved. The portal&#39;s Connect button is enabled for this integration on a stock install.</p>
 <h2 id="connect">Connect<a class="anchor" href="#connect" aria-label="Link to Connect">#</a></h2>
 <p>Portal: Connections → <strong>Connect</strong> on the New Relic card → fill the three fields → submit. The connection is live immediately.</p>
-<p>An agent cannot complete this flow itself. <code>connect</code> returns a URL only for OAuth and cookie integrations; it has no API-key branch, so <code>connect(&quot;newrelic&quot;)</code> falls through to the OAuth path and comes back as <code>{ error: &quot;Integration newrelic is not oauth2&quot; }</code>. Point the user at the portal and re-check <code>list_integrations</code> instead.</p>
-<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">A failed `connect` leaves a pending record</span></div><div class="callout-body"><p>The pending record is created before the OAuth URL is built, so the failed call leaves a stale <code>PENDING</code> row behind. It is harmless — it expires after <code>CONNECT_TTL_SECONDS</code> — but do not wait on its <code>connectionId</code>; the error response carries none.</p>
+<p>An agent cannot complete this flow itself. <code>connect</code> returns a URL only for OAuth and cookie integrations. It has no API-key branch. <code>connect(&quot;newrelic&quot;)</code> therefore falls through to the OAuth path and comes back as <code>{ error: &quot;Integration newrelic is not oauth2&quot; }</code>. Point the user at the portal and re-check <code>list_integrations</code> instead.</p>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">A failed `connect` leaves a pending record</span></div><div class="callout-body"><p>The server creates the pending record before it builds the OAuth URL, so the failed call leaves a stale <code>PENDING</code> row behind. The row is harmless and expires after <code>CONNECT_TTL_SECONDS</code>. Do not wait on its <code>connectionId</code>, because the error response carries none.</p>
 </div></div>
 
 <h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
@@ -127,9 +127,9 @@ connection fields below.</p>
 </div></div>
 
 <p>The <code>Api-Key</code> header value is sent <strong>verbatim</strong> — the server adds no <code>Bearer</code> prefix and no other decoration. That is what NerdGraph expects, and it means the stored value must be exactly the key.</p>
-<p>The key is pinned by <code>allowedHosts</code> to <code>api.newrelic.com</code> and <code>api.eu.newrelic.com</code>. A request to any other host throws before the credential is attached, so the key cannot leak to another destination. New Relic is the only shipped plugin that sets this; for API-key plugins in general, omitting <code>allowedHosts</code> means no host validation happens at all.</p>
+<p>The key is pinned by <code>allowedHosts</code> to <code>api.newrelic.com</code> and <code>api.eu.newrelic.com</code>. A request to any other host throws before the credential is attached, so the key cannot leak to another destination. New Relic is the only shipped plugin that sets this. For API-key plugins in general, omitting <code>allowedHosts</code> means no host validation happens at all.</p>
 <p>Everything is NerdGraph. There is no REST surface here, so <code>newrelic_run_nrql</code> is the tool for any read the specific tools do not cover.</p>
-<p>Leaving <code>accountId</code> blank is the safer default when the key spans several accounts: every call then has to name the account it means, instead of silently querying whichever one you configured months ago.</p>
+<p>Leaving <code>accountId</code> blank is the safer default when the key spans several accounts. Every call then has to name the account it means. Otherwise a call queries whichever account you configured months ago.</p>
 
     </article>
     <nav class="prevnext"><a class="pn pn-prev" href="asana.html"><span class="pn-dir">Previous</span><span class="pn-label">Asana</span></a><a class="pn pn-next" href="browser.html"><span class="pn-dir">Next</span><span class="pn-label">Browser</span></a></nav>

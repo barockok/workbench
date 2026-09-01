@@ -62,9 +62,9 @@
       </div>
       <p class="lede">Configuring Google or Keycloak login for the portal — redirect URIs, provider discovery, and the stateless session model.</p>
       <p>The portal has no password login. Users sign in through an OIDC provider, and a
-user row is created on first successful callback. Two providers are supported and
-both are optional; you can enable either, both, or neither (in which case the only
-way to create a user is the seed script — see <a href="install.html">install</a>).</p>
+user row is created on first successful callback. Two providers are supported, and
+both are optional. You can enable either, both, or neither. With neither, the only
+way to create a user is the seed script — see <a href="install.html">install</a>.</p>
 <div class="table-wrap"><table><thead><tr><th>Provider</th><th>Enabled when</th><th>Callback URL</th></tr></thead><tbody>
 <tr><td>Google</td><td><code>GOOGLE_CLIENT_ID</code> is set</td><td><code>${SERVER_PUBLIC_URL}/api/auth/google/callback</code></td></tr>
 <tr><td>Keycloak</td><td>all three <code>KEYCLOAK_*</code> vars are set</td><td><code>${SERVER_PUBLIC_URL}/api/auth/keycloak/callback</code></td></tr>
@@ -74,7 +74,7 @@ documentation — including the comment in <code>.env.example</code> — describ
 <code>${PORTAL_URL}/auth/google/callback</code>. That value is wrong and will fail with a
 <code>redirect_uri_mismatch</code> in the provider console. The same helper builds the URI
 for both the authorize redirect and the token exchange, so the two are always
-byte-identical; there is nothing to align by hand except what you register with
+byte-identical. There is nothing to align by hand except what you register with
 the provider.</p>
 </div></div>
 
@@ -91,8 +91,8 @@ redirect URI on the OAuth client.</p>
 of Google&#39;s two published issuer spellings — <code>https://accounts.google.com</code> and the
 bare <code>accounts.google.com</code> — with the audience pinned to <code>GOOGLE_CLIENT_ID</code> and 60
 seconds of clock tolerance, then checks the nonce.</p>
-<p>Accounts whose email is not verified are rejected. A returning user is matched on
-<code>google_sub</code>; otherwise the server links by email address; otherwise it creates a
+<p>Accounts whose email is not verified are rejected. The server matches a returning user on
+<code>google_sub</code>. Failing that, it links by email address. Failing that, it creates a
 new user.</p>
 <p><code>GOOGLE_CLIENT_ID</code> alone is enough to make the provider appear and to build an
 authorize URL, but without <code>GOOGLE_CLIENT_SECRET</code> the token exchange throws
@@ -118,12 +118,12 @@ created on <code>keycloak_sub</code>. It is a confidential-client flow with no P
 <p>Two behavioural differences to be aware of:</p>
 <ul>
 <li><strong>Email verification is checked more loosely.</strong> Keycloak logins are rejected only
-when the token carries <code>email_verified: false</code>; an absent claim passes. Google
+when the token carries <code>email_verified: false</code>. An absent claim passes. Google
 rejects an absent claim too. Configure the realm to emit the claim if you rely
 on it.</li>
 <li><strong>Keycloak cannot complete an MCP <code>/authorize</code> handshake.</strong> The MCP OAuth
 authorize endpoint hardcodes the Google authorize URL, and the Keycloak callback
-never resumes an authorize ticket. Keycloak works for portal login; agents
+never resumes an authorize ticket. Keycloak works for portal login. Agents
 authorizing over MCP OAuth 2.1 need Google configured. Agents can also
 authenticate with a workbench API key, which is provider-independent.</li>
 </ul>
@@ -153,7 +153,7 @@ there itself. The only route that answers with a 302 to Google is the MCP OAuth
 <code>GET /authorize</code>.</p>
 <p>The session is a stateless <strong>HS256 JWT</strong> signed with <code>SESSION_SECRET</code>. Claims are
 <code>sub</code> (the user id), <code>email</code>, <code>iat</code>, <code>exp</code>, plus <code>aud</code> and <code>iss</code> both set to
-<code>workbench</code>; verification enforces the audience, the issuer, and 5 seconds of
+<code>workbench</code>. Verification enforces the audience, the issuer, and 5 seconds of
 clock tolerance. The lifetime is <strong>24 hours</strong>.</p>
 <p>After either callback the server redirects to <code>PORTAL_URL</code> with the token in the
 <strong>URL fragment</strong> — not a query parameter, so it is never sent to the server or

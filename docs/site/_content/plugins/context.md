@@ -58,7 +58,7 @@ function origin(ctx: any): string {
 ```
 
 New Relic reads `region` and `accountId` the same way — the secret field
-(`apiKey`) is *not* in `getConfig()`; it is stored encrypted as the token and
+(`apiKey`) is *not* in `getConfig()`. The server stores it encrypted as the token and
 attached by `ctx.http()`.
 
 ## `ctx.getToken()`

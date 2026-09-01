@@ -4,7 +4,7 @@ description: Symptoms you are likely to hit, what causes them, and the fix — f
 ---
 
 Most of what follows was found the hard way in production and written down in the
-project's field notes. The table is the index; the sections below carry the detail.
+project's field notes. The table is the index. The sections below carry the detail.
 
 ## Symptom index
 
@@ -138,7 +138,7 @@ integrations all go through the built-in pass, which logs
 
 ### Chromium will not start as root
 
-**Symptom:** cookie capture fails with `fetch failed` against the CDP port; Chromium
+**Symptom:** cookie capture fails with `fetch failed` against the CDP port. Chromium
 appears to start and die.
 
 **Cause:** the container image has no `USER` directive, so the process runs as root, and
@@ -237,7 +237,7 @@ file request with a login page at status 200 rather than a 403.
 **Cause:** GitHub's token endpoint returns `application/x-www-form-urlencoded` by
 default. Calling `.json()` on that response throws.
 
-**Fix:** the exchange sends `Accept: application/json`. This is shipped; seeing it now
+**Fix:** the exchange sends `Accept: application/json`. This is shipped. Seeing it now
 means an old build.
 
 ### Confluence operations return 410
@@ -249,7 +249,7 @@ means an old build.
 
 **Fix:** update the scopes on your Atlassian app, then **have users reconnect** — an
 existing connection still carries the old scope grant, and a scope change does not
-apply retroactively. The MCP tool names and arguments did not change; search still uses
+apply retroactively. The MCP tool names and arguments did not change. Search still uses
 CQL.
 
 The same reconnect requirement applies to any scope addition. Bitbucket's pipeline tools

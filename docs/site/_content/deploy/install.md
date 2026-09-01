@@ -18,7 +18,7 @@ actually built and tested:
 | npm | 10.2.0 | `packageManager` in the root `package.json` |
 
 Chromium is only needed for cookie-auth and browser-session integrations. In the
-Docker image it is baked in; locally, Playwright installs it as a dependency.
+Docker image it is baked in. Locally, Playwright installs it as a dependency.
 
 ## Workspace layout
 

@@ -86,7 +86,7 @@ agent&#39;s context on connect.</p>
   Meta -.reads.-&gt; Store
   Portal --&gt;|stores tokens| Store
   Portal -.OAuth consent.-&gt; APIs</pre></div>
-<p>The agent never holds a provider credential. It names a tool; the server looks up
+<p>The agent never holds a provider credential. It names a tool. The server looks up
 that user&#39;s stored token, injects it into the outbound request, and returns the
 response.</p>
 <h2 id="why-the-meta-tool-pattern">Why the meta-tool pattern<a class="anchor" href="#why-the-meta-tool-pattern" aria-label="Link to Why the meta-tool pattern">#</a></h2>
@@ -101,7 +101,7 @@ selection problem when it picks one.</p>
 <li><code>execute_tools</code> runs one or many, concurrently, in a single call.</li>
 </ol>
 <p>The same discipline applies on the way back. A tool result is serialized into one
-text block capped at <strong>60,000 characters</strong>; past that it is truncated with a notice
+text block capped at <strong>60,000 characters</strong>. Past that it is truncated with a notice
 telling the agent to narrow the request with <code>limit</code>, <code>fields</code>, or pagination.
 Truncated output is deliberately not valid JSON, so a client cannot silently parse
 a half-response as complete.</p>

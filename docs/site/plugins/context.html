@@ -100,7 +100,7 @@ connect time, or <code>{}</code> when nothing was stored or the stored JSON fail
   return typeof u === &quot;string&quot; &amp;&amp; u ? u.replace(/\/+$/, &quot;&quot;) : DEFAULT_ORIGIN;
 }</code></pre></div>
 <p>New Relic reads <code>region</code> and <code>accountId</code> the same way — the secret field
-(<code>apiKey</code>) is <em>not</em> in <code>getConfig()</code>; it is stored encrypted as the token and
+(<code>apiKey</code>) is <em>not</em> in <code>getConfig()</code>. The server stores it encrypted as the token and
 attached by <code>ctx.http()</code>.</p>
 <h2 id="ctxgettoken"><code>ctx.getToken()</code><a class="anchor" href="#ctxgettoken" aria-label="Link to ctx.getToken()">#</a></h2>
 <p>Returns the decrypted access token. The token is loaded lazily on first call and

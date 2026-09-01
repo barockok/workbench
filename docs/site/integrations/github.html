@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">Connect GitHub so an agent can work with repositories, issues, pull requests, code review, and Actions.</p>
-      <p>The GitHub integration is the largest code-hosting surface in the catalog: repository and file reads, the whole issue lifecycle, the whole pull-request review loop including formal review verdicts, code and issue search, and GitHub Actions run control.</p>
+      <p>The GitHub integration is the largest code-hosting surface in the catalog. It covers repository and file reads, the whole issue lifecycle, and the whole pull-request review loop, including formal review verdicts. It also covers code and issue search, and GitHub Actions run control.</p>
 <h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td>Plugin id</td><td><code>github</code></td></tr>
@@ -71,7 +71,7 @@
 <tr><td>Token URL</td><td><code>https://github.com/login/oauth/access_token</code></td></tr>
 <tr><td>Proxy base</td><td><code>https://api.github.com</code></td></tr>
 </tbody></table></div>
-<p>This is an OAuth App, not a GitHub App: one callback URL and classic scope strings. Whether its user tokens expire is a property of the app on GitHub&#39;s side, not of this server — see <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s OAuth App documentation<span class="ext" aria-hidden="true">↗</span></a>. The server refreshes a token when the provider gave it an expiry and a refresh token.</p>
+<p>This is an OAuth App, not a GitHub App. It has one callback URL and classic scope strings. Whether its user tokens expire is a property of the app on GitHub&#39;s side, not of this server. See <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s OAuth App documentation<span class="ext" aria-hidden="true">↗</span></a>. The server refreshes a token when the provider gave it an expiry and a refresh token.</p>
 <h2 id="set-up-the-oauth-app">Set up the OAuth app<a class="anchor" href="#set-up-the-oauth-app" aria-label="Link to Set up the OAuth app">#</a></h2>
 <div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">The console steps are GitHub's UI, not this server's</span></div><div class="callout-body"><p>Menu names, labels, and page URLs below come from GitHub&#39;s console and change
 without notice. If what you see differs, follow <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s own documentation<span class="ext" aria-hidden="true">↗</span></a> — the values this server needs (the callback URL and the scopes in the tables
@@ -152,9 +152,9 @@ wait_for_connection({ connectionId })</code></pre></div>
 </div></div>
 
 <p><code>github_trigger_workflow</code> needs the workflow to declare <code>on: workflow_dispatch</code>, and GitHub answers with 204 and no run id. Poll <code>github_list_workflow_runs</code> to find the run you just started.</p>
-<p><code>github_create_or_update_file</code> requires the file&#39;s current sha when updating. Read it with <code>github_get_content</code> first; a stale sha is rejected.</p>
-<p>GitHub&#39;s token endpoint returns <code>application/x-www-form-urlencoded</code> by default, which breaks a naive JSON parse of the token response. The server sends <code>Accept: application/json</code> on the exchange, so this is already handled — worth knowing if you are debugging a connect failure against a fork or proxy.</p>
-<p>A 403 mentioning organization SAML enforcement is not a scope problem — no change to the scope table fixes it. The user has to authorize their token for that organization on GitHub&#39;s side; <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s documentation on SAML and authorized tokens<span class="ext" aria-hidden="true">↗</span></a> has the current procedure.</p>
+<p><code>github_create_or_update_file</code> requires the file&#39;s current sha when updating. Read it with <code>github_get_content</code> first. A stale sha is rejected.</p>
+<p>GitHub&#39;s token endpoint returns <code>application/x-www-form-urlencoded</code> by default, which breaks a naive JSON parse of the token response. The server sends <code>Accept: application/json</code> on the exchange, so this is already handled. It is worth knowing if you are debugging a connect failure against a fork or a proxy.</p>
+<p>A 403 mentioning organization SAML enforcement is not a scope problem — no change to the scope table fixes it. The user has to authorize their token for that organization on GitHub&#39;s side. <a href="https://docs.github.com/en/apps/oauth-apps" target="_blank" rel="noopener">GitHub&#39;s documentation on SAML and authorized tokens<span class="ext" aria-hidden="true">↗</span></a> has the current procedure.</p>
 <p>GitHub rate-limits OAuth calls per user and applies separate secondary limits to bursts of writes. The current numbers are in <a href="https://docs.github.com/en/rest" target="_blank" rel="noopener">GitHub&#39;s REST API documentation<span class="ext" aria-hidden="true">↗</span></a>.</p>
 
     </article>

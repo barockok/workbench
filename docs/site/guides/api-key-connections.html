@@ -96,14 +96,14 @@ into requests.</li>
 <li><strong>Every other non-blank field</strong> is stored as the connection&#39;s <code>config</code> JSON, in
 plaintext. Tools read it with <code>ctx.getConfig()</code>.</li>
 </ul>
-<p>So for New Relic: <code>apiKey</code> becomes the encrypted credential; <code>region</code> and <code>accountId</code>
+<p>So for New Relic, <code>apiKey</code> becomes the encrypted credential. <code>region</code> and <code>accountId</code>
 become <code>{&quot;region&quot;:&quot;US&quot;,&quot;accountId&quot;:&quot;1234567&quot;}</code> in <code>config</code>. The region is what selects
 the US or EU NerdGraph endpoint at request time, both for tools and for the
 <a href="curl-session.html">curl proxy</a>.</p>
 <p>A manifest with no <code>secret</code> field is a plugin bug — the connect endpoint returns 500.</p>
 <h2 id="connecting">Connecting<a class="anchor" href="#connecting" aria-label="Link to Connecting">#</a></h2>
 <p>API-key integrations connect <strong>from the portal</strong>, not from the agent. The <code>connect</code>
-meta-tool has no apikey branch; calling it on one falls into the OAuth path and errors.</p>
+meta-tool has no apikey branch. Calling it on one falls into the OAuth path and errors.</p>
 <p>In the portal, clicking Connect on an apikey integration fetches its field list and
 opens a modal. Submitting posts to:</p>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl -X POST https://workbench.example.com/api/auth/apikey/newrelic \
@@ -144,7 +144,7 @@ misconstructed URL in a tool cannot leak the key to a third party.</p>
 attach the user&#39;s API key to whatever URL the plugin passes — including one derived
 from tool arguments. If you are writing an apikey plugin, set <code>allowedHosts</code>, or
 validate the host in the handler before calling <code>ctx.http()</code>. The cookie auth branch
-enforces a host check unconditionally; the apikey branch does not.</p>
+enforces a host check unconditionally. The apikey branch does not.</p>
 </div></div>
 
 <h2 id="reading-config-in-a-tool">Reading config in a tool<a class="anchor" href="#reading-config-in-a-tool" aria-label="Link to Reading config in a tool">#</a></h2>

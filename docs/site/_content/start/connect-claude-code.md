@@ -4,7 +4,7 @@ description: Wire Claude Code to a workbench with either an API key or OAuth, an
 ---
 
 Claude Code reaches a workbench over HTTP as a remote MCP server. Configuration is
-one entry in `.mcp.json`; the only real decision is which credential it carries.
+one entry in `.mcp.json`. The only real decision is which credential it carries.
 
 ## Pick an auth path
 
@@ -82,7 +82,7 @@ auth problem. Go back and validate the JSON.
 On first use the client discovers the authorization server from the 401 challenge,
 registers itself through Dynamic Client Registration, and opens a browser to sign
 in with **Google** — the workbench's `/authorize` redirects there specifically, and
-fails if `GOOGLE_CLIENT_ID` is unset. Keycloak covers portal login only; it cannot
+fails if `GOOGLE_CLIENT_ID` is unset. Keycloak covers portal login only. It cannot
 complete this flow, so a Keycloak-only deployment must use the API-key path above.
 After you sign in, the client holds an access token and a refresh token and renews
 them on its own — you do not repeat this.
@@ -126,7 +126,7 @@ touches no integration.
 
 Only the nine meta-tools, prefixed by the server name — `mcp__workbench__search_tools`,
 `mcp__workbench__execute_tools`, and so on. Plugin tools are never advertised
-individually; they are reached by name through `execute_tools`. That is the point
+individually. An agent reaches them by name through `execute_tools`. That is the point
 of the design, and it is why adding integrations does not grow the tool list.
 
 Next: [Your first integration](first-connection.md).

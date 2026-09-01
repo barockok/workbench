@@ -137,7 +137,7 @@ The callback path is `/api/auth/plugin/:integration/callback` for every plugin â
 the `/plugin/` segment exists so it cannot collide with the portal's own
 `/api/auth/google/callback`. That is the URL to register in a provider console.
 
-PKCE is used on every plugin OAuth flow, confidential clients included; the
+PKCE is used on every plugin OAuth flow, confidential clients included. The
 verifier stays server-side. Each plugin has its own client credentials, named from
 the plugin in upper snake case â€” `google-gmail` becomes `GOOGLE_GMAIL_CLIENT_ID`
 and `GOOGLE_GMAIL_CLIENT_SECRET`. An unset secret with a set ID is valid and means
@@ -149,7 +149,7 @@ belongs to another user. The pending record is in-process, so it is not shared
 across cluster workers.
 
 Not every auth mode goes through `connect`. API-key integrations are connected
-from the portal, which renders the manifest's declared fields and posts them;
+from the portal, which renders the manifest's declared fields and posts them.
 there is no agent-side path. Cookie integrations return a portal login URL the
 user opens to sign in live and capture a session.
 
@@ -162,7 +162,7 @@ The portal is the human half. The agent cannot do any of it.
 - Connect and disconnect integrations, including the API-key and cookie flows the
   agent has no access to.
 - See which MCP clients hold live refresh tokens on the account, and revoke one.
-  Revocation deletes refresh tokens and outstanding authorization codes; access
+  Revocation deletes refresh tokens and outstanding authorization codes. Access
   tokens already issued are self-contained JWTs and lapse at their TTL.
 - Drive a live browser session for cookie capture, over an origin-gated CDP
   WebSocket proxy.

@@ -51,7 +51,7 @@ range is computed against a *newer* tag and the log comes out empty or backwards
 
 Notes live under the **stable** name — `docs/releases/vX.Y.Z.md` — from the first
 release candidate onward. That means an RC build itself falls back to the git-log
-changelog, which is fine; the notes are for the stable release the RC is
+changelog. That is fine, because the notes are for the stable release the RC is
 rehearsing.
 
 Group notes by category, explain why a change was made rather than restating the
@@ -75,7 +75,7 @@ fires the release workflow. It refuses to run unless every one of these holds:
 
 The tag checks run against **local** refs, after a `git fetch --tags origin`. A
 stable tag you created locally and never pushed still trips the "already exists"
-refusal; delete it with `git tag -d` first.
+refusal. Delete it with `git tag -d` first.
 
 Before it does anything it prints `git log --oneline <rc>..HEAD` under the heading
 `commits landed since <rc> (these ship untested by the RC build):`. Read that
@@ -147,7 +147,7 @@ against the same database. Take a copy of the SQLite file or a `pg_dump` first.
 
 ### Keep `ENCRYPTION_KEY` and `SESSION_SECRET` unchanged
 
-Changing `ENCRYPTION_KEY` makes every stored credential undecryptable; there is no
+Changing `ENCRYPTION_KEY` makes every stored credential undecryptable. There is no
 re-encryption path. Changing `SESSION_SECRET` invalidates every portal session,
 MCP access and refresh token, connect token, curl session, and jot cookie at once.
 

@@ -139,7 +139,7 @@ Takes one required `tool` name and returns that tool's argument schema.
 }
 ```
 
-Plugins define their schemas in Zod; this tool converts them to portable JSON Schema so
+Plugins define their schemas in Zod. This tool converts them to portable JSON Schema so
 a client needs no Zod knowledge. Defaults survive the conversion, and they are real —
 `execute_tools` validates against the same Zod schema before calling the handler, so an
 omitted `state` genuinely arrives as `"open"` rather than `undefined`.

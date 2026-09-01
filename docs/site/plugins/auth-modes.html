@@ -62,7 +62,7 @@
       </div>
       <p class="lede">The four auth types a manifest can declare — oauth2, apikey, cookie, none — with the exact manifest shape, the connect experience, and what ctx.http does for each.</p>
       <p><code>manifest.auth</code> is a discriminated union on <code>type</code>. Pick the one the target
-service supports; it determines the whole connection experience and how
+service supports. It determines the whole connection experience and how
 <code>ctx.http()</code> authenticates.</p>
 <div class="table-wrap"><table><thead><tr><th><code>type</code></th><th>Use when</th><th>Credential stored</th><th><code>ctx.http()</code> attaches</th></tr></thead><tbody>
 <tr><td><code>oauth2</code></td><td>The service has an OAuth 2.0 app you can register</td><td>Access + refresh token, encrypted</td><td><code>Authorization: Bearer &lt;token&gt;</code></td></tr>
@@ -94,9 +94,9 @@ screen and back. From an agent, <code>connect({ integration })</code> returns th
 a <code>connectionId</code> to pass to <code>wait_for_connection</code>.</p>
 <p><strong>Refresh tokens.</strong> <code>ctx.getToken()</code> refreshes automatically 30 seconds before
 expiry, but only if a <code>refresh_token</code> was issued. That usually requires an
-explicit scope — Atlassian needs <code>offline_access</code> in the scope list; Google needs
+explicit scope. Atlassian needs <code>offline_access</code> in the scope list. Google needs
 <code>access_type=offline</code>, which the server adds for you.</p>
-<p>Add an <code>instance</code> block when the product can be self-hosted; see
+<p>Add an <code>instance</code> block when the product can be self-hosted. See
 <a href="manifest.html">the manifest reference</a>.</p>
 <h2 id="apikey"><code>apikey</code><a class="anchor" href="#apikey" aria-label="Link to apikey">#</a></h2>
 <p>For services authenticated by a long-lived key sent in a header. New Relic is the

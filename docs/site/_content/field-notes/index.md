@@ -19,7 +19,7 @@ it maps symptoms to fixes. Come here when you want to know *why*.
 ## How to read them
 
 Each note is dated by the day the finding was understood, not the day the code
-changed. A note is a record of what was true then; where later work superseded
+changed. A note is a record of what was true then. Where later work superseded
 it, the note says so and links forward. Nothing here is deleted when it becomes
 history — it is marked.
 

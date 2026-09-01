@@ -66,7 +66,7 @@ repository</strong> — history is published too, so a leak in any commit is per
 the hygiene rules below before your first commit, not after.</p>
 <h2 id="setup">Setup<a class="anchor" href="#setup" aria-label="Link to Setup">#</a></h2>
 <p>You need Node 20 or 22 — the two versions CI builds against — and npm 10. The
-published Docker image is Node 20 only; both Dockerfile stages are
+published Docker image is Node 20 only. Both Dockerfile stages are
 <code>node:20-bookworm-slim</code>.</p>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">git clone https://github.com/&lt;your-fork&gt;/workbench.git
 cd workbench
@@ -77,8 +77,8 @@ npm run dev</code></pre></div>
 <p><code>npm run dev</code> fans out to every package that defines a <code>dev</code> script: the server under
 <code>tsx watch</code> (loading <code>.env</code> from the repo root), the portal under Vite, and the sample
 OAuth provider.</p>
-<p><code>.env</code> needs at minimum <code>ENCRYPTION_KEY</code> and <code>SESSION_SECRET</code>; see
-<a href="environment.html">environment variables</a> for how to generate them and what else you can
+<p><code>.env</code> needs at minimum <code>ENCRYPTION_KEY</code> and <code>SESSION_SECRET</code>. See
+<a href="environment.html">environment variables</a> for how to generate them, and what else you can
 set.</p>
 <p>To get a working account without configuring SSO:</p>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cd packages/server
@@ -125,7 +125,7 @@ minutes.</p>
 
 <h2 id="commits">Commits<a class="anchor" href="#commits" aria-label="Link to Commits">#</a></h2>
 <p>Use <a href="https://www.conventionalcommits.org/" target="_blank" rel="noopener">Conventional Commits<span class="ext" aria-hidden="true">↗</span></a>. Scope is the
-affected package or plugin; keep the subject under about 72 characters.</p>
+affected package or plugin. Keep the subject under about 72 characters.</p>
 <div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">feat(slack): add reaction tool
 fix(oauth): handle form-encoded token response
 chore: bump deps
@@ -181,8 +181,8 @@ npm run gap -w @workbench/server -- markdown  # markdown table
 npm run gap -w @workbench/server -- json      # machine-readable</code></pre></div>
 <p>The report gives overall coverage, a per-app table of current versus target tool counts
 with the named missing tools, a &quot;key gaps&quot; list, and a suggested next set of plugins to
-build. Current counts come from scanning each plugin&#39;s <code>tools/</code> directory; the targets
-live in <code>packages/server/src/gap/catalog.ts</code> — update that file as the reference
+build. Current counts come from scanning each plugin&#39;s <code>tools/</code> directory. The targets
+live in <code>packages/server/src/gap/catalog.ts</code>. Update that file as the reference
 platform changes.</p>
 <h2 id="releases">Releases<a class="anchor" href="#releases" aria-label="Link to Releases">#</a></h2>
 <p>Versions are <code>vX.Y.Z</code>. A tag push triggers the release workflow, which verifies the tag

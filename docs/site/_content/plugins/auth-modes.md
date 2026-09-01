@@ -4,7 +4,7 @@ description: The four auth types a manifest can declare — oauth2, apikey, cook
 ---
 
 `manifest.auth` is a discriminated union on `type`. Pick the one the target
-service supports; it determines the whole connection experience and how
+service supports. It determines the whole connection experience and how
 `ctx.http()` authenticates.
 
 | `type` | Use when | Credential stored | `ctx.http()` attaches |
@@ -48,10 +48,10 @@ a `connectionId` to pass to `wait_for_connection`.
 
 **Refresh tokens.** `ctx.getToken()` refreshes automatically 30 seconds before
 expiry, but only if a `refresh_token` was issued. That usually requires an
-explicit scope — Atlassian needs `offline_access` in the scope list; Google needs
+explicit scope. Atlassian needs `offline_access` in the scope list. Google needs
 `access_type=offline`, which the server adds for you.
 
-Add an `instance` block when the product can be self-hosted; see
+Add an `instance` block when the product can be self-hosted. See
 [the manifest reference](manifest.md).
 
 ## `apikey`
