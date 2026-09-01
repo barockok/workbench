@@ -4,11 +4,11 @@
 
 **Self-hosted MCP tool aggregator.** One endpoint, per-user OAuth, 178 tools across 16 integrations — behind 9 meta-tools.
 
-[**Documentation**](https://barockok.github.io/workbench/) ·
-[Quickstart](https://barockok.github.io/workbench/start/quickstart.html) ·
-[Integrations](https://barockok.github.io/workbench/integrations/index.html) ·
-[Build a plugin](https://barockok.github.io/workbench/plugins/index.html) ·
-[Deploy](https://barockok.github.io/workbench/deploy/install.html)
+[**Documentation**](docs/site/_content/index.md) ·
+[Quickstart](docs/site/_content/start/quickstart.md) ·
+[Integrations](docs/site/_content/integrations/index.md) ·
+[Build a plugin](docs/site/_content/plugins/index.md) ·
+[Deploy](docs/site/_content/deploy/install.md)
 
 [![CI](https://github.com/barockok/workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/barockok/workbench/actions)
 [![codecov](https://codecov.io/gh/barockok/workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/barockok/workbench)
@@ -49,7 +49,7 @@ npm run dev
 
 Then open the portal, connect an integration, mint an API key, and point your MCP
 client at `http://localhost:3000/mcp`. The full walkthrough is in the
-[Quickstart](https://barockok.github.io/workbench/start/quickstart.html).
+[Quickstart](docs/site/_content/start/quickstart.md).
 
 ## Documentation
 
@@ -57,13 +57,13 @@ The docs are the product surface — start there, not here.
 
 | Section | What's in it |
 |---|---|
-| [Get started](https://barockok.github.io/workbench/) | What it is, how it works, connecting an agent |
-| [Guides](https://barockok.github.io/workbench/guides/discovering-tools.html) | Discovering and executing tools, OAuth, browser sessions, raw API calls, troubleshooting |
-| [Integrations](https://barockok.github.io/workbench/integrations/index.html) | Every provider: exact scopes, setup steps, full tool list |
-| [Build plugins](https://barockok.github.io/workbench/plugins/index.html) | Manifest reference, plugin context API, the four auth modes |
-| [Deploy](https://barockok.github.io/workbench/deploy/install.html) | Docker, PostgreSQL, portal SSO, security, observability, releases |
-| [Reference](https://barockok.github.io/workbench/reference/meta-tools.html) | All 9 meta-tools, every HTTP route, every environment variable, the tool catalog |
-| [Field notes](https://barockok.github.io/workbench/field-notes/index.html) | Production failures, root causes, and what changed |
+| [Get started](docs/site/_content/index.md) | What it is, how it works, connecting an agent |
+| [Guides](docs/site/_content/guides/discovering-tools.md) | Discovering and executing tools, OAuth, browser sessions, raw API calls, troubleshooting |
+| [Integrations](docs/site/_content/integrations/index.md) | Every provider: exact scopes, setup steps, full tool list |
+| [Build plugins](docs/site/_content/plugins/index.md) | Manifest reference, plugin context API, the four auth modes |
+| [Deploy](docs/site/_content/deploy/install.md) | Docker, PostgreSQL, portal SSO, security, observability, releases |
+| [Reference](docs/site/_content/reference/meta-tools.md) | All 9 meta-tools, every HTTP route, every environment variable, the tool catalog |
+| [Field notes](docs/site/_content/field-notes/index.md) | Production failures, root causes, and what changed |
 
 ## What's in the box
 
@@ -95,7 +95,7 @@ node docs/site/build.mjs   # _content/*.md + nav.json → static HTML in docs/si
 Rebuild and commit the output with any content change — CI fails the docs build
 if `docs/site` is out of date with its source.
 
-See [Contributing](https://barockok.github.io/workbench/reference/contributing.html)
+See [Contributing](docs/site/_content/reference/contributing.md)
 for the branch, commit, and release conventions, and
 [SECURITY.md](SECURITY.md) for reporting a vulnerability.
 
