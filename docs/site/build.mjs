@@ -14,6 +14,7 @@
 //   :::cards ... :::                              → card grid (landing pages)
 
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, dirname, relative, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
@@ -264,6 +265,21 @@ function assetHref(from) {
   return depth ? '../'.repeat(depth) : '';
 }
 
+// Pages serves assets with `cache-control: max-age=600` and the asset URLs
+// carry no version, so for ten minutes after a deploy a returning visitor gets
+// the new HTML against the old CSS — and a disk-cached copy can outlive that.
+// Stamping the content hash into the query changes the URL only when the file
+// changes: a deploy busts the cache at once, an unchanged deploy still hits it.
+// Content-derived, so the build stays deterministic and the CI staleness check
+// keeps working.
+function assetTag(file) {
+  const hash = createHash('sha256')
+    .update(readFileSync(join(ROOT, 'assets', file)))
+    .digest('hex')
+    .slice(0, 8);
+  return `assets/${file}?v=${hash}`;
+}
+
 /* ------------------------------------------------------------------ *
  * Template
  * ------------------------------------------------------------------ */
@@ -335,7 +351,7 @@ function layout({ page, title, description, content, headings }) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="${A}assets/docs.css">
+<link rel="stylesheet" href="${A}${assetTag('docs.css')}">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
@@ -408,7 +424,7 @@ function layout({ page, title, description, content, headings }) {
 </div>
 
 <script>window.__WB_BASE__=${JSON.stringify(A)};</script>
-<script src="${A}assets/docs.js" defer></script>
+<script src="${A}${assetTag('docs.js')}" defer></script>
 </body>
 </html>
 `;
@@ -480,7 +496,9 @@ for (const page of pages) {
   for (const m of html.matchAll(/href="([^"#][^"]*?)"/g)) {
     const target = m[1];
     if (/^(https?:|mailto:|data:)/.test(target)) continue;
-    const resolved = normalize(join(fromDir, target.split('#')[0]));
+    // Strip the fragment and the query: asset URLs carry a ?v=<hash> cache
+    // buster, which is not part of the path on disk.
+    const resolved = normalize(join(fromDir, target.split(/[#?]/)[0]));
     if (!existsSync(join(ROOT, resolved))) broken.push(`${file} → ${target}`);
   }
 }

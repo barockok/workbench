@@ -285,7 +285,7 @@
     return {
       startOnLoad: false,
       securityLevel: 'strict',
-      fontFamily: "'Instrument Sans', system-ui, sans-serif",
+      fontFamily: "'Inter', system-ui, sans-serif",
       // Set through mermaid, not CSS: it measures label boxes at init.
       fontSize: 14,
       theme: 'base',
@@ -297,59 +297,67 @@
         noteMargin: 12, mirrorActors: false, wrap: true,
       },
       er: { useMaxWidth: true, entityPadding: 14, minEntityWidth: 120 },
+      // These mirror the CSS custom properties in docs.css and must be kept in
+      // step with them by hand: mermaid measures label boxes at init, so the
+      // palette cannot come from CSS variables the way the rest of the site's
+      // does. Nodes take the brand tint, edges and text the neutral ramp, notes
+      // the warn tint.
       themeVariables: dark ? {
-        background: '#1a1817',
-        primaryColor: '#241f1b',
-        primaryTextColor: '#f2eee8',
-        primaryBorderColor: '#5a3620',
-        secondaryColor: '#211f1d',
-        tertiaryColor: '#1a1817',
-        lineColor: '#8a827a',
-        textColor: '#cfc8bf',
-        mainBkg: '#241f1b',
-        nodeBorder: '#5a3620',
-        clusterBkg: '#161514',
-        clusterBorder: '#2c2926',
-        edgeLabelBackground: '#1a1817',
-        actorBkg: '#241f1b',
-        actorBorder: '#5a3620',
-        actorTextColor: '#f2eee8',
-        signalColor: '#cfc8bf',
-        signalTextColor: '#cfc8bf',
-        labelBoxBkgColor: '#241f1b',
-        labelBoxBorderColor: '#5a3620',
-        labelTextColor: '#f2eee8',
-        loopTextColor: '#cfc8bf',
-        noteBkgColor: '#2a1a11',
-        noteBorderColor: '#5a3620',
-        noteTextColor: '#f2eee8',
-        sequenceNumberColor: '#121110',
+        background: '#111928',       /* --surface */
+        primaryColor: '#2a122e',     /* --accent-soft */
+        primaryTextColor: '#f9faf8', /* --text */
+        primaryBorderColor: '#d68ee4', /* brand 300 — a node outline is structure,
+                                          not decoration, so it takes a step
+                                          that clears 3:1 rather than the
+                                          decorative --accent-line */
+        secondaryColor: '#1a2433',   /* --surface-2 */
+        tertiaryColor: '#111928',
+        lineColor: '#8e95a3',        /* --text-3 */
+        textColor: '#c6cad0',        /* --text-2 */
+        mainBkg: '#2a122e',
+        nodeBorder: '#d68ee4',
+        clusterBkg: '#0b1018',       /* --bg */
+        clusterBorder: '#2a3444',    /* --border */
+        edgeLabelBackground: '#111928',
+        actorBkg: '#2a122e',
+        actorBorder: '#d68ee4',
+        actorTextColor: '#f9faf8',
+        signalColor: '#c6cad0',
+        signalTextColor: '#c6cad0',
+        labelBoxBkgColor: '#2a122e',
+        labelBoxBorderColor: '#d68ee4',
+        labelTextColor: '#f9faf8',
+        loopTextColor: '#c6cad0',
+        noteBkgColor: '#2a1d0a',     /* --warn-soft */
+        noteBorderColor: '#543a16',  /* --warn-line */
+        noteTextColor: '#f9faf8',
+        sequenceNumberColor: '#0b1018',
       } : {
-        background: '#ffffff',
-        primaryColor: '#fdf2ec',
-        primaryTextColor: '#191714',
-        primaryBorderColor: '#e0b79f',
-        secondaryColor: '#f7f5f1',
+        background: '#ffffff',       /* --surface */
+        primaryColor: '#fef3ff',     /* --accent-soft */
+        primaryTextColor: '#111928', /* --text */
+        primaryBorderColor: '#a642b7', /* brand 400 — see the dark theme note */
+        secondaryColor: '#f9faf8',   /* --surface-2 */
         tertiaryColor: '#ffffff',
-        lineColor: '#8a827a',
-        textColor: '#45403a',
-        mainBkg: '#fdf2ec',
-        nodeBorder: '#e0b79f',
-        clusterBkg: '#f7f5f1',
-        clusterBorder: '#e6e1d8',
+        lineColor: '#6b7280',        /* --text-3 */
+        textColor: '#525c6a',        /* --text-2 */
+        mainBkg: '#fef3ff',
+        nodeBorder: '#a642b7',
+        clusterBkg: '#f9faf8',
+        clusterBorder: '#e5e7eb',    /* --border */
         edgeLabelBackground: '#ffffff',
-        actorBkg: '#fdf2ec',
-        actorBorder: '#e0b79f',
-        actorTextColor: '#191714',
-        signalColor: '#45403a',
-        signalTextColor: '#45403a',
-        labelBoxBkgColor: '#fdf2ec',
-        labelBoxBorderColor: '#e0b79f',
-        labelTextColor: '#191714',
-        loopTextColor: '#45403a',
-        noteBkgColor: '#fdf6e8',
-        noteBorderColor: '#edd6a4',
-        noteTextColor: '#191714',
+        actorBkg: '#fef3ff',
+        actorBorder: '#a642b7',
+        actorTextColor: '#111928',
+        signalColor: '#525c6a',
+        signalTextColor: '#525c6a',
+        labelBoxBkgColor: '#fef3ff',
+        labelBoxBorderColor: '#a642b7',
+        labelTextColor: '#111928',
+        loopTextColor: '#525c6a',
+        noteBkgColor: '#fdf4e9',     /* --warn-soft */
+        noteBorderColor: '#f6d9ac',  /* --warn-line */
+        noteTextColor: '#111928',
         sequenceNumberColor: '#ffffff',
       },
     };
@@ -371,7 +379,7 @@
         .then(function (m) { window.__mermaid = m.default; return m.default; });
     }
     // Mermaid measures every label box at render time. If the webfont has not
-    // arrived yet it measures in the fallback and renders in Instrument Sans,
+    // arrived yet it measures in the fallback and renders in Inter,
     // and every edge label ends up clipped. Wait for the font first.
     var fonts = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
     Promise.all([mermaidLoaded, fonts]).then(function (r) {
