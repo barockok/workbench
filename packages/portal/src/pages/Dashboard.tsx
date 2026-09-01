@@ -157,7 +157,7 @@ export default function Dashboard() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark" />
-          <span className="brand-name">a-workbench</span>
+          <span className="brand-name">workbench</span>
           <span className="brand-slash">/</span>
           <span className="brand-tag">operator console</span>
         </div>
