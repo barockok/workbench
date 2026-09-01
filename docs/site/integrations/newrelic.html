@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Relic — a-workbench Docs</title>
+<meta name="description" content="Connect New Relic with a User API key so an agent can run NRQL, find entities, and manage dashboards and alerting.">
+<meta property="og:title" content="New Relic — a-workbench">
+<meta property="og:description" content="Connect New Relic with a User API key so an agent can run NRQL, find entities, and manage dashboards and alerting.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab active" href="index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">All integrations</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Atlassian</p><ul><li><a class="" href="atlassian-jira.html">Jira</a></li><li><a class="" href="atlassian-confluence.html">Confluence</a></li><li><a class="" href="atlassian-bitbucket.html">Bitbucket</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Code hosting</p><ul><li><a class="" href="github.html">GitHub</a></li><li><a class="" href="gitlab.html">GitLab</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Google Workspace</p><ul><li><a class="" href="google.html">Setup &amp; scopes</a></li><li><a class="" href="google-tools.html">Gmail, Drive, Docs &amp; more</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Other services</p><ul><li><a class="" href="slack.html">Slack</a></li><li><a class="" href="asana.html">Asana</a></li><li><a class="active" href="newrelic.html">New Relic</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Built in</p><ul><li><a class="" href="browser.html">Browser</a></li><li><a class="" href="jots.html">Jots</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Other services</p>
+          <h1>New Relic</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Connect New Relic with a User API key so an agent can run NRQL, find entities, and manage dashboards and alerting.</p>
+      <p>New Relic is the one integration that does not use OAuth. The user pastes a User API key, picks a region, and optionally sets a default account id. Every tool then speaks NerdGraph, New Relic&#39;s GraphQL API: NRQL queries, entity search, dashboard reads and widget writes, alert policies and conditions, notification destinations, and tagging.</p>
+<h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Plugin id</td><td><code>newrelic</code></td></tr>
+<tr><td>Auth</td><td>API key</td></tr>
+<tr><td>Tools</td><td>13</td></tr>
+<tr><td>Header</td><td><code>Api-Key</code></td></tr>
+<tr><td>Endpoint</td><td><code>https://api.newrelic.com/graphql</code> (US) or <code>https://api.eu.newrelic.com/graphql</code> (EU)</td></tr>
+<tr><td>Allowed hosts</td><td><code>api.newrelic.com</code>, <code>api.eu.newrelic.com</code></td></tr>
+</tbody></table></div>
+<p>The endpoint is chosen per request from the <code>region</code> value stored on the connection. There is nothing to register and no consent screen — an API-key connection is stored synchronously the moment the user submits the form.</p>
+<h2 id="create-the-api-key">Create the API key<a class="anchor" href="#create-the-api-key" aria-label="Link to Create the API key">#</a></h2>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">The console steps are New Relic's UI, not this server's</span></div><div class="callout-body"><p>Menu names, labels, and page URLs below come from New Relic&#39;s console and change
+without notice. If what you see differs, follow <a href="https://docs.newrelic.com/" target="_blank" rel="noopener">New Relic&#39;s own documentation<span class="ext" aria-hidden="true">↗</span></a>.
+What this server needs is unchanged either way: a User API key, pasted into the
+connection fields below.</p>
+</div></div>
+
+
+<div class="steps">
+
+<h3 id="generate-a-user-api-key">Generate a User API key<a class="anchor" href="#generate-a-user-api-key" aria-label="Link to Generate a User API key">#</a></h3>
+<p>In New Relic, open the user menu → <strong>API keys</strong> → <strong>Create a key</strong> → key type <strong>User</strong>. Copy it; you cannot read it back later.</p>
+<h3 id="note-your-region">Note your region<a class="anchor" href="#note-your-region" aria-label="Link to Note your region">#</a></h3>
+<p>US accounts live on <code>api.newrelic.com</code>, EU accounts on <code>api.eu.newrelic.com</code>. Getting this wrong produces authentication failures against a key that is perfectly valid on the other region.</p>
+<h3 id="find-your-account-id-if-you-want-a-default">Find your account id, if you want a default<a class="anchor" href="#find-your-account-id-if-you-want-a-default" aria-label="Link to Find your account id, if you want a default">#</a></h3>
+<p>The numeric account id appears in the New Relic URL and under account settings. It is optional — see the field table.</p>
+</div>
+
+<p>There is no OAuth app, so there is no callback URL for this integration.</p>
+<h2 id="connection-fields">Connection fields<a class="anchor" href="#connection-fields" aria-label="Link to Connection fields">#</a></h2>
+<p>The portal renders these from the manifest.</p>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>apiKey</code></td><td>Yes</td><td>The User API key. Stored encrypted as the connection&#39;s token; never returned to an agent.</td></tr>
+<tr><td><code>region</code></td><td>Yes</td><td>A select with options <code>US</code> and <code>EU</code>. Determines the NerdGraph endpoint.</td></tr>
+<tr><td><code>accountId</code></td><td>No</td><td>Numeric default account id. A User API key can span several accounts, so leaving it blank forces each call to pass <code>accountId</code> explicitly.</td></tr>
+</tbody></table></div>
+<h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
+<p>None. API-key integrations have no client id or secret, so no environment variables are involved, and the portal&#39;s Connect button is enabled for this integration on a stock install.</p>
+<h2 id="connect">Connect<a class="anchor" href="#connect" aria-label="Link to Connect">#</a></h2>
+<p>Portal: Connections → <strong>Connect</strong> on the New Relic card → fill the three fields → submit. The connection is live immediately.</p>
+<p>An agent cannot complete this flow itself. <code>connect</code> returns a URL only for OAuth and cookie integrations; it has no API-key branch, so <code>connect(&quot;newrelic&quot;)</code> falls through to the OAuth path and comes back as <code>{ error: &quot;Integration newrelic is not oauth2&quot; }</code>. Point the user at the portal and re-check <code>list_integrations</code> instead.</p>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">A failed `connect` leaves a pending record</span></div><div class="callout-body"><p>The pending record is created before the OAuth URL is built, so the failed call leaves a stale <code>PENDING</code> row behind. It is harmless — it expires after <code>CONNECT_TTL_SECONDS</code> — but do not wait on its <code>connectionId</code>; the error response carries none.</p>
+</div></div>
+
+<h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>newrelic_run_nrql</code></td><td>Run an arbitrary NRQL query and return the raw result rows</td></tr>
+<tr><td><code>newrelic_search_entities</code></td><td>Find entities by name, domain, or type; returns GUIDs</td></tr>
+<tr><td><code>newrelic_get_dashboard</code></td><td>Fetch a dashboard by GUID with its pages and widgets</td></tr>
+<tr><td><code>newrelic_add_widgets_to_dashboard_page</code></td><td>Add visualization widgets to an existing dashboard page</td></tr>
+<tr><td><code>newrelic_add_tags_to_entity</code></td><td>Add tags to an entity by GUID</td></tr>
+<tr><td><code>newrelic_create_alert_policy</code></td><td>Create an alert policy with an incident preference</td></tr>
+<tr><td><code>newrelic_create_static_nrql_condition</code></td><td>Add a static NRQL threshold condition to a policy</td></tr>
+<tr><td><code>newrelic_create_ai_notifications_destination</code></td><td>Create a destination (Slack, Jira, email, webhook, …)</td></tr>
+<tr><td><code>newrelic_create_ai_notifications_channel</code></td><td>Create a channel bound to a destination</td></tr>
+<tr><td><code>newrelic_create_ai_workflow</code></td><td>Connect an issue filter to notification channels</td></tr>
+<tr><td><code>newrelic_create_alert_notification_channel</code></td><td>Legacy notification channel — see the warning below</td></tr>
+<tr><td><code>newrelic_add_notification_channels_to_policy</code></td><td>Legacy channel-to-policy binding — see the warning below</td></tr>
+<tr><td><code>newrelic_configure_cloud_integration</code></td><td>Enable an AWS, Azure, or GCP integration on a linked cloud account</td></tr>
+</tbody></table></div>
+<h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The two legacy alert-channel tools are best-effort and untested</span></div><div class="callout-body"><p><code>newrelic_create_alert_notification_channel</code> and <code>newrelic_add_notification_channels_to_policy</code> target New Relic&#39;s legacy alert-channel mutations, which New Relic has been retiring in favour of AI Notifications. They were written against the documented shapes but have not been verified end to end. For anything new, use the <code>newrelic_create_ai_notifications_*</code> and <code>newrelic_create_ai_workflow</code> tools instead.</p>
+</div></div>
+
+<p>The <code>Api-Key</code> header value is sent <strong>verbatim</strong> — the server adds no <code>Bearer</code> prefix and no other decoration. That is what NerdGraph expects, and it means the stored value must be exactly the key.</p>
+<p>The key is pinned by <code>allowedHosts</code> to <code>api.newrelic.com</code> and <code>api.eu.newrelic.com</code>. A request to any other host throws before the credential is attached, so the key cannot leak to another destination. New Relic is the only shipped plugin that sets this; for API-key plugins in general, omitting <code>allowedHosts</code> means no host validation happens at all.</p>
+<p>Everything is NerdGraph. There is no REST surface here, so <code>newrelic_run_nrql</code> is the tool for any read the specific tools do not cover.</p>
+<p>Leaving <code>accountId</code> blank is the safer default when the key spans several accounts: every call then has to name the account it means, instead of silently querying whichever one you configured months ago.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="asana.html"><span class="pn-dir">Previous</span><span class="pn-label">Asana</span></a><a class="pn pn-next" href="browser.html"><span class="pn-dir">Next</span><span class="pn-label">Browser</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/integrations/newrelic.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#create-the-api-key">Create the API key</a></li><li class="toc-h3"><a href="#generate-a-user-api-key">Generate a User API key</a></li><li class="toc-h3"><a href="#note-your-region">Note your region</a></li><li class="toc-h3"><a href="#find-your-account-id-if-you-want-a-default">Find your account id, if you want a default</a></li><li class="toc-h2"><a href="#connection-fields">Connection fields</a></li><li class="toc-h2"><a href="#server-configuration">Server configuration</a></li><li class="toc-h2"><a href="#connect">Connect</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

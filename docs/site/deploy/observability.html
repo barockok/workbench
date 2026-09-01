@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observability — a-workbench Docs</title>
+<meta name="description" content="The Prometheus metrics endpoint and the metrics it emits, OpenTelemetry tracing, and the audit log destinations.">
+<meta property="og:title" content="Observability — a-workbench">
+<meta property="og:description" content="The Prometheus metrics endpoint and the metrics it emits, OpenTelemetry tracing, and the audit log destinations.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab active" href="install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Running the server</p><ul><li><a class="" href="install.html">Install</a></li><li><a class="" href="docker.html">Docker &amp; Compose</a></li><li><a class="" href="database.html">Database</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Production</p><ul><li><a class="" href="portal-sso.html">Portal SSO</a></li><li><a class="" href="security.html">Security model</a></li><li><a class="active" href="observability.html">Observability</a></li><li><a class="" href="releases.html">Releases &amp; upgrades</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Production</p>
+          <h1>Observability</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">The Prometheus metrics endpoint and the metrics it emits, OpenTelemetry tracing, and the audit log destinations.</p>
+      <p>Three separate mechanisms: Prometheus metrics on <code>/metrics</code>, OpenTelemetry spans,
+and an audit log of tool executions. Metrics and the audit log work out of the
+box; tracing needs an exporter you configure yourself.</p>
+<h2 id="metrics">Metrics<a class="anchor" href="#metrics" aria-label="Link to Metrics">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl http://localhost:3000/metrics</code></pre></div>
+<p><code>GET /metrics</code> serves a Prometheus text exposition from a dedicated registry. It
+includes <code>collectDefaultMetrics</code> — Node process, GC, and heap gauges — plus four
+custom metrics.</p>
+<div class="table-wrap"><table><thead><tr><th>Metric</th><th>Type</th><th>Labels</th><th>Buckets</th></tr></thead><tbody>
+<tr><td><code>workbench_http_requests_total</code></td><td>Counter</td><td><code>method</code>, <code>route</code>, <code>status</code></td><td>—</td></tr>
+<tr><td><code>workbench_http_request_duration_seconds</code></td><td>Histogram</td><td><code>method</code>, <code>route</code>, <code>status</code></td><td>0.005 → 5, 10 buckets</td></tr>
+<tr><td><code>workbench_tool_executions_total</code></td><td>Counter</td><td><code>integration</code>, <code>tool</code>, <code>success</code></td><td>—</td></tr>
+<tr><td><code>workbench_tool_execution_duration_seconds</code></td><td>Histogram</td><td><code>integration</code>, <code>tool</code>, <code>success</code></td><td>0.05 → 30, 9 buckets</td></tr>
+</tbody></table></div>
+<p>The two tool metrics are the interesting ones — the per-integration, per-tool
+success rate and latency of the handlers agents run:</p>
+<div class="code" data-lang="promql"><div class="code-bar"><span class="code-lang">promql</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-promql">sum by (integration) (rate(workbench_tool_executions_total{success=&quot;false&quot;}[5m]))
+
+histogram_quantile(0.95,
+  sum by (le, integration) (rate(workbench_tool_execution_duration_seconds_bucket[5m])))</code></pre></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Both tool metrics cover handler execution only</span></div><div class="callout-body"><p>They are incremented around the handler call, after the connection check and
+argument validation. A call rejected with <code>NOT_CONNECTED</code>, or one whose
+arguments fail schema validation, returns before either metric is touched — so
+neither appears in <code>workbench_tool_executions_total{success=&quot;false&quot;}</code>. Both are
+audit-logged, so query the audit log for those.</p>
+</div></div>
+
+<p>HTTP metrics are recorded in request/response hooks, labelled by the matched route
+pattern where one exists and the raw URL otherwise. <code>/metrics</code> excludes itself, so
+scraping does not inflate its own counters.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`/metrics` is unauthenticated, and its `route` label is unbounded</span></div><div class="callout-body"><p>There is no auth on the endpoint. Route labels expose which routes exist and
+tool labels expose which integrations are in use. Worse, an unmatched request
+has no route pattern, so the hook falls back to the raw <code>request.url</code> — every
+distinct 404 URL becomes its own label value and its own time series, and a
+scanner hitting random paths grows the registry without limit until the process
+runs out of memory. Keep the endpoint on an internal network or block it at the
+reverse proxy, and rate-limit or drop unmatched paths in front of the server.</p>
+</div></div>
+
+<p>There is no log-level setting. The Fastify logger is constructed inline with a
+redaction list and nothing else — no <code>LOG_LEVEL</code> variable exists in the config
+schema or is read from the environment, so the logger runs at Fastify&#39;s default
+level and the only way to change it is to edit the source.</p>
+<p>Because there is no <code>/health</code>, <code>/healthz</code>, or <code>/readyz</code> route anywhere in the
+server, and the image declares no <code>HEALTHCHECK</code>, <code>/metrics</code> is also the only HTTP
+endpoint available for an orchestrator liveness probe. A TCP check on the listen
+port is the alternative.</p>
+<h2 id="tracing">Tracing<a class="anchor" href="#tracing" aria-label="Link to Tracing">#</a></h2>
+<p>OpenTelemetry is initialized for its side effect at server startup. It registers a
+<code>NodeTracerProvider</code> with an <code>HttpInstrumentation</code>, under the service name
+<code>a-workbench</code>, and the server code wraps operations in spans through a <code>withSpan</code>
+helper that sets OK/ERROR status and records exceptions.</p>
+<p>The entire setup is wrapped in try/catch and loaded with <code>require()</code> rather than
+<code>import</code>, so a partially installed or version-mismatched OTel dependency logs
+<code>[telemetry] disabled: …</code> and the server still boots. If you expect traces and see
+that line, that is where to look.</p>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">No exporter is configured in the repository</span></div><div class="callout-body"><p>The SDK is started with <code>traceExporter: undefined</code>. Spans are produced but
+nothing ships them anywhere by default, and there is no OTLP endpoint setting in
+the config schema. Export is configured entirely through the standard <code>OTEL_*</code>
+environment variables the SDK reads on its own.</p>
+</div></div>
+
+<p>To point it at a collector, set the standard variables on the process:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">OTEL_TRACES_EXPORTER=otlp
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf</code></pre></div>
+<p>One caveat when correlating: the resource&#39;s <code>service.version</code> is hardcoded to
+<code>0.1.0</code> and does not track the release version, so do not group dashboards by it.</p>
+<h2 id="audit-log">Audit log<a class="anchor" href="#audit-log" aria-label="Link to Audit log">#</a></h2>
+<p>Every tool execution is recorded as an audit event with a timestamp, user, tool,
+integration, action, success flag, error message, and duration. <code>AUDIT_LOG_DEST</code>
+selects where it goes.</p>
+<div class="table-wrap"><table><thead><tr><th>Value</th><th>Behaviour</th></tr></thead><tbody>
+<tr><td><code>sqlite</code> (default)</td><td><code>INSERT</code> into the <code>audit_log</code> table through the shared database adapter</td></tr>
+<tr><td><code>stdout</code></td><td>One JSON line per event on stdout</td></tr>
+<tr><td><code>kafka</code></td><td><strong>Not implemented.</strong> Logs &quot;Kafka not implemented, falling back to stdout&quot; to stderr and prints the JSON line</td></tr>
+</tbody></table></div>
+<p>Despite the name, <code>sqlite</code> writes to whichever backend <code>DATABASE_URL</code> selects —
+including PostgreSQL. The <code>success</code> column is bound as a real boolean because
+PostgreSQL rejects <code>1</code>/<code>0</code> for <code>BOOLEAN</code>; <code>created_at</code> is unix seconds. Two
+indexes support querying: <code>(user_id, created_at)</code> and <code>(integration, created_at)</code>.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Kafka is not wired up</span></div><div class="callout-body"><p><code>AUDIT_LOG_KAFKA_BROKERS</code> and <code>AUDIT_LOG_KAFKA_TOPIC</code> are declared in the config
+schema — so setting them is accepted and validated — but no code anywhere reads
+either variable, and the Kafka destination writes to stdout. If you need events
+in Kafka, use <code>AUDIT_LOG_DEST=stdout</code> and ship them from your log pipeline.</p>
+</div></div>
+
+<p>For shipping to a log aggregator, <code>stdout</code> is the destination to use. Note that
+Fastify&#39;s own request log redacts <code>Authorization</code>, <code>x-workbench-api-key</code>,
+<code>?token=</code>, and <code>?cdpToken=</code>, but deliberately does not redact <code>req.url</code>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="security.html"><span class="pn-dir">Previous</span><span class="pn-label">Security model</span></a><a class="pn pn-next" href="releases.html"><span class="pn-dir">Next</span><span class="pn-label">Releases &amp; upgrades</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/observability.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#metrics">Metrics</a></li><li class="toc-h2"><a href="#tracing">Tracing</a></li><li class="toc-h2"><a href="#audit-log">Audit log</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

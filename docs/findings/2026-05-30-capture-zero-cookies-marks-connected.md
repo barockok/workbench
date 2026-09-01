@@ -58,5 +58,5 @@ prompt the user to finish logging in and retry capture.
 The ≥1-cookie success path is unchanged.
 
 See related specs/plans at:
-- `docs/superpowers/specs/2026-05-30-mcp-initiated-connect-design.md`
-- `docs/superpowers/plans/2026-05-30-mcp-initiated-connect-plan.md`
+- `docs/internal/superpowers/specs/2026-05-30-mcp-initiated-connect-design.md`
+- `docs/internal/superpowers/plans/2026-05-30-mcp-initiated-connect-plan.md`

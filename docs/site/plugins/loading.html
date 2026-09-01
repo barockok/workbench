@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loading and reloading — a-workbench Docs</title>
+<meta name="description" content="How the server discovers plugins at boot — the built-in list, PLUGINS_DIR, the skip rules, what happens when a plugin throws, and how to mount a plugin directory in Docker or Kubernetes.">
+<meta property="og:title" content="Loading and reloading — a-workbench">
+<meta property="og:description" content="How the server discovers plugins at boot — the built-in list, PLUGINS_DIR, the skip rules, what happens when a plugin throws, and how to mount a plugin directory in Docker or Kubernetes.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab active" href="index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Getting started</p><ul><li><a class="" href="index.html">Plugin overview</a></li><li><a class="" href="writing-a-plugin.html">Write your first plugin</a></li><li><a class="active" href="loading.html">Loading and reloading</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Reference</p><ul><li><a class="" href="manifest.html">Manifest reference</a></li><li><a class="" href="context.html">Plugin context API</a></li><li><a class="" href="auth-modes.html">Auth modes</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Getting started</p>
+          <h1>Loading and reloading</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">How the server discovers plugins at boot — the built-in list, PLUGINS_DIR, the skip rules, what happens when a plugin throws, and how to mount a plugin directory in Docker or Kubernetes.</p>
+      <p><code>loadPlugins()</code> runs exactly once, during server boot. It registers internal
+plugins, then built-ins, then everything found under <code>PLUGINS_DIR</code>.</p>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+  participant Boot as Server boot
+  participant L as loadPlugins
+  participant FS as Filesystem
+  participant R as registry
+  Boot-&gt;&gt;L: loadPlugins()
+  L-&gt;&gt;R: register browser, jots
+  L-&gt;&gt;FS: probe for plugins base path
+  FS--&gt;&gt;L: first existing candidate
+  loop 16 built-in names
+    L-&gt;&gt;FS: import manifest.ts + tools/index.ts
+    L-&gt;&gt;R: register(integration, tools, dir)
+  end
+  L-&gt;&gt;FS: resolve PLUGINS_DIR to absolute
+  loop each subdirectory
+    L-&gt;&gt;L: skip if built-in or reserved name
+    L-&gt;&gt;FS: import manifest.ts + tools/index.ts
+    L-&gt;&gt;R: register(integration, tools, dir)
+  end</pre></div>
+<h2 id="step-1-internal-plugins">Step 1 — internal plugins<a class="anchor" href="#step-1-internal-plugins" aria-label="Link to Step 1 — internal plugins">#</a></h2>
+<p><code>registerInternalPlugins()</code> registers <code>browser</code> and <code>jots</code> from server source.
+Both declare <code>auth: { type: &quot;none&quot; }</code>. They are not on disk under <code>PLUGINS_DIR</code>
+and cannot be replaced: their handlers reach into the browser-session and jots
+modules, capabilities deliberately kept out of the plugin <code>ToolContext</code> so a
+third-party plugin can never drive a user&#39;s logged-in capture browser or touch
+the jots filesystem.</p>
+<h2 id="step-2-built-ins-by-hardcoded-list">Step 2 — built-ins by hardcoded list<a class="anchor" href="#step-2-built-ins-by-hardcoded-list" aria-label="Link to Step 2 — built-ins by hardcoded list">#</a></h2>
+<p>There is no directory scan for built-ins. The loader iterates a literal array of
+16 names:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">google-gmail        atlassian-jira          asana
+google-drive        atlassian-confluence    github
+google-sheets       atlassian-bitbucket     gitlab
+google-calendar                             slack
+google-gemini                               newrelic
+google-docs                                 httpbin-cookie
+google-slides</code></pre></div>
+<p>Adding a directory under <code>packages/plugins/</code> without adding its name to that
+array skips it here — but whether it is loaded at all depends on where
+<code>PLUGINS_DIR</code> points:</p>
+<ul>
+<li><strong>In the shipped container image, it is still loaded.</strong> <code>packages/plugins</code> is
+copied to <code>/app/plugins</code>, which is both the base path found by the probe below
+and where the default <code>PLUGINS_DIR</code> (<code>./plugins</code>, resolved against the
+<code>/app</code> workdir) lands. Step 3 scans that same directory and imports every
+subdirectory that is not a built-in name, so an unlisted directory loads there
+and logs <code>Loaded plugin: &lt;dir&gt;</code>.</li>
+<li><strong>In a dev layout, it does nothing.</strong> Dev runs from <code>packages/server</code>, so
+<code>./plugins</code> resolves to <code>packages/server/plugins</code>, which does not exist —
+step 3 returns immediately and nothing outside the array is loaded.</li>
+</ul>
+<p>The base directory is probed in order, and the first one that exists wins:</p>
+<div class="table-wrap"><table><thead><tr><th>Order</th><th>Candidate, relative to <code>process.cwd()</code></th></tr></thead><tbody>
+<tr><td>1</td><td><code>../plugins</code></td></tr>
+<tr><td>2</td><td><code>../../plugins</code></td></tr>
+<tr><td>3</td><td><code>plugins</code></td></tr>
+</tbody></table></div>
+<p>If none exists, the entire built-in step is skipped and boot continues.</p>
+<h2 id="step-3-external-plugins-from-plugins_dir">Step 3 — external plugins from <code>PLUGINS_DIR</code><a class="anchor" href="#step-3-external-plugins-from-plugins_dir" aria-label="Link to Step 3 — external plugins from PLUGINS_DIR">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Default</th><th>Required</th></tr></thead><tbody>
+<tr><td><code>PLUGINS_DIR</code></td><td><code>./plugins</code></td><td>No</td></tr>
+</tbody></table></div>
+<p>The value is <strong>always</strong> passed through <code>path.resolve()</code> before use. If the
+directory does not exist, the step returns silently. Otherwise every direct
+subdirectory is scanned and imported.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Why the path is resolved to absolute</span></div><div class="callout-body"><p>A relative directory reaches <code>import()</code> as a bare specifier. Node&#39;s ESM
+resolver reads <code>plugins/slack/manifest.ts</code> as the package <code>plugins</code> and throws
+<code>ERR_MODULE_NOT_FOUND</code> — which, with the default <code>./plugins</code>, failed every
+plugin at once on container boot. <code>path.resolve()</code> is what prevents it. Do not
+reintroduce a relative path anywhere in this chain.</p>
+</div></div>
+
+<h3 id="two-skip-rules">Two skip rules<a class="anchor" href="#two-skip-rules" aria-label="Link to Two skip rules">#</a></h3>
+<p><strong>Built-in names are skipped.</strong> In the shipped container image <code>PLUGINS_DIR</code> and
+the built-in base path resolve to the same directory (<code>/app/plugins</code>), so every
+built-in would otherwise be imported twice. The built-in loop already registered
+them. Note the corollary: in that image this step scans the built-in directory
+itself, so any <em>other</em> directory sitting there is loaded even though it is not on
+the built-in list.</p>
+<p><strong><code>browser</code> and <code>jots</code> are refused.</strong> Registration overwrites by name, so a disk
+directory using either name would shadow an internal capability. The loader logs
+and continues:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">Skipping plugin dir &quot;browser&quot;: name reserved for internal plugin</code></pre></div>
+<h2 id="failure-isolation">Failure isolation<a class="anchor" href="#failure-isolation" aria-label="Link to Failure isolation">#</a></h2>
+<p>Every import — built-in and external — is individually wrapped in try/catch.</p>
+<div class="table-wrap"><table><thead><tr><th>Failure</th><th>Log line</th><th>Effect</th></tr></thead><tbody>
+<tr><td>Built-in plugin throws</td><td><code>Failed to load built-in plugin &lt;name&gt;: …</code></td><td>That integration is absent; boot continues</td></tr>
+<tr><td>External plugin throws</td><td><code>Failed to load plugin &lt;dir&gt;: …</code></td><td>That integration is absent; boot continues</td></tr>
+<tr><td>Success (external)</td><td><code>Loaded plugin: &lt;dir&gt;</code></td><td>Registered</td></tr>
+</tbody></table></div>
+<p>The important consequence: <strong>a broken plugin is silently missing, not fatal.</strong>
+The server starts, the portal renders, and the integration simply is not in the
+catalog. When a plugin you expect does not appear, read the boot log first — a
+missing card almost always has a <code>Failed to load</code> line above it.</p>
+<h2 id="registration-overwrites-by-name">Registration overwrites by name<a class="anchor" href="#registration-overwrites-by-name" aria-label="Link to Registration overwrites by name">#</a></h2>
+<p>The registry holds two maps: integrations keyed by <code>integration.name</code>, and tools
+keyed by <code>tool.name</code>. <code>register()</code> writes into both with plain <code>set</code> — no
+collision check, no warning.</p>
+<ul>
+<li><strong>Integration names.</strong> A later plugin with the same <code>name</code> replaces the earlier
+one entirely, including its tools list and directory.</li>
+<li><strong>Tool names are one flat global namespace.</strong> They are keyed across all
+plugins, not scoped per integration. If your plugin exports a tool named
+<code>github_list_repos</code>, whichever plugin registers last wins — and since external
+plugins load <em>after</em> built-ins, yours would win, silently breaking GitHub.</li>
+</ul>
+<p>Prefix every tool name with your integration&#39;s identity, and keep the prefix
+distinct from the 16 shipped ones.</p>
+<h2 id="there-is-no-hot-reload">There is no hot reload<a class="anchor" href="#there-is-no-hot-reload" aria-label="Link to There is no hot reload">#</a></h2>
+<p>Plugins are imported once at boot. <code>import()</code> results are cached by the ESM
+loader, so even re-running <code>loadPlugins()</code> would not pick up edits on disk.</p>
+<p><strong>Restart the server after any change to a plugin file</strong> — the manifest, a tool,
+or a re-export barrel.</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker compose restart a-workbench</code></pre></div>
+<h2 id="mounting-a-plugin-directory">Mounting a plugin directory<a class="anchor" href="#mounting-a-plugin-directory" aria-label="Link to Mounting a plugin directory">#</a></h2>
+<h3 id="docker-compose">Docker Compose<a class="anchor" href="#docker-compose" aria-label="Link to Docker Compose">#</a></h3>
+<p>The image ships only the built-ins. Bind-mount your plugin tree read-only and
+point <code>PLUGINS_DIR</code> at the mount:</p>
+<div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">services:
+  a-workbench:
+    image: a-workbench:latest
+    volumes:
+      - /srv/awb-plugins:/srv/awb-plugins:ro
+    environment:
+      - PLUGINS_DIR=/srv/awb-plugins
+      - MY_INTERNAL_TOOL_CLIENT_ID=...
+      - MY_INTERNAL_TOOL_CLIENT_SECRET=...</code></pre></div>
+<p><code>:ro</code> keeps the server from ever mutating your plugin tree.</p>
+<h3 id="kubernetes">Kubernetes<a class="anchor" href="#kubernetes" aria-label="Link to Kubernetes">#</a></h3>
+<p>The same shape: mount something at <code>PLUGINS_DIR</code>. A <code>ConfigMap</code> works for a small
+plugin; a <code>PersistentVolumeClaim</code> is better once you ship a logo or several tool
+files. OAuth credentials belong in a <code>Secret</code>, not the ConfigMap.</p>
+<div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">spec:
+  containers:
+    - name: a-workbench
+      env:
+        - name: PLUGINS_DIR
+          value: /srv/awb-plugins
+        - name: MY_INTERNAL_TOOL_CLIENT_ID
+          valueFrom:
+            secretKeyRef: { name: awb-plugin-oauth, key: client-id }
+      volumeMounts:
+        - name: plugins
+          mountPath: /srv/awb-plugins
+          readOnly: true
+  volumes:
+    - name: plugins
+      persistentVolumeClaim:
+        claimName: awb-plugins</code></pre></div>
+<p>Because there is no hot reload, updating the volume contents requires a pod
+restart to take effect.</p>
+<h2 id="the-ts-requirement">The <code>.ts</code> requirement<a class="anchor" href="#the-ts-requirement" aria-label="Link to The .ts requirement">#</a></h2>
+<p>The loader imports <code>manifest.ts</code> and <code>tools/index.ts</code> by those exact filenames.
+The server runtime must be able to resolve TypeScript — in this repo it runs under
+<code>tsx</code>. If you ship pre-built JavaScript, the filenames the loader looks for do
+not change, so a <code>.js</code>-only plugin will not load as-is.</p>
+<h2 id="verifying-a-load">Verifying a load<a class="anchor" href="#verifying-a-load" aria-label="Link to Verifying a load">#</a></h2>
+<div class="steps">
+
+<h3 id="check-the-boot-log">Check the boot log<a class="anchor" href="#check-the-boot-log" aria-label="Link to Check the boot log">#</a></h3>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">Loaded plugin: my-internal-tool</code></pre></div>
+<h3 id="check-the-portal">Check the portal<a class="anchor" href="#check-the-portal" aria-label="Link to Check the portal">#</a></h3>
+<p>The integration appears as a card with its logo (or a cog if <code>logo</code> is omitted)
+and offers the connect flow for its auth type.</p>
+<h3 id="check-mcp">Check MCP<a class="anchor" href="#check-mcp" aria-label="Link to Check MCP">#</a></h3>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl -s -X POST $SERVER_PUBLIC_URL/mcp \
+  -H &quot;x-workbench-api-key: $API_KEY&quot; \
+  -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/call&quot;,
+       &quot;params&quot;:{&quot;name&quot;:&quot;list_integrations&quot;,&quot;arguments&quot;:{}}}'</code></pre></div>
+<p>Your integration should be listed with its <code>version</code> and a <code>connected</code> flag.
+Then <code>search_tools</code> for one of your tool names, and <code>execute_tools</code> to run it.</p>
+</div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="writing-a-plugin.html"><span class="pn-dir">Previous</span><span class="pn-label">Write your first plugin</span></a><a class="pn pn-next" href="manifest.html"><span class="pn-dir">Next</span><span class="pn-label">Manifest reference</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/plugins/loading.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#step-1-internal-plugins">Step 1 — internal plugins</a></li><li class="toc-h2"><a href="#step-2-built-ins-by-hardcoded-list">Step 2 — built-ins by hardcoded list</a></li><li class="toc-h2"><a href="#step-3-external-plugins-from-plugins_dir">Step 3 — external plugins from PLUGINS_DIR</a></li><li class="toc-h3"><a href="#two-skip-rules">Two skip rules</a></li><li class="toc-h2"><a href="#failure-isolation">Failure isolation</a></li><li class="toc-h2"><a href="#registration-overwrites-by-name">Registration overwrites by name</a></li><li class="toc-h2"><a href="#there-is-no-hot-reload">There is no hot reload</a></li><li class="toc-h2"><a href="#mounting-a-plugin-directory">Mounting a plugin directory</a></li><li class="toc-h3"><a href="#docker-compose">Docker Compose</a></li><li class="toc-h3"><a href="#kubernetes">Kubernetes</a></li><li class="toc-h2"><a href="#the-ts-requirement">The .ts requirement</a></li><li class="toc-h2"><a href="#verifying-a-load">Verifying a load</a></li><li class="toc-h3"><a href="#check-the-boot-log">Check the boot log</a></li><li class="toc-h3"><a href="#check-the-portal">Check the portal</a></li><li class="toc-h3"><a href="#check-mcp">Check MCP</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

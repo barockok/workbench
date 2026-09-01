@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code — a-workbench Docs</title>
+<meta name="description" content="Wire Claude Code to a workbench with either an API key or OAuth, and fix it when it doesn't appear.">
+<meta property="og:title" content="Claude Code — a-workbench">
+<meta property="og:description" content="Wire Claude Code to a workbench with either an API key or OAuth, and fix it when it doesn't appear.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab active" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Introduction</p><ul><li><a class="" href="../index.html">What is a-workbench?</a></li><li><a class="" href="quickstart.html">Quickstart</a></li><li><a class="" href="how-it-works.html">How it works</a></li><li><a class="" href="concepts.html">Core concepts</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Connect an agent</p><ul><li><a class="active" href="connect-claude-code.html">Claude Code</a></li><li><a class="" href="connect-other-clients.html">Other MCP clients</a></li><li><a class="" href="first-connection.html">Your first integration</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Connect an agent</p>
+          <h1>Claude Code</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Wire Claude Code to a workbench with either an API key or OAuth, and fix it when it doesn't appear.</p>
+      <p>Claude Code reaches a workbench over HTTP as a remote MCP server. Configuration is
+one entry in <code>.mcp.json</code>; the only real decision is which credential it carries.</p>
+<h2 id="pick-an-auth-path">Pick an auth path<a class="anchor" href="#pick-an-auth-path" aria-label="Link to Pick an auth path">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Use</th><th>Auth</th><th>Config needs</th></tr></thead><tbody>
+<tr><td>Interactive — you, at a terminal</td><td>OAuth browser login</td><td>server <code>url</code> only</td></tr>
+<tr><td>Headless, CI, scripts</td><td>Workbench API key</td><td><code>url</code> plus a <code>headers</code> block</td></tr>
+</tbody></table></div>
+<p>These are two different tokens and they travel in two different headers.
+<code>Authorization: Bearer</code> carries an OAuth access token or a portal session JWT. The
+API key travels in <code>x-workbench-api-key</code>, which the server checks first and
+separately.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">An API key in a `Bearer` header will not authenticate</span></div><div class="callout-body"><p>The server tries a <code>Bearer</code> value as an OAuth access token, then as a session
+JWT. An API key is neither, so it fails both and you get a 401 that looks like
+an OAuth problem.</p>
+</div></div>
+
+<h2 id="write-the-config">Write the config<a class="anchor" href="#write-the-config" aria-label="Link to Write the config">#</a></h2>
+<p>Put <code>.mcp.json</code> at the project root.</p>
+<div class="tabs" id="tabs-start-connect-claude-code-0"><div class="tab-bar"><button type="button" class="tab active" data-i="0">OAuth</button><button type="button" class="tab" data-i="1">API key</button></div><div class="tab-panel active" data-i="0"><div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">OAuth</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;workbench&quot;: {
+      &quot;url&quot;: &quot;https://your-workbench.example.com/mcp&quot;
+    }
+  }
+}</code></pre></div>
+</div><div class="tab-panel" data-i="1"><div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">API key</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;workbench&quot;: {
+      &quot;url&quot;: &quot;https://your-workbench.example.com/mcp&quot;,
+      &quot;headers&quot;: { &quot;x-workbench-api-key&quot;: &quot;YOUR_API_KEY&quot; }
+    }
+  }
+}</code></pre></div>
+</div></div>
+
+<p>Note there is no trailing comma after the <code>headers</code> object. A single stray comma
+makes the file invalid JSON, and Claude Code then drops the whole server — it will
+not appear in <code>claude mcp list</code> at all, and the only clue is:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">[Failed to parse] Project config (shared via .mcp.json)
+  └ [Error] MCP config is not a valid JSON</code></pre></div>
+<p>Validate before going further:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">python3 -m json.tool .mcp.json</code></pre></div>
+<h2 id="load-and-confirm">Load and confirm<a class="anchor" href="#load-and-confirm" aria-label="Link to Load and confirm">#</a></h2>
+<p>Claude Code does not re-read <code>.mcp.json</code> mid-session. After any edit, restart the
+session, then check the server is parsed and reachable:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">claude mcp list
+# workbench: https://your-workbench.example.com/mcp (HTTP) - ✓ Connected</code></pre></div>
+<p>If <code>workbench</code> is missing from that list, stop — it is a config problem, not an
+auth problem. Go back and validate the JSON.</p>
+<h2 id="authorize-oauth-path-only">Authorize (OAuth path only)<a class="anchor" href="#authorize-oauth-path-only" aria-label="Link to Authorize (OAuth path only)">#</a></h2>
+<p>On first use the client discovers the authorization server from the 401 challenge,
+registers itself through Dynamic Client Registration, and opens a browser to sign
+in with <strong>Google</strong> — the workbench&#39;s <code>/authorize</code> redirects there specifically, and
+fails if <code>GOOGLE_CLIENT_ID</code> is unset. Keycloak covers portal login only; it cannot
+complete this flow, so a Keycloak-only deployment must use the API-key path above.
+After you sign in, the client holds an access token and a refresh token and renews
+them on its own — you do not repeat this.</p>
+<p>If the browser lands on a page that cannot reach your machine — common over SSH,
+where the client&#39;s <code>localhost:&lt;port&gt;/callback</code> is not reachable from where the
+browser runs — copy the <strong>full</strong> callback URL out of the address bar, including
+<code>?code=…</code>, and hand it back to the client&#39;s completion tool.</p>
+<p>A workbench also serves <code>GET /oauth/callback</code> as an out-of-band landing page for
+clients registered against it. It does no server-side work at all: no code
+exchange, no token storage. It renders the current URL into a text field for you
+to copy back to a CLI agent, and nothing else.</p>
+<h2 id="verify-end-to-end">Verify end to end<a class="anchor" href="#verify-end-to-end" aria-label="Link to Verify end to end">#</a></h2>
+<p>Ask for something that requires the server:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">You: list my integrations
+Claude: list_integrations()  → integrations with per-user connection status</code></pre></div>
+<p><code>whoami</code> is the smaller check — it returns the workbench user id and email and
+touches no integration.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" href="#troubleshooting" aria-label="Link to Troubleshooting">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead><tbody>
+<tr><td><code>MCP config is not a valid JSON</code>; server absent from <code>claude mcp list</code></td><td>trailing comma or syntax error in <code>.mcp.json</code></td><td>validate with <code>python3 -m json.tool</code>, remove the offending comma</td></tr>
+<tr><td>Server loads but its tools are missing</td><td>config edited but not reloaded</td><td>restart the session</td></tr>
+<tr><td><code>401</code> with <code>WWW-Authenticate: Bearer …</code> on <code>/mcp</code></td><td>no or invalid credential</td><td>OAuth: complete the browser login. API key: confirm the header is present</td></tr>
+<tr><td>Authorized but every call still 401s</td><td>API key sent in <code>Authorization: Bearer</code></td><td>move it to <code>x-workbench-api-key</code></td></tr>
+<tr><td>Tool calls return <code>{&quot;error&quot;:&quot;NOT_CONNECTED&quot;}</code></td><td>the workbench user has no credential for that integration</td><td><code>connect(&#39;&lt;integration&gt;&#39;)</code>, then <code>wait_for_connection</code></td></tr>
+<tr><td>A tool &quot;succeeds&quot; but the content is an error object</td><td>plugin-tool failures are not JSON-RPC errors</td><td>read <code>results[i].error</code> in the response body</td></tr>
+<tr><td>Connected to the wrong workbench</td><td>two similarly named servers, e.g. staging and production</td><td>check the exact <code>url</code> in <code>claude mcp list</code> — each server is authorized separately</td></tr>
+<tr><td>Results end mid-JSON with a truncation notice</td><td>the 60,000-character result cap</td><td>narrow the request with the tool&#39;s <code>limit</code>, <code>fields</code>, or pagination arguments</td></tr>
+</tbody></table></div>
+<h2 id="what-claude-code-sees">What Claude Code sees<a class="anchor" href="#what-claude-code-sees" aria-label="Link to What Claude Code sees">#</a></h2>
+<p>Only the nine meta-tools, prefixed by the server name — <code>mcp__workbench__search_tools</code>,
+<code>mcp__workbench__execute_tools</code>, and so on. Plugin tools are never advertised
+individually; they are reached by name through <code>execute_tools</code>. That is the point
+of the design, and it is why adding integrations does not grow the tool list.</p>
+<p>Next: <a href="first-connection.html">Your first integration</a>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="concepts.html"><span class="pn-dir">Previous</span><span class="pn-label">Core concepts</span></a><a class="pn pn-next" href="connect-other-clients.html"><span class="pn-dir">Next</span><span class="pn-label">Other MCP clients</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/start/connect-claude-code.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#pick-an-auth-path">Pick an auth path</a></li><li class="toc-h2"><a href="#write-the-config">Write the config</a></li><li class="toc-h2"><a href="#load-and-confirm">Load and confirm</a></li><li class="toc-h2"><a href="#authorize-oauth-path-only">Authorize (OAuth path only)</a></li><li class="toc-h2"><a href="#verify-end-to-end">Verify end to end</a></li><li class="toc-h2"><a href="#troubleshooting">Troubleshooting</a></li><li class="toc-h2"><a href="#what-claude-code-sees">What Claude Code sees</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

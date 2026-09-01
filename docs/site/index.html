@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is a-workbench? — a-workbench Docs</title>
+<meta name="description" content="A self-hosted MCP server that puts 178 SaaS tools behind 9 meta-tools, with per-user OAuth for every integration.">
+<meta property="og:title" content="What is a-workbench? — a-workbench">
+<meta property="og:description" content="A self-hosted MCP server that puts 178 SaaS tools behind 9 meta-tools, with per-user OAuth for every integration.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-landing">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab active" href="index.html">Get started</a><a class="topnav-tab" href="guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="integrations/index.html">Integrations</a><a class="topnav-tab" href="plugins/index.html">Build plugins</a><a class="topnav-tab" href="deploy/install.html">Deploy</a><a class="topnav-tab" href="reference/meta-tools.html">Reference</a><a class="topnav-tab" href="field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Introduction</p><ul><li><a class="active" href="index.html">What is a-workbench?</a></li><li><a class="" href="start/quickstart.html">Quickstart</a></li><li><a class="" href="start/how-it-works.html">How it works</a></li><li><a class="" href="start/concepts.html">Core concepts</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Connect an agent</p><ul><li><a class="" href="start/connect-claude-code.html">Claude Code</a></li><li><a class="" href="start/connect-other-clients.html">Other MCP clients</a></li><li><a class="" href="start/first-connection.html">Your first integration</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Introduction</p>
+          <h1>What is a-workbench?</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">A self-hosted MCP server that puts 178 SaaS tools behind 9 meta-tools, with per-user OAuth for every integration.</p>
+      <p>a-workbench is a self-hosted MCP server that sits between your agent and the SaaS
+tools it needs. It ships 16 integrations and 178 tools, holds a separate OAuth
+connection per user per provider, and exposes all of it through <strong>9 meta-tools</strong> —
+so the agent&#39;s tool list stays the same size whether you have loaded one
+integration or all of them.</p>
+<p>The alternative is running one MCP server per service: sixteen processes, sixteen
+credential setups, and every tool from every one of them flattened into the
+agent&#39;s context on connect.</p>
+<h2 id="the-shape-of-it">The shape of it<a class="anchor" href="#the-shape-of-it" aria-label="Link to The shape of it">#</a></h2>
+<div class="mermaid-wrap"><pre class="mermaid">flowchart TB
+  Agent[&quot;Agent&lt;br/&gt;(Claude Code, any MCP client)&quot;]
+  MCP[&quot;POST /mcp&lt;br/&gt;one endpoint&quot;]
+  Meta[&quot;9 meta-tools&lt;br/&gt;search · schema · execute&quot;]
+  Reg[&quot;Plugin registry&lt;br/&gt;16 integrations · 178 tools&quot;]
+  Portal[&quot;Portal&lt;br/&gt;connect · API keys · revoke&quot;]
+  Store[(&quot;Token store&lt;br/&gt;AES-256-GCM&lt;br/&gt;SQLite or PostgreSQL&quot;)]
+  APIs[&quot;Third-party APIs&lt;br/&gt;Jira · GitHub · Slack · …&quot;]
+
+  Agent --&gt;|JSON-RPC| MCP
+  MCP --&gt; Meta
+  Meta --&gt; Reg
+  Reg --&gt;|ctx.http + credential| APIs
+  Meta -.reads.-&gt; Store
+  Portal --&gt;|stores tokens| Store
+  Portal -.OAuth consent.-&gt; APIs</pre></div>
+<p>The agent never holds a provider credential. It names a tool; the server looks up
+that user&#39;s stored token, injects it into the outbound request, and returns the
+response.</p>
+<h2 id="why-the-meta-tool-pattern">Why the meta-tool pattern<a class="anchor" href="#why-the-meta-tool-pattern" aria-label="Link to Why the meta-tool pattern">#</a></h2>
+<p>A conventional MCP server advertises every tool it has in <code>tools/list</code>. Connect
+five of them and the agent is carrying several hundred tool definitions before it
+has done any work — context spent on descriptions it will not use, and a harder
+selection problem when it picks one.</p>
+<p>a-workbench advertises only the 9 meta-tools. Everything else is reached by name:</p>
+<ol>
+<li><code>search_tools</code> finds candidates by keyword.</li>
+<li><code>get_tool_schema</code> returns the JSON Schema for one tool&#39;s arguments.</li>
+<li><code>execute_tools</code> runs one or many, concurrently, in a single call.</li>
+</ol>
+<p>The same discipline applies on the way back. A tool result is serialized into one
+text block capped at <strong>60,000 characters</strong>; past that it is truncated with a notice
+telling the agent to narrow the request with <code>limit</code>, <code>fields</code>, or pagination.
+Truncated output is deliberately not valid JSON, so a client cannot silently parse
+a half-response as complete.</p>
+<h2 id="where-to-go-next">Where to go next<a class="anchor" href="#where-to-go-next" aria-label="Link to Where to go next">#</a></h2>
+<div class="cards" data-cols="3"><a class="card" href="start/quickstart.html"><span class="card-title">Quickstart</span><span class="card-desc">Local server, API key, connected agent, one pass.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="start/how-it-works.html"><span class="card-title">How it works</span><span class="card-desc">Packages, request path, where tokens live.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="start/concepts.html"><span class="card-title">Core concepts</span><span class="card-desc">Integration, plugin, tool, connection, registry.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="integrations/index.html"><span class="card-title">Integrations</span><span class="card-desc">All 16, their scopes and their tools.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="plugins/index.html"><span class="card-title">Build plugins</span><span class="card-desc">The manifest, the context API, the four auth modes.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a><a class="card" href="deploy/install.html"><span class="card-title">Deploy</span><span class="card-desc">Docker, Postgres, SSO, security, observability.</span><span class="card-more">Read<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5"/></svg></span></a></div>
+
+<h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Integrations</td><td>16 on disk, plus 2 internal (<code>browser</code>, <code>jots</code>)</td></tr>
+<tr><td>Tools</td><td>178 plugin tools, behind 9 meta-tools</td></tr>
+<tr><td>Auth modes</td><td><code>oauth2</code>, <code>apikey</code>, <code>cookie</code>, <code>none</code></td></tr>
+<tr><td>Agent auth</td><td>Workbench API key, OAuth 2.1 (DCR + PKCE), or portal session</td></tr>
+<tr><td>Portal login</td><td>Google, Keycloak, or both (the agent OAuth flow is Google-only)</td></tr>
+<tr><td>Database</td><td>SQLite or PostgreSQL</td></tr>
+<tr><td>Deployment</td><td>Node 20+, Docker image, Docker Compose</td></tr>
+</tbody></table></div>
+
+    </article>
+    <nav class="prevnext"><span></span><a class="pn pn-next" href="start/quickstart.html"><span class="pn-dir">Next</span><span class="pn-label">Quickstart</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/index.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-shape-of-it">The shape of it</a></li><li class="toc-h2"><a href="#why-the-meta-tool-pattern">Why the meta-tool pattern</a></li><li class="toc-h2"><a href="#where-to-go-next">Where to go next</a></li><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="";</script>
+<script src="assets/docs.js" defer></script>
+</body>
+</html>
