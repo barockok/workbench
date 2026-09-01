@@ -58,6 +58,12 @@ jobs:
       - name: Typecheck tests
         run: npm run typecheck:tests -w @a-workbench/server
 
+      # The site is published from main by the Docs workflow, so a broken
+      # internal link or an unbuildable page must fail here, on the pull
+      # request, rather than at deploy time.
+      - name: Build the docs site
+        run: node docs/site/build.mjs
+
       - name: Test
         run: npm run test:coverage -w @a-workbench/server
         env:

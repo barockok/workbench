@@ -33,3 +33,6 @@ temp/
 
 # Playwright CLI snapshots/screenshots (may capture real user PII)
 .playwright-cli/
+
+# Generated docs site (built by docs/site/build.mjs in CI)
+docs/site/_site/
