@@ -242,7 +242,14 @@ Static artifact hosting. Full guide: [Jots](../guides/jots.md).
 | GET | `/j/:name` | none | 301 to `/j/:name/`. 404 on an invalid name |
 | GET | `/j/:name/*` | jot cookie when `access` is `password` | Serves files; a directory falls back to `index.html`. 404 for an invalid name, a missing manifest, a missing file, or **any request for the manifest file itself**; **403** on traversal; on a locked jot, 200 plus the unlock page for browser navigations and **401** otherwise |
 | POST | `/j/:name/__auth` | password form | Sets the jot cookie (httpOnly, `SameSite=Lax`, `Max-Age=2592000`, `Secure` in production) and 302s to `/j/:name/`. **401** plus the unlock page on a wrong password; 404 invalid name or no manifest; 302 if the jot is not password-gated |
-| POST | `/j/upload/:token` | single-use mint token in the path | Body is a gzip tarball, streamed. 200 with the commit result. **404** unknown or consumed token; **413** `TOO_LARGE` / `TOO_MANY_FILES`; **400** `BAD_ARCHIVE`, `NO_INDEX`, or another extract error; **409** `JOT_NAME_TAKEN`; **500** `DEPLOY_FAILED` |
+| OPTIONS | `/j/:name/*` | none | Preflight. **204** plus `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods`, and `Access-Control-Max-Age` for a public jot with `cors` enabled; **404** for every other jot, so CORS posture is not discoverable |
+| POST | `/j/upload/:token` | single-use mint token in the path | Body is a gzip tarball, streamed. 200 with the commit result. **404** unknown or consumed token, or a patch whose jot no longer exists; **403** a patch whose jot changed owner; **413** `TOO_LARGE` / `TOO_MANY_FILES`, from the archive and again from the merged tree on a patch; **400** `BAD_ARCHIVE`, `NO_INDEX`, `INVALID_PATH`, or another extract error; **409** `JOT_NAME_TAKEN`; **500** `DEPLOY_FAILED` |
+
+A token minted by `update_jot` puts the upload in **patch** mode: the live tree is staged,
+the token's delete list applied, and the archive overlaid on top, so an uploaded path wins
+over a delete of itself. `NO_INDEX` is still checked, but a patch normally inherits the
+live `index.html`. `access` and the password hash come from the live manifest, never the
+token, so a patch cannot change a jot's gating.
 
 Jot **content** responses carry `Content-Security-Policy: sandbox allow-scripts
 allow-forms`, `nosniff`, `X-Frame-Options: SAMEORIGIN`, and
@@ -253,9 +260,15 @@ jot are sent without any of those headers. The sandbox puts a served page on an
 opaque origin, so jot JavaScript cannot read app cookies or make credentialed
 same-origin calls to `/api` or `/mcp`.
 
-> [!WARNING] A jot cannot fetch its own data files
+> [!WARNING] By default, a jot cannot fetch its own data files
 > The opaque origin blocks same-origin `fetch` from the page. Inline everything a jot
-> needs — it has to be self-contained.
+> needs — it has to be self-contained, unless it opts into `cors`.
+
+A **public** jot deployed or updated with `cors: true` instead carries
+`Access-Control-Allow-Origin: *` and `Cross-Origin-Resource-Policy: cross-origin` on its
+content responses, which is what lets the page fetch its own files. The `sandbox`,
+`nosniff`, and `X-Frame-Options` headers are unchanged. The flag is ignored on password
+jots: an opaque-origin fetch sends no cookie, so the request would 401 regardless.
 
 The manifest file is answered with 404 rather than 403, so a probe cannot confirm it
 exists.

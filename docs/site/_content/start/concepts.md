@@ -145,12 +145,15 @@ connected, nothing is minted.
 
 A static site the agent can deploy and host: `deploy_jot` returns a single-use
 upload URL, you push a gzip tarball, and it is served at `/j/<name>/`. Names are
-global and creator-locked, and a jot can be password-gated.
+global and creator-locked, and a jot can be password-gated. `update_jot` patches a
+live jot instead of replacing it, so a single data file can be refreshed on its own;
+`list_jot_files` shows what a jot currently holds.
 
 Jots are served on an opaque origin under a sandbox CSP, so a jot's JavaScript
 cannot read app cookies or make credentialed same-origin calls to `/api` or `/mcp`.
-One consequence is worth planning for: **a jot cannot fetch its own data files** —
-it has to be self-contained.
+One consequence is worth planning for: **by default a jot cannot fetch its own data
+files** — it has to be self-contained, or opt into `cors: true`, which is public-jot
+only and does not weaken the sandbox.
 
 Defaults are 5 MiB decompressed, 1000 files, and a 5-minute upload token, all
 configurable.

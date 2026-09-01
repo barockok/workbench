@@ -249,8 +249,14 @@ streamed, not buffered.</p>
 <tr><td>GET</td><td><code>/j/:name</code></td><td>none</td><td>301 to <code>/j/:name/</code>. 404 on an invalid name</td></tr>
 <tr><td>GET</td><td><code>/j/:name/*</code></td><td>jot cookie when <code>access</code> is <code>password</code></td><td>Serves files; a directory falls back to <code>index.html</code>. 404 for an invalid name, a missing manifest, a missing file, or <strong>any request for the manifest file itself</strong>; <strong>403</strong> on traversal; on a locked jot, 200 plus the unlock page for browser navigations and <strong>401</strong> otherwise</td></tr>
 <tr><td>POST</td><td><code>/j/:name/__auth</code></td><td>password form</td><td>Sets the jot cookie (httpOnly, <code>SameSite=Lax</code>, <code>Max-Age=2592000</code>, <code>Secure</code> in production) and 302s to <code>/j/:name/</code>. <strong>401</strong> plus the unlock page on a wrong password; 404 invalid name or no manifest; 302 if the jot is not password-gated</td></tr>
-<tr><td>POST</td><td><code>/j/upload/:token</code></td><td>single-use mint token in the path</td><td>Body is a gzip tarball, streamed. 200 with the commit result. <strong>404</strong> unknown or consumed token; <strong>413</strong> <code>TOO_LARGE</code> / <code>TOO_MANY_FILES</code>; <strong>400</strong> <code>BAD_ARCHIVE</code>, <code>NO_INDEX</code>, or another extract error; <strong>409</strong> <code>JOT_NAME_TAKEN</code>; <strong>500</strong> <code>DEPLOY_FAILED</code></td></tr>
+<tr><td>OPTIONS</td><td><code>/j/:name/*</code></td><td>none</td><td>Preflight. <strong>204</strong> plus <code>Access-Control-Allow-Origin: *</code>, <code>Access-Control-Allow-Methods</code>, and <code>Access-Control-Max-Age</code> for a public jot with <code>cors</code> enabled; <strong>404</strong> for every other jot, so CORS posture is not discoverable</td></tr>
+<tr><td>POST</td><td><code>/j/upload/:token</code></td><td>single-use mint token in the path</td><td>Body is a gzip tarball, streamed. 200 with the commit result. <strong>404</strong> unknown or consumed token, or a patch whose jot no longer exists; <strong>403</strong> a patch whose jot changed owner; <strong>413</strong> <code>TOO_LARGE</code> / <code>TOO_MANY_FILES</code>, from the archive and again from the merged tree on a patch; <strong>400</strong> <code>BAD_ARCHIVE</code>, <code>NO_INDEX</code>, <code>INVALID_PATH</code>, or another extract error; <strong>409</strong> <code>JOT_NAME_TAKEN</code>; <strong>500</strong> <code>DEPLOY_FAILED</code></td></tr>
 </tbody></table></div>
+<p>A token minted by <code>update_jot</code> puts the upload in <strong>patch</strong> mode: the live tree is staged,
+the token&#39;s delete list applied, and the archive overlaid on top, so an uploaded path wins
+over a delete of itself. <code>NO_INDEX</code> is still checked, but a patch normally inherits the
+live <code>index.html</code>. <code>access</code> and the password hash come from the live manifest, never the
+token, so a patch cannot change a jot&#39;s gating.</p>
 <p>Jot <strong>content</strong> responses carry <code>Content-Security-Policy: sandbox allow-scripts allow-forms</code>, <code>nosniff</code>, <code>X-Frame-Options: SAMEORIGIN</code>, and
 <code>Cross-Origin-Resource-Policy: same-origin</code> — that is, every served file plus the
 two unlock-page responses. The bare status replies do not: the 404s, the 403 on
@@ -258,10 +264,15 @@ traversal, and the plain <code>401 Unauthorized</code> for a non-browser request
 jot are sent without any of those headers. The sandbox puts a served page on an
 opaque origin, so jot JavaScript cannot read app cookies or make credentialed
 same-origin calls to <code>/api</code> or <code>/mcp</code>.</p>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">A jot cannot fetch its own data files</span></div><div class="callout-body"><p>The opaque origin blocks same-origin <code>fetch</code> from the page. Inline everything a jot
-needs — it has to be self-contained.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">By default, a jot cannot fetch its own data files</span></div><div class="callout-body"><p>The opaque origin blocks same-origin <code>fetch</code> from the page. Inline everything a jot
+needs — it has to be self-contained, unless it opts into <code>cors</code>.</p>
 </div></div>
 
+<p>A <strong>public</strong> jot deployed or updated with <code>cors: true</code> instead carries
+<code>Access-Control-Allow-Origin: *</code> and <code>Cross-Origin-Resource-Policy: cross-origin</code> on its
+content responses, which is what lets the page fetch its own files. The <code>sandbox</code>,
+<code>nosniff</code>, and <code>X-Frame-Options</code> headers are unchanged. The flag is ignored on password
+jots: an opaque-origin fetch sends no cookie, so the request would 401 regardless.</p>
 <p>The manifest file is answered with 404 rather than 403, so a probe cannot confirm it
 exists.</p>
 <h2 id="mcp">MCP<a class="anchor" href="#mcp" aria-label="Link to MCP">#</a></h2>

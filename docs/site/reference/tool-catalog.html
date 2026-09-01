@@ -359,20 +359,29 @@ for <code>CONNECT_TTL_SECONDS</code> (600 by default).</p>
 <p><code>browser_close</code> ends the warm session and keeps the profile. There is one Chromium per
 user, shared with cookie capture rather than exclusive with it.</p>
 <h2 id="jots-internal">jots (internal)<a class="anchor" href="#jots-internal" aria-label="Link to jots (internal)">#</a></h2>
-<p>Three tools for hosting static files. Also <code>auth: none</code>.</p>
+<p>Five tools for hosting static files. Also <code>auth: none</code>.</p>
 <div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
-<tr><td><code>deploy_jot</code></td><td>Returns <code>{ uploadUrl, token, expiresAt, maxBytes }</code> for a gzip-tarball upload</td></tr>
+<tr><td><code>deploy_jot</code></td><td>Returns <code>{ uploadUrl, token, expiresAt, maxBytes }</code> for a gzip-tarball upload that replaces the jot</td></tr>
+<tr><td><code>update_jot</code></td><td>Same, in patch mode: the archive is overlaid onto the live jot, plus an optional <code>delete</code> list</td></tr>
+<tr><td><code>list_jot_files</code></td><td>List a jot&#39;s files — path, bytes, updatedAt</td></tr>
 <tr><td><code>list_jots</code></td><td>List the caller&#39;s own jots — never anyone else&#39;s</td></tr>
 <tr><td><code>delete_jot</code></td><td>Delete a jot you own</td></tr>
 </tbody></table></div>
 <p><code>deploy_jot</code> rejects an invalid name (<code>INVALID_NAME</code>), <code>access: &quot;password&quot;</code> without a
 password (<code>PASSWORD_REQUIRED</code>), and a name already owned by another user
 (<code>JOT_NAME_TAKEN</code> — names are global and creator-locked). Passwords are hashed before
-the token is minted. <code>delete_jot</code> returns <code>FORBIDDEN</code> for another owner&#39;s jot and
-<code>NOT_FOUND</code> when it does not exist.</p>
+the token is minted. <code>update_jot</code>, <code>list_jot_files</code>, and <code>delete_jot</code> return <code>FORBIDDEN</code>
+for another owner&#39;s jot and <code>NOT_FOUND</code> when it does not exist; <code>update_jot</code> also
+rejects a <code>delete</code> entry that escapes the jot or names the manifest (<code>INVALID_PATH</code>).</p>
+<p>A patch inherits <code>access</code> and the password hash from the live jot, so it cannot change
+gating, and its archive needs no root <code>index.html</code> — the live one is retained.</p>
+<p>Both tools accept <code>cors: true</code>, which on a <strong>public</strong> jot serves its files with
+<code>Access-Control-Allow-Origin: *</code> so the page can fetch its own data. The sandbox CSP is
+unchanged; the flag is ignored on password jots.</p>
 <p>Limits come from configuration: <code>JOTS_MAX_BYTES</code> (5 MiB), <code>JOTS_MAX_FILES</code> (1000), and
 <code>JOTS_UPLOAD_TTL_SECONDS</code> (300, single use). An archive with no root <code>index.html</code> is
-rejected with <code>NO_INDEX</code>.</p>
+rejected with <code>NO_INDEX</code>. A patch is re-measured after the merge, so one that pushes the
+tree over either cap is rejected with <code>TOO_LARGE</code> / <code>TOO_MANY_FILES</code>.</p>
 
     </article>
     <nav class="prevnext"><a class="pn pn-prev" href="database-schema.html"><span class="pn-dir">Previous</span><span class="pn-label">Database schema</span></a><a class="pn pn-next" href="contributing.html"><span class="pn-dir">Next</span><span class="pn-label">Contributing</span></a></nav>

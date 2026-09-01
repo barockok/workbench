@@ -12,11 +12,13 @@ need no credential. They live in server source rather than the plugin directory,
 their handlers write to the filesystem — a capability the plugin context deliberately
 does not expose.
 
-## The three tools
+## The five tools
 
 | Tool | Does |
 |---|---|
-| `deploy_jot` | Validates the name and returns an upload URL plus a single-use token |
+| `deploy_jot` | Validates the name and returns an upload URL plus a single-use token. Publishes the whole site |
+| `update_jot` | Same, in patch mode: the archive is overlaid onto the live site instead of replacing it |
+| `list_jot_files` | Lists the files inside a jot you own — path, bytes, updatedAt |
 | `list_jots` | Lists **your** jots — name, access, url, updatedAt, newest first |
 | `delete_jot` | Deletes a jot you own; `FORBIDDEN` for another owner, `NOT_FOUND` if absent |
 
@@ -68,7 +70,84 @@ https://workbench.example.com/j/release-report/
 :::
 
 The upload replaces any previous deploy of that name wholesale — this is a publish, not
-a merge.
+a merge. To change one file without re-uploading the site, use
+[`update_jot`](#updating-one-file) instead.
+
+## Updating one file
+
+`deploy_jot` republishes everything. When only one file changes — a `data.json`
+regenerated weekly, a chart's dataset, a config blob — `update_jot` overlays your
+archive onto the live tree and leaves the rest alone.
+
+:::steps
+
+### See what is there
+
+```json
+{ "executions": [ { "tool": "list_jot_files",
+  "args": { "name": "release-report" } } ] }
+```
+
+```json
+{
+  "result": {
+    "files": [
+      { "path": "data.json", "bytes": 4120, "updatedAt": "2026-08-24T00:05:00.000Z" },
+      { "path": "index.html", "bytes": 18233, "updatedAt": "2026-08-24T00:05:00.000Z" }
+    ]
+  }
+}
+```
+
+Owner-scoped, like `list_jots`. The internal manifest is never listed.
+
+### Mint a patch token
+
+```json
+{ "executions": [ { "tool": "update_jot",
+  "args": { "name": "release-report" } } ] }
+```
+
+Returns the same `{ uploadUrl, token, expiresAt, maxBytes }` shape as `deploy_jot`.
+
+### Upload only what changed
+
+```bash
+tar czf - -C ./site data.json \
+  | curl --data-binary @- \
+      -H 'Content-Type: application/gzip' \
+      https://workbench.example.com/j/upload/3a71…
+```
+
+:::
+
+Pass `delete` to remove paths — a directory removes its contents:
+
+```json
+{ "executions": [ { "tool": "update_jot",
+  "args": { "name": "release-report", "delete": ["last-quarter", "stale.json"] } } ] }
+```
+
+Deletes are applied to the staged copy *before* the archive is overlaid, so a path that
+is both deleted and uploaded keeps the uploaded version.
+
+Two differences from a deploy are worth holding onto:
+
+- **No `index.html` needed in the archive.** The live one is retained, so a patch that
+  ships only `data.json` is fine. A deploy in the same shape would be rejected with
+  `NO_INDEX`.
+- **Access is inherited, never set.** `access` and the password hash are read from the
+  live jot rather than from the token, so an update cannot change who can read a jot.
+  Redeploy for that.
+
+Ownership is re-checked when the upload lands, not just at mint: a jot that has been
+deleted meanwhile returns 404, and one that changed hands returns 403.
+
+The **merged** tree is re-measured against both limits. `JOTS_MAX_BYTES` and
+`JOTS_MAX_FILES` are enforced during extraction, which only sees the archive — so
+without this check a run of small patches could walk a jot past either cap. A patch that
+would push it over returns 413 (`TOO_LARGE` or `TOO_MANY_FILES`) and leaves the live jot
+untouched.
 
 ## The guards, in order
 
@@ -150,11 +229,40 @@ cannot read the workbench's cookies or make credentialed same-origin requests to
 or `/mcp`. Responses also carry `nosniff`, `X-Frame-Options: SAMEORIGIN`, and
 `Cross-Origin-Resource-Policy: same-origin`.
 
-> [!WARNING] A jot cannot fetch its own data files
+> [!WARNING] By default, a jot cannot fetch its own data files
 > The opaque origin means same-origin `fetch` from inside a jot does not work. Pages
 > must be **self-contained**: inline the data, or embed it as a data URI. Loading
 > `data.json` alongside `index.html` at runtime will fail. This is the single most
-> common surprise when deploying a page that worked locally.
+> common surprise when deploying a page that worked locally — see `cors` below for the
+> opt-out.
+
+### Letting a jot read its own files
+
+Pass `cors: true` on `deploy_jot` or `update_jot` to serve a **public** jot's files with
+`Access-Control-Allow-Origin: *` and `Cross-Origin-Resource-Policy: cross-origin`, and to
+answer preflight `OPTIONS` requests. That is what makes `fetch('./data.json')` work from
+inside the page.
+
+```json
+{ "executions": [ { "tool": "deploy_jot",
+  "args": { "name": "weekly-metrics", "access": "public", "cors": true } } ] }
+```
+
+This pairs naturally with `update_jot`: the page ships once, and the weekly data file is
+patched in on its own.
+
+What it does *not* do is weaken the sandbox. `sandbox allow-scripts allow-forms`,
+`nosniff`, and `X-Frame-Options` are unchanged, so the page still cannot reach app
+cookies, storage, `/api`, or `/mcp`.
+
+> [!WARNING] `cors: true` makes a jot's files world-readable by other sites
+> Any origin can read them. A public jot is already readable over a plain GET, so this
+> only matters if you were treating an unguessable jot name as a secret — which it never
+> was.
+
+On a **password** jot the flag is stored but ignored: an opaque-origin fetch carries no
+cookie, so the request would be answered with 401 regardless. Preflight requests to a jot
+without `cors` return 404, so a jot's CORS posture cannot be discovered by probing.
 
 Two more serving details:
 
@@ -174,7 +282,9 @@ The defaults are stated in the tool's own description, but all four are configur
 | `JOTS_UPLOAD_TTL_SECONDS` | `300` | no | Lifetime of a mint token |
 
 The size and file caps are enforced *while extracting*, not after, so a zip-bomb-shaped
-archive is stopped partway rather than after filling the disk.
+archive is stopped partway rather than after filling the disk. A patch is measured twice:
+once during extraction, and again on the merged tree, because extraction only ever sees
+the incoming archive.
 
 `JOTS_DIR` defaulting next to the database means jots and `tokens.db` share a volume by
 default. On a small volume, point it somewhere with room.
