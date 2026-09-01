@@ -79,7 +79,7 @@ key is `ENCRYPTION_KEY` decoded from hex, resolved once at module load.
 | Jot passwords | scrypt with a fresh random 16-byte salt per jot, verified in constant time |
 | Scopes, expiry timestamps, connection `config` | **Not encrypted** — a self-hosted instance origin or a New Relic region is plaintext |
 
-There is no local account password anywhere in the system; the only scrypt hashes
+There is no local account password anywhere in the system. The only scrypt hashes
 are jot passwords.
 
 > [!DANGER] There is no key rotation path
@@ -91,9 +91,9 @@ are jot passwords.
 > [database migration](database.md).
 
 Storage guidance is the same for both backends. Older documentation described the
-store as "SQLite" and told operators to protect `data/tokens.db`; **PostgreSQL is
-a first-class backend**, and on a PostgreSQL deployment the equivalent duty is
-restricting network access and role grants on the database, plus protecting the
+store as "SQLite" and told operators to protect `data/tokens.db`. **PostgreSQL is
+a first-class backend.** On a PostgreSQL deployment the equivalent duty is to
+restrict network access and role grants on the database, and to protect the
 connection string.
 
 ## SSRF posture and its limits
@@ -154,7 +154,7 @@ see [observability](observability.md).
 ## Operator responsibilities
 
 - Protect `ENCRYPTION_KEY` and `SESSION_SECRET`. Losing the encryption key makes
-  stored credentials unrecoverable; disclosing it makes them decryptable.
+  stored credentials unrecoverable. Disclosing it makes them decryptable.
   Disclosing `SESSION_SECRET` lets an attacker mint any of the five credentials
   derived from it — the four JWTs and the jot unlock cookie.
 - Keep the database on trusted storage: restricted filesystem permissions for a
@@ -171,8 +171,8 @@ see [observability](observability.md).
   frame-ancestors or `X-Frame-Options` policy in front of the server.
 - Treat `/metrics` as internal. It is unauthenticated.
 - Rate-limit `POST /register` at the proxy on an internet-facing deployment.
-- Rotate per-plugin OAuth client secrets on your own schedule; they are read from
-  the environment, never stored.
+- Rotate per-plugin OAuth client secrets on your own schedule. The server reads
+  them from the environment and never stores them.
 - Review anything you put in `PLUGINS_DIR`, and mount it read-only.
 - Remember that `BROWSER_PROFILE_TTL_DAYS` (default 30) **deletes** an idle
   browser profile, logging that user out of every cookie-auth integration.

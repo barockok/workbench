@@ -3,7 +3,7 @@ title: Gmail, Drive, Docs & more
 description: Scopes and complete tool lists for each of the seven google-* plugins.
 ---
 
-Seven plugins, 39 tools between them, each connected independently. Operator setup — Cloud project, consent screen, and the seven OAuth clients — is on [Google setup & scopes](google.md); this page is the per-plugin breakdown.
+Seven plugins, 39 tools between them, each connected independently. Operator setup — Cloud project, consent screen, and the seven OAuth clients — is on [Google setup & scopes](google.md). This page is the per-plugin breakdown.
 
 | Plugin | Tools | Proxy base |
 |---|---|---|
@@ -66,7 +66,7 @@ Replying in-thread needs both the thread id and the original `Message-ID` header
 | `google_calendar_delete_event` | Delete an event permanently |
 | `google_calendar_freebusy` | Find busy intervals across calendars between two times |
 
-Every tool defaults to the `primary` calendar. Call `google_calendar_freebusy` before creating an event to avoid double-booking, and prefer `google_calendar_update_event` over delete-and-recreate when only the time or details change — attendees are notified on delete.
+Every tool defaults to the `primary` calendar. Call `google_calendar_freebusy` before you create an event, to avoid double-booking. Prefer `google_calendar_update_event` over delete-and-recreate when only the time or the details change, because a delete notifies attendees.
 
 ## Google Docs
 
@@ -95,7 +95,7 @@ Read with `google_docs_get_plaintext` unless you need the structure — the full
 | `google_sheets_create` | Create an empty spreadsheet, optionally with named tabs |
 
 > [!WARNING] `google_sheets_write` replaces, it does not add
-> Writing to `Sheet1!A1:C10` overwrites whatever is in those cells. To add rows to a log or table without touching existing data, use `google_sheets_append` with a column range such as `Sheet1!A:C` — Sheets finds the table and inserts after it.
+> Writing to `Sheet1!A1:C10` overwrites whatever is in those cells. To add rows to a log or table without touching existing data, use `google_sheets_append` with a column range such as `Sheet1!A:C`. Sheets finds the table and inserts after it.
 
 ## Google Slides
 
@@ -109,7 +109,7 @@ Read with `google_docs_get_plaintext` unless you need the structure — the full
 | `google_slides_batch_update` | Insert text, create or delete slides |
 | `google_slides_create_from_markdown` | Build a deck from Markdown |
 
-`google_slides_create_from_markdown` splits slides on `---` and handles tables, bullets, and quotes; `|||` makes a two-column layout. It is far less work than assembling the same deck through `google_slides_batch_update`.
+`google_slides_create_from_markdown` splits slides on `---` and handles tables, bullets, and quotes. `|||` makes a two-column layout. It is far less work than assembling the same deck through `google_slides_batch_update`.
 
 ## Google Gemini
 
@@ -119,4 +119,4 @@ Read with `google_docs_get_plaintext` unless you need the structure — the full
 |---|---|
 | `google_gemini_generate` | Generate content from a prompt; `model` defaults to `gemini-1.5-flash` |
 
-The Generative Language API is quota-limited by Google independently of the other Google plugins; see [the Gemini API rate-limit documentation](https://ai.google.dev/gemini-api/docs/rate-limits).
+Google quota-limits the Generative Language API independently of the other Google plugins. See [the Gemini API rate-limit documentation](https://ai.google.dev/gemini-api/docs/rate-limits).

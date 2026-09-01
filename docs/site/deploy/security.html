@@ -126,7 +126,7 @@ key is <code>ENCRYPTION_KEY</code> decoded from hex, resolved once at module loa
 <tr><td>Jot passwords</td><td>scrypt with a fresh random 16-byte salt per jot, verified in constant time</td></tr>
 <tr><td>Scopes, expiry timestamps, connection <code>config</code></td><td><strong>Not encrypted</strong> — a self-hosted instance origin or a New Relic region is plaintext</td></tr>
 </tbody></table></div>
-<p>There is no local account password anywhere in the system; the only scrypt hashes
+<p>There is no local account password anywhere in the system. The only scrypt hashes
 are jot passwords.</p>
 <div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">There is no key rotation path</span></div><div class="callout-body"><p><code>ENCRYPTION_KEY</code> is read once at startup and every stored blob is ciphertext
 under it. Changing it does not re-encrypt anything — it makes every existing
@@ -137,9 +137,9 @@ keep it identical across every replica and across a
 </div></div>
 
 <p>Storage guidance is the same for both backends. Older documentation described the
-store as &quot;SQLite&quot; and told operators to protect <code>data/tokens.db</code>; <strong>PostgreSQL is
-a first-class backend</strong>, and on a PostgreSQL deployment the equivalent duty is
-restricting network access and role grants on the database, plus protecting the
+store as &quot;SQLite&quot; and told operators to protect <code>data/tokens.db</code>. <strong>PostgreSQL is
+a first-class backend.</strong> On a PostgreSQL deployment the equivalent duty is to
+restrict network access and role grants on the database, and to protect the
 connection string.</p>
 <h2 id="ssrf-posture-and-its-limits">SSRF posture and its limits<a class="anchor" href="#ssrf-posture-and-its-limits" aria-label="Link to SSRF posture and its limits">#</a></h2>
 <p>Several code paths take a URL that ultimately comes from a user or an agent.</p>
@@ -188,7 +188,7 @@ see <a href="observability.html">observability</a>.</p>
 <h2 id="operator-responsibilities">Operator responsibilities<a class="anchor" href="#operator-responsibilities" aria-label="Link to Operator responsibilities">#</a></h2>
 <ul>
 <li>Protect <code>ENCRYPTION_KEY</code> and <code>SESSION_SECRET</code>. Losing the encryption key makes
-stored credentials unrecoverable; disclosing it makes them decryptable.
+stored credentials unrecoverable. Disclosing it makes them decryptable.
 Disclosing <code>SESSION_SECRET</code> lets an attacker mint any of the five credentials
 derived from it — the four JWTs and the jot unlock cookie.</li>
 <li>Keep the database on trusted storage: restricted filesystem permissions for a
@@ -205,8 +205,8 @@ protection. Add <code>Strict-Transport-Security</code>, a <code>Content-Security
 frame-ancestors or <code>X-Frame-Options</code> policy in front of the server.</li>
 <li>Treat <code>/metrics</code> as internal. It is unauthenticated.</li>
 <li>Rate-limit <code>POST /register</code> at the proxy on an internet-facing deployment.</li>
-<li>Rotate per-plugin OAuth client secrets on your own schedule; they are read from
-the environment, never stored.</li>
+<li>Rotate per-plugin OAuth client secrets on your own schedule. The server reads
+them from the environment and never stores them.</li>
 <li>Review anything you put in <code>PLUGINS_DIR</code>, and mount it read-only.</li>
 <li>Remember that <code>BROWSER_PROFILE_TTL_DAYS</code> (default 30) <strong>deletes</strong> an idle
 browser profile, logging that user out of every cookie-auth integration.</li>

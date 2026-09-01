@@ -3,7 +3,7 @@ title: GitLab
 description: Connect gitlab.com or a self-hosted GitLab instance for projects, merge requests, and CI pipelines.
 ---
 
-The GitLab integration is the only one that lets each user choose which server they are connecting to. Projects, files, issues, merge requests with inline review, and CI pipelines all work the same against gitlab.com and against a self-hosted instance — the difference is a per-connection instance URL that the server swaps into every API call and every OAuth endpoint.
+The GitLab integration is the only one that lets each user choose which server they are connecting to. Projects, files, issues, merge requests with inline review, and CI pipelines work the same against gitlab.com and against a self-hosted instance. The difference is a per-connection instance URL. The server swaps that URL into every API call and every OAuth endpoint.
 
 ## At a glance
 
@@ -16,16 +16,16 @@ The GitLab integration is the only one that lets each user choose which server t
 | Token URL | `https://gitlab.com/oauth/token` (cloud default) |
 | Proxy base | Resolved per request: the connection's instance origin + `/api/v4` |
 
-The manifest declares an `instance` field labelled "GitLab instance URL", with the default `https://gitlab.com`. At connect time the portal shows a browser prompt using that label, prefilled with the default; submitting it blank keeps the default.
+The manifest declares an `instance` field labelled "GitLab instance URL", with the default `https://gitlab.com`. At connect time the portal shows a browser prompt using that label, prefilled with the default. Submitting it blank keeps the default.
 
 ## How the origin swap works
 
-The server keeps the manifest URL's **path and query** and replaces only the origin. `https://gitlab.com/oauth/authorize` against an instance of `https://gitlab.acme.com` becomes `https://gitlab.acme.com/oauth/authorize`. The same swap applies to the token exchange and to every later refresh, and the chosen origin is stored on the connection so tools build their API base from it.
+The server keeps the manifest URL's **path and query** and replaces only the origin. `https://gitlab.com/oauth/authorize` against an instance of `https://gitlab.acme.com` becomes `https://gitlab.acme.com/oauth/authorize`. The same swap applies to the token exchange and to every later refresh. The server stores the chosen origin on the connection, and tools build their API base from it.
 
 An entered instance URL must be **https**, must carry no `user:pass@` userinfo, and must not be a private, loopback, or link-local literal. Path, query, and fragment are discarded — only the origin survives.
 
 > [!WARNING] One cloud OAuth app cannot authorize a self-hosted instance
-> Every GitLab instance has its own application registry, and OAuth endpoints are per-instance. An application created on gitlab.com is unknown to `gitlab.acme.com` and vice versa. Register the application on whichever instance your users will connect to. The deployment holds a single `GITLAB_CLIENT_ID` / `GITLAB_CLIENT_SECRET` pair, so every instance it talks to must share that client id and secret — practical when you control the instances, not when they are unrelated.
+> Every GitLab instance has its own application registry, and OAuth endpoints are per-instance. An application created on gitlab.com is unknown to `gitlab.acme.com` and vice versa. Register the application on whichever instance your users will connect to. The deployment holds a single `GITLAB_CLIENT_ID` / `GITLAB_CLIENT_SECRET` pair. Every instance it talks to must therefore share that client id and secret. That is practical when you control the instances, but not when they are unrelated.
 
 ## Set up the OAuth app
 
@@ -39,7 +39,7 @@ An entered instance URL must be **https**, must carry no `user:pass@` userinfo, 
 
 Cloud, per user: [gitlab.com/-/user_settings/applications](https://gitlab.com/-/user_settings/applications).
 Cloud, group-owned (better for teams): Group → **Settings → Applications**.
-Self-hosted: the same paths under your instance origin; instance-wide applications live under **Admin → Applications**.
+Self-hosted: the same paths under your instance origin. Instance-wide applications live under **Admin → Applications**.
 
 ### Fill in the fields
 
@@ -134,8 +134,8 @@ Issues and merge requests are addressed by `iid`, the per-project number you see
 
 Instance-wide `gitlab_search_code` depends on GitLab's advanced search being enabled on the instance — see [GitLab's documentation](https://docs.gitlab.com/) for what that requires on your version and tier. Scoping the search to a `project` avoids the dependency and is faster.
 
-A `gitlab_approve_mr` 404 usually means merge-request approvals are not available on that instance; GitLab gates the feature by tier, so check [GitLab's documentation](https://docs.gitlab.com/) for the instance's version.
+A `gitlab_approve_mr` 404 usually means merge-request approvals are not available on that instance. GitLab gates the feature by tier. Check [GitLab's documentation](https://docs.gitlab.com/) for the instance's version.
 
-401s on every call immediately after connecting almost always mean the wrong instance URL was entered, or the application lives on a different instance than the one the user typed.
+401s on every call immediately after connecting almost always mean one of two things. Either the instance URL was wrong, or the application lives on a different instance than the one the user typed.
 
-`gitlab_get_clone_url` embeds the live access token in the URL. It expires with the token; mint it immediately before use.
+`gitlab_get_clone_url` embeds the live access token in the URL. It expires with the token. Mint it immediately before use.

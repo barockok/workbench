@@ -371,13 +371,13 @@ user, shared with cookie capture rather than exclusive with it.</p>
 password (<code>PASSWORD_REQUIRED</code>), and a name already owned by another user
 (<code>JOT_NAME_TAKEN</code> — names are global and creator-locked). Passwords are hashed before
 the token is minted. <code>update_jot</code>, <code>list_jot_files</code>, and <code>delete_jot</code> return <code>FORBIDDEN</code>
-for another owner&#39;s jot and <code>NOT_FOUND</code> when it does not exist; <code>update_jot</code> also
+for another owner&#39;s jot and <code>NOT_FOUND</code> when it does not exist. <code>update_jot</code> also
 rejects a <code>delete</code> entry that escapes the jot or names the manifest (<code>INVALID_PATH</code>).</p>
 <p>A patch inherits <code>access</code> and the password hash from the live jot, so it cannot change
 gating, and its archive needs no root <code>index.html</code> — the live one is retained.</p>
 <p>Both tools accept <code>cors: true</code>, which on a <strong>public</strong> jot serves its files with
 <code>Access-Control-Allow-Origin: *</code> so the page can fetch its own data. The sandbox CSP is
-unchanged; the flag is ignored on password jots.</p>
+unchanged. The flag is ignored on password jots.</p>
 <p>Limits come from configuration: <code>JOTS_MAX_BYTES</code> (5 MiB), <code>JOTS_MAX_FILES</code> (1000), and
 <code>JOTS_UPLOAD_TTL_SECONDS</code> (300, single use). An archive with no root <code>index.html</code> is
 rejected with <code>NO_INDEX</code>. A patch is re-measured after the merge, so one that pushes the

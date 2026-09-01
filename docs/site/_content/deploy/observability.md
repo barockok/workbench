@@ -5,7 +5,7 @@ description: The Prometheus metrics endpoint and the metrics it emits, OpenTelem
 
 Three separate mechanisms: Prometheus metrics on `/metrics`, OpenTelemetry spans,
 and an audit log of tool executions. Metrics and the audit log work out of the
-box; tracing needs an exporter you configure yourself.
+box. Tracing needs an exporter you configure yourself.
 
 ## Metrics
 
@@ -106,11 +106,11 @@ selects where it goes.
 | `kafka` | **Not implemented.** Logs "Kafka not implemented, falling back to stdout" to stderr and prints the JSON line |
 
 Despite the name, `sqlite` writes to whichever backend `DATABASE_URL` selects —
-including PostgreSQL. The `success` column is bound as a real boolean because
-PostgreSQL rejects `1`/`0` for `BOOLEAN`; `created_at` is unix seconds. Two
+including PostgreSQL. The `success` column is bound as a real boolean, because
+PostgreSQL rejects `1`/`0` for `BOOLEAN`. `created_at` is unix seconds. Two
 indexes support querying: `(user_id, created_at)` and `(integration, created_at)`.
 
-> [!WARNING] Kafka is not wired up
+> [!WARNING] Kafka is declared but not connected
 > `AUDIT_LOG_KAFKA_BROKERS` and `AUDIT_LOG_KAFKA_TOPIC` are declared in the config
 > schema — so setting them is accepted and validated — but no code anywhere reads
 > either variable, and the Kafka destination writes to stdout. If you need events

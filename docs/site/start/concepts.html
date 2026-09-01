@@ -64,7 +64,7 @@
       <h2 id="integration">Integration<a class="anchor" href="#integration" aria-label="Link to Integration">#</a></h2>
 <p>One third-party service, as workbench sees it: a name, a version, a declared auth
 mode, an optional logo and categories, and an optional proxy base URL. <code>github</code>,
-<code>slack</code>, <code>atlassian-jira</code>, <code>newrelic</code> are integrations. Sixteen ship on disk; two
+<code>slack</code>, <code>atlassian-jira</code>, <code>newrelic</code> are integrations. Sixteen ship on disk. Two
 more (<code>browser</code>, <code>jots</code>) are built into the server.</p>
 <p>An integration&#39;s auth mode decides everything about how it connects and how
 credentials reach the outbound request. There are four: <code>oauth2</code>, <code>apikey</code>,
@@ -74,12 +74,12 @@ appears in <code>list_integrations</code> alongside a per-user <code>connected</
 <h2 id="plugin">Plugin<a class="anchor" href="#plugin" aria-label="Link to Plugin">#</a></h2>
 <p>The on-disk form of an integration: a directory containing exactly two import
 targets, <code>manifest.ts</code> (default-exporting the <code>Integration</code>) and <code>tools/index.ts</code>
-(exporting the tools). Built-ins live in <code>packages/plugins</code>; your own go in
+(exporting the tools). Built-ins live in <code>packages/plugins</code>. Your own go in
 <code>PLUGINS_DIR</code>.</p>
 <p>Plugins load once at boot. There is no hot reload and no unload — the imports are
 ESM-cached, so picking up an edit means restarting the server. A plugin that fails
-to load is logged and skipped; the server still boots and every other plugin still
-loads, which means a broken plugin shows up as <em>silently absent from the catalog</em>
+to load is logged and skipped. The server still boots and every other plugin still
+loads. A broken plugin therefore shows up as <em>silently absent from the catalog</em>
 rather than as a crash.</p>
 <p><strong>Why it matters:</strong> &quot;integration&quot; is the concept, &quot;plugin&quot; is the thing you write
 and mount. See <a href="../plugins/index.html">Build plugins</a>.</p>
@@ -126,9 +126,9 @@ cookie, everything else requires a stored token.</p>
 separate Jira tokens and see separate connection states.</p>
 <p>Distinct from the transient <em>pending connection</em> — the in-process record created by
 <code>connect()</code> and polled by <code>wait_for_connection()</code>. It is <code>PENDING</code> only for the minutes
-an OAuth handshake is in flight; once terminal (<code>CONNECTED</code> or <code>EXPIRED</code>) it is kept for
-another hour before a 60-second sweep prunes it, so a wait that is still running can
-read the outcome.</p>
+an OAuth handshake is in flight. Once terminal (<code>CONNECTED</code> or <code>EXPIRED</code>) it is kept for
+another hour before a 60-second sweep prunes it. A wait that is still running can
+therefore read the outcome.</p>
 <p><strong>Why it matters:</strong> <code>NOT_CONNECTED</code> from a tool call means this row is missing, and
 the fix is <code>connect(&#39;&lt;integration&gt;&#39;)</code>.</p>
 <h2 id="browser-session">Browser session<a class="anchor" href="#browser-session" aria-label="Link to Browser session">#</a></h2>
@@ -138,8 +138,8 @@ different things: capturing cookies for <code>cookie</code>-auth integrations, a
 <code>browser_click</code>, and so on).</p>
 <p>There is one warm Chromium per user, and the two uses <strong>share</strong> it: capture and every
 <code>browser_*</code> tool resolve the same session, so an agent can be driving the browser a user
-is logging in through. Idle sessions are killed after <code>BROWSER_SESSION_TTL_SECONDS</code>
-(default 300); the profile survives.</p>
+is logging in through. The server kills idle sessions after <code>BROWSER_SESSION_TTL_SECONDS</code>
+(default 300). The profile survives.</p>
 <p><code>BROWSER_SESSION_BUSY</code> is not a conflict between those two uses. It appears only while a
 spawn for that user is still in flight, or when a profile reset is requested while the
 profile is claimed — surfaced as 409 by <code>/api/browser-session/reset</code> and
@@ -152,8 +152,9 @@ WebSocket proxy.</p>
 and how an agent hands control back to you mid-task.</p>
 <h2 id="curl-session">Curl session<a class="anchor" href="#curl-session" aria-label="Link to Curl session">#</a></h2>
 <p>A short-lived escape hatch. <code>curl_session([&#39;github&#39;])</code> mints a 15-minute token
-scoped to the named integrations; requests to <code>&lt;SERVER_PUBLIC_URL&gt;/c/&lt;integration&gt;/&lt;path&gt;</code>
-carrying it are forwarded upstream with the user&#39;s real credential injected. It
+scoped to the named integrations. The server forwards requests to
+<code>&lt;SERVER_PUBLIC_URL&gt;/c/&lt;integration&gt;/&lt;path&gt;</code> carrying that token upstream, with the
+user&#39;s real credential injected. It
 covers provider endpoints no shipped tool wraps.</p>
 <p>Only integrations whose manifest declares a <code>proxy</code> block accept it, and validation
 is all-or-nothing: if any named integration is unknown, proxy-disabled, or not
@@ -169,7 +170,7 @@ and wait for explicit approval before calling it.</p>
 <p>A static site the agent can deploy and host: <code>deploy_jot</code> returns a single-use
 upload URL, you push a gzip tarball, and it is served at <code>/j/&lt;name&gt;/</code>. Names are
 global and creator-locked, and a jot can be password-gated. <code>update_jot</code> patches a
-live jot instead of replacing it, so a single data file can be refreshed on its own;
+live jot instead of replacing it, so a single data file can be refreshed on its own.
 <code>list_jot_files</code> shows what a jot currently holds.</p>
 <p>Jots are served on an opaque origin under a sandbox CSP, so a jot&#39;s JavaScript
 cannot read app cookies or make credentialed same-origin calls to <code>/api</code> or <code>/mcp</code>.

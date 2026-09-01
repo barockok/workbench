@@ -162,7 +162,7 @@ plugin prefixes its tools with its own slug (<code>github_</code>, <code>jira_</
     &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;
   }
 }</code></pre></div>
-<p>Plugins define their schemas in Zod; this tool converts them to portable JSON Schema so
+<p>Plugins define their schemas in Zod. This tool converts them to portable JSON Schema so
 a client needs no Zod knowledge. Defaults survive the conversion, and they are real —
 <code>execute_tools</code> validates against the same Zod schema before calling the handler, so an
 omitted <code>state</code> genuinely arrives as <code>&quot;open&quot;</code> rather than <code>undefined</code>.</p>

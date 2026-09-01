@@ -61,8 +61,8 @@
         </button>
       </div>
       <p class="lede">Create the Google Cloud project, consent screen, and seven OAuth clients that the google-* plugins need.</p>
-      <p>Google Workspace ships as <strong>seven separate plugins</strong>, one per product. Each has its own manifest, its own scopes, its own OAuth client, and its own row in the connections table. A user who connects Gmail grants Gmail only; Drive stays unconnected until they connect it too.</p>
-<p>That split is the point — one consent prompt per product, and no way for a Calendar tool to reach a user&#39;s mail — but it means the operator setup is one Cloud project with several clients rather than one client for everything.</p>
+      <p>Google Workspace ships as <strong>seven separate plugins</strong>, one per product. Each has its own manifest, its own scopes, its own OAuth client, and its own row in the connections table. A user who connects Gmail grants Gmail only. Drive stays unconnected until they connect it too.</p>
+<p>That split is the point: one consent prompt per product, and no way for a Calendar tool to reach a user&#39;s mail. It does mean the operator setup is one Cloud project with several clients, rather than one client for everything.</p>
 <div class="table-wrap"><table><thead><tr><th>Plugin</th><th>Scopes</th></tr></thead><tbody>
 <tr><td><code>google-gmail</code></td><td><code>https://www.googleapis.com/auth/gmail.modify</code></td></tr>
 <tr><td><code>google-drive</code></td><td><code>https://www.googleapis.com/auth/drive</code></td></tr>
@@ -74,7 +74,7 @@
 </tbody></table></div>
 <p>Per-plugin tool lists are on <a href="google-tools.html">Google tools</a>.</p>
 <h2 id="the-shared-scope-model">The shared scope model<a class="anchor" href="#the-shared-scope-model" aria-label="Link to The shared scope model">#</a></h2>
-<p>Each plugin asks for the narrowest scope that still lets its tools work, plus <code>drive.file</code> where the product needs to create or find its own documents.</p>
+<p>Each plugin asks for the narrowest scope that still lets its tools work. It adds <code>drive.file</code> where the product needs to create or find its own documents.</p>
 <p><code>drive.file</code> is per-file, not per-drive: it grants access only to files the app itself created or the user explicitly opened with it. That is why Docs, Sheets, and Slides can create documents and search for their own without holding the full <code>drive</code> scope. The <code>google-drive</code> plugin does hold full <code>drive</code>, because a general file manager has to see files it did not create.</p>
 <p><code>gmail.modify</code> covers reading, sending, drafting, and label changes, but not permanent deletion.</p>
 <h2 id="set-up">Set up<a class="anchor" href="#set-up" aria-label="Link to Set up">#</a></h2>
@@ -139,7 +139,7 @@ GOOGLE_CALENDAR_CLIENT_ID=...
 GOOGLE_CALENDAR_CLIENT_SECRET=...
 GOOGLE_GEMINI_CLIENT_ID=...
 GOOGLE_GEMINI_CLIENT_SECRET=...</code></pre></div>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`GOOGLE_CLIENT_ID` is not a fallback</span></div><div class="callout-body"><p>It configures portal SSO and nothing else. A <code>google-*</code> plugin with no <code>_CLIENT_ID</code> of its own shows as unconfigured in the portal and will not connect, no matter what <code>GOOGLE_CLIENT_ID</code> is set to.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`GOOGLE_CLIENT_ID` is not a fallback</span></div><div class="callout-body"><p>It configures portal SSO and nothing else. A <code>google-*</code> plugin with no <code>_CLIENT_ID</code> of its own shows as unconfigured in the portal. It will not connect, no matter what <code>GOOGLE_CLIENT_ID</code> is set to.</p>
 </div></div>
 
 <h2 id="connect">Connect<a class="anchor" href="#connect" aria-label="Link to Connect">#</a></h2>
@@ -149,7 +149,7 @@ GOOGLE_GEMINI_CLIENT_SECRET=...</code></pre></div>
 wait_for_connection({ connectionId })</code></pre></div>
 <p>The server adds <code>access_type=offline</code>, <code>prompt=consent</code>, and <code>include_granted_scopes=true</code> to every <code>google-*</code> authorize request, so each connection comes back with a refresh token.</p>
 <h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
-<p>Several of these scopes — the Gmail and Drive ones especially — are ones Google classes as sensitive or restricted, which means an External app publishing to Production goes through Google&#39;s verification process, and an app whose scopes are restricted has additional requirements on top. What that process demands is Google&#39;s to define and changes over time; check <a href="https://support.google.com/cloud/answer/13463073" target="_blank" rel="noopener">Google&#39;s OAuth verification documentation<span class="ext" aria-hidden="true">↗</span></a> before you plan around it. An Internal Workspace app does not go through it.</p>
+<p>Google classes several of these scopes as sensitive or restricted, the Gmail and Drive ones especially. An External app publishing to Production therefore goes through Google&#39;s verification process. An app whose scopes are restricted has additional requirements on top. Google defines what that process demands, and it changes over time. Check <a href="https://support.google.com/cloud/answer/13463073" target="_blank" rel="noopener">Google&#39;s OAuth verification documentation<span class="ext" aria-hidden="true">↗</span></a> before you plan around it. An Internal Workspace app does not go through it.</p>
 <p><code>Error 400: redirect_uri_mismatch</code> means the URI registered on the client and the one the server sends are not the same string. Register exactly what this server builds — scheme, host, port, and path all matter, and <code>/api/auth/plugin/google-gmail/callback</code> is not the same as the portal&#39;s own <code>/api/auth/google/callback</code>.</p>
 <p><code>invalid_grant</code> on refresh means Google no longer honours the stored refresh token — a revoked grant at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions<span class="ext" aria-hidden="true">↗</span></a> is the common cause. Whatever the reason, the fix from this server&#39;s side is the same: the user reconnects.</p>
 <p>Adding a scope to a manifest does not upgrade an existing grant. Add it to the consent screen as well, then have each user reconnect.</p>

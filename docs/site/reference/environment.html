@@ -131,7 +131,7 @@ not portal-side.</p>
 <tr><td><code>BROWSER_DISK_CACHE_MB</code></td><td>non-negative integer</td><td><code>32</code></td><td>no</td><td>Becomes Chromium&#39;s <code>--disk-cache-size</code></td></tr>
 </tbody></table></div>
 <div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`BROWSER_PROFILE_TTL_DAYS` deletes credentials</span></div><div class="callout-body"><p>Deleting a profile logs that user out of <strong>every</strong> cookie-auth integration at once.
-The 30-day default is deliberately conservative; the cache trim that runs far more
+The 30-day default is deliberately conservative. The cache trim that runs far more
 often is free by comparison. Raise it or set <code>0</code> if your users connect cookie
 integrations rarely.</p>
 </div></div>
@@ -145,7 +145,7 @@ Chromium is spawned.</p>
 <tr><td><code>CAPTURE_PROXY_USERNAME</code></td><td>string</td><td>—</td><td>no</td><td>Proxy username</td></tr>
 <tr><td><code>CAPTURE_PROXY_PASSWORD</code></td><td>string</td><td>—</td><td>no</td><td>Proxy password</td></tr>
 </tbody></table></div>
-<p>Proxy authentication is armed only when all three are set; the answering handler
+<p>Proxy authentication is armed only when all three are set. The answering handler
 responds to proxy auth challenges specifically, and declines anything else. Because
 they bypass the schema, a typo in one of these names fails silently rather than at
 boot.</p>

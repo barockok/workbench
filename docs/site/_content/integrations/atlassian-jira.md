@@ -3,7 +3,7 @@ title: Jira
 description: Connect Atlassian Jira Cloud so an agent can create, search, update, comment on, and transition issues.
 ---
 
-The Jira integration gives an agent the issue lifecycle: discover projects, search with JQL, read an issue in full, create one, assign it, comment on it, and move it through its workflow. Descriptions and comments are plain text — the plugin wraps and unwraps Atlassian Document Format for you.
+The Jira integration gives an agent the issue lifecycle. It can discover projects, search with JQL, read an issue in full, create one, assign it, comment on it, and move it through its workflow. Descriptions and comments are plain text. The plugin wraps and unwraps Atlassian Document Format for you.
 
 ## At a glance
 
@@ -16,7 +16,7 @@ The Jira integration gives an agent the issue lifecycle: discover projects, sear
 | Token URL | `https://auth.atlassian.com/oauth/token` |
 | Proxy base | `https://api.atlassian.com/ex/jira/cloud-id` |
 
-The literal `cloud-id` in the proxy base is a placeholder. At request time the server calls `/oauth/token/accessible-resources` with the user's token, substitutes the real cloud id, and caches it per user for the life of the process.
+The literal `cloud-id` in the proxy base is a placeholder. At request time the server calls `/oauth/token/accessible-resources` with the user's token. It then substitutes the real cloud id and caches it per user for the life of the process.
 
 ## Set up the OAuth app
 
@@ -69,7 +69,7 @@ Apps default to Development status, where only you can install. **Distribution**
 | `offline_access` | Issue a refresh token; without it the connection dies at the first access-token expiry |
 
 > [!WARNING] `read:board-scope:jira-software` cannot be granted on a 3LO app
-> As of this writing the Jira Software API is not among the API rows the console lets you add to a standard OAuth 2.0 (3LO) app — check [Atlassian's 3LO documentation](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/) for the current list, which is Atlassian's to change. The manifest requests the scope so it works the moment Atlassian exposes it; until then `jira_get_boards` returns `Unauthorized; scope does not match`. Every other Jira tool is unaffected.
+> As of this writing, the console does not let you add the Jira Software API to a standard OAuth 2.0 (3LO) app. Atlassian owns that list and can change it. Check [Atlassian's 3LO documentation](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/) for the current set. The manifest requests the scope, so it works the moment Atlassian exposes it. Until then `jira_get_boards` returns `Unauthorized; scope does not match`. Every other Jira tool is unaffected.
 
 ## Server configuration
 
@@ -78,7 +78,7 @@ ATLASSIAN_JIRA_CLIENT_ID=...
 ATLASSIAN_JIRA_CLIENT_SECRET=...
 ```
 
-If you register one Atlassian app covering both Jira and Confluence, you still set both variable pairs to the same values — the server derives the prefix from the plugin name and never falls back to a shared `ATLASSIAN_*` pair.
+If you register one Atlassian app covering both Jira and Confluence, you still set both variable pairs to the same values. The server derives the prefix from the plugin name. It never falls back to a shared `ATLASSIAN_*` pair.
 
 ## Connect
 
@@ -117,8 +117,8 @@ Open the returned `url` to consent. The pending connection expires after `CONNEC
 
 Transition ids are not stable identifiers. They vary per workflow *and* per the issue's current status, so `jira_get_transitions` must be called against the same issue immediately before `jira_transition_issue`.
 
-When Atlassian returns a new refresh token on a refresh, the server stores it and discards the old one — so an out-of-band copy of a refresh token goes stale as soon as the server rotates it. If no new token comes back, the existing one is kept.
+When Atlassian returns a new refresh token on a refresh, the server stores it and discards the old one. An out-of-band copy of a refresh token therefore goes stale as soon as the server rotates it. If no new token comes back, the server keeps the existing one.
 
-A 401 against `<site>.atlassian.net` in a debugging session usually means the cloud id was not resolved. Tools always go through `api.atlassian.com/ex/jira/<cloud-id>/`; the direct site host is not usable with a 3LO token.
+A 401 against `<site>.atlassian.net` in a debugging session usually means the cloud id was not resolved. Tools always go through `api.atlassian.com/ex/jira/<cloud-id>/`. The direct site host is not usable with a 3LO token.
 
-If Jira answers `403 OAUTH_2_FORBIDDEN`, check the connecting user's project and issue permissions in Jira before touching the scope list; the scopes the server requests are the ones in the table above and are fixed at the manifest. Atlassian defines what the code means — see [their 3LO documentation](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/).
+If Jira answers `403 OAUTH_2_FORBIDDEN`, check the connecting user's project and issue permissions in Jira before you touch the scope list. The scopes the server requests are the ones in the table above, fixed at the manifest. Atlassian defines what the code means — see [their 3LO documentation](https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/).

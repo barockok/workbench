@@ -62,7 +62,7 @@
       </div>
       <p class="lede">Symptoms you are likely to hit, what causes them, and the fix — from MCP client config through container boot to provider quirks.</p>
       <p>Most of what follows was found the hard way in production and written down in the
-project&#39;s field notes. The table is the index; the sections below carry the detail.</p>
+project&#39;s field notes. The table is the index. The sections below carry the detail.</p>
 <h2 id="symptom-index">Symptom index<a class="anchor" href="#symptom-index" aria-label="Link to Symptom index">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead><tbody>
 <tr><td><code>MCP config is not a valid JSON</code>; server absent from <code>claude mcp list</code></td><td>Syntax error, usually a trailing comma, in <code>.mcp.json</code></td><td>Validate with <code>python3 -m json.tool .mcp.json</code>, remove the comma</td></tr>
@@ -155,7 +155,7 @@ integrations all go through the built-in pass, which logs
 <code>Failed to load built-in plugin &lt;name&gt;</code>, while a directory under <code>PLUGINS_DIR</code> logs
 <code>Failed to load plugin &lt;dir&gt;</code>.</p>
 <h3 id="chromium-will-not-start-as-root">Chromium will not start as root<a class="anchor" href="#chromium-will-not-start-as-root" aria-label="Link to Chromium will not start as root">#</a></h3>
-<p><strong>Symptom:</strong> cookie capture fails with <code>fetch failed</code> against the CDP port; Chromium
+<p><strong>Symptom:</strong> cookie capture fails with <code>fetch failed</code> against the CDP port. Chromium
 appears to start and die.</p>
 <p><strong>Cause:</strong> the container image has no <code>USER</code> directive, so the process runs as root, and
 Chromium refuses to run as root without <code>--no-sandbox</code>.</p>
@@ -227,7 +227,7 @@ file request with a login page at status 200 rather than a 403.</p>
 <p><strong>Symptom:</strong> connecting GitHub fails during the code exchange with a JSON parse error.</p>
 <p><strong>Cause:</strong> GitHub&#39;s token endpoint returns <code>application/x-www-form-urlencoded</code> by
 default. Calling <code>.json()</code> on that response throws.</p>
-<p><strong>Fix:</strong> the exchange sends <code>Accept: application/json</code>. This is shipped; seeing it now
+<p><strong>Fix:</strong> the exchange sends <code>Accept: application/json</code>. This is shipped. Seeing it now
 means an old build.</p>
 <h3 id="confluence-operations-return-410">Confluence operations return 410<a class="anchor" href="#confluence-operations-return-410" aria-label="Link to Confluence operations return 410">#</a></h3>
 <p><strong>Cause:</strong> Atlassian removed the v1 content API. The integration was migrated to REST v2
@@ -236,7 +236,7 @@ means an old build.</p>
 <code>read:space:confluence</code>, plus <code>search:confluence</code> and <code>offline_access</code>.</p>
 <p><strong>Fix:</strong> update the scopes on your Atlassian app, then <strong>have users reconnect</strong> — an
 existing connection still carries the old scope grant, and a scope change does not
-apply retroactively. The MCP tool names and arguments did not change; search still uses
+apply retroactively. The MCP tool names and arguments did not change. Search still uses
 CQL.</p>
 <p>The same reconnect requirement applies to any scope addition. Bitbucket&#39;s pipeline tools
 need <code>pipeline</code> and <code>pipeline:write</code>, which existing connections do not have.</p>

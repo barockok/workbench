@@ -62,8 +62,8 @@
       </div>
       <p class="lede">Choosing SQLite or PostgreSQL, what else derives from DATABASE_URL, migrating between them, cluster mode, and the dialect traps that reach operators.</p>
       <p>One variable selects the backend. <code>DATABASE_URL</code> starting with <code>postgres://</code> or
-<code>postgresql://</code> gets the PostgreSQL adapter; <strong>anything else is treated as a
-SQLite file path</strong>. There is no separate driver setting.</p>
+<code>postgresql://</code> gets the PostgreSQL adapter. <strong>Anything else is treated as a
+SQLite file path.</strong> There is no separate driver setting.</p>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">DATABASE_URL=/data/tokens.db                                  # SQLite
 DATABASE_URL=postgres://user:pw@db.internal:5432/workbench    # PostgreSQL</code></pre></div>
 <p>The default is <code>./data/tokens.db</code>. Both backends implement the same adapter
@@ -73,7 +73,7 @@ the server with its cwd set to <code>packages/server</code>, so the file lands a
 <code>packages/server/data/tokens.db</code> — not the repo-root <code>data/</code> that
 <code>docker-compose.yml</code> bind-mounts to <code>/data</code>. The same applies to the other two
 relative defaults, <code>PLUGINS_DIR=./plugins</code> and <code>PORTAL_DIST_DIR=./portal</code>. Use an
-absolute path anywhere it matters; the Compose file does exactly that with
+absolute path anywhere it matters. The Compose file does exactly that with
 <code>DATABASE_URL=/data/tokens.db</code>.</p>
 </div></div>
 
@@ -186,10 +186,10 @@ for portal login, and <code>__oauth_authorize__</code> for an MCP authorize tick
 dialect and is idempotent: a <code>CREATE TABLE IF NOT EXISTS</code> block followed by
 additive column adds. On SQLite those are bare <code>ALTER TABLE … ADD COLUMN</code>
 statements in a try/catch that swallows only &quot;duplicate column name&quot; and rethrows
-everything else; on PostgreSQL they are one <code>ADD COLUMN IF NOT EXISTS</code> batch.</p>
+everything else. On PostgreSQL they are one <code>ADD COLUMN IF NOT EXISTS</code> batch.</p>
 <p>It runs from an explicit <code>initDb()</code> call at boot, before plugins load and before
-routes register — not as an import side effect. Nothing to run by hand; starting
-the server against an empty database creates the schema.</p>
+routes register — not as an import side effect. There is nothing to run by hand.
+Starting the server against an empty database creates the schema.</p>
 <h2 id="migrating-sqlite-to-postgresql">Migrating SQLite to PostgreSQL<a class="anchor" href="#migrating-sqlite-to-postgresql" aria-label="Link to Migrating SQLite to PostgreSQL">#</a></h2>
 <p>The migration script lives in <code>packages/server/src/migrate/</code> and is a dry run
 unless you pass <code>--apply</code>.</p>
@@ -236,12 +236,12 @@ itself. Change it and every user must reconnect every integration.</p>
 values are exactly <code>true</code>, <code>false</code>, <code>1</code>, <code>0</code> — anything else is a validation error
 at boot, not a falsy value.</p>
 <p><strong>Cluster mode requires PostgreSQL.</strong> With a SQLite <code>DATABASE_URL</code> the process
-prints an explicit message and exits 1; SQLite cannot be safely shared across
+prints an explicit message and exits 1. SQLite cannot be safely shared across
 processes.</p>
 <p>Connection budgeting is the thing to get right:</p>
 <div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">total connections = PG_POOL_MAX × worker count</code></pre></div>
 <p><code>PG_POOL_MAX</code> defaults to 2 and is <strong>per worker</strong>. On a 16-core host that is 32
-connections from one deployment; keep the total well under the server&#39;s
+connections from one deployment. Keep the total well under the server&#39;s
 <code>max_connections</code>. <code>PG_CONNECT_TIMEOUT_MS</code> (default 5000, <code>0</code> = unlimited) caps
 how long a request waits for a free pool slot before being rejected.</p>
 <p>Two caveats:</p>

@@ -363,7 +363,7 @@ Five tools for hosting static files. Also `auth: none`.
 password (`PASSWORD_REQUIRED`), and a name already owned by another user
 (`JOT_NAME_TAKEN` — names are global and creator-locked). Passwords are hashed before
 the token is minted. `update_jot`, `list_jot_files`, and `delete_jot` return `FORBIDDEN`
-for another owner's jot and `NOT_FOUND` when it does not exist; `update_jot` also
+for another owner's jot and `NOT_FOUND` when it does not exist. `update_jot` also
 rejects a `delete` entry that escapes the jot or names the manifest (`INVALID_PATH`).
 
 A patch inherits `access` and the password hash from the live jot, so it cannot change
@@ -371,7 +371,7 @@ gating, and its archive needs no root `index.html` — the live one is retained.
 
 Both tools accept `cors: true`, which on a **public** jot serves its files with
 `Access-Control-Allow-Origin: *` so the page can fetch its own data. The sandbox CSP is
-unchanged; the flag is ignored on password jots.
+unchanged. The flag is ignored on password jots.
 
 Limits come from configuration: `JOTS_MAX_BYTES` (5 MiB), `JOTS_MAX_FILES` (1000), and
 `JOTS_UPLOAD_TTL_SECONDS` (300, single use). An archive with no root `index.html` is

@@ -3,7 +3,7 @@ title: New Relic
 description: Connect New Relic with a User API key so an agent can run NRQL, find entities, and manage dashboards and alerting.
 ---
 
-New Relic is the one integration that does not use OAuth. The user pastes a User API key, picks a region, and optionally sets a default account id. Every tool then speaks NerdGraph, New Relic's GraphQL API: NRQL queries, entity search, dashboard reads and widget writes, alert policies and conditions, notification destinations, and tagging.
+New Relic is the one integration that does not use OAuth. The user pastes a User API key, picks a region, and optionally sets a default account id. Every tool then speaks NerdGraph, New Relic's GraphQL API. That covers NRQL queries, entity search, dashboard reads and widget writes, alert policies and conditions, notification destinations, and tagging.
 
 ## At a glance
 
@@ -29,7 +29,7 @@ The endpoint is chosen per request from the `region` value stored on the connect
 :::steps
 ### Generate a User API key
 
-In New Relic, open the user menu → **API keys** → **Create a key** → key type **User**. Copy it; you cannot read it back later.
+In New Relic, open the user menu → **API keys** → **Create a key** → key type **User**. Copy it. You cannot read it back later.
 
 ### Note your region
 
@@ -54,16 +54,16 @@ The portal renders these from the manifest.
 
 ## Server configuration
 
-None. API-key integrations have no client id or secret, so no environment variables are involved, and the portal's Connect button is enabled for this integration on a stock install.
+None. API-key integrations have no client id or secret, so no environment variables are involved. The portal's Connect button is enabled for this integration on a stock install.
 
 ## Connect
 
 Portal: Connections → **Connect** on the New Relic card → fill the three fields → submit. The connection is live immediately.
 
-An agent cannot complete this flow itself. `connect` returns a URL only for OAuth and cookie integrations; it has no API-key branch, so `connect("newrelic")` falls through to the OAuth path and comes back as `{ error: "Integration newrelic is not oauth2" }`. Point the user at the portal and re-check `list_integrations` instead.
+An agent cannot complete this flow itself. `connect` returns a URL only for OAuth and cookie integrations. It has no API-key branch. `connect("newrelic")` therefore falls through to the OAuth path and comes back as `{ error: "Integration newrelic is not oauth2" }`. Point the user at the portal and re-check `list_integrations` instead.
 
 > [!NOTE] A failed `connect` leaves a pending record
-> The pending record is created before the OAuth URL is built, so the failed call leaves a stale `PENDING` row behind. It is harmless — it expires after `CONNECT_TTL_SECONDS` — but do not wait on its `connectionId`; the error response carries none.
+> The server creates the pending record before it builds the OAuth URL, so the failed call leaves a stale `PENDING` row behind. The row is harmless and expires after `CONNECT_TTL_SECONDS`. Do not wait on its `connectionId`, because the error response carries none.
 
 ## Tools
 
@@ -90,8 +90,8 @@ An agent cannot complete this flow itself. `connect` returns a URL only for OAut
 
 The `Api-Key` header value is sent **verbatim** — the server adds no `Bearer` prefix and no other decoration. That is what NerdGraph expects, and it means the stored value must be exactly the key.
 
-The key is pinned by `allowedHosts` to `api.newrelic.com` and `api.eu.newrelic.com`. A request to any other host throws before the credential is attached, so the key cannot leak to another destination. New Relic is the only shipped plugin that sets this; for API-key plugins in general, omitting `allowedHosts` means no host validation happens at all.
+The key is pinned by `allowedHosts` to `api.newrelic.com` and `api.eu.newrelic.com`. A request to any other host throws before the credential is attached, so the key cannot leak to another destination. New Relic is the only shipped plugin that sets this. For API-key plugins in general, omitting `allowedHosts` means no host validation happens at all.
 
 Everything is NerdGraph. There is no REST surface here, so `newrelic_run_nrql` is the tool for any read the specific tools do not cover.
 
-Leaving `accountId` blank is the safer default when the key spans several accounts: every call then has to name the account it means, instead of silently querying whichever one you configured months ago.
+Leaving `accountId` blank is the safer default when the key spans several accounts. Every call then has to name the account it means. Otherwise a call queries whichever account you configured months ago.

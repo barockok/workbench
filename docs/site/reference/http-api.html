@@ -136,13 +136,13 @@ again.</p>
 <tr><td>DELETE</td><td><code>/api/agents/:clientId</code></td><td>yes</td><td><code>{ revoked: &lt;count&gt; }</code> — idempotent</td></tr>
 </tbody></table></div>
 <p><code>configured</code> reports whether the <em>operator</em> has supplied credentials: always true for
-<code>none</code>, <code>cookie</code>, and <code>apikey</code>; true for <code>oauth2</code> only when the plugin&#39;s client-ID
+<code>none</code>, <code>cookie</code>, and <code>apikey</code>. It is true for <code>oauth2</code> only when the plugin&#39;s client-ID
 environment variable is set. <code>connected</code> reports whether <em>this user</em> has a credential.</p>
 <p>The logo route is deliberately unauthenticated so a plain <code>&lt;img src&gt;</code> works. Path
 traversal is defused by reducing the parameter to its basename.</p>
 <p><code>/api/agents</code> lists OAuth clients that hold live refresh tokens on this account —
 which AI clients can reach your workbench — grouped by <code>client_id</code>. Revocation
-deletes refresh tokens and outstanding authorization codes; live access tokens
+deletes refresh tokens and outstanding authorization codes. Live access tokens
 survive until their TTL.</p>
 <h2 id="connecting-an-integration">Connecting an integration<a class="anchor" href="#connecting-an-integration" aria-label="Link to Connecting an integration">#</a></h2>
 <p><strong><code>GET /api/auth/:integration</code></strong> is the connect entry point. It is authenticated, and

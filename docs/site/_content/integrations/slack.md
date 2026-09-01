@@ -3,7 +3,7 @@ title: Slack
 description: Connect Slack so an agent can post, search, read history, and handle files as the connecting user.
 ---
 
-The Slack integration acts **as the person who connected it**, not as a bot. Messages it posts show that user's name, `slack_search_all` searches what that user can see, and channel history covers the private channels and DMs that user belongs to. That is a deliberate choice — several of these tools have no bot-token equivalent — and it drives the whole app setup.
+The Slack integration acts **as the person who connected it**, not as a bot. Messages it posts show that user's name. `slack_search_all` searches what that user can see. Channel history covers the private channels and DMs that user belongs to. This is a deliberate choice, because several of these tools have no bot-token equivalent, and it drives the whole app setup.
 
 ## At a glance
 
@@ -54,7 +54,7 @@ On the same page, scroll to **Scopes**. There are two boxes. Put every scope fro
 :::
 
 > [!WARNING] Bot Token Scopes is the wrong box
-> This is the failure that costs the most time. The manifest's scopes are sent as `user_scope`, so every scope below belongs in the console's **User Token Scopes** list. Put them in the bot list instead and the two sets do not match, and the install fails — the error Slack returns does not name which box is at fault. [Slack's OAuth documentation](https://api.slack.com/authentication/oauth-v2) covers the bot/user token split.
+> This is the failure that costs the most time. The manifest's scopes are sent as `user_scope`, so every scope below belongs in the console's **User Token Scopes** list. Put them in the bot list instead, and the two sets do not match. The install then fails. The error Slack returns does not name which box is at fault. [Slack's OAuth documentation](https://api.slack.com/authentication/oauth-v2) covers the bot/user token split.
 
 ## Scopes
 
@@ -79,7 +79,7 @@ All 16 are user scopes.
 | `files:read` | Read file metadata and download file contents |
 | `search:read` | Search messages and files |
 
-The manifest pairs `users:read.email` with `users:read`, and `search:read` is requested as a user scope — which is one of the reasons this integration uses a user token. What each scope grants, and which are available as bot versus user scopes, is defined by Slack; see [Slack's scope reference](https://api.slack.com/scopes).
+The manifest pairs `users:read.email` with `users:read`. It requests `search:read` as a user scope, which is one of the reasons this integration uses a user token. Slack defines what each scope grants, and which are available as bot rather than user scopes. See [Slack's scope reference](https://api.slack.com/scopes).
 
 ## Server configuration
 
@@ -125,16 +125,16 @@ wait_for_connection({ connectionId })
 ## Notes and gotchas
 
 > [!WARNING] `slack_download_file` guards its own credential
-> Slack file URLs redirect to a presigned CDN host. The tool validates that the URL is https on `slack.com`, `files.slack.com`, or a `*.slack.com` subdomain **before** attaching the token, then follows the redirect chain manually — at most five requests in total, so at most four redirects — and drops the bearer the moment the host stops being Slack — so the token cannot be redirected off-platform. It rejects non-https redirects outright.
+> Slack file URLs redirect to a presigned CDN host. The tool checks that the URL is https on `slack.com`, `files.slack.com`, or a `*.slack.com` subdomain **before** it attaches the token. It then follows the redirect chain itself, at most five requests in total, so at most four redirects. It drops the bearer the moment the host stops being Slack, so the token cannot be redirected off-platform. It rejects non-https redirects outright.
 >
-> It also treats a `text/html` response as `not_authed_or_not_found` rather than returning the bytes. Slack answers an unauthorized file request with **200 and a login page**, not a 403, so a status-code check alone would hand you a login page as if it were your file. If you see that error, the usual cause is a missing `files:read` grant.
+> It also treats a `text/html` response as `not_authed_or_not_found` rather than returning the bytes. Slack answers an unauthorized file request with **200 and a login page**, not a 403. A status-code check alone would therefore hand you a login page as if it were your file. If you see that error, the usual cause is a missing `files:read` grant.
 
 `slack_delete_message` is marked destructive in its own description and cannot be undone. Keep the `ts` from `slack_send_message` if you may later edit or delete what you posted.
 
-Slack's Web API answers errors with HTTP 200 and `{ "ok": false, "error": "..." }` — the server relies on this when handling the token exchange, and the tools pass the envelope straight through. A tool result that looks successful but carries `ok:false` is a failure; read the `error` field.
+Slack's Web API answers errors with HTTP 200 and `{ "ok": false, "error": "..." }`. The server relies on this when it handles the token exchange, and the tools pass the envelope straight through. A tool result that looks successful but carries `ok:false` is a failure. Read the `error` field.
 
 Reading a channel the user has not joined commonly returns `not_in_channel` — `slack_join_channel` fixes it for public channels.
 
-`slack_upload_file` uses Slack's external upload flow (`files.getUploadURLExternal` then `files.completeUploadExternal`) rather than `files.upload`, which was not usable from a newly created app when the integration was built. See [Slack's file-upload documentation](https://api.slack.com/messaging/files) for the current state of those methods.
+`slack_upload_file` uses Slack's external upload flow: `files.getUploadURLExternal`, then `files.completeUploadExternal`. It does not use `files.upload`, which was not usable from a newly created app when the integration was built. See [Slack's file-upload documentation](https://api.slack.com/messaging/files) for the current state of those methods.
 
-Adding a scope after users have connected requires each of them to reconnect; Slack does not upgrade an existing grant.
+Adding a scope after users have connected requires each of them to reconnect. Slack does not upgrade an existing grant.

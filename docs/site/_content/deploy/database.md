@@ -4,8 +4,8 @@ description: Choosing SQLite or PostgreSQL, what else derives from DATABASE_URL,
 ---
 
 One variable selects the backend. `DATABASE_URL` starting with `postgres://` or
-`postgresql://` gets the PostgreSQL adapter; **anything else is treated as a
-SQLite file path**. There is no separate driver setting.
+`postgresql://` gets the PostgreSQL adapter. **Anything else is treated as a
+SQLite file path.** There is no separate driver setting.
 
 ```bash
 DATABASE_URL=/data/tokens.db                                  # SQLite
@@ -21,7 +21,7 @@ contract and run the same logical schema, so a deployment can move between them.
 > `packages/server/data/tokens.db` — not the repo-root `data/` that
 > `docker-compose.yml` bind-mounts to `/data`. The same applies to the other two
 > relative defaults, `PLUGINS_DIR=./plugins` and `PORTAL_DIST_DIR=./portal`. Use an
-> absolute path anywhere it matters; the Compose file does exactly that with
+> absolute path anywhere it matters. The Compose file does exactly that with
 > `DATABASE_URL=/data/tokens.db`.
 
 ## What else derives from `DATABASE_URL`
@@ -148,11 +148,11 @@ There is no versioned migration table. `applySchema()` dispatches on the adapter
 dialect and is idempotent: a `CREATE TABLE IF NOT EXISTS` block followed by
 additive column adds. On SQLite those are bare `ALTER TABLE … ADD COLUMN`
 statements in a try/catch that swallows only "duplicate column name" and rethrows
-everything else; on PostgreSQL they are one `ADD COLUMN IF NOT EXISTS` batch.
+everything else. On PostgreSQL they are one `ADD COLUMN IF NOT EXISTS` batch.
 
 It runs from an explicit `initDb()` call at boot, before plugins load and before
-routes register — not as an import side effect. Nothing to run by hand; starting
-the server against an empty database creates the schema.
+routes register — not as an import side effect. There is nothing to run by hand.
+Starting the server against an empty database creates the schema.
 
 ## Migrating SQLite to PostgreSQL
 
@@ -226,7 +226,7 @@ values are exactly `true`, `false`, `1`, `0` — anything else is a validation e
 at boot, not a falsy value.
 
 **Cluster mode requires PostgreSQL.** With a SQLite `DATABASE_URL` the process
-prints an explicit message and exits 1; SQLite cannot be safely shared across
+prints an explicit message and exits 1. SQLite cannot be safely shared across
 processes.
 
 Connection budgeting is the thing to get right:
@@ -236,7 +236,7 @@ total connections = PG_POOL_MAX × worker count
 ```
 
 `PG_POOL_MAX` defaults to 2 and is **per worker**. On a 16-core host that is 32
-connections from one deployment; keep the total well under the server's
+connections from one deployment. Keep the total well under the server's
 `max_connections`. `PG_CONNECT_TIMEOUT_MS` (default 5000, `0` = unlimited) caps
 how long a request waits for a free pool slot before being rejected.
 

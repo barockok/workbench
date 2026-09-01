@@ -99,7 +99,7 @@ case, but not when you rebuild an older tag via <code>workflow_dispatch</code>: 
 range is computed against a <em>newer</em> tag and the log comes out empty or backwards.</p>
 <p>Notes live under the <strong>stable</strong> name — <code>docs/releases/vX.Y.Z.md</code> — from the first
 release candidate onward. That means an RC build itself falls back to the git-log
-changelog, which is fine; the notes are for the stable release the RC is
+changelog. That is fine, because the notes are for the stable release the RC is
 rehearsing.</p>
 <p>Group notes by category, explain why a change was made rather than restating the
 commit subject, and link the relevant findings document when one exists.</p>
@@ -117,7 +117,7 @@ fires the release workflow. It refuses to run unless every one of these holds:</
 </ul>
 <p>The tag checks run against <strong>local</strong> refs, after a <code>git fetch --tags origin</code>. A
 stable tag you created locally and never pushed still trips the &quot;already exists&quot;
-refusal; delete it with <code>git tag -d</code> first.</p>
+refusal. Delete it with <code>git tag -d</code> first.</p>
 <p>Before it does anything it prints <code>git log --oneline &lt;rc&gt;..HEAD</code> under the heading
 <code>commits landed since &lt;rc&gt; (these ship untested by the RC build):</code>. Read that
 list. If it is non-empty, the thing you soaked is not the thing you are about to
@@ -171,7 +171,7 @@ changes and required operator actions are written down.</p>
 <code>ADD COLUMN</code> — so an upgrade is not reversible by simply running the old image
 against the same database. Take a copy of the SQLite file or a <code>pg_dump</code> first.</p>
 <h3 id="keep-encryption_key-and-session_secret-unchanged">Keep <code>ENCRYPTION_KEY</code> and <code>SESSION_SECRET</code> unchanged<a class="anchor" href="#keep-encryption_key-and-session_secret-unchanged" aria-label="Link to Keep ENCRYPTION_KEY and SESSION_SECRET unchanged">#</a></h3>
-<p>Changing <code>ENCRYPTION_KEY</code> makes every stored credential undecryptable; there is no
+<p>Changing <code>ENCRYPTION_KEY</code> makes every stored credential undecryptable. There is no
 re-encryption path. Changing <code>SESSION_SECRET</code> invalidates every portal session,
 MCP access and refresh token, connect token, curl session, and jot cookie at once.</p>
 <h3 id="move-to-the-new-version-and-restart">Move to the new version and restart<a class="anchor" href="#move-to-the-new-version-and-restart" aria-label="Link to Move to the new version and restart">#</a></h3>

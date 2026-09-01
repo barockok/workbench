@@ -3,7 +3,7 @@ title: Asana
 description: Connect Asana so an agent can create, read, update, complete, and comment on tasks across projects.
 ---
 
-The Asana integration covers the task loop: find a project, list or create tasks in it, read one back by gid, update or complete it, and comment on it. Everything is addressed by gid, so most workflows start with `asana_list_projects` or `asana_search_users`.
+The Asana integration covers the task loop. It can find a project, list or create tasks in it, read one back by gid, update or complete it, and comment on it. Everything is addressed by gid, so most workflows start with `asana_list_projects` or `asana_search_users`.
 
 ## At a glance
 
@@ -91,7 +91,7 @@ wait_for_connection({ connectionId })
 ## Notes and gotchas
 
 > [!WARNING] Granular-scope mode must match the manifest exactly
-> The manifest requests the single scope `default`. Asana's app settings offer a full-permissions mode and a granular-scope mode, and `default` belongs to the former — switching the app to granular scopes while the manifest still requests `default` fails the authorize call, and so does the reverse. If you need granular scopes, change the manifest to match; [Asana's OAuth documentation](https://developers.asana.com/docs) describes the two modes.
+> The manifest requests the single scope `default`. Asana's app settings offer a full-permissions mode and a granular-scope mode, and `default` belongs to the full-permissions mode. Switching the app to granular scopes while the manifest still requests `default` fails the authorize call. The reverse fails too. If you need granular scopes, change the manifest to match. [Asana's OAuth documentation](https://developers.asana.com/docs) describes the two modes.
 
 Completing a task is an update, not a separate call: `asana_update_task` with `completed: true`. Passing `false` reopens it.
 
@@ -99,4 +99,4 @@ List tools return 10 rows by default. Raise `limit` when you expect more, rather
 
 The server refreshes an expired access token automatically and keeps the existing refresh token when Asana returns none. Token lifetimes are Asana's to set — see [Asana's OAuth documentation](https://developers.asana.com/docs) for the current values.
 
-A 402 response means the endpoint requires a paid Asana plan. Asana also rate-limits per token, with the ceiling depending on the plan; the current figures are in [Asana's API documentation](https://developers.asana.com/docs).
+A 402 response means the endpoint requires a paid Asana plan. Asana also rate-limits per token, and the ceiling depends on the plan. The current figures are in [Asana's API documentation](https://developers.asana.com/docs).
