@@ -1,6 +1,17 @@
 # Changelog
 
-All notable changes to a-workbench, newest first. The latest release also lives in `RELEASE_NOTES.md`.
+All notable changes to a-workbench, newest first. Full notes for each release live in `docs/releases/<tag>.md`.
+
+---
+
+# a-workbench v0.24.0
+
+_2026-08-26_
+
+Headline: **Curl proxy — transparent API access via short-lived session tokens.**
+
+- **`curl_session` + `/c/<integration>/<path>` proxy:** 15-min bearer token unlocks direct REST access (GET/POST/PUT/PATCH/DELETE) to any curl-proxy-enabled integration, with the real credential injected transparently. Enabled on asana, bitbucket, confluence, jira, github, gitlab, google-*, newrelic, slack; dynamic base-URL resolvers for jira/confluence/gitlab/newrelic.
+- **High-risk guardrail:** tool description now warns the calling agent and requires explicit user approval before minting (prompt-level only, no hard gate yet).
 
 ---
 
@@ -173,7 +184,7 @@ Headline: **Keycloak OIDC joins Google as a configurable SSO provider, plus new 
 ## Internal
 
 - **Commit-msg hook** — `.githooks/commit-msg` blocks AI co-authorship trailers. Enable: `git config core.hooksPath .githooks`.
-- **Public release hardening** — `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md` added; PII scrubbed; internal `uat-dir/` removed.
+- **Public release hardening** — `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md` added; PII scrubbed; internal `staging-dir/` removed.
 
 ---
 
@@ -834,6 +845,6 @@ First tagged release. Self-hosted MCP tool aggregator for AI agents — connects
 
 ## Chores / Docs
 - Test coverage ~27% → 95.64%; CI + Codecov.
-- Docs: architecture, how-to-use, how-to-onboard, how-to-add-custom-plugin, per-provider OAuth guides, UAT reports.
+- Docs: architecture, how-to-use, how-to-onboard, how-to-add-custom-plugin, per-provider OAuth guides, staging reports.
 - Docker Compose setup + sample OAuth app.
 - Docker image: Debian (glibc) base with Playwright chromium + system libs baked in, so the cookie-auth WebCDP capture flow runs headless in-container.

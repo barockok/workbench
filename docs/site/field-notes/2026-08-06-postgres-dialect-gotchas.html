@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-08-06 — PostgreSQL support: what the adapter has to paper over — workbench Docs</title>
+<meta name="description" content="Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.">
+<meta property="og:title" content="2026-08-06 — PostgreSQL support: what the adapter has to paper over — workbench">
+<meta property="og:description" content="Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab active" href="index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">About field notes</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Findings</p><ul><li><a class="" href="2026-08-18-browser-navigate-file-protocol-ssrf.html">browser_navigate accepts file:// URLs — filesystem read via agent prompt</a></li><li><a class="active" href="2026-08-06-postgres-dialect-gotchas.html">2026-08-06 — PostgreSQL support: what the adapter has to paper over</a></li><li><a class="" href="2026-08-06-browser-profile-disk-growth.html">Browser profiles grow without bound — nothing ever reclaims them</a></li><li><a class="" href="2026-08-03-bitbucket-pr-author-reviewer-bug.html">Bitbucket PR Author Cannot Be Added as Reviewer</a></li><li><a class="" href="2026-06-22-confluence-v2-migration.html">Confluence integration migrated from REST v1 → v2</a></li><li><a class="" href="2026-06-18-apikey-auth-and-newrelic.html">2026-06-18 — API-key auth path + New Relic (NerdGraph) plugin</a></li><li><a class="" href="2026-06-14-slack-file-download.html">Slack file download: auth-walled URLs + Bearer host scoping</a></li><li><a class="" href="2026-06-14-self-hosted-instance-oauth.html">2026-06-14 — Per-connection instance URL for self-hosted OAuth (GitLab)</a></li><li><a class="" href="2026-06-14-github-token-form-encoded.html">GitHub token exchange returns form-urlencoded → JSON parse error</a></li><li><a class="" href="2026-06-14-ci-pipeline-triggers.html">Triggering CI: GitHub Actions, GitLab Pipelines, Bitbucket Pipelines</a></li><li><a class="" href="2026-06-12-builtin-tools-round-review.html">Built-in tools round review — raw passthrough everywhere, several broken/bloated tools</a></li><li><a class="" href="2026-06-12-builtin-tools-coverage-gaps.html">Built-in tools coverage gaps — create-but-can't-follow-up pattern</a></li><li><a class="" href="2026-06-11-slack-user-token-oauth.html">Slack OAuth: user tokens need `user_scope`, nest under `authed_user`, and errors hide in 200s</a></li><li><a class="" href="2026-06-10-empty-json-body-bodyless-post.html">Bodyless POST must not declare `Content-Type: application/json`</a></li><li><a class="" href="2026-06-09-chromium-singleton-lock-stale.html">Stale Chromium SingletonLock blocks capture after pod rollout</a></li><li><a class="" href="2026-05-31-root-chromium-no-sandbox.html">Cookie-auth capture fails in container — chromium as root needs `--no-sandbox`</a></li><li><a class="" href="2026-05-31-mcp-oauth.html">MCP OAuth 2.1 — SSO resumption + two-token model</a></li><li><a class="" href="2026-05-31-cookie-domain-scoping.html">Cookie capture/replay across subdomains — scope cookies to the target host</a></li><li><a class="" href="2026-05-30-relative-plugins-dir-import.html">Relative PLUGINS_DIR breaks dynamic plugin import in container</a></li><li><a class="" href="2026-05-30-capture-zero-cookies-marks-connected.html">Finding: cookie capture with zero cookies marked the session CONNECTED</a></li><li><a class="" href="2026-05-30-abandoned-cookie-session-leak.html">Finding: abandoned cookie login sessions leak chromium + tmpdir</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Findings</p>
+          <h1>2026-08-06 — PostgreSQL support: what the adapter has to paper over</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      
+      <p>Adding a second SQL backend behind <code>DbAdapter</code> is mostly mechanical. These are
+the parts that are not, recorded so the next person does not rediscover them
+from a production stack trace.</p>
+<h2 id="booleans-are-not-1-and-0">Booleans are not 1 and 0<a class="anchor" href="#booleans-are-not-1-and-0" aria-label="Link to Booleans are not 1 and 0">#</a></h2>
+<p>The schema has genuine <code>BOOLEAN</code> columns (<code>users.is_admin</code>, <code>audit_log.success</code>).
+SQLite has no boolean type, so <code>event.success ? 1 : 0</code> was correct there and had
+been correct for years. PostgreSQL rejects it outright:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">error: column &quot;success&quot; is of type boolean but expression is of type integer</code></pre></div>
+<p>This is not a warning and there is no implicit cast — every audit write would
+have failed on PostgreSQL, silently in production because audit failures are
+swallowed.</p>
+<p>The fix is directional. Call sites pass a real <code>boolean</code>; <code>SqliteAdapter</code>
+converts to 1/0 when binding, because better-sqlite3 refuses booleans in the
+other direction (&quot;can only bind numbers, strings, bigints, buffers, and null&quot;).
+<code>SqlParam</code> includes <code>boolean</code> to make that the typed, obvious thing to write.</p>
+<p>Note the asymmetry on read: PostgreSQL returns <code>true</code>/<code>false</code>, SQLite returns
+<code>1</code>/<code>0</code>. Nothing in the codebase reads these columns today, but anything that
+starts to must coerce with <code>Boolean(...)</code> rather than compare with <code>===</code>.</p>
+<h2 id="is-not-always-a-placeholder"><code>?</code> is not always a placeholder<a class="anchor" href="#is-not-always-a-placeholder" aria-label="Link to ? is not always a placeholder">#</a></h2>
+<p>Rewriting SQLite&#39;s <code>?</code> placeholders to PostgreSQL&#39;s <code>$1, $2, …</code> with
+<code>sql.replace(/\?/g, …)</code> is wrong in four ways. A <code>?</code> can appear:</p>
+<ul>
+<li>inside a string literal — <code>WHERE path LIKE &#39;%?%&#39;</code></li>
+<li>inside a quoted identifier — <code>SELECT &quot;weird?col&quot;</code></li>
+<li>inside a comment</li>
+<li>as a PostgreSQL operator — JSONB <code>?</code>, <code>?|</code>, <code>?&amp;</code></li>
+</ul>
+<p>Any of these consumes a placeholder number, so the real placeholders shift and
+the query fails with <code>bind message supplies N parameters, but prepared statement requires M</code> — but only when that particular statement runs. No current query
+trips it, which is exactly why it would have been found late. <code>toPgParams</code> walks
+the string and substitutes only in ordinary SQL text; <code>tests/db-params.test.ts</code>
+covers each case.</p>
+<h2 id="a-pool-is-not-a-connection">A pool is not a connection<a class="anchor" href="#a-pool-is-not-a-connection" aria-label="Link to A pool is not a connection">#</a></h2>
+<p>SQLite gives statement-level atomicity for free and, being one file accessed
+through one synchronous handle, made read-then-write sequences <em>look</em> safe.
+<code>pg.Pool</code> does not: consecutive <code>pool.query()</code> calls may land on different
+backends, so a SELECT/DELETE/INSERT sequence is three independent transactions
+with two windows in between.</p>
+<p><code>rotateRefreshToken</code> was exactly that shape. Two concurrent presentations of the
+same refresh token would both SELECT the row, both proceed, and both mint a
+valid successor — single-use refresh tokens silently stop being single-use.</p>
+<p>Two things fix it, and both are needed:</p>
+<ol>
+<li><code>DbAdapter.transaction()</code> — on PostgreSQL it checks out one client, issues
+<code>BEGIN</code>, and hands the callback an executor <strong>pinned to that client</strong>. A
+stray <code>db.run()</code> inside the callback would take a different connection and
+run outside the transaction, so the callback must use what it is given.</li>
+<li>Deciding the winner on the <strong>DELETE&#39;s row count</strong>, not on the SELECT. Both
+callers see the row; only one <code>DELETE</code> can report <code>changes === 1</code>.</li>
+</ol>
+<p><code>SqliteAdapter.transaction()</code> needs a small serialization queue for an unrelated
+reason: better-sqlite3 is synchronous, but the adapter methods are <code>async</code>, so
+an <code>await</code> inside a transaction callback yields to the event loop and a second
+caller could issue <code>BEGIN</code> inside the first transaction (&quot;cannot start a
+transaction within a transaction&quot;).</p>
+<h2 id="schema-creation-is-no-longer-an-import-side-effect">Schema creation is no longer an import side effect<a class="anchor" href="#schema-creation-is-no-longer-an-import-side-effect" aria-label="Link to Schema creation is no longer an import side effect">#</a></h2>
+<p><code>db.ts</code> used to run its DDL at module scope, so importing <code>db</code> anywhere created
+the tables. That cannot work with two dialects, so it moved into <code>initDb()</code>.</p>
+<p>The consequence is easy to miss: <strong>anything that used to get tables for free now
+gets none</strong>. The test suite had no tables at all on a fresh checkout until
+<code>tests/setup.ts</code> was added as a vitest <code>setupFile</code>. <code>applySchema(adapter)</code> takes
+the adapter explicitly so the integration suite can stand up a throwaway
+database of either dialect and run exactly the production DDL against it.</p>
+<h2 id="the-tests-were-not-type-checked">The tests were not type-checked<a class="anchor" href="#the-tests-were-not-type-checked" aria-label="Link to The tests were not type-checked">#</a></h2>
+<p><code>packages/server/tsconfig.json</code> has <code>&quot;include&quot;: [&quot;src/**/*&quot;]</code>. Nothing ever
+type-checked <code>tests/</code>, so converting 23 source files to <code>async</code> left ~40 broken
+call sites in the suite while <code>npm run build</code> stayed perfectly green — the
+failure only appeared in CI&#39;s test step, which reads as a flaky-test problem
+rather than a compile problem.</p>
+<p><code>tsconfig.test.json</code> + the <code>typecheck:tests</code> CI step close that gap. It carries
+an explicit exclude list of files that were already failing before any of this;
+that is recorded debt, not a design choice.</p>
+<h2 id="verifying-the-postgresql-path">Verifying the PostgreSQL path<a class="anchor" href="#verifying-the-postgresql-path" aria-label="Link to Verifying the PostgreSQL path">#</a></h2>
+<p><code>tests/db-adapter.integration.test.ts</code> runs the same assertions against both
+backends. SQLite always runs; PostgreSQL runs only when <code>TEST_POSTGRES_URL</code> is
+set and skips <strong>loudly</strong> otherwise. CI provides it from a <code>postgres:16</code> service
+container. Locally:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker run --rm -e POSTGRES_PASSWORD=pw -p 5432:5432 postgres:16
+TEST_POSTGRES_URL=postgres://postgres:pw@127.0.0.1:5432/postgres npm run test -w @a-workbench/server</code></pre></div>
+<p>A skipped backend that reports success is worse than no test.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="2026-08-18-browser-navigate-file-protocol-ssrf.html"><span class="pn-dir">Previous</span><span class="pn-label">browser_navigate accepts file:// URLs — filesystem read via agent prompt</span></a><a class="pn pn-next" href="2026-08-06-browser-profile-disk-growth.html"><span class="pn-dir">Next</span><span class="pn-label">Browser profiles grow without bound — nothing ever reclaims them</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/field-notes/2026-08-06-postgres-dialect-gotchas.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#booleans-are-not-1-and-0">Booleans are not 1 and 0</a></li><li class="toc-h2"><a href="#is-not-always-a-placeholder">? is not always a placeholder</a></li><li class="toc-h2"><a href="#a-pool-is-not-a-connection">A pool is not a connection</a></li><li class="toc-h2"><a href="#schema-creation-is-no-longer-an-import-side-effect">Schema creation is no longer an import side effect</a></li><li class="toc-h2"><a href="#the-tests-were-not-type-checked">The tests were not type-checked</a></li><li class="toc-h2"><a href="#verifying-the-postgresql-path">Verifying the PostgreSQL path</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

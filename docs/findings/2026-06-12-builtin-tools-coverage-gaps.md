@@ -67,7 +67,7 @@ Sprint/board ops need `read:board-scope:jira-software` (same scope blocking `jir
 
 ### Fine as-is
 
-Docs, Slides, Drive (maybe move/rename later), Gemini, Confluence (surface complete — its problem is broken endpoints, see [2026-06-12 confluence v1 content GET removed](2026-06-12-confluence-v1-content-get-removed.md)), httpbin (test plugin).
+Docs, Slides, Drive (maybe move/rename later), Gemini, Confluence (surface complete — its problem is broken endpoints, see the v1 content API removal, resolved by [2026-06-22 confluence v2 migration](2026-06-22-confluence-v2-migration.md)), httpbin (test plugin).
 
 ## Build order suggestion
 

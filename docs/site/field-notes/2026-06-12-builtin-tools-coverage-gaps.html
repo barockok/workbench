@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Built-in tools coverage gaps — create-but-can't-follow-up pattern — workbench Docs</title>
+<meta name="description" content="Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.">
+<meta property="og:title" content="Built-in tools coverage gaps — create-but-can't-follow-up pattern — workbench">
+<meta property="og:description" content="Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab active" href="index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">About field notes</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Findings</p><ul><li><a class="" href="2026-08-18-browser-navigate-file-protocol-ssrf.html">browser_navigate accepts file:// URLs — filesystem read via agent prompt</a></li><li><a class="" href="2026-08-06-postgres-dialect-gotchas.html">2026-08-06 — PostgreSQL support: what the adapter has to paper over</a></li><li><a class="" href="2026-08-06-browser-profile-disk-growth.html">Browser profiles grow without bound — nothing ever reclaims them</a></li><li><a class="" href="2026-08-03-bitbucket-pr-author-reviewer-bug.html">Bitbucket PR Author Cannot Be Added as Reviewer</a></li><li><a class="" href="2026-06-22-confluence-v2-migration.html">Confluence integration migrated from REST v1 → v2</a></li><li><a class="" href="2026-06-18-apikey-auth-and-newrelic.html">2026-06-18 — API-key auth path + New Relic (NerdGraph) plugin</a></li><li><a class="" href="2026-06-14-slack-file-download.html">Slack file download: auth-walled URLs + Bearer host scoping</a></li><li><a class="" href="2026-06-14-self-hosted-instance-oauth.html">2026-06-14 — Per-connection instance URL for self-hosted OAuth (GitLab)</a></li><li><a class="" href="2026-06-14-github-token-form-encoded.html">GitHub token exchange returns form-urlencoded → JSON parse error</a></li><li><a class="" href="2026-06-14-ci-pipeline-triggers.html">Triggering CI: GitHub Actions, GitLab Pipelines, Bitbucket Pipelines</a></li><li><a class="" href="2026-06-12-builtin-tools-round-review.html">Built-in tools round review — raw passthrough everywhere, several broken/bloated tools</a></li><li><a class="active" href="2026-06-12-builtin-tools-coverage-gaps.html">Built-in tools coverage gaps — create-but-can't-follow-up pattern</a></li><li><a class="" href="2026-06-11-slack-user-token-oauth.html">Slack OAuth: user tokens need `user_scope`, nest under `authed_user`, and errors hide in 200s</a></li><li><a class="" href="2026-06-10-empty-json-body-bodyless-post.html">Bodyless POST must not declare `Content-Type: application/json`</a></li><li><a class="" href="2026-06-09-chromium-singleton-lock-stale.html">Stale Chromium SingletonLock blocks capture after pod rollout</a></li><li><a class="" href="2026-05-31-root-chromium-no-sandbox.html">Cookie-auth capture fails in container — chromium as root needs `--no-sandbox`</a></li><li><a class="" href="2026-05-31-mcp-oauth.html">MCP OAuth 2.1 — SSO resumption + two-token model</a></li><li><a class="" href="2026-05-31-cookie-domain-scoping.html">Cookie capture/replay across subdomains — scope cookies to the target host</a></li><li><a class="" href="2026-05-30-relative-plugins-dir-import.html">Relative PLUGINS_DIR breaks dynamic plugin import in container</a></li><li><a class="" href="2026-05-30-capture-zero-cookies-marks-connected.html">Finding: cookie capture with zero cookies marked the session CONNECTED</a></li><li><a class="" href="2026-05-30-abandoned-cookie-session-leak.html">Finding: abandoned cookie login sessions leak chromium + tmpdir</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Findings</p>
+          <h1>Built-in tools coverage gaps — create-but-can't-follow-up pattern</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      
+      <p><strong>Date:</strong> 2026-06-12
+<strong>Status:</strong> implemented 2026-06-12 — all gaps below filled (jira lifecycle, bitbucket review set, github review+issue lifecycle+search+actions, asana lifecycle, gmail thread reply+modify, sheets append, calendar freebusy, slack update/delete).
+<strong>Scope:</strong> gap analysis across all built-in plugins (companion to <a href="2026-06-12-builtin-tools-round-review.html">2026-06-12 builtin tools round review</a>, which covers quality of <em>existing</em> tools; this covers what&#39;s <em>missing</em>).</p>
+<h2 id="the-pattern">The pattern<a class="anchor" href="#the-pattern" aria-label="Link to The pattern">#</a></h2>
+<p>Three plugins ship the entry-point write but none of the lifecycle that follows:</p>
+<ul>
+<li><strong>GitHub:</strong> <code>create_issue</code> / <code>create_pr</code> exist, but no <code>list_prs</code>, <code>get_pr</code>, issue read/update/comment — open a PR, then blind.</li>
+<li><strong>Asana:</strong> <code>create_task</code> exists, but no <code>get_task</code> / <code>update_task</code> — can create a task, never complete one.</li>
+<li><strong>Bitbucket:</strong> <code>create_pr</code> / <code>list_prs</code> / <code>get_pr</code> exist, but no diff, comments, approve, or merge — can open a PR, can&#39;t review one.</li>
+</ul>
+<h2 id="per-plugin-gaps-priority-order">Per-plugin gaps (priority order)<a class="anchor" href="#per-plugin-gaps-priority-order" aria-label="Link to Per-plugin gaps (priority order)">#</a></h2>
+<h3 id="1-github-biggest-hole">1. GitHub (biggest hole)<a class="anchor" href="#1-github-biggest-hole" aria-label="Link to 1. GitHub (biggest hole)">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Missing</th><th>Why</th></tr></thead><tbody>
+<tr><td><code>list_prs</code> / <code>get_pr</code> / <code>get_pr_diff</code> / PR comments / <code>merge_pr</code></td><td>Whole review loop absent — worse than Bitbucket</td></tr>
+<tr><td><code>list_issues</code> / <code>update_issue</code> / <code>add_issue_comment</code></td><td>Has create only; can&#39;t read or follow up own issues</td></tr>
+<tr><td><code>search_code</code> / <code>search_issues</code></td><td>No discovery</td></tr>
+<tr><td>Actions: <code>list_workflow_runs</code> / <code>get_run</code></td><td>CI status — common agent ask</td></tr>
+</tbody></table></div>
+<h3 id="2-bitbucket-scopes-already-sufficient-repository-pullrequestwrite">2. Bitbucket (scopes already sufficient — <code>repository</code>, <code>pullrequest:write</code>)<a class="anchor" href="#2-bitbucket-scopes-already-sufficient-repository-pullrequestwrite" aria-label="Link to 2. Bitbucket (scopes already sufficient — repository, pullrequest:write)">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Missing</th><th>Endpoint</th></tr></thead><tbody>
+<tr><td><code>get_pr_diff</code></td><td><code>GET /pullrequests/{id}/diff</code> (or <code>/diffstat</code>, cheaper)</td></tr>
+<tr><td><code>list_pr_comments</code> / <code>add_pr_comment</code> (inline path+line)</td><td><code>/pullrequests/{id}/comments</code></td></tr>
+<tr><td><code>approve_pr</code> / <code>request_changes</code></td><td><code>POST /pullrequests/{id}/approve</code>, <code>/request-changes</code></td></tr>
+<tr><td><code>merge_pr</code> / <code>decline_pr</code></td><td><code>POST /pullrequests/{id}/merge</code>, <code>/decline</code></td></tr>
+<tr><td><code>get_file</code> (source at ref)</td><td><code>GET /src/{commit}/{path}</code></td></tr>
+<tr><td><code>list_pr_commits</code></td><td><code>/pullrequests/{id}/commits</code></td></tr>
+</tbody></table></div>
+<p>Native Bitbucket issue tracker (<code>/issues</code>, <code>issue:write</code> scope) deliberately skipped — tickets belong in Jira.</p>
+<h3 id="3-jira-existing-scopes-writejira-workreadjira-work-cover-all-of-these-no-reconnect">3. Jira (existing scopes <code>write:jira-work</code>/<code>read:jira-work</code> cover all of these — no reconnect)<a class="anchor" href="#3-jira-existing-scopes-writejira-workreadjira-work-cover-all-of-these-no-reconnect" aria-label="Link to 3. Jira (existing scopes write:jira-work/read:jira-work cover all of these — no reconnect)">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Missing</th><th>Endpoint</th></tr></thead><tbody>
+<tr><td><code>update_issue</code></td><td><code>PUT /rest/api/3/issue/{key}</code></td></tr>
+<tr><td><code>transition_issue</code> + <code>get_transitions</code></td><td><code>POST /issue/{key}/transitions</code> — top agent op, no way to move status today</td></tr>
+<tr><td><code>add_comment</code> / <code>get_comments</code></td><td><code>/issue/{key}/comment</code></td></tr>
+<tr><td><code>list_projects</code></td><td><code>GET /rest/api/3/project/search</code> — no project-key discovery today (<code>project_types</code> doesn&#39;t help)</td></tr>
+</tbody></table></div>
+<p>Sprint/board ops need <code>read:board-scope:jira-software</code> (same scope blocking <code>jira_get_boards</code>) — bundle with that reconnect or skip.</p>
+<h3 id="4-asana">4. Asana<a class="anchor" href="#4-asana" aria-label="Link to 4. Asana">#</a></h3>
+<p><code>get_task</code>, <code>update_task</code> (complete / assign / due date), <code>add_comment</code> (stories API).</p>
+<h3 id="5-gmail">5. Gmail<a class="anchor" href="#5-gmail" aria-label="Link to 5. Gmail">#</a></h3>
+<ul>
+<li><code>send</code> builds raw MIME with no <code>threadId</code> (gmail.ts:15-22) → <strong>every reply forks a new conversation</strong>. Add <code>threadId</code> + <code>In-Reply-To</code>/<code>References</code> headers.</li>
+<li>No <code>modify</code> (mark read, archive, add/remove labels), no attachment download.</li>
+</ul>
+<h3 id="6-sheets">6. Sheets<a class="anchor" href="#6-sheets" aria-label="Link to 6. Sheets">#</a></h3>
+<p><code>write</code> is PUT values = overwrite only (sheets.ts:30). Missing <code>append</code> (<code>POST …/values/{range}:append</code>) — the log-a-row case is the most common agent write. No add-tab either.</p>
+<h3 id="7-second-tier">7. Second tier<a class="anchor" href="#7-second-tier" aria-label="Link to 7. Second tier">#</a></h3>
+<ul>
+<li><strong>Calendar:</strong> <code>freebusy</code> (availability before scheduling), respond-to-invite (accept/decline).</li>
+<li><strong>Slack:</strong> <code>update_message</code> / <code>delete_message</code> (agents editing own progress messages).</li>
+</ul>
+<h3 id="fine-as-is">Fine as-is<a class="anchor" href="#fine-as-is" aria-label="Link to Fine as-is">#</a></h3>
+<p>Docs, Slides, Drive (maybe move/rename later), Gemini, Confluence (surface complete — its problem is broken endpoints, see the v1 content API removal, resolved by <a href="2026-06-22-confluence-v2-migration.html">2026-06-22 confluence v2 migration</a>), httpbin (test plugin).</p>
+<h2 id="build-order-suggestion">Build order suggestion<a class="anchor" href="#build-order-suggestion" aria-label="Link to Build order suggestion">#</a></h2>
+<ol>
+<li>Jira lifecycle set (update/transition/comment/list_projects) — one file, no scope change</li>
+<li>Bitbucket review set (diff/comments/approve/merge) — no scope change</li>
+<li>GitHub review + issue lifecycle</li>
+<li>Asana lifecycle, Gmail thread-reply + modify, Sheets append</li>
+<li>Calendar freebusy, Slack edit</li>
+</ol>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="2026-06-12-builtin-tools-round-review.html"><span class="pn-dir">Previous</span><span class="pn-label">Built-in tools round review — raw passthrough everywhere, several broken/bloated tools</span></a><a class="pn pn-next" href="2026-06-11-slack-user-token-oauth.html"><span class="pn-dir">Next</span><span class="pn-label">Slack OAuth: user tokens need `user_scope`, nest under `authed_user`, and errors hide in 200s</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/field-notes/2026-06-12-builtin-tools-coverage-gaps.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-pattern">The pattern</a></li><li class="toc-h2"><a href="#per-plugin-gaps-priority-order">Per-plugin gaps (priority order)</a></li><li class="toc-h3"><a href="#1-github-biggest-hole">1. GitHub (biggest hole)</a></li><li class="toc-h3"><a href="#2-bitbucket-scopes-already-sufficient-repository-pullrequestwrite">2. Bitbucket (scopes already sufficient — repository, pullrequest:write)</a></li><li class="toc-h3"><a href="#3-jira-existing-scopes-writejira-workreadjira-work-cover-all-of-these-no-reconnect">3. Jira (existing scopes write:jira-work/read:jira-work cover all of these — no reconnect)</a></li><li class="toc-h3"><a href="#4-asana">4. Asana</a></li><li class="toc-h3"><a href="#5-gmail">5. Gmail</a></li><li class="toc-h3"><a href="#6-sheets">6. Sheets</a></li><li class="toc-h3"><a href="#7-second-tier">7. Second tier</a></li><li class="toc-h3"><a href="#fine-as-is">Fine as-is</a></li><li class="toc-h2"><a href="#build-order-suggestion">Build order suggestion</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

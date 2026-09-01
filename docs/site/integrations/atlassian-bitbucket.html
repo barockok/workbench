@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bitbucket — workbench Docs</title>
+<meta name="description" content="Connect Bitbucket Cloud so an agent can browse repositories, run the full pull-request review loop, and drive Pipelines.">
+<meta property="og:title" content="Bitbucket — workbench">
+<meta property="og:description" content="Connect Bitbucket Cloud so an agent can browse repositories, run the full pull-request review loop, and drive Pipelines.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab active" href="index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">All integrations</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Atlassian</p><ul><li><a class="" href="atlassian-jira.html">Jira</a></li><li><a class="" href="atlassian-confluence.html">Confluence</a></li><li><a class="active" href="atlassian-bitbucket.html">Bitbucket</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Code hosting</p><ul><li><a class="" href="github.html">GitHub</a></li><li><a class="" href="gitlab.html">GitLab</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Google Workspace</p><ul><li><a class="" href="google.html">Setup &amp; scopes</a></li><li><a class="" href="google-tools.html">Gmail, Drive, Docs &amp; more</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Other services</p><ul><li><a class="" href="slack.html">Slack</a></li><li><a class="" href="asana.html">Asana</a></li><li><a class="" href="newrelic.html">New Relic</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Built in</p><ul><li><a class="" href="browser.html">Browser</a></li><li><a class="" href="jots.html">Jots</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Atlassian</p>
+          <h1>Bitbucket</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Connect Bitbucket Cloud so an agent can browse repositories, run the full pull-request review loop, and drive Pipelines.</p>
+      <p>The Bitbucket integration covers a complete review cycle. It can list repos, open a pull request, read its diff, comment inline, approve or request changes, then merge or decline. It also triggers, polls, and stops Bitbucket Pipelines. It can mint a short-lived authenticated clone URL.</p>
+<h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Plugin id</td><td><code>atlassian-bitbucket</code></td></tr>
+<tr><td>Auth</td><td>OAuth 2.0 (workspace consumer)</td></tr>
+<tr><td>Tools</td><td>20</td></tr>
+<tr><td>Authorization URL</td><td><code>https://bitbucket.org/site/oauth2/authorize</code></td></tr>
+<tr><td>Token URL</td><td><code>https://bitbucket.org/site/oauth2/access_token</code></td></tr>
+<tr><td>Proxy base</td><td><code>https://api.bitbucket.org/2.0</code></td></tr>
+</tbody></table></div>
+<p>Bitbucket Cloud OAuth is separate from the Atlassian developer console that Jira and Confluence use. You create a &quot;consumer&quot; inside a Bitbucket workspace&#39;s own settings.</p>
+<h2 id="set-up-the-oauth-app">Set up the OAuth app<a class="anchor" href="#set-up-the-oauth-app" aria-label="Link to Set up the OAuth app">#</a></h2>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">The console steps are Atlassian's UI, not this server's</span></div><div class="callout-body"><p>Menu names, labels, and page URLs below come from Atlassian&#39;s console and change
+without notice. If what you see differs, follow <a href="https://developer.atlassian.com/cloud/bitbucket/oauth-2/" target="_blank" rel="noopener">Atlassian&#39;s own documentation<span class="ext" aria-hidden="true">↗</span></a> — the values this server needs (the callback URL and the scopes in the tables
+below) are unaffected.</p>
+</div></div>
+
+
+<div class="steps">
+
+<h3 id="create-the-consumer">Create the consumer<a class="anchor" href="#create-the-consumer" aria-label="Link to Create the consumer">#</a></h3>
+<p>Go to <code>https://bitbucket.org/&lt;workspace&gt;/workspace/settings/api</code>, or Workspace settings → <strong>Apps and features</strong> → <strong>OAuth consumers</strong> → <strong>Add consumer</strong>.</p>
+<h3 id="fill-in-the-callback-url">Fill in the callback URL<a class="anchor" href="#fill-in-the-callback-url" aria-label="Link to Fill in the callback URL">#</a></h3>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td>Name</td><td>your deployment name</td></tr>
+<tr><td>Callback URL</td><td><code>https://&lt;your-workbench-host&gt;/api/auth/plugin/atlassian-bitbucket/callback</code></td></tr>
+<tr><td>This is a private consumer</td><td>leave unchecked for the normal three-legged flow</td></tr>
+</tbody></table></div>
+<p>Bitbucket allows only one callback URL per consumer. For local development create a second consumer pointing at <code>http://localhost:3000/api/auth/plugin/atlassian-bitbucket/callback</code>.</p>
+<h3 id="tick-the-permissions">Tick the permissions<a class="anchor" href="#tick-the-permissions" aria-label="Link to Tick the permissions">#</a></h3>
+<p>Check every scope in the table below. The checkboxes nest: selecting <code>repository:write</code> auto-selects <code>repository</code>, and <code>pipeline:write</code> auto-selects <code>pipeline</code>.</p>
+<h3 id="copy-the-credentials">Copy the credentials<a class="anchor" href="#copy-the-credentials" aria-label="Link to Copy the credentials">#</a></h3>
+<p>Save, then expand the consumer in the list to reveal <strong>Key</strong> (the client id) and <strong>Secret</strong>.</p>
+</div>
+
+<h2 id="scopes">Scopes<a class="anchor" href="#scopes" aria-label="Link to Scopes">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Scope</th><th>What it is for</th></tr></thead><tbody>
+<tr><td><code>repository</code></td><td>Read repositories, files, branches, and commits the user can see</td></tr>
+<tr><td><code>repository:write</code></td><td>Write repository contents</td></tr>
+<tr><td><code>pullrequest:write</code></td><td>Create, comment on, approve, merge, and decline pull requests</td></tr>
+<tr><td><code>pipeline</code></td><td>Read Pipelines runs</td></tr>
+<tr><td><code>pipeline:write</code></td><td>Trigger and stop Pipelines runs</td></tr>
+<tr><td><code>account</code></td><td>Read account and workspace membership — backs workspace defaulting and user search</td></tr>
+</tbody></table></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Adding `pipeline` and `pipeline:write` forces a reconnect</span></div><div class="callout-body"><p>These two were added after the integration first shipped. Anyone who connected before must disconnect and reconnect. Existing tokens carry the old grant, and the three Pipelines tools return 403 until they do. Adding the scopes to the consumer is not enough on its own.</p>
+</div></div>
+
+<h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">ATLASSIAN_BITBUCKET_CLIENT_ID=...
+ATLASSIAN_BITBUCKET_CLIENT_SECRET=...</code></pre></div>
+<h2 id="connect">Connect<a class="anchor" href="#connect" aria-label="Link to Connect">#</a></h2>
+<p>Portal: Connections → <strong>Connect</strong> on the Bitbucket card.</p>
+<p>Agent:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">connect({ integration: &quot;atlassian-bitbucket&quot; })
+wait_for_connection({ connectionId })</code></pre></div>
+<h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>bitbucket_list_repos</code></td><td>Slim repository rows for a workspace</td></tr>
+<tr><td><code>bitbucket_get_repo</code></td><td>One repo, including its https clone URL and main branch</td></tr>
+<tr><td><code>bitbucket_create_pr</code></td><td>Open a pull request from a source branch into a destination branch</td></tr>
+<tr><td><code>bitbucket_list_prs</code></td><td>List pull requests by state, paged</td></tr>
+<tr><td><code>bitbucket_get_pr</code></td><td>One PR with reviewers, approval status, and open-task counts</td></tr>
+<tr><td><code>bitbucket_get_pr_diff</code></td><td>Full diff, or a per-file diffstat summary</td></tr>
+<tr><td><code>bitbucket_list_pr_comments</code></td><td>Comments, with <code>{ path, line }</code> on inline ones</td></tr>
+<tr><td><code>bitbucket_add_pr_comment</code></td><td>Post a general or inline comment</td></tr>
+<tr><td><code>bitbucket_approve_pr</code></td><td>Approve as the connected user</td></tr>
+<tr><td><code>bitbucket_request_changes</code></td><td>Mark the PR as changes-requested</td></tr>
+<tr><td><code>bitbucket_merge_pr</code></td><td>Merge into the destination branch</td></tr>
+<tr><td><code>bitbucket_decline_pr</code></td><td>Close the PR without merging</td></tr>
+<tr><td><code>bitbucket_list_pr_commits</code></td><td>The PR&#39;s commits as slim rows</td></tr>
+<tr><td><code>bitbucket_get_file</code></td><td>Raw file contents at a specific ref</td></tr>
+<tr><td><code>bitbucket_list_default_reviewers</code></td><td>Who Bitbucket will auto-attach to new PRs</td></tr>
+<tr><td><code>bitbucket_search_users</code></td><td>Resolve workspace members to UUIDs</td></tr>
+<tr><td><code>bitbucket_trigger_pipeline</code></td><td>Start a default or custom pipeline on a ref</td></tr>
+<tr><td><code>bitbucket_get_pipeline</code></td><td>Poll one pipeline&#39;s state and result</td></tr>
+<tr><td><code>bitbucket_stop_pipeline</code></td><td>Stop a running pipeline</td></tr>
+<tr><td><code>bitbucket_get_clone_url</code></td><td>Mint <code>https://x-token-auth:&lt;token&gt;@bitbucket.org/...</code> for clone, pull, or push</td></tr>
+</tbody></table></div>
+<h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Naming the PR author as a reviewer makes the create call fail</span></div><div class="callout-body"><p>Bitbucket rejects a pull request whose reviewer list includes its own author, and the failure is not obvious from the error. <code>bitbucket_create_pr</code> filters the author out of <code>reviewers</code> before sending. It also upserts: if an open PR already exists from the same source branch, the call updates that PR instead of creating a second one.</p>
+</div></div>
+
+<p><code>bitbucket_get_file</code> needs a real ref. A branch name or a 40-character SHA works. The literal <code>HEAD</code> does not, on this API.</p>
+<p>The token in <code>bitbucket_get_clone_url</code> is the user&#39;s live OAuth access token, embedded in a URL. It is short-lived, and the URL dies with it. Mint it immediately before use. Never persist it to a file, a remote, or shell history.</p>
+<p>Bitbucket attaches a repository&#39;s default reviewers to new pull requests, so a PR can come back with reviewers you did not name. <code>bitbucket_list_default_reviewers</code> shows who those are for a repo.</p>
+<p>Bitbucket issues short-lived access tokens and rotates refresh tokens (see <a href="https://developer.atlassian.com/cloud/bitbucket/oauth-2/" target="_blank" rel="noopener">Atlassian&#39;s Bitbucket OAuth 2.0 documentation<span class="ext" aria-hidden="true">↗</span></a> for current lifetimes). The server refreshes 30 seconds before expiry and stores each new refresh token automatically, keeping the previous one when the response carries none.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="atlassian-confluence.html"><span class="pn-dir">Previous</span><span class="pn-label">Confluence</span></a><a class="pn pn-next" href="github.html"><span class="pn-dir">Next</span><span class="pn-label">GitHub</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/integrations/atlassian-bitbucket.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#set-up-the-oauth-app">Set up the OAuth app</a></li><li class="toc-h3"><a href="#create-the-consumer">Create the consumer</a></li><li class="toc-h3"><a href="#fill-in-the-callback-url">Fill in the callback URL</a></li><li class="toc-h3"><a href="#tick-the-permissions">Tick the permissions</a></li><li class="toc-h3"><a href="#copy-the-credentials">Copy the credentials</a></li><li class="toc-h2"><a href="#scopes">Scopes</a></li><li class="toc-h2"><a href="#server-configuration">Server configuration</a></li><li class="toc-h2"><a href="#connect">Connect</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

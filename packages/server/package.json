@@ -1,6 +1,6 @@
 {
   "name": "@a-workbench/server",
-  "version": "0.23.3",
+  "version": "0.24.0",
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",

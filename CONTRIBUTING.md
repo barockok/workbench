@@ -1,4 +1,4 @@
-# Contributing to a-workbench
+# Contributing to workbench
 
 Thanks for your interest in contributing. This guide covers local setup,
 testing, and the pull-request workflow.
@@ -65,7 +65,8 @@ Scope is the affected package or plugin. Keep the subject under ~72 chars.
 
 Plugins live under `packages/plugins/<name>/` with a `manifest.ts` and a
 `tools/` directory. See an existing plugin (e.g. `packages/plugins/slack`) as a
-template and `docs/how-to-onboard.md` for the full walkthrough. New external
+template and [Build plugins](docs/site/_content/plugins/writing-a-plugin.md) for the
+full walkthrough. New external
 integrations should:
 
 - Read all secrets from environment / per-user OAuth — never hardcode.

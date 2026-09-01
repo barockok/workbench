@@ -37,7 +37,7 @@ export default function Login() {
     <div className="login-shell">
       <aside className="login-art">
         <div className="meta">
-          <span>a-workbench<span className="sep"> / </span><b>v0.1</b></span>
+          <span>workbench<span className="sep"> / </span><b>v0.1</b></span>
           <span className="sep">·</span>
           <span>mcp aggregator</span>
         </div>

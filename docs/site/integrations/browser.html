@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser — workbench Docs</title>
+<meta name="description" content="The built-in headless browser an agent drives directly — navigate, click, type, read, screenshot, and hand control to a human.">
+<meta property="og:title" content="Browser — workbench">
+<meta property="og:description" content="The built-in headless browser an agent drives directly — navigate, click, type, read, screenshot, and hand control to a human.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab active" href="index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">All integrations</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Atlassian</p><ul><li><a class="" href="atlassian-jira.html">Jira</a></li><li><a class="" href="atlassian-confluence.html">Confluence</a></li><li><a class="" href="atlassian-bitbucket.html">Bitbucket</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Code hosting</p><ul><li><a class="" href="github.html">GitHub</a></li><li><a class="" href="gitlab.html">GitLab</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Google Workspace</p><ul><li><a class="" href="google.html">Setup &amp; scopes</a></li><li><a class="" href="google-tools.html">Gmail, Drive, Docs &amp; more</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Other services</p><ul><li><a class="" href="slack.html">Slack</a></li><li><a class="" href="asana.html">Asana</a></li><li><a class="" href="newrelic.html">New Relic</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Built in</p><ul><li><a class="active" href="browser.html">Browser</a></li><li><a class="" href="jots.html">Jots</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Built in</p>
+          <h1>Browser</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">The built-in headless browser an agent drives directly — navigate, click, type, read, screenshot, and hand control to a human.</p>
+      <p><code>browser</code> is an internal plugin. It lives in the server&#39;s own source rather than under <code>PLUGINS_DIR</code>, and it declares <code>auth: { type: &quot;none&quot; }</code>. It is therefore always connected and needs no setup. Its nine tools drive a warm headless Chromium session that belongs to one user.</p>
+<p>It is internal on purpose. The handlers reach straight into the browser-session layer. Keeping that out of the plugin context means a third-party plugin can never drive a user&#39;s logged-in browser and steal their cookies. The name <code>browser</code> is reserved, and a plugin directory using it is refused at load time.</p>
+<h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Plugin id</td><td><code>browser</code></td></tr>
+<tr><td>Auth</td><td>None (internal, always connected)</td></tr>
+<tr><td>Tools</td><td>9</td></tr>
+<tr><td>Session lifetime</td><td><code>BROWSER_SESSION_TTL_SECONDS</code>, default 300 seconds idle</td></tr>
+</tbody></table></div>
+<h2 id="the-per-user-session-model">The per-user session model<a class="anchor" href="#the-per-user-session-model" aria-label="Link to The per-user session model">#</a></h2>
+<p>There is exactly one browser per user, backed by a persistent profile on disk. Every action tool opens the session if it is not already running, and refreshes its idle timer. A sequence of calls therefore reuses one warm browser instead of paying the startup cost each time.</p>
+<p>The cookie-auth capture flow uses that same browser. The two <strong>share</strong> it rather than excluding each other. Capture and the <code>browser_*</code> tools resolve the same warm session, so a capture can start while an agent is driving. <code>browser_close</code> ends the process but keeps the profile, so the logged-in state survives.</p>
+<p>Because the profile persists, sites the user logged into stay logged in across sessions. The server kills an idle session after <code>BROWSER_SESSION_TTL_SECONDS</code>. The profile itself is separately subject to <code>BROWSER_PROFILE_TTL_DAYS</code>.</p>
+<h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>browser_navigate</code></td><td>Navigate to a URL; returns the final URL and page title</td></tr>
+<tr><td><code>browser_read_text</code></td><td>Read the page&#39;s visible text (<code>document.body.innerText</code>)</td></tr>
+<tr><td><code>browser_screenshot</code></td><td>Capture the current viewport as a downscaled image</td></tr>
+<tr><td><code>browser_click</code></td><td>Click at viewport coordinates <code>(x, y)</code> with left, right, or middle button</td></tr>
+<tr><td><code>browser_type</code></td><td>Type text into the focused element</td></tr>
+<tr><td><code>browser_key</code></td><td>Press a key or chord — <code>Enter</code>, <code>Tab</code>, <code>ctrl+a</code>, <code>ArrowDown</code></td></tr>
+<tr><td><code>browser_scroll</code></td><td>Scroll up, down, left, or right; default 600 pixels</td></tr>
+<tr><td><code>browser_close</code></td><td>Close the session, keep the profile</td></tr>
+<tr><td><code>browser_live_url</code></td><td>Mint a short-lived URL for a human to watch and take over</td></tr>
+</tbody></table></div>
+<h2 id="screenshots-and-the-token-budget">Screenshots and the token budget<a class="anchor" href="#screenshots-and-the-token-budget" aria-label="Link to Screenshots and the token budget">#</a></h2>
+<p>Screenshots cost vision tokens, and a browsing loop can burn a context window on pictures of pages that have not changed. Two mechanisms keep that in check.</p>
+<p><strong>Downscaling.</strong> Shots are JPEG by default at quality 60, scaled so the width does not exceed <code>maxWidth</code> — default <strong>1000</strong> pixels. <code>format</code>, <code>quality</code> (1–100), and <code>maxWidth</code> are all overridable per call.</p>
+<p><strong>The unchanged short-circuit.</strong> The server hashes each capture and compares it to the previous one for that session. If the pixels are identical it returns <code>{ unchanged: true }</code> and no image at all. A screenshot after an action that did nothing costs almost nothing.</p>
+<p>The cheaper habit is to prefer <code>browser_read_text</code> for text-heavy pages, forms, and reading, and reserve <code>browser_screenshot</code> for cases where layout or pixels actually matter. <code>browser_read_text</code> truncates at 20,000 characters by default and tells you whether it truncated.</p>
+<h2 id="human-takeover">Human takeover<a class="anchor" href="#human-takeover" aria-label="Link to Human takeover">#</a></h2>
+<p><code>browser_live_url</code> returns a URL into the portal&#39;s browser canvas — <code>${PORTAL_URL}/browser?t=&lt;token&gt;</code> — carrying a signed token whose lifetime is <code>CONNECT_TTL_SECONDS</code> (default 600 seconds).</p>
+<p>Opening it attaches a live view of the <em>same</em> session the agent is driving. A person can take over by hand to solve a CAPTCHA, complete an SSO prompt, or click through a consent screen. They can then leave the page. The agent&#39;s next tool call continues in the browser they just used. This is the escape hatch for anything an agent cannot or should not do itself.</p>
+<p>The live-view connection is authorized on its first WebSocket frame, not through the URL, and the browser canvas only accepts connections from allowed origins.</p>
+<h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`browser_navigate` accepts only http and https, and does not block private addresses</span></div><div class="callout-body"><p>The URL is validated as a URL and then explicitly required to start with <code>http://</code> or <code>https://</code>, which rules out <code>file://</code> and other schemes. There is no private-IP or metadata-endpoint block, so a session can reach anything on the network the server sits on. Treat a URL an agent picked up from untrusted page content as untrusted, and run the server where that reachability is acceptable.</p>
+</div></div>
+
+<p>Clicks are coordinates, not selectors. Take a screenshot to find a target, then click it — and click a field before <code>browser_type</code>, which types into whatever currently has focus.</p>
+<p><code>browser_close</code> is worth calling when the agent is done. It ends the Chromium process early rather than waiting for the idle reaper, and the profile is untouched.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="newrelic.html"><span class="pn-dir">Previous</span><span class="pn-label">New Relic</span></a><a class="pn pn-next" href="jots.html"><span class="pn-dir">Next</span><span class="pn-label">Jots</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/integrations/browser.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#the-per-user-session-model">The per-user session model</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#screenshots-and-the-token-budget">Screenshots and the token budget</a></li><li class="toc-h2"><a href="#human-takeover">Human takeover</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

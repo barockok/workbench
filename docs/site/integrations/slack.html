@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slack — workbench Docs</title>
+<meta name="description" content="Connect Slack so an agent can post, search, read history, and handle files as the connecting user.">
+<meta property="og:title" content="Slack — workbench">
+<meta property="og:description" content="Connect Slack so an agent can post, search, read history, and handle files as the connecting user.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab active" href="index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Overview</p><ul><li><a class="" href="index.html">All integrations</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Atlassian</p><ul><li><a class="" href="atlassian-jira.html">Jira</a></li><li><a class="" href="atlassian-confluence.html">Confluence</a></li><li><a class="" href="atlassian-bitbucket.html">Bitbucket</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Code hosting</p><ul><li><a class="" href="github.html">GitHub</a></li><li><a class="" href="gitlab.html">GitLab</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Google Workspace</p><ul><li><a class="" href="google.html">Setup &amp; scopes</a></li><li><a class="" href="google-tools.html">Gmail, Drive, Docs &amp; more</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Other services</p><ul><li><a class="active" href="slack.html">Slack</a></li><li><a class="" href="asana.html">Asana</a></li><li><a class="" href="newrelic.html">New Relic</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Built in</p><ul><li><a class="" href="browser.html">Browser</a></li><li><a class="" href="jots.html">Jots</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Other services</p>
+          <h1>Slack</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Connect Slack so an agent can post, search, read history, and handle files as the connecting user.</p>
+      <p>The Slack integration acts <strong>as the person who connected it</strong>, not as a bot. Messages it posts show that user&#39;s name. <code>slack_search_all</code> searches what that user can see. Channel history covers the private channels and DMs that user belongs to. This is a deliberate choice, because several of these tools have no bot-token equivalent, and it drives the whole app setup.</p>
+<h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Plugin id</td><td><code>slack</code></td></tr>
+<tr><td>Auth</td><td>OAuth 2.0, <strong>user token</strong></td></tr>
+<tr><td>Tools</td><td>18</td></tr>
+<tr><td>Authorization URL</td><td><code>https://slack.com/oauth/v2/authorize</code></td></tr>
+<tr><td>Token URL</td><td><code>https://slack.com/api/oauth.v2.access</code></td></tr>
+<tr><td>Proxy base</td><td><code>https://slack.com/api</code></td></tr>
+</tbody></table></div>
+<p>The server sends the manifest&#39;s scopes in the <code>user_scope</code> parameter, and reads the resulting token from <code>authed_user.access_token</code> in the response.</p>
+<h2 id="set-up-the-oauth-app">Set up the OAuth app<a class="anchor" href="#set-up-the-oauth-app" aria-label="Link to Set up the OAuth app">#</a></h2>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">The console steps are Slack's UI, not this server's</span></div><div class="callout-body"><p>Menu names, labels, and page URLs below come from Slack&#39;s console and change
+without notice. If what you see differs, follow <a href="https://api.slack.com/authentication/oauth-v2" target="_blank" rel="noopener">Slack&#39;s own documentation<span class="ext" aria-hidden="true">↗</span></a> — the values this server needs (the callback URL and the scopes in the tables
+below) are unaffected.</p>
+</div></div>
+
+
+<div class="steps">
+
+<h3 id="create-the-app">Create the app<a class="anchor" href="#create-the-app" aria-label="Link to Create the app">#</a></h3>
+<p><a href="https://api.slack.com/apps" target="_blank" rel="noopener">api.slack.com/apps<span class="ext" aria-hidden="true">↗</span></a> → <strong>Create New App</strong> → <strong>From scratch</strong>. Name it and pick a development workspace.</p>
+<h3 id="add-the-redirect-url">Add the redirect URL<a class="anchor" href="#add-the-redirect-url" aria-label="Link to Add the redirect URL">#</a></h3>
+<p><strong>OAuth &amp; Permissions</strong> → <strong>Redirect URLs</strong> → <strong>Add New Redirect URL</strong>:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">https://&lt;your-workbench-host&gt;/api/auth/plugin/slack/callback</code></pre></div>
+<p>For local development add <code>http://localhost:3000/api/auth/plugin/slack/callback</code>. Save URLs.</p>
+<h3 id="add-all-16-scopes-under-user-token-scopes">Add all 16 scopes under User Token Scopes<a class="anchor" href="#add-all-16-scopes-under-user-token-scopes" aria-label="Link to Add all 16 scopes under User Token Scopes">#</a></h3>
+<p>On the same page, scroll to <strong>Scopes</strong>. There are two boxes. Put every scope from the table below in <strong>User Token Scopes</strong>. Leave <strong>Bot Token Scopes</strong> empty.</p>
+<h3 id="copy-the-credentials">Copy the credentials<a class="anchor" href="#copy-the-credentials" aria-label="Link to Copy the credentials">#</a></h3>
+<p><strong>Settings → Basic Information → App Credentials</strong>: Client ID, and Client Secret via <em>Show</em>.</p>
+<h3 id="distribute-if-others-will-connect">Distribute, if others will connect<a class="anchor" href="#distribute-if-others-will-connect" aria-label="Link to Distribute, if others will connect">#</a></h3>
+<p><strong>Settings → Manage Distribution</strong> → work through the checklist → <strong>Activate Public Distribution</strong>. Until then only your development workspace can install.</p>
+</div>
+
+
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Bot Token Scopes is the wrong box</span></div><div class="callout-body"><p>This is the failure that costs the most time. The manifest&#39;s scopes are sent as <code>user_scope</code>, so every scope below belongs in the console&#39;s <strong>User Token Scopes</strong> list. Put them in the bot list instead, and the two sets do not match. The install then fails. The error Slack returns does not name which box is at fault. <a href="https://api.slack.com/authentication/oauth-v2" target="_blank" rel="noopener">Slack&#39;s OAuth documentation<span class="ext" aria-hidden="true">↗</span></a> covers the bot/user token split.</p>
+</div></div>
+
+<h2 id="scopes">Scopes<a class="anchor" href="#scopes" aria-label="Link to Scopes">#</a></h2>
+<p>All 16 are user scopes.</p>
+<div class="table-wrap"><table><thead><tr><th>Scope</th><th>What it is for</th></tr></thead><tbody>
+<tr><td><code>chat:write</code></td><td>Post, edit, and delete messages as the user</td></tr>
+<tr><td><code>channels:read</code></td><td>List public channels</td></tr>
+<tr><td><code>channels:write</code></td><td>Join a public channel</td></tr>
+<tr><td><code>groups:read</code></td><td>List private channels the user belongs to</td></tr>
+<tr><td><code>im:read</code></td><td>List direct-message conversations</td></tr>
+<tr><td><code>mpim:read</code></td><td>List group direct messages</td></tr>
+<tr><td><code>channels:history</code></td><td>Read public channel history</td></tr>
+<tr><td><code>groups:history</code></td><td>Read private channel history</td></tr>
+<tr><td><code>im:history</code></td><td>Read direct-message history</td></tr>
+<tr><td><code>mpim:history</code></td><td>Read group direct-message history</td></tr>
+<tr><td><code>reactions:write</code></td><td>Add and remove reaction emoji</td></tr>
+<tr><td><code>users:read</code></td><td>List users and read profiles</td></tr>
+<tr><td><code>users:read.email</code></td><td>Read email addresses — needed to look a user up by email</td></tr>
+<tr><td><code>files:write</code></td><td>Upload files</td></tr>
+<tr><td><code>files:read</code></td><td>Read file metadata and download file contents</td></tr>
+<tr><td><code>search:read</code></td><td>Search messages and files</td></tr>
+</tbody></table></div>
+<p>The manifest pairs <code>users:read.email</code> with <code>users:read</code>. It requests <code>search:read</code> as a user scope, which is one of the reasons this integration uses a user token. Slack defines what each scope grants, and which are available as bot rather than user scopes. See <a href="https://api.slack.com/scopes" target="_blank" rel="noopener">Slack&#39;s scope reference<span class="ext" aria-hidden="true">↗</span></a>.</p>
+<h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">SLACK_CLIENT_ID=...
+SLACK_CLIENT_SECRET=...</code></pre></div>
+<h2 id="connect">Connect<a class="anchor" href="#connect" aria-label="Link to Connect">#</a></h2>
+<p>Portal: Connections → <strong>Connect</strong> on the Slack card → approve in Slack.</p>
+<p>Agent:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">connect({ integration: &quot;slack&quot; })
+wait_for_connection({ connectionId })</code></pre></div>
+<h2 id="tools">Tools<a class="anchor" href="#tools" aria-label="Link to Tools">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>slack_send_message</code></td><td>Post to a channel, or reply in a thread with <code>threadTs</code></td></tr>
+<tr><td><code>slack_update_message</code></td><td>Edit an existing message by channel and <code>ts</code></td></tr>
+<tr><td><code>slack_delete_message</code></td><td>Permanently delete a message — irreversible</td></tr>
+<tr><td><code>slack_send_dm</code></td><td>Send a direct message to a user</td></tr>
+<tr><td><code>slack_list_channels</code></td><td>List channels</td></tr>
+<tr><td><code>slack_join_channel</code></td><td>Join a public channel so its history is readable</td></tr>
+<tr><td><code>slack_get_channel_history</code></td><td>Read a channel&#39;s messages</td></tr>
+<tr><td><code>slack_get_thread_replies</code></td><td>Read the replies in a thread</td></tr>
+<tr><td><code>slack_get_permalink</code></td><td>Get a shareable permalink for a message</td></tr>
+<tr><td><code>slack_add_reaction</code></td><td>Add a reaction emoji</td></tr>
+<tr><td><code>slack_remove_reaction</code></td><td>Remove a reaction you added</td></tr>
+<tr><td><code>slack_search_all</code></td><td>Search messages and files across the workspace</td></tr>
+<tr><td><code>slack_lookup_user</code></td><td>Exact-email lookup returning a slim user</td></tr>
+<tr><td><code>slack_find_users</code></td><td>Fuzzy find by name or email, falling back to substring match</td></tr>
+<tr><td><code>slack_list_users</code></td><td>Page through workspace members, bots and deactivated included</td></tr>
+<tr><td><code>slack_upload_file</code></td><td>Upload a file to a channel</td></tr>
+<tr><td><code>slack_get_file_info</code></td><td>File metadata, including the download URL</td></tr>
+<tr><td><code>slack_download_file</code></td><td>Download a file by its private URL</td></tr>
+</tbody></table></div>
+<h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`slack_download_file` guards its own credential</span></div><div class="callout-body"><p>Slack file URLs redirect to a presigned CDN host. The tool checks that the URL is https on <code>slack.com</code>, <code>files.slack.com</code>, or a <code>*.slack.com</code> subdomain <strong>before</strong> it attaches the token. It then follows the redirect chain itself, at most five requests in total, so at most four redirects. It drops the bearer the moment the host stops being Slack, so the token cannot be redirected off-platform. It rejects non-https redirects outright.</p>
+<p>It also treats a <code>text/html</code> response as <code>not_authed_or_not_found</code> rather than returning the bytes. Slack answers an unauthorized file request with <strong>200 and a login page</strong>, not a 403. A status-code check alone would therefore hand you a login page as if it were your file. If you see that error, the usual cause is a missing <code>files:read</code> grant.</p>
+</div></div>
+
+<p><code>slack_delete_message</code> is marked destructive in its own description and cannot be undone. Keep the <code>ts</code> from <code>slack_send_message</code> if you may later edit or delete what you posted.</p>
+<p>Slack&#39;s Web API answers errors with HTTP 200 and <code>{ &quot;ok&quot;: false, &quot;error&quot;: &quot;...&quot; }</code>. The server relies on this when it handles the token exchange, and the tools pass the envelope straight through. A tool result that looks successful but carries <code>ok:false</code> is a failure. Read the <code>error</code> field.</p>
+<p>Reading a channel the user has not joined commonly returns <code>not_in_channel</code> — <code>slack_join_channel</code> fixes it for public channels.</p>
+<p><code>slack_upload_file</code> uses Slack&#39;s external upload flow: <code>files.getUploadURLExternal</code>, then <code>files.completeUploadExternal</code>. It does not use <code>files.upload</code>, which was not usable from a newly created app when the integration was built. See <a href="https://api.slack.com/messaging/files" target="_blank" rel="noopener">Slack&#39;s file-upload documentation<span class="ext" aria-hidden="true">↗</span></a> for the current state of those methods.</p>
+<p>Adding a scope after users have connected requires each of them to reconnect. Slack does not upgrade an existing grant.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="google-tools.html"><span class="pn-dir">Previous</span><span class="pn-label">Gmail, Drive, Docs &amp; more</span></a><a class="pn pn-next" href="asana.html"><span class="pn-dir">Next</span><span class="pn-label">Asana</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/integrations/slack.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#at-a-glance">At a glance</a></li><li class="toc-h2"><a href="#set-up-the-oauth-app">Set up the OAuth app</a></li><li class="toc-h3"><a href="#create-the-app">Create the app</a></li><li class="toc-h3"><a href="#add-the-redirect-url">Add the redirect URL</a></li><li class="toc-h3"><a href="#add-all-16-scopes-under-user-token-scopes">Add all 16 scopes under User Token Scopes</a></li><li class="toc-h3"><a href="#copy-the-credentials">Copy the credentials</a></li><li class="toc-h3"><a href="#distribute-if-others-will-connect">Distribute, if others will connect</a></li><li class="toc-h2"><a href="#scopes">Scopes</a></li><li class="toc-h2"><a href="#server-configuration">Server configuration</a></li><li class="toc-h2"><a href="#connect">Connect</a></li><li class="toc-h2"><a href="#tools">Tools</a></li><li class="toc-h2"><a href="#notes-and-gotchas">Notes and gotchas</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

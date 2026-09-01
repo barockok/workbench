@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raw API calls with curl_session — workbench Docs</title>
+<meta name="description" content="Mint a short-lived proxy token that forwards arbitrary HTTP requests to a provider's API with your credential injected.">
+<meta property="og:title" content="Raw API calls with curl_session — workbench">
+<meta property="og:description" content="Mint a short-lived proxy token that forwards arbitrary HTTP requests to a provider's API with your credential injected.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab active" href="discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Working with tools</p><ul><li><a class="" href="discovering-tools.html">Discovering tools</a></li><li><a class="" href="executing-tools.html">Executing tools</a></li><li><a class="active" href="curl-session.html">Raw API calls</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Authentication</p><ul><li><a class="" href="oauth-connections.html">OAuth connections</a></li><li><a class="" href="api-key-connections.html">API-key connections</a></li><li><a class="" href="browser-sessions.html">Browser sessions</a></li><li><a class="" href="self-hosted-instances.html">Self-hosted instances</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Operating</p><ul><li><a class="" href="jots.html">Jots file store</a></li><li><a class="" href="troubleshooting.html">Troubleshooting</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Working with tools</p>
+          <h1>Raw API calls with curl_session</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Mint a short-lived proxy token that forwards arbitrary HTTP requests to a provider's API with your credential injected.</p>
+      <p>The tool catalog is wide but not complete. GitHub alone has hundreds of endpoints, and the
+plugin wraps 28 of them. When the endpoint you need has no tool, <code>curl_session</code> is the
+escape hatch. It mints a 15-minute token that lets you send <strong>any</strong> HTTP request to that
+provider&#39;s API through the workbench, with your real credential attached server-side.</p>
+<p>You never see the credential. The proxy injects it.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">This tool is deliberately marked HIGH RISK in its own description</span></div><div class="callout-body"><p><code>curl_session</code> grants arbitrary GET/POST/PUT/PATCH/DELETE against the named
+integrations, including destructive writes. Anything reachable with the user&#39;s
+credential is reachable through the minted token. The tool description instructs the
+calling agent to name the integrations and the intended action, and to wait for
+explicit user approval, before invoking it. It also instructs the agent not to mint
+speculatively or as a default first step. An MCP client that surfaces tool
+descriptions shows this to the user. One that does not, does not. As the operator, treat a minted curl session as
+a consent event worth auditing.</p>
+</div></div>
+
+<h2 id="when-to-reach-for-it">When to reach for it<a class="anchor" href="#when-to-reach-for-it" aria-label="Link to When to reach for it">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Situation</th><th>Use</th></tr></thead><tbody>
+<tr><td>A tool exists for the operation</td><td><a href="executing-tools.html"><code>execute_tools</code></a> — validated args, slim responses, audit trail per tool</td></tr>
+<tr><td>No tool wraps the endpoint</td><td><code>curl_session</code></td></tr>
+<tr><td>You want a permanent capability</td><td>Write a plugin tool instead</td></tr>
+</tbody></table></div>
+<p>Prefer a tool where one exists. Tool calls get argument validation, per-tool audit
+entries, and per-tool metrics. A proxied request gets an HTTP request log and nothing
+tool-shaped.</p>
+<h2 id="minting-a-session">Minting a session<a class="anchor" href="#minting-a-session" aria-label="Link to Minting a session">#</a></h2>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/call&quot;,&quot;params&quot;:{
+  &quot;name&quot;: &quot;curl_session&quot;,
+  &quot;arguments&quot;: { &quot;integrations&quot;: [&quot;github&quot;] }
+}}</code></pre></div>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;token&quot;: &quot;eyJhbGciOiJIUzI1NiJ9…&quot;,
+  &quot;expiresIn&quot;: 900,
+  &quot;proxyBaseUrl&quot;: &quot;https://workbench.example.com/c&quot;,
+  &quot;usage&quot;: &quot;Send requests to https://workbench.example.com/c/&lt;integration&gt;/&lt;path&gt; with Authorization: Bearer &lt;token&gt;&quot;
+}</code></pre></div>
+<p><code>integrations</code> is required and must have at least one entry. Multiple integrations in
+one session are allowed, and the token then covers all of them.</p>
+<p>Validation is <strong>all-or-nothing</strong>. Every requested name is checked, the failures are
+collected, and if there is even one the call returns an error and mints nothing:</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;error&quot;: &quot;gitlab: not connected; httpbin-cookie: curl proxy not enabled&quot; }</code></pre></div>
+<p>The three per-name reasons are <code>integration not found</code>, <code>curl proxy not enabled</code>, and
+<code>not connected</code>.</p>
+<h3 id="the-token">The token<a class="anchor" href="#the-token" aria-label="Link to The token">#</a></h3>
+<ul>
+<li>A JWT with audience <code>workbench-curl</code>, carrying the user id and the list of allowed
+integrations.</li>
+<li>TTL is <strong>900 seconds</strong>, fixed at mint. It is not configurable, and there is no refresh
+or revoke — you mint a new one.</li>
+<li>It is <em>only</em> accepted at <code>/c/:integration/*</code>. It does not authenticate <code>/mcp</code> or
+<code>/api/*</code>.</li>
+</ul>
+<h2 id="the-url-shape">The URL shape<a class="anchor" href="#the-url-shape" aria-label="Link to The URL shape">#</a></h2>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">&lt;SERVER_PUBLIC_URL&gt;/c/&lt;integration&gt;/&lt;path&gt;&lt;?query&gt;</code></pre></div>
+<p>The path tail after the integration name is appended to the resolved base URL, and the
+original query string is preserved verbatim.</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">TOKEN='eyJhbGciOiJIUzI1NiJ9…'
+
+# GET https://api.github.com/repos/acme/demo-repo/labels?per_page=100
+curl -s &quot;https://workbench.example.com/c/github/repos/acme/demo-repo/labels?per_page=100&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot;
+
+# POST with a JSON body — bytes are forwarded exactly as sent
+curl -s -X POST &quot;https://workbench.example.com/c/github/repos/acme/demo-repo/labels&quot; \
+  -H &quot;Authorization: Bearer $TOKEN&quot; \
+  -H 'Content-Type: application/json' \
+  -d '{&quot;name&quot;:&quot;needs-triage&quot;,&quot;color&quot;:&quot;ededed&quot;}'</code></pre></div>
+<p><code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code>, <code>HEAD</code> and <code>OPTIONS</code> are routed. The response
+comes back with the upstream status and headers, and the body is <strong>streamed</strong> — nothing
+is buffered, so large downloads work.</p>
+<h2 id="how-the-credential-is-injected">How the credential is injected<a class="anchor" href="#how-the-credential-is-injected" aria-label="Link to How the credential is injected">#</a></h2>
+<p>Your <code>Authorization</code> header never reaches the provider. The proxy strips it — along with
+the usual hop-by-hop headers (<code>host</code>, <code>connection</code>, <code>transfer-encoding</code>, <code>te</code>, <code>trailer</code>,
+<code>keep-alive</code>, <code>proxy-authorization</code>, <code>upgrade</code>, and <code>content-length</code>, which is
+recomputed) — and then sends the request through the same <code>ctx.http()</code> that plugin tools
+use. That is where the real credential goes on, according to the integration&#39;s declared
+auth type:</p>
+<div class="table-wrap"><table><thead><tr><th>Auth type</th><th>What is attached</th></tr></thead><tbody>
+<tr><td><code>oauth2</code></td><td><code>Authorization: Bearer &lt;access token&gt;</code>, refreshed first if it expires within 30s</td></tr>
+<tr><td><code>apikey</code></td><td>The manifest&#39;s <code>headerName</code> set to the stored key <strong>verbatim</strong> — no <code>Bearer</code> prefix — after the <code>allowedHosts</code> check</td></tr>
+<tr><td><code>cookie</code></td><td>A <code>Cookie</code> header built from the unexpired cookies scoped to the target host, with redirects disabled</td></tr>
+</tbody></table></div>
+<p>Every other header you send is forwarded as-is, so <code>Accept</code>, <code>Content-Type</code>, and
+provider-specific headers all work.</p>
+<p>Because the credential is attached by the same layer plugin tools use, an expired OAuth
+token is refreshed and re-stored transparently on a proxied call, exactly as it would be
+on a tool call.</p>
+<h2 id="how-the-target-base-is-resolved">How the target base is resolved<a class="anchor" href="#how-the-target-base-is-resolved" aria-label="Link to How the target base is resolved">#</a></h2>
+<p>An integration is proxy-capable only if its manifest declares a <code>proxy</code> block. Fifteen
+of the sixteen shipped plugins do. <code>httpbin-cookie</code> does not.</p>
+<h3 id="static-baseurl">Static <code>baseUrl</code><a class="anchor" href="#static-baseurl" aria-label="Link to Static baseUrl">#</a></h3>
+<p>Most integrations pin one base:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">proxy: { baseUrl: &quot;https://api.github.com&quot; }</code></pre></div>
+<p>A trailing slash is stripped, then <code>/&lt;path&gt;</code> is appended.</p>
+<h3 id="resolver-quotinstance-urlquot"><code>resolver: &quot;instance-url&quot;</code><a class="anchor" href="#resolver-quotinstance-urlquot" aria-label="Link to resolver: &amp;quot;instance-url&amp;quot;">#</a></h3>
+<p>For integrations that can point at a self-hosted deployment. The base comes from the
+per-connection <code>instanceUrl</code> stored at connect time, plus the manifest&#39;s <code>pathPrefix</code>.
+GitLab:</p>
+<div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">proxy: { resolver: &quot;instance-url&quot;, pathPrefix: &quot;/api/v4&quot; }</code></pre></div>
+<p>A connection to <code>https://gitlab.example.com</code> makes
+<code>/c/gitlab/projects</code> resolve to <code>https://gitlab.example.com/api/v4/projects</code>. If the
+connection has no <code>instanceUrl</code>, the request fails with 502 and
+<code>No instanceUrl in connection config for gitlab</code>. See
+<a href="self-hosted-instances.html">Self-hosted instances</a>.</p>
+<h3 id="resolver-quotnewrelic-regionquot"><code>resolver: &quot;newrelic-region&quot;</code><a class="anchor" href="#resolver-quotnewrelic-regionquot" aria-label="Link to resolver: &amp;quot;newrelic-region&amp;quot;">#</a></h3>
+<p>Region-scoped NerdGraph. The per-connection <code>region</code> config decides:</p>
+<div class="table-wrap"><table><thead><tr><th><code>region</code></th><th>Base</th></tr></thead><tbody>
+<tr><td><code>EU</code></td><td><code>https://api.eu.newrelic.com/graphql</code></td></tr>
+<tr><td>anything else (including unset)</td><td><code>https://api.newrelic.com/graphql</code></td></tr>
+</tbody></table></div>
+<h3 id="the-atlassian-cloud-id-placeholder">The Atlassian <code>cloud-id</code> placeholder<a class="anchor" href="#the-atlassian-cloud-id-placeholder" aria-label="Link to The Atlassian cloud-id placeholder">#</a></h3>
+<p>Jira and Confluence declare bases containing the literal segment <code>cloud-id</code>:</p>
+<div class="code" data-lang="text"><div class="code-bar"><span class="code-lang">text</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-plaintext">https://api.atlassian.com/ex/jira/cloud-id
+https://api.atlassian.com/ex/confluence/cloud-id/wiki</code></pre></div>
+<p>That is not a variable you substitute. <code>ctx.http()</code> recognises the pattern and swaps in
+the real cloud id for your connection, resolved once from Atlassian&#39;s
+<code>accessible-resources</code> endpoint and cached per user and product for the process
+lifetime. Send <code>/c/atlassian-jira/rest/api/3/myself</code> and the placeholder is handled for
+you.</p>
+<h2 id="failure-modes">Failure modes<a class="anchor" href="#failure-modes" aria-label="Link to Failure modes">#</a></h2>
+<p>Returned by the proxy itself, in the order they are checked:</p>
+<p>Every one of these is a JSON object with a single <code>error</code> key — e.g.
+<code>{&quot;error&quot;:&quot;Invalid or expired curl session token&quot;}</code>. The table gives the <code>error</code> string.</p>
+<div class="table-wrap"><table><thead><tr><th>Status</th><th><code>error</code></th><th>Meaning</th></tr></thead><tbody>
+<tr><td>401</td><td><code>Authorization: Bearer &lt;curl-session-token&gt; required</code></td><td>No bearer header</td></tr>
+<tr><td>401</td><td><code>Invalid or expired curl session token</code></td><td>Bad signature, wrong audience, or past its 15 minutes</td></tr>
+<tr><td>403</td><td><code>Integration &quot;x&quot; is not in this curl session</code></td><td>Valid token, but that integration was not in <code>integrations</code> at mint</td></tr>
+<tr><td>400</td><td><code>Integration &quot;x&quot; does not support curl proxy</code></td><td>The manifest has no <code>proxy</code> block</td></tr>
+<tr><td>502</td><td><code>Cannot resolve proxy base URL: &lt;reason&gt;</code></td><td>A dynamic resolver had nothing to work with</td></tr>
+<tr><td>502</td><td><code>Upstream request failed: &lt;reason&gt;</code></td><td>The outbound request threw — DNS, TLS, a host the credential layer refused</td></tr>
+</tbody></table></div>
+<p>Anything else you see is the upstream provider&#39;s own response, passed through unchanged.</p>
+<h2 id="operator-notes">Operator notes<a class="anchor" href="#operator-notes" aria-label="Link to Operator notes">#</a></h2>
+<p>The proxy sits behind the same server as <code>/mcp</code> and the portal, and it inherits the same
+credential store. Two things follow:</p>
+<ul>
+<li>A minted token is a bearer credential for the user&#39;s full API access to the named
+integrations, for 15 minutes, with no revocation path. It is worth treating leaked
+curl tokens the way you would treat a leaked provider token — the mitigation is the
+short TTL.</li>
+<li>Proxied requests appear in the HTTP request metrics
+(<code>workbench_http_requests_total</code>, labelled by route) and in the Fastify request log,
+but produce <strong>no <code>audit_log</code> entries</strong> — the audit trail records tool executions, and
+no tool ran. The mint is not audited either: meta-tool calls do not write audit rows.
+If you need per-request provenance for an integration, a plugin tool is the right
+shape, not the proxy.</li>
+</ul>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="executing-tools.html"><span class="pn-dir">Previous</span><span class="pn-label">Executing tools</span></a><a class="pn pn-next" href="oauth-connections.html"><span class="pn-dir">Next</span><span class="pn-label">OAuth connections</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/guides/curl-session.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#when-to-reach-for-it">When to reach for it</a></li><li class="toc-h2"><a href="#minting-a-session">Minting a session</a></li><li class="toc-h3"><a href="#the-token">The token</a></li><li class="toc-h2"><a href="#the-url-shape">The URL shape</a></li><li class="toc-h2"><a href="#how-the-credential-is-injected">How the credential is injected</a></li><li class="toc-h2"><a href="#how-the-target-base-is-resolved">How the target base is resolved</a></li><li class="toc-h3"><a href="#static-baseurl">Static baseUrl</a></li><li class="toc-h3"><a href="#resolver-quotinstance-urlquot">resolver: &amp;quot;instance-url&amp;quot;</a></li><li class="toc-h3"><a href="#resolver-quotnewrelic-regionquot">resolver: &amp;quot;newrelic-region&amp;quot;</a></li><li class="toc-h3"><a href="#the-atlassian-cloud-id-placeholder">The Atlassian cloud-id placeholder</a></li><li class="toc-h2"><a href="#failure-modes">Failure modes</a></li><li class="toc-h2"><a href="#operator-notes">Operator notes</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tool catalog — workbench Docs</title>
+<meta name="description" content="Every tool a stock install loads — 178 plugin tools across 16 integrations, plus 12 built-in tools.">
+<meta property="og:title" content="Tool catalog — workbench">
+<meta property="og:description" content="Every tool a stock install loads — 178 plugin tools across 16 integrations, plus 12 built-in tools.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab active" href="meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">API</p><ul><li><a class="" href="meta-tools.html">MCP meta-tools</a></li><li><a class="" href="mcp-endpoint.html">MCP endpoint</a></li><li><a class="" href="http-api.html">HTTP API</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Configuration</p><ul><li><a class="" href="environment.html">Environment variables</a></li><li><a class="" href="database-schema.html">Database schema</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Project</p><ul><li><a class="active" href="tool-catalog.html">Tool catalog</a></li><li><a class="" href="contributing.html">Contributing</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Project</p>
+          <h1>Tool catalog</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Every tool a stock install loads — 178 plugin tools across 16 integrations, plus 12 built-in tools.</p>
+      <p>A stock install registers <strong>190 tools</strong>: 178 from the 16 built-in plugins, plus 9
+browser tools and 3 jots tools from the two internal plugins.</p>
+<p>None of them appear in MCP <code>tools/list</code> — that returns only the
+<a href="meta-tools.html">nine meta-tools</a>. Find a tool here or with <code>search_tools</code>, fetch its
+arguments with <code>get_tool_schema</code>, and run it with <code>execute_tools</code>.</p>
+<div class="table-wrap"><table><thead><tr><th>Integration</th><th>Auth</th><th>Curl proxy</th><th>Tools</th></tr></thead><tbody>
+<tr><td><a href="../integrations/asana.html"><code>asana</code></a></td><td>oauth2</td><td>yes</td><td>8</td></tr>
+<tr><td><a href="../integrations/atlassian-bitbucket.html"><code>atlassian-bitbucket</code></a></td><td>oauth2</td><td>yes</td><td>20</td></tr>
+<tr><td><a href="../integrations/atlassian-confluence.html"><code>atlassian-confluence</code></a></td><td>oauth2</td><td>yes</td><td>6</td></tr>
+<tr><td><a href="../integrations/atlassian-jira.html"><code>atlassian-jira</code></a></td><td>oauth2</td><td>yes</td><td>12</td></tr>
+<tr><td><a href="../integrations/github.html"><code>github</code></a></td><td>oauth2</td><td>yes</td><td>28</td></tr>
+<tr><td><a href="../integrations/gitlab.html"><code>gitlab</code></a></td><td>oauth2 + instance</td><td>yes</td><td>31</td></tr>
+<tr><td><code>google-calendar</code></td><td>oauth2</td><td>yes</td><td>7</td></tr>
+<tr><td><code>google-docs</code></td><td>oauth2</td><td>yes</td><td>5</td></tr>
+<tr><td><code>google-drive</code></td><td>oauth2</td><td>yes</td><td>8</td></tr>
+<tr><td><code>google-gemini</code></td><td>oauth2</td><td>yes</td><td>1</td></tr>
+<tr><td><code>google-gmail</code></td><td>oauth2</td><td>yes</td><td>8</td></tr>
+<tr><td><code>google-sheets</code></td><td>oauth2</td><td>yes</td><td>5</td></tr>
+<tr><td><code>google-slides</code></td><td>oauth2</td><td>yes</td><td>5</td></tr>
+<tr><td><code>httpbin-cookie</code></td><td>cookie</td><td>no</td><td>3</td></tr>
+<tr><td><a href="../integrations/newrelic.html"><code>newrelic</code></a></td><td>apikey</td><td>yes</td><td>13</td></tr>
+<tr><td><a href="../integrations/slack.html"><code>slack</code></a></td><td>oauth2</td><td>yes</td><td>18</td></tr>
+<tr><td><a href="../integrations/browser.html"><code>browser</code></a></td><td>none (internal)</td><td>no</td><td>9</td></tr>
+<tr><td><a href="../integrations/jots.html"><code>jots</code></a></td><td>none (internal)</td><td>no</td><td>3</td></tr>
+</tbody></table></div>
+<p>Tool names are a flat global namespace across every plugin, so a later-loaded plugin
+silently wins a name collision. Prefix your own tools with your integration name.</p>
+<h2 id="asana">asana<a class="anchor" href="#asana" aria-label="Link to asana">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>asana_create_task</code></td><td>Create a task in a project; returns its gid</td></tr>
+<tr><td><code>asana_get_task</code></td><td>Read one task by gid</td></tr>
+<tr><td><code>asana_update_task</code></td><td>Update fields; <code>completed: true</code> is how you close a task</td></tr>
+<tr><td><code>asana_add_comment</code></td><td>Add a story (comment) to a task</td></tr>
+<tr><td><code>asana_list_tasks</code></td><td>Slim task rows for a project</td></tr>
+<tr><td><code>asana_list_projects</code></td><td>Slim project rows</td></tr>
+<tr><td><code>asana_list_teams</code></td><td>Slim team rows for an organization</td></tr>
+<tr><td><code>asana_search_users</code></td><td>Resolve user gids for assignment</td></tr>
+</tbody></table></div>
+<h2 id="atlassian-bitbucket">atlassian-bitbucket<a class="anchor" href="#atlassian-bitbucket" aria-label="Link to atlassian-bitbucket">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>bitbucket_list_repos</code></td><td>Slim repo rows for a workspace</td></tr>
+<tr><td><code>bitbucket_get_repo</code></td><td>One repo plus its https clone URL</td></tr>
+<tr><td><code>bitbucket_create_pr</code></td><td>Open a PR; upserts an existing PR from the same source branch, and filters the author out of reviewers</td></tr>
+<tr><td><code>bitbucket_list_prs</code></td><td>Slim PR rows, <code>OPEN</code> by default</td></tr>
+<tr><td><code>bitbucket_get_pr</code></td><td>One PR including reviewer approval status</td></tr>
+<tr><td><code>bitbucket_get_pr_diff</code></td><td>Diffstat rows, or the full unified diff</td></tr>
+<tr><td><code>bitbucket_list_pr_comments</code></td><td>PR comments including inline <code>{path, line}</code></td></tr>
+<tr><td><code>bitbucket_add_pr_comment</code></td><td>Add a general or inline PR comment</td></tr>
+<tr><td><code>bitbucket_approve_pr</code></td><td>Approve as the connected user</td></tr>
+<tr><td><code>bitbucket_request_changes</code></td><td>Mark the PR as changes-requested</td></tr>
+<tr><td><code>bitbucket_merge_pr</code></td><td>Merge into the destination branch — irreversible</td></tr>
+<tr><td><code>bitbucket_decline_pr</code></td><td>Close the PR without merging</td></tr>
+<tr><td><code>bitbucket_get_file</code></td><td>Raw file text at a ref</td></tr>
+<tr><td><code>bitbucket_list_pr_commits</code></td><td>Slim commit rows for a PR</td></tr>
+<tr><td><code>bitbucket_trigger_pipeline</code></td><td>Start a Pipelines run on a branch</td></tr>
+<tr><td><code>bitbucket_get_pipeline</code></td><td>Poll one pipeline run</td></tr>
+<tr><td><code>bitbucket_stop_pipeline</code></td><td>Stop a running pipeline</td></tr>
+<tr><td><code>bitbucket_get_clone_url</code></td><td>Mint a token-embedded clone URL</td></tr>
+<tr><td><code>bitbucket_list_default_reviewers</code></td><td>Reviewers that auto-attach to new PRs</td></tr>
+<tr><td><code>bitbucket_search_users</code></td><td>Resolve user UUIDs</td></tr>
+</tbody></table></div>
+<h2 id="atlassian-confluence">atlassian-confluence<a class="anchor" href="#atlassian-confluence" aria-label="Link to atlassian-confluence">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>confluence_create_page</code></td><td>Create a page in a space</td></tr>
+<tr><td><code>confluence_search_pages</code></td><td>CQL full-text search</td></tr>
+<tr><td><code>confluence_get_page</code></td><td>Page body, version, and space</td></tr>
+<tr><td><code>confluence_list_spaces</code></td><td>List spaces</td></tr>
+<tr><td><code>confluence_update_page</code></td><td>Update a page — takes the current version number</td></tr>
+<tr><td><code>confluence_delete_page</code></td><td>Move a page to the space trash</td></tr>
+</tbody></table></div>
+<h2 id="atlassian-jira">atlassian-jira<a class="anchor" href="#atlassian-jira" aria-label="Link to atlassian-jira">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>jira_create_issue</code></td><td>Create an issue</td></tr>
+<tr><td><code>jira_search_issues</code></td><td>JQL search; slim rows plus a page token</td></tr>
+<tr><td><code>jira_get_issue</code></td><td>One issue in full</td></tr>
+<tr><td><code>jira_search_users</code></td><td>Resolve account IDs</td></tr>
+<tr><td><code>jira_get_boards</code></td><td>List Agile boards</td></tr>
+<tr><td><code>jira_project_types</code></td><td>Project types, with base64 icons stripped</td></tr>
+<tr><td><code>jira_update_issue</code></td><td>Update issue fields</td></tr>
+<tr><td><code>jira_get_transitions</code></td><td>Transitions available from the current status</td></tr>
+<tr><td><code>jira_transition_issue</code></td><td>Move an issue to a new status</td></tr>
+<tr><td><code>jira_add_comment</code></td><td>Comment on an issue</td></tr>
+<tr><td><code>jira_get_comments</code></td><td>Comments, converted from ADF to plain text</td></tr>
+<tr><td><code>jira_list_projects</code></td><td>List projects</td></tr>
+</tbody></table></div>
+<h2 id="github">github<a class="anchor" href="#github" aria-label="Link to github">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>github_list_repos</code></td><td>List repositories</td></tr>
+<tr><td><code>github_get_repo</code></td><td>One repository</td></tr>
+<tr><td><code>github_list_branches</code></td><td>List branches</td></tr>
+<tr><td><code>github_list_commits</code></td><td>List commits</td></tr>
+<tr><td><code>github_list_releases</code></td><td>List releases</td></tr>
+<tr><td><code>github_get_content</code></td><td>File contents (base64 + sha) or a directory listing</td></tr>
+<tr><td><code>github_create_issue</code></td><td>Create an issue</td></tr>
+<tr><td><code>github_list_issues</code></td><td>List issues</td></tr>
+<tr><td><code>github_get_issue</code></td><td>One issue</td></tr>
+<tr><td><code>github_update_issue</code></td><td>Update an issue</td></tr>
+<tr><td><code>github_add_issue_comment</code></td><td>Comment on an issue</td></tr>
+<tr><td><code>github_create_pr</code></td><td>Open a pull request</td></tr>
+<tr><td><code>github_list_prs</code></td><td>List pull requests</td></tr>
+<tr><td><code>github_get_pr</code></td><td>One pull request</td></tr>
+<tr><td><code>github_get_pr_diff</code></td><td>The PR diff</td></tr>
+<tr><td><code>github_list_pr_comments</code></td><td>PR review comments</td></tr>
+<tr><td><code>github_add_pr_comment</code></td><td>Comment on a PR</td></tr>
+<tr><td><code>github_merge_pr</code></td><td>Merge a PR</td></tr>
+<tr><td><code>github_create_pr_review</code></td><td>Submit a review — <code>APPROVE</code>, <code>REQUEST_CHANGES</code>, or <code>COMMENT</code></td></tr>
+<tr><td><code>github_create_or_update_file</code></td><td>Commit a file directly</td></tr>
+<tr><td><code>github_search_code</code></td><td>Code search</td></tr>
+<tr><td><code>github_search_issues</code></td><td>Issue and PR search</td></tr>
+<tr><td><code>github_list_workflow_runs</code></td><td>List Actions runs</td></tr>
+<tr><td><code>github_trigger_workflow</code></td><td><code>workflow_dispatch</code> a workflow</td></tr>
+<tr><td><code>github_get_workflow_run</code></td><td>Poll one run</td></tr>
+<tr><td><code>github_rerun_workflow_run</code></td><td>Re-run a workflow run</td></tr>
+<tr><td><code>github_cancel_workflow_run</code></td><td>Cancel a running workflow</td></tr>
+<tr><td><code>github_get_clone_url</code></td><td>Mint a token-embedded clone URL</td></tr>
+</tbody></table></div>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">`github_trigger_workflow` returns no run id</span></div><div class="callout-body"><p><code>workflow_dispatch</code> answers 204 with no body. The workflow must declare
+<code>on: workflow_dispatch</code>, and you have to poll <code>github_list_workflow_runs</code> to find
+the run you started.</p>
+</div></div>
+
+<h2 id="gitlab">gitlab<a class="anchor" href="#gitlab" aria-label="Link to gitlab">#</a></h2>
+<p>Every GitLab tool builds its base URL from the connection&#39;s <code>instanceUrl</code>, defaulting
+to <code>https://gitlab.com</code> — the same tools work against a self-hosted instance.</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>gitlab_list_projects</code></td><td>List projects</td></tr>
+<tr><td><code>gitlab_get_project</code></td><td>One project</td></tr>
+<tr><td><code>gitlab_list_branches</code></td><td>List branches</td></tr>
+<tr><td><code>gitlab_list_commits</code></td><td>List commits</td></tr>
+<tr><td><code>gitlab_list_releases</code></td><td>List releases</td></tr>
+<tr><td><code>gitlab_get_file</code></td><td>Read a file at a ref</td></tr>
+<tr><td><code>gitlab_create_or_update_file</code></td><td>Commit a file directly</td></tr>
+<tr><td><code>gitlab_create_issue</code></td><td>Create an issue</td></tr>
+<tr><td><code>gitlab_list_issues</code></td><td>List issues</td></tr>
+<tr><td><code>gitlab_get_issue</code></td><td>One issue</td></tr>
+<tr><td><code>gitlab_update_issue</code></td><td>Update an issue</td></tr>
+<tr><td><code>gitlab_add_issue_comment</code></td><td>Comment on an issue</td></tr>
+<tr><td><code>gitlab_create_mr</code></td><td>Open a merge request</td></tr>
+<tr><td><code>gitlab_list_mrs</code></td><td>List merge requests</td></tr>
+<tr><td><code>gitlab_get_mr</code></td><td>One merge request</td></tr>
+<tr><td><code>gitlab_get_mr_diff</code></td><td>The MR diff</td></tr>
+<tr><td><code>gitlab_list_mr_commits</code></td><td>Commits in an MR</td></tr>
+<tr><td><code>gitlab_list_mr_comments</code></td><td>MR notes</td></tr>
+<tr><td><code>gitlab_add_mr_comment</code></td><td>Comment on an MR</td></tr>
+<tr><td><code>gitlab_approve_mr</code></td><td>Approve an MR</td></tr>
+<tr><td><code>gitlab_merge_mr</code></td><td>Merge an MR</td></tr>
+<tr><td><code>gitlab_close_mr</code></td><td>Close an MR without merging</td></tr>
+<tr><td><code>gitlab_list_pipelines</code></td><td>List pipelines</td></tr>
+<tr><td><code>gitlab_trigger_pipeline</code></td><td>Start a pipeline; <code>variables</code> is <code>[{key, value}]</code></td></tr>
+<tr><td><code>gitlab_get_pipeline</code></td><td>Poll one pipeline</td></tr>
+<tr><td><code>gitlab_retry_pipeline</code></td><td>Retry failed jobs</td></tr>
+<tr><td><code>gitlab_cancel_pipeline</code></td><td>Cancel a running pipeline</td></tr>
+<tr><td><code>gitlab_search_projects</code></td><td>Project search</td></tr>
+<tr><td><code>gitlab_search_code</code></td><td>Code search</td></tr>
+<tr><td><code>gitlab_search_issues</code></td><td>Issue search</td></tr>
+<tr><td><code>gitlab_get_clone_url</code></td><td>Mint a token-embedded clone URL</td></tr>
+</tbody></table></div>
+<h2 id="google-calendar">google-calendar<a class="anchor" href="#google-calendar" aria-label="Link to google-calendar">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>google_calendar_list_events</code></td><td>List events in a time range</td></tr>
+<tr><td><code>google_calendar_create_event</code></td><td>Create an event</td></tr>
+<tr><td><code>google_calendar_get_event</code></td><td>One event</td></tr>
+<tr><td><code>google_calendar_update_event</code></td><td>Patch an event</td></tr>
+<tr><td><code>google_calendar_delete_event</code></td><td>Delete an event</td></tr>
+<tr><td><code>google_calendar_list_calendars</code></td><td>List the user&#39;s calendars</td></tr>
+<tr><td><code>google_calendar_freebusy</code></td><td>Free/busy query across calendars</td></tr>
+</tbody></table></div>
+<h2 id="google-docs">google-docs<a class="anchor" href="#google-docs" aria-label="Link to google-docs">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>google_docs_get</code></td><td>Full document structure</td></tr>
+<tr><td><code>google_docs_get_plaintext</code></td><td>Document text only</td></tr>
+<tr><td><code>google_docs_create</code></td><td>Create a document</td></tr>
+<tr><td><code>google_docs_batch_update</code></td><td>Apply a batch of document edits</td></tr>
+<tr><td><code>google_docs_search</code></td><td>Find documents via Drive</td></tr>
+</tbody></table></div>
+<h2 id="google-drive">google-drive<a class="anchor" href="#google-drive" aria-label="Link to google-drive">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>google_drive_list</code></td><td>List files with a raw Drive <code>q</code> query</td></tr>
+<tr><td><code>google_drive_create_folder</code></td><td>Create a folder</td></tr>
+<tr><td><code>google_drive_search</code></td><td>Name and full-text search, query escaped</td></tr>
+<tr><td><code>google_drive_upload</code></td><td>Upload file content</td></tr>
+<tr><td><code>google_drive_upload_from_url</code></td><td>Fetch a URL into Drive</td></tr>
+<tr><td><code>google_drive_download</code></td><td>Download file content</td></tr>
+<tr><td><code>google_drive_trash</code></td><td>Move a file to trash</td></tr>
+<tr><td><code>google_drive_permissions</code></td><td>Update sharing permissions for a file</td></tr>
+</tbody></table></div>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">`google_drive_upload_from_url` blocks private addresses by hostname</span></div><div class="callout-body"><p>It requires https and rejects <code>localhost</code>, <code>127.*</code>, <code>10.*</code>, <code>172.16–31.*</code>,
+<code>192.168.*</code>, <code>169.254.*</code>, <code>0.0.0.0</code>, and IPv6 loopback/ULA/link-local. This is a
+string check on the hostname, so a public DNS name resolving to a private address is
+not caught.</p>
+</div></div>
+
+<h2 id="google-gemini">google-gemini<a class="anchor" href="#google-gemini" aria-label="Link to google-gemini">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>google_gemini_generate</code></td><td>Generate content with a Gemini model</td></tr>
+</tbody></table></div>
+<h2 id="google-gmail">google-gmail<a class="anchor" href="#google-gmail" aria-label="Link to google-gmail">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>google_gmail_send</code></td><td>Send a message, or reply inside a thread</td></tr>
+<tr><td><code>google_gmail_list</code></td><td>List messages</td></tr>
+<tr><td><code>google_gmail_get</code></td><td>One message, body decoded, with its <code>messageIdHeader</code></td></tr>
+<tr><td><code>google_gmail_modify</code></td><td>Change labels — mark read, archive</td></tr>
+<tr><td><code>google_gmail_profile</code></td><td>The mailbox profile</td></tr>
+<tr><td><code>google_gmail_labels</code></td><td>List labels</td></tr>
+<tr><td><code>google_gmail_threads</code></td><td>List conversation threads</td></tr>
+<tr><td><code>google_gmail_draft</code></td><td>Create a draft</td></tr>
+</tbody></table></div>
+<h2 id="google-sheets">google-sheets<a class="anchor" href="#google-sheets" aria-label="Link to google-sheets">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>google_sheets_read</code></td><td>Read a range</td></tr>
+<tr><td><code>google_sheets_write</code></td><td>Overwrite a range</td></tr>
+<tr><td><code>google_sheets_append</code></td><td>Append rows</td></tr>
+<tr><td><code>google_sheets_create</code></td><td>Create a spreadsheet</td></tr>
+<tr><td><code>google_sheets_search</code></td><td>Find spreadsheets</td></tr>
+</tbody></table></div>
+<h2 id="google-slides">google-slides<a class="anchor" href="#google-slides" aria-label="Link to google-slides">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>google_slides_get</code></td><td>Read a presentation</td></tr>
+<tr><td><code>google_slides_create</code></td><td>Create a presentation</td></tr>
+<tr><td><code>google_slides_batch_update</code></td><td>Apply a batch of slide edits</td></tr>
+<tr><td><code>google_slides_search</code></td><td>Find presentations</td></tr>
+<tr><td><code>google_slides_create_from_markdown</code></td><td>Build slides from Markdown — <code>---</code> splits slides, <code>|||</code> makes two columns</td></tr>
+</tbody></table></div>
+<h2 id="httpbin-cookie">httpbin-cookie<a class="anchor" href="#httpbin-cookie" aria-label="Link to httpbin-cookie">#</a></h2>
+<p>The reference cookie-auth plugin. It exists to exercise the browser-session capture
+path end to end, and ships no logo on purpose so the portal&#39;s fallback icon gets used.</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>httpbin_get_cookies</code></td><td>Read back the cookies the proxy sent</td></tr>
+<tr><td><code>httpbin_set_cookie</code></td><td>Set a cookie on httpbin</td></tr>
+<tr><td><code>httpbin_get_headers</code></td><td>Echo request headers — verifies <code>Cookie</code> injection</td></tr>
+</tbody></table></div>
+<h2 id="newrelic">newrelic<a class="anchor" href="#newrelic" aria-label="Link to newrelic">#</a></h2>
+<p>All thirteen go through NerdGraph. The endpoint is region-scoped from the connection&#39;s
+stored <code>region</code>.</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>newrelic_run_nrql</code></td><td>Run an NRQL query</td></tr>
+<tr><td><code>newrelic_search_entities</code></td><td>Entity search</td></tr>
+<tr><td><code>newrelic_get_dashboard</code></td><td>Read a dashboard</td></tr>
+<tr><td><code>newrelic_create_alert_policy</code></td><td>Create an alert policy</td></tr>
+<tr><td><code>newrelic_create_static_nrql_condition</code></td><td>Add a static NRQL alert condition</td></tr>
+<tr><td><code>newrelic_create_alert_notification_channel</code></td><td>Create a legacy notification channel</td></tr>
+<tr><td><code>newrelic_add_notification_channels_to_policy</code></td><td>Attach legacy channels to a policy</td></tr>
+<tr><td><code>newrelic_create_ai_notifications_destination</code></td><td>Create a notification destination</td></tr>
+<tr><td><code>newrelic_create_ai_notifications_channel</code></td><td>Create a notification channel</td></tr>
+<tr><td><code>newrelic_create_ai_workflow</code></td><td>Create a workflow linking a policy to channels</td></tr>
+<tr><td><code>newrelic_add_tags_to_entity</code></td><td>Tag an entity</td></tr>
+<tr><td><code>newrelic_add_widgets_to_dashboard_page</code></td><td>Add widgets to a dashboard page</td></tr>
+<tr><td><code>newrelic_configure_cloud_integration</code></td><td>Configure a cloud integration</td></tr>
+</tbody></table></div>
+<p>The two legacy alert-channel mutations are best-effort and were never verified against
+a live account.</p>
+<h2 id="slack">slack<a class="anchor" href="#slack" aria-label="Link to slack">#</a></h2>
+<p>Slack&#39;s scopes are <strong>user</strong> scopes, so these tools act as the connecting user, not as a
+bot.</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>slack_send_message</code></td><td>Post a message to a channel</td></tr>
+<tr><td><code>slack_update_message</code></td><td>Edit a message</td></tr>
+<tr><td><code>slack_delete_message</code></td><td>Delete a message — destructive</td></tr>
+<tr><td><code>slack_list_channels</code></td><td>List channels</td></tr>
+<tr><td><code>slack_get_channel_history</code></td><td>Read channel history</td></tr>
+<tr><td><code>slack_upload_file</code></td><td>Upload a file</td></tr>
+<tr><td><code>slack_add_reaction</code></td><td>Add an emoji reaction</td></tr>
+<tr><td><code>slack_get_thread_replies</code></td><td>Read a thread</td></tr>
+<tr><td><code>slack_lookup_user</code></td><td>Look up a user by exact email</td></tr>
+<tr><td><code>slack_send_dm</code></td><td>Send a direct message</td></tr>
+<tr><td><code>slack_search_all</code></td><td>Search messages and files</td></tr>
+<tr><td><code>slack_list_users</code></td><td>List workspace users</td></tr>
+<tr><td><code>slack_download_file</code></td><td>Download a Slack-hosted file</td></tr>
+<tr><td><code>slack_get_file_info</code></td><td>File metadata</td></tr>
+<tr><td><code>slack_remove_reaction</code></td><td>Remove a reaction</td></tr>
+<tr><td><code>slack_get_permalink</code></td><td>Permalink for a message</td></tr>
+<tr><td><code>slack_join_channel</code></td><td>Join a public channel</td></tr>
+<tr><td><code>slack_find_users</code></td><td>Fuzzy user search</td></tr>
+</tbody></table></div>
+<p><code>slack_download_file</code> needs the <code>files:read</code> scope. It validates the host before
+sending the credential and drops the Bearer the moment a redirect leaves Slack, so the
+token cannot be redirected out.</p>
+<h2 id="browser-internal">browser (internal)<a class="anchor" href="#browser-internal" aria-label="Link to browser (internal)">#</a></h2>
+<p>Nine tools driving one warm, per-user Chromium session. Always connected — this is an
+<code>auth: none</code> integration. Every action tool ensures the session exists and marks it
+active, so an idle session is reaped but a working one is not.</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>browser_navigate</code></td><td>Navigate the session. <code>http</code>/<code>https</code> only</td></tr>
+<tr><td><code>browser_screenshot</code></td><td>Downscaled JPEG of the viewport; returns <code>{ unchanged: true }</code> when pixels are identical to the last shot</td></tr>
+<tr><td><code>browser_click</code></td><td>Click at coordinates — left, right, or middle</td></tr>
+<tr><td><code>browser_type</code></td><td>Type into the focused element</td></tr>
+<tr><td><code>browser_key</code></td><td>Press a key or chord</td></tr>
+<tr><td><code>browser_scroll</code></td><td>Scroll a direction, 600px by default</td></tr>
+<tr><td><code>browser_read_text</code></td><td><code>document.body.innerText</code>, optionally truncated</td></tr>
+<tr><td><code>browser_close</code></td><td>Close the session, keep the profile</td></tr>
+<tr><td><code>browser_live_url</code></td><td>Mint a link that hands the live browser to a human</td></tr>
+</tbody></table></div>
+<p><code>browser_screenshot</code> defaults to a maximum width of 1000 pixels and clamps quality to
+1–100. <code>browser_live_url</code> returns a portal URL carrying a signed connect token, valid
+for <code>CONNECT_TTL_SECONDS</code> (600 by default).</p>
+<p><code>browser_close</code> ends the warm session and keeps the profile. There is one Chromium per
+user, shared with cookie capture rather than exclusive with it.</p>
+<h2 id="jots-internal">jots (internal)<a class="anchor" href="#jots-internal" aria-label="Link to jots (internal)">#</a></h2>
+<p>Five tools for hosting static files. Also <code>auth: none</code>.</p>
+<div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>deploy_jot</code></td><td>Returns <code>{ uploadUrl, token, expiresAt, maxBytes }</code> for a gzip-tarball upload that replaces the jot</td></tr>
+<tr><td><code>update_jot</code></td><td>Same, in patch mode: the archive is overlaid onto the live jot, plus an optional <code>delete</code> list</td></tr>
+<tr><td><code>list_jot_files</code></td><td>List a jot&#39;s files — path, bytes, updatedAt</td></tr>
+<tr><td><code>list_jots</code></td><td>List the caller&#39;s own jots — never anyone else&#39;s</td></tr>
+<tr><td><code>delete_jot</code></td><td>Delete a jot you own</td></tr>
+</tbody></table></div>
+<p><code>deploy_jot</code> rejects an invalid name (<code>INVALID_NAME</code>), <code>access: &quot;password&quot;</code> without a
+password (<code>PASSWORD_REQUIRED</code>), and a name already owned by another user
+(<code>JOT_NAME_TAKEN</code> — names are global and creator-locked). Passwords are hashed before
+the token is minted. <code>update_jot</code>, <code>list_jot_files</code>, and <code>delete_jot</code> return <code>FORBIDDEN</code>
+for another owner&#39;s jot and <code>NOT_FOUND</code> when it does not exist. <code>update_jot</code> also
+rejects a <code>delete</code> entry that escapes the jot or names the manifest (<code>INVALID_PATH</code>).</p>
+<p>A patch inherits <code>access</code> and the password hash from the live jot, so it cannot change
+gating, and its archive needs no root <code>index.html</code> — the live one is retained.</p>
+<p>Both tools accept <code>cors: true</code>, which on a <strong>public</strong> jot serves its files with
+<code>Access-Control-Allow-Origin: *</code> so the page can fetch its own data. The sandbox CSP is
+unchanged. The flag is ignored on password jots.</p>
+<p>Limits come from configuration: <code>JOTS_MAX_BYTES</code> (5 MiB), <code>JOTS_MAX_FILES</code> (1000), and
+<code>JOTS_UPLOAD_TTL_SECONDS</code> (300, single use). An archive with no root <code>index.html</code> is
+rejected with <code>NO_INDEX</code>. A patch is re-measured after the merge, so one that pushes the
+tree over either cap is rejected with <code>TOO_LARGE</code> / <code>TOO_MANY_FILES</code>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="database-schema.html"><span class="pn-dir">Previous</span><span class="pn-label">Database schema</span></a><a class="pn pn-next" href="contributing.html"><span class="pn-dir">Next</span><span class="pn-label">Contributing</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/reference/tool-catalog.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#asana">asana</a></li><li class="toc-h2"><a href="#atlassian-bitbucket">atlassian-bitbucket</a></li><li class="toc-h2"><a href="#atlassian-confluence">atlassian-confluence</a></li><li class="toc-h2"><a href="#atlassian-jira">atlassian-jira</a></li><li class="toc-h2"><a href="#github">github</a></li><li class="toc-h2"><a href="#gitlab">gitlab</a></li><li class="toc-h2"><a href="#google-calendar">google-calendar</a></li><li class="toc-h2"><a href="#google-docs">google-docs</a></li><li class="toc-h2"><a href="#google-drive">google-drive</a></li><li class="toc-h2"><a href="#google-gemini">google-gemini</a></li><li class="toc-h2"><a href="#google-gmail">google-gmail</a></li><li class="toc-h2"><a href="#google-sheets">google-sheets</a></li><li class="toc-h2"><a href="#google-slides">google-slides</a></li><li class="toc-h2"><a href="#httpbin-cookie">httpbin-cookie</a></li><li class="toc-h2"><a href="#newrelic">newrelic</a></li><li class="toc-h2"><a href="#slack">slack</a></li><li class="toc-h2"><a href="#browser-internal">browser (internal)</a></li><li class="toc-h2"><a href="#jots-internal">jots (internal)</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

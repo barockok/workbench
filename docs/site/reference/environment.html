@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Environment variables — workbench Docs</title>
+<meta name="description" content="Every variable the server reads, with its validation, default, and effect.">
+<meta property="og:title" content="Environment variables — workbench">
+<meta property="og:description" content="Every variable the server reads, with its validation, default, and effect.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body class="is-wide">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab active" href="meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">API</p><ul><li><a class="" href="meta-tools.html">MCP meta-tools</a></li><li><a class="" href="mcp-endpoint.html">MCP endpoint</a></li><li><a class="" href="http-api.html">HTTP API</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Configuration</p><ul><li><a class="active" href="environment.html">Environment variables</a></li><li><a class="" href="database-schema.html">Database schema</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Project</p><ul><li><a class="" href="tool-catalog.html">Tool catalog</a></li><li><a class="" href="contributing.html">Contributing</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Configuration</p>
+          <h1>Environment variables</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Every variable the server reads, with its validation, default, and effect.</p>
+      <p>Configuration is one Zod schema parsed at module import time. A validation failure
+crashes the process on boot, before routes are registered or plugins load — so a bad
+value fails loudly and immediately rather than at first use.</p>
+<p>Two variables are genuinely required. Everything else has a default.</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Requirement</th><th>Generate with</th></tr></thead><tbody>
+<tr><td><code>ENCRYPTION_KEY</code></td><td>exactly 64 hex characters</td><td><code>openssl rand -hex 32</code></td></tr>
+<tr><td><code>SESSION_SECRET</code></td><td>at least 32 characters</td><td><code>openssl rand -base64 32</code></td></tr>
+</tbody></table></div>
+<p>Both default to <code>&quot;&quot;</code> outside tests, and <code>&quot;&quot;</code> fails validation — which is how the
+requirement is enforced. When <code>NODE_ENV=test</code> they fall back to fixed development
+values so the suite runs without setup.</p>
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">`ENCRYPTION_KEY` is unrecoverable and unrotatable</span></div><div class="callout-body"><p>It is the AES-256-GCM key for every stored OAuth token, cookie bundle, and API key,
+read once at module load. There is no re-encryption path. If you change it or lose
+it, every stored credential becomes undecryptable and every user must reconnect
+every integration. It must also stay identical across a SQLite-to-PostgreSQL
+migration, which copies ciphertext verbatim. Back it up with the same care as the
+database.</p>
+</div></div>
+
+<h2 id="core">Core<a class="anchor" href="#core" aria-label="Link to Core">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>PORT</code></td><td>string</td><td><code>3000</code></td><td>no</td><td>Listen port. The server binds <code>0.0.0.0</code></td></tr>
+<tr><td><code>NODE_ENV</code></td><td><code>development</code> | <code>production</code> | <code>test</code></td><td><code>development</code></td><td>no</td><td>Selects test defaults for the two secrets; also makes the jot cookie <code>Secure</code> in production</td></tr>
+<tr><td><code>SERVER_PUBLIC_URL</code></td><td>URL</td><td><code>http://localhost:3000</code></td><td>no</td><td>The server&#39;s own public origin. Drives every OAuth redirect URI, the OAuth metadata documents, the access token&#39;s <code>iss</code>/<code>aud</code>, and half the WebSocket origin allowlist</td></tr>
+<tr><td><code>PORTAL_URL</code></td><td>URL</td><td><code>http://localhost:5173</code></td><td>no</td><td>Where SSO and connect flows redirect the user; the other half of the WebSocket origin allowlist</td></tr>
+<tr><td><code>PORTAL_DIST_DIR</code></td><td>string</td><td><code>./portal</code></td><td>no</td><td>First candidate path for the built portal SPA</td></tr>
+<tr><td><code>PLUGINS_DIR</code></td><td>string</td><td><code>./plugins</code></td><td>no</td><td>External plugin directory. Always resolved to an absolute path before import</td></tr>
+</tbody></table></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The default `PORTAL_URL` does not match the dev portal</span></div><div class="callout-body"><p>The Vite dev server binds port 3000 with <code>strictPort</code>, so the default
+<code>http://localhost:5173</code> is wrong for local development. Unless you set
+<code>PORTAL_URL=http://localhost:3000</code>, the CDP WebSocket origin allowlist rejects the
+dev portal with a 403 and browser-session capture fails.</p>
+</div></div>
+
+<h2 id="database">Database<a class="anchor" href="#database" aria-label="Link to Database">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>DATABASE_URL</code></td><td>string</td><td><code>./data/tokens.db</code></td><td>no</td><td>Backend selector and connection string. A <code>postgres://</code> or <code>postgresql://</code> prefix selects PostgreSQL; anything else is a SQLite file path</td></tr>
+<tr><td><code>PG_POOL_MAX</code></td><td>positive integer</td><td><code>2</code></td><td>no</td><td>Maximum pooled connections <strong>per worker</strong></td></tr>
+<tr><td><code>PG_CONNECT_TIMEOUT_MS</code></td><td>non-negative integer</td><td><code>5000</code></td><td>no</td><td>Milliseconds to wait for a free pool slot. <code>0</code> = unlimited</td></tr>
+</tbody></table></div>
+<p><code>DATABASE_URL</code> does more than pick a database: the browser-profile directory and the
+jots directory both default to siblings of its dirname.</p>
+<h2 id="authentication-and-sso">Authentication and SSO<a class="anchor" href="#authentication-and-sso" aria-label="Link to Authentication and SSO">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>ENCRYPTION_KEY</code></td><td>string, exactly 64 chars (hex)</td><td><code>&quot;&quot;</code>; all-zeros when <code>NODE_ENV=test</code></td><td><strong>yes</strong></td><td>AES-256-GCM key for tokens, cookie bundles, and the API-key copy</td></tr>
+<tr><td><code>SESSION_SECRET</code></td><td>string, min 32 chars</td><td><code>&quot;&quot;</code>; fixed value when <code>NODE_ENV=test</code></td><td><strong>yes</strong></td><td>Keys five credentials: the four HS256 JWTs (portal session, MCP OAuth access, connect, curl-session) and the jot unlock cookie, which is a plain HMAC-SHA256 digest rather than a JWT. Rotating it invalidates all five</td></tr>
+<tr><td><code>GOOGLE_CLIENT_ID</code></td><td>string</td><td>—</td><td>no</td><td>Google Workspace SSO for portal login. Its presence alone enables the <code>google</code> provider</td></tr>
+<tr><td><code>GOOGLE_CLIENT_SECRET</code></td><td>string</td><td>—</td><td>no</td><td>Required for the token exchange; without it the auth URL builds but the exchange throws</td></tr>
+<tr><td><code>KEYCLOAK_ISSUER_URL</code></td><td>URL</td><td>—</td><td>no</td><td>OIDC discovery base for Keycloak SSO</td></tr>
+<tr><td><code>KEYCLOAK_CLIENT_ID</code></td><td>string</td><td>—</td><td>no</td><td>Keycloak client, also the ID-token audience</td></tr>
+<tr><td><code>KEYCLOAK_CLIENT_SECRET</code></td><td>string</td><td>—</td><td>no</td><td>Keycloak is a confidential client — no PKCE on this flow</td></tr>
+</tbody></table></div>
+<p>Keycloak counts as configured only when all three of its variables are set. The
+Google callback URL is <code>${SERVER_PUBLIC_URL}/api/auth/google/callback</code> and the
+Keycloak one is <code>${SERVER_PUBLIC_URL}/api/auth/keycloak/callback</code> — both server-side,
+not portal-side.</p>
+<h2 id="oauth-server-mcp-clients">OAuth server (MCP clients)<a class="anchor" href="#oauth-server-mcp-clients" aria-label="Link to OAuth server (MCP clients)">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code></td><td>positive integer</td><td><code>3600</code></td><td>no</td><td>Lifetime of an MCP OAuth access token, and the <code>expires_in</code> value returned by <code>/token</code>. Also the revocation lag — revoking an agent does not invalidate live access tokens</td></tr>
+<tr><td><code>CONNECT_TTL_SECONDS</code></td><td>positive integer</td><td><code>600</code></td><td>no</td><td>Pending-connection TTL and connect-JWT lifetime, used by <code>connect</code>, the browser live-URL route, and <code>browser_live_url</code></td></tr>
+</tbody></table></div>
+<h2 id="browser-sessions">Browser sessions<a class="anchor" href="#browser-sessions" aria-label="Link to Browser sessions">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>BROWSER_PROFILES_DIR</code></td><td>string</td><td><code>dirname(DATABASE_URL)/browser-profiles</code></td><td>no</td><td>Root for per-user Chromium profiles</td></tr>
+<tr><td><code>BROWSER_SESSION_TTL_SECONDS</code></td><td>positive integer</td><td><code>300</code></td><td>no</td><td>Idle cutoff before a warm browser session is killed. Checked every 30 seconds</td></tr>
+<tr><td><code>BROWSER_PROFILE_TTL_DAYS</code></td><td>non-negative integer</td><td><code>30</code></td><td>no</td><td>Age at which an unused whole profile is <strong>deleted</strong>. <code>0</code> disables deletion</td></tr>
+<tr><td><code>BROWSER_PROFILE_REAP_INTERVAL_SECONDS</code></td><td>positive integer</td><td><code>3600</code></td><td>no</td><td>Disk-reaper interval. It also runs once immediately at boot</td></tr>
+<tr><td><code>BROWSER_DISK_CACHE_MB</code></td><td>non-negative integer</td><td><code>32</code></td><td>no</td><td>Becomes Chromium&#39;s <code>--disk-cache-size</code></td></tr>
+</tbody></table></div>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`BROWSER_PROFILE_TTL_DAYS` deletes credentials</span></div><div class="callout-body"><p>Deleting a profile logs that user out of <strong>every</strong> cookie-auth integration at once.
+The 30-day default is deliberately conservative. The cache trim that runs far more
+often is free by comparison. Raise it or set <code>0</code> if your users connect cookie
+integrations rarely.</p>
+</div></div>
+
+<h3 id="capture-proxy-read-straight-from-processenv">Capture proxy — read straight from <code>process.env</code><a class="anchor" href="#capture-proxy-read-straight-from-processenv" aria-label="Link to Capture proxy — read straight from process.env">#</a></h3>
+<p>These three are <strong>not</strong> in the config schema, so they are invisible to the boot-time
+validation and easy to miss when reading <code>config.ts</code>. They are read directly where
+Chromium is spawned.</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>CAPTURE_PROXY</code></td><td>string</td><td>—</td><td>no</td><td>Passed to Chromium as <code>--proxy-server=</code></td></tr>
+<tr><td><code>CAPTURE_PROXY_USERNAME</code></td><td>string</td><td>—</td><td>no</td><td>Proxy username</td></tr>
+<tr><td><code>CAPTURE_PROXY_PASSWORD</code></td><td>string</td><td>—</td><td>no</td><td>Proxy password</td></tr>
+</tbody></table></div>
+<p>Proxy authentication is armed only when all three are set. The answering handler
+responds to proxy auth challenges specifically, and declines anything else. Because
+they bypass the schema, a typo in one of these names fails silently rather than at
+boot.</p>
+<h2 id="jots">Jots<a class="anchor" href="#jots" aria-label="Link to Jots">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>JOTS_DIR</code></td><td>string</td><td><code>dirname(DATABASE_URL)/jots</code></td><td>no</td><td>Root for deployed jot files</td></tr>
+<tr><td><code>JOTS_MAX_BYTES</code></td><td>positive integer</td><td><code>5242880</code> (5 MiB)</td><td>no</td><td>Per-file and total decompressed size cap</td></tr>
+<tr><td><code>JOTS_MAX_FILES</code></td><td>positive integer</td><td><code>1000</code></td><td>no</td><td>Maximum files in one archive, enforced during extraction</td></tr>
+<tr><td><code>JOTS_UPLOAD_TTL_SECONDS</code></td><td>positive integer</td><td><code>300</code></td><td>no</td><td>Lifetime of a single-use upload token</td></tr>
+</tbody></table></div>
+<h2 id="cluster">Cluster<a class="anchor" href="#cluster" aria-label="Link to Cluster">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>CLUSTER_ENABLED</code></td><td><code>&quot;true&quot;</code> | <code>&quot;false&quot;</code> | <code>&quot;1&quot;</code> | <code>&quot;0&quot;</code></td><td><code>false</code></td><td>no</td><td>Forks one worker per available core</td></tr>
+</tbody></table></div>
+<p>Note the enum: an arbitrary truthy-looking string such as <code>yes</code> is a <strong>validation
+error</strong> that crashes the boot, not a falsy value.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Cluster mode requires PostgreSQL and multiplies connections</span></div><div class="callout-body"><p>With a SQLite <code>DATABASE_URL</code> the process exits with status 1 and a clear message —
+SQLite cannot be shared across processes. The total connection count becomes
+<code>PG_POOL_MAX × worker count</code>, which must stay well under the server&#39;s
+<code>max_connections</code>. SSO nonces and in-flight connection records are held in
+process-local maps, so they are not shared across workers.</p>
+</div></div>
+
+<h2 id="audit-and-telemetry">Audit and telemetry<a class="anchor" href="#audit-and-telemetry" aria-label="Link to Audit and telemetry">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Type / validation</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>AUDIT_LOG_DEST</code></td><td><code>sqlite</code> | <code>stdout</code> | <code>kafka</code></td><td><code>sqlite</code></td><td>no</td><td>Where audit events go</td></tr>
+<tr><td><code>AUDIT_LOG_KAFKA_BROKERS</code></td><td>string</td><td>—</td><td>no</td><td><strong>Declared but never read</strong></td></tr>
+<tr><td><code>AUDIT_LOG_KAFKA_TOPIC</code></td><td>string</td><td><code>audit-log</code></td><td>no</td><td><strong>Declared but never read</strong></td></tr>
+</tbody></table></div>
+<p><code>sqlite</code> writes to whatever backend <code>DATABASE_URL</code> selects, PostgreSQL included,
+despite the name.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The `kafka` destination is not implemented</span></div><div class="callout-body"><p><code>AUDIT_LOG_KAFKA_BROKERS</code> and <code>AUDIT_LOG_KAFKA_TOPIC</code> pass validation and are then
+read by nothing. Selecting <code>AUDIT_LOG_DEST=kafka</code> logs &quot;Kafka not implemented,
+falling back to stdout&quot; and prints the event as a JSON line.</p>
+</div></div>
+
+<p>There is no variable for tracing. OpenTelemetry instrumentation is registered but
+starts with no exporter configured, so spans are produced and nothing exports them by
+default. Any export has to come from the standard <code>OTEL_*</code> variables the OTel SDK
+reads on its own.</p>
+<h2 id="plugin-credentials">Plugin credentials<a class="anchor" href="#plugin-credentials" aria-label="Link to Plugin credentials">#</a></h2>
+<p>Per-plugin OAuth clients are read directly from <code>process.env</code> by name, not declared in
+the schema. The prefix is the plugin name converted from kebab-case to
+UPPER_SNAKE_CASE.</p>
+<div class="table-wrap"><table><thead><tr><th>Pattern</th><th>Example</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>&lt;PLUGIN&gt;_CLIENT_ID</code></td><td><code>GOOGLE_GMAIL_CLIENT_ID</code></td><td>OAuth client ID. Without it the integration reports <code>configured: false</code> and cannot be connected</td></tr>
+<tr><td><code>&lt;PLUGIN&gt;_CLIENT_SECRET</code></td><td><code>GOOGLE_GMAIL_CLIENT_SECRET</code></td><td>OAuth client secret. Empty or unset means a public, PKCE-only client — which is valid, not an error</td></tr>
+<tr><td><code>&lt;PLUGIN&gt;_ALLOWED_INSTANCES</code></td><td><code>GITLAB_ALLOWED_INSTANCES</code></td><td>Comma-separated extra self-hosted origins for a plugin that declares <code>instance</code></td></tr>
+</tbody></table></div>
+<p>There are 16 built-in plugins. The 14 that use OAuth, by the prefix they take:
+<code>ASANA</code>, <code>ATLASSIAN_BITBUCKET</code>, <code>ATLASSIAN_CONFLUENCE</code>, <code>ATLASSIAN_JIRA</code>,
+<code>GITHUB</code>, <code>GITLAB</code>, <code>GOOGLE_CALENDAR</code>, <code>GOOGLE_DOCS</code>, <code>GOOGLE_DRIVE</code>,
+<code>GOOGLE_GEMINI</code>, <code>GOOGLE_GMAIL</code>, <code>GOOGLE_SHEETS</code>, <code>GOOGLE_SLIDES</code>, <code>SLACK</code>.</p>
+<p>The other two take no <code>_CLIENT_ID</code> because they do not use OAuth: <code>newrelic</code>
+(<code>NEWRELIC</code>) is API-key auth, and <code>httpbin-cookie</code> (<code>HTTPBIN_COOKIE</code>) is
+cookie auth.</p>
+<p><code>&lt;PLUGIN&gt;_ALLOWED_INSTANCES</code> entries are each normalised: https only, no userinfo in
+the URL, and no private or loopback address literals. The manifest&#39;s cloud default is
+always allowed — with the variable unset, it is the <em>only</em> allowed origin. This is
+what stops a shared client secret being POSTed to an attacker-chosen host.</p>
+<p>New Relic&#39;s key, region, and account ID are entered per user in the portal — the
+running server never reads them from the environment. The one exception is the
+shipped verification script, below.</p>
+<h2 id="migration-and-tooling">Migration and tooling<a class="anchor" href="#migration-and-tooling" aria-label="Link to Migration and tooling">#</a></h2>
+<p>Read only by the shipped scripts and by tests — never by the running server.</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Read by</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>SOURCE_SQLITE_PATH</code></td><td>migration</td><td>Overrides the source database path</td></tr>
+<tr><td><code>TARGET_DATABASE_URL</code></td><td>migration</td><td>Target connection string. Must start <code>postgres://</code> or <code>postgresql://</code></td></tr>
+<tr><td><code>PGHOST</code>, <code>PGPORT</code>, <code>PGUSER</code>, <code>PGPASSWORD</code>, <code>PGDATABASE</code></td><td>migration</td><td>libpq-style fallback when <code>TARGET_DATABASE_URL</code> is unset. Host, user, and database are required; port defaults to 5432</td></tr>
+<tr><td><code>TEST_POSTGRES_URL</code></td><td>test suite</td><td>Enables the PostgreSQL half of the database-adapter suite. Without it that half skips loudly</td></tr>
+<tr><td><code>NEW_RELIC_API_KEY</code></td><td><code>scripts/verify-newrelic.ts</code></td><td>NerdGraph user key the script authenticates with</td></tr>
+<tr><td><code>NEW_RELIC_REGION</code></td><td><code>scripts/verify-newrelic.ts</code></td><td>Uppercased; selects the region-scoped NerdGraph endpoint. Defaults to <code>US</code></td></tr>
+<tr><td><code>NEW_RELIC_ACCOUNT_ID</code></td><td><code>scripts/verify-newrelic.ts</code></td><td>Account to query, parsed as a number</td></tr>
+</tbody></table></div>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">`.env.example` is incomplete</span></div><div class="callout-body"><p>It documents 11 of the 31 schema variables. Missing entirely: <code>NODE_ENV</code>,
+<code>PORTAL_DIST_DIR</code>, <code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code>, every <code>BROWSER_*</code>, every
+<code>JOTS_*</code>, both <code>PG_*</code>, both <code>AUDIT_LOG_KAFKA_*</code>, all three <code>KEYCLOAK_*</code>,
+<code>CLUSTER_ENABLED</code> (present only as a comment), every <code>CAPTURE_PROXY*</code>, and
+<code>&lt;PLUGIN&gt;_ALLOWED_INSTANCES</code>. On the plugin side only the seven Google plugins
+get real <code>_CLIENT_ID</code> / <code>_CLIENT_SECRET</code> placeholders: six more (<code>GITHUB</code>,
+<code>SLACK</code>, <code>ATLASSIAN_JIRA</code>, <code>ATLASSIAN_CONFLUENCE</code>, <code>ATLASSIAN_BITBUCKET</code>,
+<code>ASANA</code>) appear only as commented examples, and <code>GITLAB</code> is absent altogether.
+Treat this page as the list, not that file.</p>
+</div></div>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="http-api.html"><span class="pn-dir">Previous</span><span class="pn-label">HTTP API</span></a><a class="pn pn-next" href="database-schema.html"><span class="pn-dir">Next</span><span class="pn-label">Database schema</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/reference/environment.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#core">Core</a></li><li class="toc-h2"><a href="#database">Database</a></li><li class="toc-h2"><a href="#authentication-and-sso">Authentication and SSO</a></li><li class="toc-h2"><a href="#oauth-server-mcp-clients">OAuth server (MCP clients)</a></li><li class="toc-h2"><a href="#browser-sessions">Browser sessions</a></li><li class="toc-h3"><a href="#capture-proxy-read-straight-from-processenv">Capture proxy — read straight from process.env</a></li><li class="toc-h2"><a href="#jots">Jots</a></li><li class="toc-h2"><a href="#cluster">Cluster</a></li><li class="toc-h2"><a href="#audit-and-telemetry">Audit and telemetry</a></li><li class="toc-h2"><a href="#plugin-credentials">Plugin credentials</a></li><li class="toc-h2"><a href="#migration-and-tooling">Migration and tooling</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

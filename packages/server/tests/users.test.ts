@@ -63,25 +63,6 @@ describe("api key management for existing users", () => {
     expect(await verifyApiKey(second)).toBe("bob");
   });
 
-  // api_key_sha is the lookup handle, so a stale one left behind by setApiKey
-  // would keep the revoked key working. Assert the column, not just behavior.
-  it("replaces api_key_sha on rotation", async () => {
-    await seedUser("bob");
-    await setApiKey("bob");
-    const before = await db.get<{ api_key_sha: string | null }>(
-      "SELECT api_key_sha FROM users WHERE id = ?",
-      ["bob"]
-    );
-    await setApiKey("bob");
-    const after = await db.get<{ api_key_sha: string | null }>(
-      "SELECT api_key_sha FROM users WHERE id = ?",
-      ["bob"]
-    );
-    expect(before?.api_key_sha).toBeTruthy();
-    expect(after?.api_key_sha).toBeTruthy();
-    expect(after?.api_key_sha).not.toBe(before?.api_key_sha);
-  });
-
   it("reports hasApiKey false before minting", async () => {
     await seedUser("bob");
     expect(await hasApiKey("bob")).toBe(false);

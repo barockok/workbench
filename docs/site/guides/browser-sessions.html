@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser sessions and cookie auth — workbench Docs</title>
+<meta name="description" content="Connecting services that have no OAuth app by logging in through a server-side headless browser and capturing the session cookies.">
+<meta property="og:title" content="Browser sessions and cookie auth — workbench">
+<meta property="og:description" content="Connecting services that have no OAuth app by logging in through a server-side headless browser and capturing the session cookies.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css?v=1c6e4fb1">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab active" href="discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Working with tools</p><ul><li><a class="" href="discovering-tools.html">Discovering tools</a></li><li><a class="" href="executing-tools.html">Executing tools</a></li><li><a class="" href="curl-session.html">Raw API calls</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Authentication</p><ul><li><a class="" href="oauth-connections.html">OAuth connections</a></li><li><a class="" href="api-key-connections.html">API-key connections</a></li><li><a class="active" href="browser-sessions.html">Browser sessions</a></li><li><a class="" href="self-hosted-instances.html">Self-hosted instances</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Operating</p><ul><li><a class="" href="jots.html">Jots file store</a></li><li><a class="" href="troubleshooting.html">Troubleshooting</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Authentication</p>
+          <h1>Browser sessions and cookie auth</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Connecting services that have no OAuth app by logging in through a server-side headless browser and capturing the session cookies.</p>
+      <p>Plenty of internal tools and SaaS products have no OAuth app you can register — no
+client id, no consent screen, nothing to point a callback at. For those, a plugin can
+declare <code>auth.type: &quot;cookie&quot;</code>: the user logs in through a headless Chromium running on
+the server, and the workbench captures the resulting session cookies and replays them on
+tool calls.</p>
+<p><code>httpbin-cookie</code> is the shipped reference plugin for this mode.</p>
+<p>The tradeoff is honest: cookie auth gets you a working integration where OAuth is not on
+offer, at the cost of holding a live session credential and a persistent browser profile
+per user. Everything below is about containing that cost.</p>
+<h2 id="the-capture-flow">The capture flow<a class="anchor" href="#the-capture-flow" aria-label="Link to The capture flow">#</a></h2>
+<p>The user never installs anything. They open a URL, log in inside a live view of the
+server&#39;s browser, and click Capture.</p>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+    participant U as User (portal)
+    participant W as workbench
+    participant C as Headless Chromium
+    participant S as Target site
+    U-&gt;&gt;W: Connect (cookie integration)
+    W-&gt;&gt;C: ensure per-user profile, spawn if needed
+    W-&gt;&gt;C: navigate to loginUrl
+    W--&gt;&gt;U: live view over the CDP WebSocket proxy
+    U-&gt;&gt;C: type credentials, complete MFA
+    C-&gt;&gt;S: sign in
+    S--&gt;&gt;C: Set-Cookie
+    U-&gt;&gt;W: POST .../capture
+    W-&gt;&gt;C: Storage.getCookies (read only)
+    W-&gt;&gt;W: filter by expiry + domain
+    alt zero cookies survive
+        W--&gt;&gt;U: 400 — complete login before capturing
+    else
+        W-&gt;&gt;W: encrypt bundle, store, mark CONNECTED
+        W--&gt;&gt;U: {success, cookieCount}
+    end</pre></div>
+<p>An agent can start the same flow: <code>connect(&quot;&lt;integration&gt;&quot;)</code> on a cookie integration
+returns a portal login URL carrying a short-lived connect token, then
+<code>wait_for_connection</code> blocks until Capture succeeds. The user does not need a portal
+session to use that link.</p>
+<h2 id="per-user-profiles">Per-user profiles<a class="anchor" href="#per-user-profiles" aria-label="Link to Per-user profiles">#</a></h2>
+<p>Each workbench user gets <strong>one persistent Chromium profile directory</strong>, named from a
+sanitized form of their user id and created with <code>0700</code> permissions. It is reused across
+every cookie integration and every capture.</p>
+<p>That persistence is the feature: a user who has already signed in to their identity
+provider inside this profile does not sign in again for the next cookie integration.
+Sessions carry over exactly as they would in a normal browser.</p>
+<h3 id="one-session-shared-by-capture-and-the-browser-tools">One session, shared by capture and the browser tools<a class="anchor" href="#one-session-shared-by-capture-and-the-browser-tools" aria-label="Link to One session, shared by capture and the browser tools">#</a></h3>
+<p>There is one warm Chromium per user, and both paths use it. Capture and every <code>browser_*</code>
+tool go through the same <code>ensureSession</code> call, which returns the existing warm session if
+there is one. So a capture can start while an agent is driving the browser, and an agent
+can drive a browser the user is logged into mid-capture. That is deliberate: cancelling a
+capture is a no-op precisely because the browser may still be in use by the agent.</p>
+<p><code>BROWSER_SESSION_BUSY</code> is therefore not a &quot;capture vs. agent&quot; error. It is raised in two
+narrow cases:</p>
+<div class="table-wrap"><table><thead><tr><th>Raised by</th><th>When</th></tr></thead><tbody>
+<tr><td><code>ensureSession</code></td><td>The profile is claimed but no warm session exists yet — a spawn for this user is in flight</td></tr>
+<tr><td><code>resetBrowserProfile</code></td><td>A profile wipe is requested while the profile is claimed</td></tr>
+</tbody></table></div>
+<p>Only two endpoints map it to <strong>409</strong>: <code>POST /api/browser-session/reset</code> and
+<code>POST /api/browser-session/live-url</code>. The capture endpoints do not — they turn every
+error, this one included, into <strong>400</strong> with the error message in the body.</p>
+<p>If an agent is holding a warm browser session, <code>browser_close</code> ends the process without
+destroying the profile.</p>
+<p>Warm sessions are also idle-reaped: <code>BROWSER_SESSION_TTL_SECONDS</code> (default 300),
+checked every 30 seconds, then the process is killed. The profile survives.</p>
+<h2 id="cookie-domain-scoping">Cookie domain scoping<a class="anchor" href="#cookie-domain-scoping" aria-label="Link to Cookie domain scoping">#</a></h2>
+<p>Capture is a pure read — it enumerates cookies over CDP and stores nothing until the
+filter has run. Two rules apply:</p>
+<ol>
+<li><strong>Expired cookies are dropped.</strong></li>
+<li><strong>Only cookies whose domain matches the target are kept</strong> — the cookie&#39;s bare domain
+must equal, or be a subdomain of, the manifest&#39;s <code>targetDomain</code> or one of its
+declared <code>cookieDomains</code>.</li>
+</ol>
+<p>Rule 2 exists because a shared profile accumulates cookies from every site the user has
+ever visited in it. Storing all of them and replaying all of them produced a <code>Cookie</code>
+header large enough for providers to reject the request outright — HTTP 400, header too
+large — or to return an empty session. Scoping to the target host is what a real browser
+does, and it is what the capture does now.</p>
+<p>The same filter runs again at request time: <code>ctx.http()</code> builds the <code>Cookie</code> header from
+only the unexpired cookies matching the host it is about to call. It also enforces that
+the host is one the manifest declared, and sets <code>redirect: &quot;manual&quot;</code> so cookies are never
+replayed across a redirect hop to somewhere else.</p>
+<h3 id="liveness-is-quotat-least-one-live-cookiequot">Liveness is &quot;at least one live cookie&quot;<a class="anchor" href="#liveness-is-quotat-least-one-live-cookiequot" aria-label="Link to Liveness is &amp;quot;at least one live cookie&amp;quot;">#</a></h3>
+<p>A connection counts as connected when a bundle exists <strong>and at least one cookie in it is
+unexpired</strong> — not when none have expired. Session bundles routinely mix a long-lived
+refresh cookie with short-lived junk. Requiring all of them to be live would report every
+working session as broken within the hour.</p>
+<h3 id="capture-with-zero-cookies-is-a-hard-failure">Capture with zero cookies is a hard failure<a class="anchor" href="#capture-with-zero-cookies-is-a-hard-failure" aria-label="Link to Capture with zero cookies is a hard failure">#</a></h3>
+<p>If the filter leaves nothing, capture returns <strong>400</strong> with
+<code>No cookies captured. Complete login before capturing.</code> — <em>before</em> storing anything and
+before marking the connection CONNECTED.</p>
+<p>This guard exists because the alternative was worse: an early version marked the
+connection CONNECTED on an empty capture, producing an integration that looked healthy
+in the portal and failed on every call. Both capture endpoints (portal and connect-link)
+enforce it.</p>
+<p>Cancelling a capture is a deliberate no-op — it does not kill the shared browser, since
+another integration may be mid-flow. The idle reaper handles it.</p>
+<h2 id="moving-a-session-between-deployments">Moving a session between deployments<a class="anchor" href="#moving-a-session-between-deployments" aria-label="Link to Moving a session between deployments">#</a></h2>
+<p>Two endpoints exist for portability, both owner-scoped:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash"># export
+curl https://workbench.example.com/api/integrations/httpbin-cookie/session/export \
+  -H &quot;x-workbench-api-key: $KEY&quot;
+# {&quot;integration&quot;:&quot;httpbin-cookie&quot;,&quot;session&quot;:{…}}
+
+# import (accepts the bundle, or a bare cookie array)
+curl -X POST https://workbench.example.com/api/integrations/httpbin-cookie/session/import \
+  -H &quot;x-workbench-api-key: $KEY&quot; -H 'Content-Type: application/json' \
+  -d '{&quot;session&quot;:{…}}'
+# {&quot;success&quot;:true,&quot;cookieCount&quot;:7}</code></pre></div>
+<p>An empty or invalid bundle is rejected with 400. A successful import marks the
+connection CONNECTED, same as a capture.</p>
+<h2 id="the-profile-reaper">The profile reaper<a class="anchor" href="#the-profile-reaper" aria-label="Link to The profile reaper">#</a></h2>
+<p>Persistent profiles grow without bound, and they live on the same volume as the
+database. Two mechanisms keep them in check.</p>
+<p><strong>At spawn</strong>, Chromium is started with disk-discipline flags — background networking,
+component updates, client-side phishing detection, sync and crash reporting all
+disabled, and <code>--disk-cache-size</code> set from <code>BROWSER_DISK_CACHE_MB</code>. Disabling background
+networking is the load-bearing one: it stops each profile from downloading its own
+multi-megabyte Safe Browsing blocklist.</p>
+<p><strong>On chromium exit</strong>, regenerable caches are trimmed. This is hooked to the process
+<code>exit</code> event rather than to a clean shutdown path, so a crashed or reaped browser is
+cleaned up identically to one that closed politely.</p>
+<p><strong>On a timer</strong>, a sweep runs every <code>BROWSER_PROFILE_REAP_INTERVAL_SECONDS</code> (and once
+immediately at startup). It trims caches in every profile, deletes whole profiles idle
+past <code>BROWSER_PROFILE_TTL_DAYS</code>, and skips any profile with a live session.</p>
+<p>Staleness is measured from the mtime of the profile&#39;s <code>Cookies</code> and <code>Preferences</code> files,
+not the directory&#39;s own mtime — trimming caches touches the directory, which would make
+every profile look freshly used forever.</p>
+<h2 id="operator-settings">Operator settings<a class="anchor" href="#operator-settings" aria-label="Link to Operator settings">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Default</th><th>Required</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>BROWSER_PROFILES_DIR</code></td><td><code>&lt;dirname of DATABASE_URL&gt;/browser-profiles</code></td><td>no</td><td>Where per-user profiles live. Defaults next to the database, which is usually not what you want on a small volume</td></tr>
+<tr><td><code>BROWSER_SESSION_TTL_SECONDS</code></td><td><code>300</code></td><td>no</td><td>Idle seconds before a live browser process is killed. The profile is kept</td></tr>
+<tr><td><code>BROWSER_PROFILE_TTL_DAYS</code></td><td><code>30</code></td><td>no</td><td>Age at which a whole profile is deleted. <code>0</code> disables profile deletion</td></tr>
+<tr><td><code>BROWSER_PROFILE_REAP_INTERVAL_SECONDS</code></td><td><code>3600</code></td><td>no</td><td>Sweep interval; also runs once at boot</td></tr>
+<tr><td><code>BROWSER_DISK_CACHE_MB</code></td><td><code>32</code></td><td>no</td><td>Becomes Chromium&#39;s <code>--disk-cache-size</code></td></tr>
+<tr><td><code>CAPTURE_PROXY</code></td><td>—</td><td>no</td><td>Upstream proxy for the capture browser, e.g. <code>http://host:3128</code> or <code>socks5://host:1080</code></td></tr>
+<tr><td><code>CAPTURE_PROXY_USERNAME</code></td><td>—</td><td>no</td><td>Proxy username; needs <code>CAPTURE_PROXY</code> and the password too</td></tr>
+<tr><td><code>CAPTURE_PROXY_PASSWORD</code></td><td>—</td><td>no</td><td>Proxy password</td></tr>
+</tbody></table></div>
+<p>The three <code>CAPTURE_PROXY*</code> variables are read straight from the environment and are not
+part of the validated config schema, so a typo in one is silently ignored rather than
+failing at boot.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`BROWSER_PROFILE_TTL_DAYS` deletes profiles by default</span></div><div class="callout-body"><p>The default of 30 days means a profile untouched for a month is removed entirely —
+which logs that user out of <strong>every</strong> cookie integration at once and out of any
+identity provider session the profile was carrying. They must repeat every capture.
+This is a real deletion on a timer, not a cache trim. Raise it, or set it to <code>0</code> to
+disable whole-profile deletion and keep only the cache trimming, if your users connect
+cookie integrations infrequently.</p>
+</div></div>
+
+<h3 id="the-capture_proxy-datacenter-ip-trap">The CAPTURE_PROXY datacenter-IP trap<a class="anchor" href="#the-capture_proxy-datacenter-ip-trap" aria-label="Link to The CAPTURE_PROXY datacenter-IP trap">#</a></h3>
+<p>If the workbench runs in a cloud or cluster, its egress IP is a datacenter IP — and
+several login providers treat interactive sign-in from those very differently from
+API traffic. Google SSO in particular fails interactive sign-in from datacenter ranges,
+so a capture that works on a laptop returns a server error inside the live view when run
+in-cluster.</p>
+<p><code>CAPTURE_PROXY</code> is the fix: route the capture browser&#39;s traffic out through a clean
+residential or ISP IP. It affects only the capture browser, not the server&#39;s own
+outbound API calls.</p>
+<p>For an authenticated proxy, note the shape of the constraint:</p>
+<ul>
+<li>Chromium cannot take proxy credentials on the command line, and cannot authenticate to
+a SOCKS5 proxy at all.</li>
+<li>So credentials are supplied over CDP, answering the proxy&#39;s auth challenge. That works
+for an <strong><code>http://</code></strong> proxy with <code>CAPTURE_PROXY_USERNAME</code> and <code>CAPTURE_PROXY_PASSWORD</code>
+set alongside <code>CAPTURE_PROXY</code>. <code>CAPTURE_PROXY</code> on its own is enough to route traffic —
+it becomes Chromium&#39;s <code>--proxy-server</code> regardless. It is the <em>credential</em> handler that
+needs all three. With only one or two set, the proxy is used but nothing answers its
+auth challenge.</li>
+<li>For SOCKS5, use IP allow-listing at the proxy instead of credentials.</li>
+</ul>
+<h2 id="resetting-a-profile">Resetting a profile<a class="anchor" href="#resetting-a-profile" aria-label="Link to Resetting a profile">#</a></h2>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl -X POST https://workbench.example.com/api/browser-session/reset \
+  -H &quot;x-workbench-api-key: $KEY&quot;</code></pre></div>
+<p>This wipes the user&#39;s entire profile directory — the same effect as a TTL expiry, on
+demand. It returns 409 while a session is active. Use it when a profile is corrupted or
+a user wants their server-side browser state gone.</p>
+<h2 id="related-failures">Related failures<a class="anchor" href="#related-failures" aria-label="Link to Related failures">#</a></h2>
+<p>Cookie auth has the most operational sharp edges of any auth mode. Chromium refusing to
+start as root, stale singleton locks after a pod rollover, profiles filling the volume,
+and the bodyless-POST 400 on capture are all covered in
+<a href="troubleshooting.html">Troubleshooting</a>.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="api-key-connections.html"><span class="pn-dir">Previous</span><span class="pn-label">API-key connections</span></a><a class="pn pn-next" href="self-hosted-instances.html"><span class="pn-dir">Next</span><span class="pn-label">Self-hosted instances</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/guides/browser-sessions.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-capture-flow">The capture flow</a></li><li class="toc-h2"><a href="#per-user-profiles">Per-user profiles</a></li><li class="toc-h3"><a href="#one-session-shared-by-capture-and-the-browser-tools">One session, shared by capture and the browser tools</a></li><li class="toc-h2"><a href="#cookie-domain-scoping">Cookie domain scoping</a></li><li class="toc-h3"><a href="#liveness-is-quotat-least-one-live-cookiequot">Liveness is &amp;quot;at least one live cookie&amp;quot;</a></li><li class="toc-h3"><a href="#capture-with-zero-cookies-is-a-hard-failure">Capture with zero cookies is a hard failure</a></li><li class="toc-h2"><a href="#moving-a-session-between-deployments">Moving a session between deployments</a></li><li class="toc-h2"><a href="#the-profile-reaper">The profile reaper</a></li><li class="toc-h2"><a href="#operator-settings">Operator settings</a></li><li class="toc-h3"><a href="#the-capture_proxy-datacenter-ip-trap">The CAPTURE_PROXY datacenter-IP trap</a></li><li class="toc-h2"><a href="#resetting-a-profile">Resetting a profile</a></li><li class="toc-h2"><a href="#related-failures">Related failures</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js?v=d996088e" defer></script>
+</body>
+</html>

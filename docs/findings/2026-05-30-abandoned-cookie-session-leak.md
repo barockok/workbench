@@ -31,7 +31,7 @@ until `closeCookieSession` is explicitly called or the server restarts.
 ## Resolution
 
 Closed by the MCP-initiated-connect design
-(`docs/superpowers/specs/2026-05-30-mcp-initiated-connect-design.md`, §4): every
+(`docs/internal/superpowers/specs/2026-05-30-mcp-initiated-connect-design.md`, §4): every
 cookie session gets an `expiresAt` (default 10 min) and a `setInterval` reaper
 calls `closeCookieSession` on expiry, plus an immediate reap on
 `wait_for_connection` timeout.
