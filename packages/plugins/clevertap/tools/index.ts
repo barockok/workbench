@@ -25,6 +25,7 @@ function toYYYYMMDD(input: string): string {
 const YYYYMMDD_DESC = 'Strict YYYYMMDD 8 digits without dashes (e.g. "20260617"). If you have "2026-06-17", remove dashes → "20260617".';
 const SYSTEM_EVENTS_INFO = 'System events: App Installed, App Launched, App Uninstalled, UTM Visited, Notification Sent/Viewed/Clicked, Charged etc. See https://developer.clevertap.com/docs/events#system-events. System props: CT App version, CT Latitude etc (@CT). See https://developer.clevertap.com/docs/events#system-properties.';
 const PREDEFINED_PROFILE_INFO = 'Predefined profile props: Name, Identity, Email, Phone, Gender, DOB, Photo, MSG-email, MSG-push, MSG-sms, MSG-whatsapp. See https://developer.clevertap.com/docs/concepts-user-profiles#manually-updating-predefined-user-profile-properties.';
+const CQL_INFO = 'CQL: event_properties, session_properties, common_profile_properties (app_fields, profile_fields, demographics, technographics, reachability, geo_fields), advanced_query (did_none/did_all/did_any), likelihood. See https://developer.clevertap.com/docs/clevertap-query-language. Use clevertap_request for full JSON.';
 
 class CleverTapClient {
   private baseUrl: string;
@@ -208,7 +209,7 @@ export const setProjects = {
 
 export const getEvents = {
   name: "clevertap_get_events",
-  description: `Query event data for an event within a date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} Returns cursor for paginated results — use clevertap_get_events_cursor for next pages.`,
+  description: `Query event data for an event within a date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} ${CQL_INFO} Returns cursor for paginated results — use clevertap_get_events_cursor for next pages.`,
   integration: "clevertap",
   inputSchema: z.object({
     project: z.string().optional().describe("Project name; defaults to first configured project."),
@@ -242,7 +243,7 @@ export const getEventsCursor = {
 
 export const getEventCount = {
   name: "clevertap_get_event_count",
-  description: `Count users who performed an event within date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} Supports property filters. Auto-polls if async.`, 
+  description: `Count users who performed an event within date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} ${CQL_INFO} Supports property filters (event_properties, session_properties, common_profile_properties, advanced_query). Auto-polls if async.`,
   integration: "clevertap",
   inputSchema: z.object({
     project: z.string().optional().describe("Project name; defaults to first configured project."),
@@ -283,7 +284,7 @@ export const getProfile = {
 
 export const getProfilesByEvent = {
   name: "clevertap_get_profiles_by_event",
-  description: `Get profiles of users who performed an event within date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} ${PREDEFINED_PROFILE_INFO} Returns cursor — use clevertap_get_profiles_cursor for next pages.`, 
+  description: `Get profiles of users who performed an event within date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} ${PREDEFINED_PROFILE_INFO} ${CQL_INFO} Returns cursor — use clevertap_get_profiles_cursor for next pages.`,
   integration: "clevertap",
   inputSchema: z.object({
     project: z.string().optional().describe("Project name; defaults to first configured project."),
@@ -317,7 +318,7 @@ export const getProfilesCursor = {
 
 export const getProfileCount = {
   name: "clevertap_get_profile_count",
-  description: `Count profiles who performed an event within date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} Supports property filters. Auto-polls if async.`, 
+  description: `Count profiles who performed an event within date range. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} ${CQL_INFO} Supports property filters (event_properties, session_properties, common_profile_properties, advanced_query). Auto-polls if async.`, 
   integration: "clevertap",
   inputSchema: z.object({
     project: z.string().optional().describe("Project name; defaults to first configured project."),
@@ -395,7 +396,7 @@ export const getMessageReport = {
 
 export const getTopPropertyCount = {
   name: "clevertap_get_top_property_count",
-  description: `Get top property value counts for an event (e.g. top product categories). ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} Auto-polls if async.`, 
+  description: `Get top property value counts for an event (e.g. top product categories). ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} ${CQL_INFO} Auto-polls if async.`, 
   integration: "clevertap",
   inputSchema: z.object({
     project: z.string().optional().describe("Project name; defaults to first configured project."),
@@ -417,7 +418,7 @@ export const getTopPropertyCount = {
 
 export const getEventTrend = {
   name: "clevertap_get_event_trend",
-  description: `Get daily/weekly/monthly trend for an event. Supports unique count and sum of numeric property. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} Auto-polls if async.`, 
+  description: `Get daily/weekly/monthly trend for an event. Supports unique count and sum of numeric property. ${YYYYMMDD_DESC} ${SYSTEM_EVENTS_INFO} ${CQL_INFO} Auto-polls if async.`, 
   integration: "clevertap",
   inputSchema: z.object({
     project: z.string().optional().describe("Project name; defaults to first configured project."),
@@ -500,7 +501,7 @@ export const getRealTimeCounts = {
 
 export const request = {
   name: "clevertap_request",
-  description: `Make any CleverTap API read request with full control over path, method, body, params. Prefer specific tools when available. For async partial responses use clevertap_poll. Note: dates in body must be YYYYMMDD integers, not YYYY-MM-DD strings.`,
+  description: `Make any CleverTap API read request with full control over path, method, body, params. Supports full CQL (event_properties, session_properties, common_profile_properties, advanced_query, likelihood). See https://developer.clevertap.com/docs/clevertap-query-language. Prefer specific tools when available. For async partial responses use clevertap_poll. Note: dates in body must be YYYYMMDD integers, not YYYY-MM-DD strings.`,
   integration: "clevertap",
   inputSchema: z.object({
     project: z.string().optional().describe("Project name; defaults to first configured project."),
