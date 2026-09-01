@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Loading and reloading — a-workbench Docs</title>
+<title>Loading and reloading — workbench Docs</title>
 <meta name="description" content="How the server discovers plugins at boot — the built-in list, PLUGINS_DIR, the skip rules, what happens when a plugin throws, and how to mount a plugin directory in Docker or Kubernetes.">
-<meta property="og:title" content="Loading and reloading — a-workbench">
+<meta property="og:title" content="Loading and reloading — workbench">
 <meta property="og:description" content="How the server discovers plugins at boot — the built-in list, PLUGINS_DIR, the skip rules, what happens when a plugin throws, and how to mount a plugin directory in Docker or Kubernetes.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="../index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -175,14 +175,14 @@ distinct from the 16 shipped ones.</p>
 loader, so even re-running <code>loadPlugins()</code> would not pick up edits on disk.</p>
 <p><strong>Restart the server after any change to a plugin file</strong> — the manifest, a tool,
 or a re-export barrel.</p>
-<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker compose restart a-workbench</code></pre></div>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">docker compose restart workbench</code></pre></div>
 <h2 id="mounting-a-plugin-directory">Mounting a plugin directory<a class="anchor" href="#mounting-a-plugin-directory" aria-label="Link to Mounting a plugin directory">#</a></h2>
 <h3 id="docker-compose">Docker Compose<a class="anchor" href="#docker-compose" aria-label="Link to Docker Compose">#</a></h3>
 <p>The image ships only the built-ins. Bind-mount your plugin tree read-only and
 point <code>PLUGINS_DIR</code> at the mount:</p>
 <div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">services:
-  a-workbench:
-    image: a-workbench:latest
+  workbench:
+    image: workbench:latest
     volumes:
       - /srv/awb-plugins:/srv/awb-plugins:ro
     environment:
@@ -196,7 +196,7 @@ plugin; a <code>PersistentVolumeClaim</code> is better once you ship a logo or s
 files. OAuth credentials belong in a <code>Secret</code>, not the ConfigMap.</p>
 <div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">spec:
   containers:
-    - name: a-workbench
+    - name: workbench
       env:
         - name: PLUGINS_DIR
           value: /srv/awb-plugins
@@ -240,7 +240,7 @@ Then <code>search_tools</code> for one of your tool names, and <code>execute_too
     <nav class="prevnext"><a class="pn pn-prev" href="writing-a-plugin.html"><span class="pn-dir">Previous</span><span class="pn-label">Write your first plugin</span></a><a class="pn pn-next" href="manifest.html"><span class="pn-dir">Next</span><span class="pn-label">Manifest reference</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/plugins/loading.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 

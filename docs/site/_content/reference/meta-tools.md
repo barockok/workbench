@@ -1,6 +1,6 @@
 ---
 title: MCP meta-tools
-description: Complete reference for the nine tools a-workbench exposes over MCP, their parameters, and their response shapes.
+description: Complete reference for the nine tools workbench exposes over MCP, their parameters, and their response shapes.
 ---
 
 `tools/list` on `/mcp` returns exactly nine tools, no matter how many plugin tools

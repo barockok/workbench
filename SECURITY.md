@@ -1,6 +1,6 @@
 # Security Policy
 
-a-workbench brokers per-user OAuth tokens and other credentials for third-party
+workbench brokers per-user OAuth tokens and other credentials for third-party
 SaaS tools. Security issues are taken seriously. Please follow responsible
 disclosure.
 

@@ -3,7 +3,7 @@ title: How it works
 description: The packages, the path a tool call takes, where credentials live, and what the portal is for.
 ---
 
-a-workbench is one Fastify process. It serves the MCP endpoint, the portal API, the
+workbench is one Fastify process. It serves the MCP endpoint, the portal API, the
 portal's static build, the OAuth 2.1 authorization server, the curl proxy, and the
 jots host — all on the same port, registered in a fixed order so API routes win and
 the single-page app only catches genuine client-route 404s.

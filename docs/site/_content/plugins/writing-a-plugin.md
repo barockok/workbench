@@ -262,5 +262,5 @@ catch those.
 
 > [!NOTE] `ctx` is typed `any` in every shipped plugin
 > `ToolContext` is declared in server-internal source and is not exported from
-> `@a-workbench/shared`, so plugins type their handlers `(ctx: any, args: any)`.
+> `@workbench/shared`, so plugins type their handlers `(ctx: any, args: any)`.
 > The [context reference](context.md) documents the shape you can rely on.

@@ -178,7 +178,7 @@ Passwords are redacted from the script's log output.
 ### Dry run
 
 ```bash
-npm run migrate:sqlite-to-postgres -w @a-workbench/server
+npm run migrate:sqlite-to-postgres -w @workbench/server
 ```
 
 Inside the container the built script is invoked directly:
@@ -194,7 +194,7 @@ refuses a non-empty target unless you pass `--allow-nonempty`.
 ### Apply
 
 ```bash
-npm run migrate:sqlite-to-postgres -w @a-workbench/server -- --apply --skip=pending_auth,oauth_auth_codes
+npm run migrate:sqlite-to-postgres -w @workbench/server -- --apply --skip=pending_auth,oauth_auth_codes
 ```
 
 `pending_auth` and `oauth_auth_codes` are minutes-lived handshake state. Skip them

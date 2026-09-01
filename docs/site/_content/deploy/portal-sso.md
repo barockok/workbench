@@ -57,7 +57,7 @@ integrations.
 
 ```bash
 KEYCLOAK_ISSUER_URL=https://sso.example.com/realms/engineering
-KEYCLOAK_CLIENT_ID=a-workbench
+KEYCLOAK_CLIENT_ID=workbench
 KEYCLOAK_CLIENT_SECRET=...
 SERVER_PUBLIC_URL=https://workbench.example.com
 ```
@@ -103,7 +103,7 @@ nothing on it. Use it to check your configuration landed before opening a browse
 ```mermaid
 sequenceDiagram
   participant B as Browser
-  participant S as a-workbench
+  participant S as workbench
   participant I as IdP
   B->>S: GET /api/auth/google
   S->>B: 200 JSON {url} (state, nonce)
@@ -123,7 +123,7 @@ there itself. The only route that answers with a 302 to Google is the MCP OAuth
 
 The session is a stateless **HS256 JWT** signed with `SESSION_SECRET`. Claims are
 `sub` (the user id), `email`, `iat`, `exp`, plus `aud` and `iss` both set to
-`a-workbench`; verification enforces the audience, the issuer, and 5 seconds of
+`workbench`; verification enforces the audience, the issuer, and 5 seconds of
 clock tolerance. The lifetime is **24 hours**.
 
 After either callback the server redirects to `PORTAL_URL` with the token in the
