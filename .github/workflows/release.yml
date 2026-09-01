@@ -112,6 +112,13 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ steps.img.outputs.repo }}
+          # metadata-action defaults to `latest=auto`, which tags `latest` on any
+          # git-tag ref regardless of the `type=raw` entry below. That silently
+          # moved `latest` onto v0.25.0-rc.1 — the one thing the RC path exists to
+          # prevent. Turn the flavor off so the conditional entry is the only
+          # thing that can produce `latest`.
+          flavor: |
+            latest=false
           tags: |
             type=ref,event=tag
             type=raw,value=latest,enable=${{ !contains(github.event.inputs.tag || github.ref_name, '-') }}
