@@ -59,6 +59,7 @@ https://<your-workbench-host>/api/auth/plugin/atlassian-confluence/callback
 | `write:page:confluence` | Create and update pages |
 | `delete:page:confluence` | Move a page to the space trash |
 | `read:space:confluence` | Read space metadata and resolve a space key to its numeric id |
+| `read:attachment:confluence` | List the files attached to a page — backs the `attachments` field on `confluence_get_page` |
 | `search:confluence` | CQL full-text search — backs `confluence_search_pages` |
 | `offline_access` | Issue a refresh token |
 
@@ -89,14 +90,20 @@ wait_for_connection({ connectionId })
 
 | Tool | Purpose |
 |---|---|
-| `confluence_search_pages` | Full-text search returning `{ id, title, spaceKey, version, url }` rows |
-| `confluence_get_page` | One page with its storage-format body, version number, and space |
+| `confluence_search_pages` | Full-text or raw-CQL search returning `{ id, title, spaceKey, version, url }` rows |
+| `confluence_get_page` | One page with its storage-format body, version number, space, and attachment list |
 | `confluence_create_page` | Create a page in a space, optionally nested under a parent |
 | `confluence_update_page` | Update title and body; requires the page's current version number |
 | `confluence_delete_page` | Move a page to the space trash |
 | `confluence_list_spaces` | List spaces as `{ key, name, id, url }` |
 
 ## Notes and gotchas
+
+`confluence_search_pages` takes either `query` for a plain full-text match or `cql` for a raw [CQL](https://developer.atlassian.com/cloud/confluence/advanced-searching-using-cql/) expression — space, label, date and title filters, boolean logic, `ORDER BY`. Pass exactly one; `cql` wins if both are given, and a malformed expression returns the upstream error rather than an empty list. A `cql` string is passed through untouched, so it needs its own `type = page` clause if you want one.
+
+Search and space listing are both cursor-paginated. When `hasMore` is true the response also carries `nextCursor`; call again with the same query and `cursor` set to that value for the next page. The cursor is opaque — pass it back unmodified.
+
+`confluence_get_page` also returns `attachments`: the files attached to or embedded in the page, each with a `downloadUrl`. Attachments and diagram macros never appear in the storage-format body, so a section that is only a draw.io diagram reads as an empty gap without them. The lookup is best-effort — the field is omitted entirely if it failed (an older token minted before `read:attachment:confluence` was added, for instance), as opposed to `[]` for a page that genuinely has none.
 
 Page bodies are Confluence storage format, which is XHTML. Plain text works for simple pages. Anything with structure has to be valid storage-format markup.
 
