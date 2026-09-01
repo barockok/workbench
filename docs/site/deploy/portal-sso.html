@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Portal SSO — a-workbench Docs</title>
+<title>Portal SSO — workbench Docs</title>
 <meta name="description" content="Configuring Google or Keycloak login for the portal — redirect URIs, provider discovery, and the stateless session model.">
-<meta property="og:title" content="Portal SSO — a-workbench">
+<meta property="og:title" content="Portal SSO — workbench">
 <meta property="og:description" content="Configuring Google or Keycloak login for the portal — redirect URIs, provider discovery, and the stateless session model.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="../index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -102,7 +102,7 @@ authorize URL, but without <code>GOOGLE_CLIENT_SECRET</code> the token exchange 
 integrations.</p>
 <h2 id="keycloak">Keycloak<a class="anchor" href="#keycloak" aria-label="Link to Keycloak">#</a></h2>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">KEYCLOAK_ISSUER_URL=https://sso.example.com/realms/engineering
-KEYCLOAK_CLIENT_ID=a-workbench
+KEYCLOAK_CLIENT_ID=workbench
 KEYCLOAK_CLIENT_SECRET=...
 SERVER_PUBLIC_URL=https://workbench.example.com</code></pre></div>
 <p>All three must be set — the provider reports itself configured only when none is
@@ -136,7 +136,7 @@ nothing on it. Use it to check your configuration landed before opening a browse
 <h2 id="the-session-model">The session model<a class="anchor" href="#the-session-model" aria-label="Link to The session model">#</a></h2>
 <div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
   participant B as Browser
-  participant S as a-workbench
+  participant S as workbench
   participant I as IdP
   B-&gt;&gt;S: GET /api/auth/google
   S-&gt;&gt;B: 200 JSON {url} (state, nonce)
@@ -153,7 +153,7 @@ there itself. The only route that answers with a 302 to Google is the MCP OAuth
 <code>GET /authorize</code>.</p>
 <p>The session is a stateless <strong>HS256 JWT</strong> signed with <code>SESSION_SECRET</code>. Claims are
 <code>sub</code> (the user id), <code>email</code>, <code>iat</code>, <code>exp</code>, plus <code>aud</code> and <code>iss</code> both set to
-<code>a-workbench</code>; verification enforces the audience, the issuer, and 5 seconds of
+<code>workbench</code>; verification enforces the audience, the issuer, and 5 seconds of
 clock tolerance. The lifetime is <strong>24 hours</strong>.</p>
 <p>After either callback the server redirects to <code>PORTAL_URL</code> with the token in the
 <strong>URL fragment</strong> — not a query parameter, so it is never sent to the server or
@@ -174,7 +174,7 @@ cookie, since all of them are keyed on the same secret.</p>
     <nav class="prevnext"><a class="pn pn-prev" href="database.html"><span class="pn-dir">Previous</span><span class="pn-label">Database</span></a><a class="pn pn-next" href="security.html"><span class="pn-dir">Next</span><span class="pn-label">Security model</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/portal-sso.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 

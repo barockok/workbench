@@ -65,7 +65,7 @@ The three per-name reasons are `integration not found`, `curl proxy not enabled`
 
 ### The token
 
-- A JWT with audience `a-workbench-curl`, carrying the user id and the list of allowed
+- A JWT with audience `workbench-curl`, carrying the user id and the list of allowed
   integrations.
 - TTL is **900 seconds**, fixed at mint. It is not configurable, and there is no refresh
   or revoke — you mint a new one.

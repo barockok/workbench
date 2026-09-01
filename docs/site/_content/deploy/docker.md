@@ -32,8 +32,8 @@ The runtime stage copies:
 | `packages/portal/dist` | `/app/portal` |
 | `packages/plugins` | `/app/plugins` |
 
-It then deletes `node_modules/@a-workbench` and re-materializes
-`@a-workbench/shared` as a real package — the workspace symlinks dangle because
+It then deletes `node_modules/@workbench` and re-materializes
+`@workbench/shared` as a real package — the workspace symlinks dangle because
 `packages/` is not shipped. Chromium is baked in with
 `npx playwright install --with-deps chromium` and made world-readable so any
 runtime uid can execute it. `tsx@4.19.4` is installed globally.
@@ -65,7 +65,7 @@ that or a plain TCP check on the listen port for orchestrator liveness probes. S
 
 `docker-compose.yml` defines two services.
 
-**`a-workbench`** — `build: .`, published on `3000:3000`.
+**`workbench`** — `build: .`, published on `3000:3000`.
 
 - `env_file: [.env]` pulls SSO credentials *and* every per-plugin OAuth
   credential. Without them `/authorize` and `connect(<plugin>)` fail with
@@ -130,7 +130,7 @@ To add your own plugins, mount them somewhere else and point `PLUGINS_DIR` there
 :::tabs
 ```yaml [docker-compose]
 services:
-  a-workbench:
+  workbench:
     image: ghcr.io/<owner>/<repo>:v0.24.0
     ports:
       - "3000:3000"
@@ -147,7 +147,7 @@ services:
       - ./custom-plugins:/app/custom-plugins:ro
 ```
 ```bash [docker run]
-docker run -d --name a-workbench \
+docker run -d --name workbench \
   -p 3000:3000 \
   --env-file .env \
   -e DATABASE_URL=/data/tokens.db \
@@ -177,7 +177,7 @@ flowchart LR
   A[Agent / MCP client] -->|POST /mcp| P[Reverse proxy TLS]
   B[Browser portal] -->|/api, wss CDP| P
   C[OAuth provider] -->|redirect /api/auth/...| P
-  P -->|HTTP :3000| S[a-workbench]
+  P -->|HTTP :3000| S[workbench]
   S --> D[(Database)]
   S --> X[Chromium profiles]
 ```

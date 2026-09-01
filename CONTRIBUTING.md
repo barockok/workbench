@@ -1,4 +1,4 @@
-# Contributing to a-workbench
+# Contributing to workbench
 
 Thanks for your interest in contributing. This guide covers local setup,
 testing, and the pull-request workflow.

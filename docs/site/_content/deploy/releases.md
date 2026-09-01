@@ -31,7 +31,7 @@ Soak it, then promote.
 > single-architecture image built on the GitHub-hosted `amd64` runner. On Apple
 > Silicon or Graviton it runs under emulation if your Docker supports it, and
 > fails to start if it does not. Build the image yourself on the target
-> architecture (`docker build -t a-workbench .`) for ARM hosts.
+> architecture (`docker build -t workbench .`) for ARM hosts.
 
 > [!WARNING] The tag and `package.json` must agree
 > The release workflow greps the version out of `package.json` and fails the build
@@ -97,8 +97,8 @@ database adapter suite skips itself without a live server, which would leave the
 backend untested, so CI provides one via `TEST_POSTGRES_URL`.
 
 Steps: `npm ci` → `npm run lint` → `npm run build` →
-`npm run typecheck:tests -w @a-workbench/server` →
-`npm run test:coverage -w @a-workbench/server` → Codecov upload with
+`npm run typecheck:tests -w @workbench/server` →
+`npm run test:coverage -w @workbench/server` → Codecov upload with
 `fail_ci_if_error: true`.
 
 Two things to know about that list. `npm run lint` is a no-op — no package defines
@@ -157,7 +157,7 @@ What this step is depends on how your Compose file gets the image, and the
 committed one is not what most people assume.
 
 > [!WARNING] `docker compose pull` does not fetch a release with the shipped file
-> The `a-workbench` service in the committed `docker-compose.yml` declares
+> The `workbench` service in the committed `docker-compose.yml` declares
 > `build: .` and **no `image:` key**. Compose skips a service with no `image:` on
 > `pull` — it prints a "must be built from source" warning and pulls nothing — and
 > `up -d` then rebuilds from whatever is in your local working tree. The published
@@ -169,7 +169,7 @@ committed one is not what most people assume.
 ```yaml
 # docker-compose.override.yml
 services:
-  a-workbench:
+  workbench:
     image: ghcr.io/<owner>/<repo>:v0.25.0
 ```
 

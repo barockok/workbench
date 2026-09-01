@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "workbench": {
+      "type": "http",
+      "url": "https://workbench-uat.amartha.id/mcp"
+    }
+  }
+}

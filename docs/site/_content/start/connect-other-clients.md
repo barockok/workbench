@@ -57,7 +57,7 @@ portal session. The API key needs its own header.
 An unauthenticated call returns HTTP 401 with:
 
 ```
-WWW-Authenticate: Bearer realm="a-workbench",
+WWW-Authenticate: Bearer realm="workbench",
   resource_metadata="<SERVER_PUBLIC_URL>/.well-known/oauth-protected-resource"
 ```
 

@@ -150,7 +150,7 @@ loader, so even re-running `loadPlugins()` would not pick up edits on disk.
 or a re-export barrel.
 
 ```bash
-docker compose restart a-workbench
+docker compose restart workbench
 ```
 
 ## Mounting a plugin directory
@@ -162,8 +162,8 @@ point `PLUGINS_DIR` at the mount:
 
 ```yaml
 services:
-  a-workbench:
-    image: a-workbench:latest
+  workbench:
+    image: workbench:latest
     volumes:
       - /srv/awb-plugins:/srv/awb-plugins:ro
     environment:
@@ -183,7 +183,7 @@ files. OAuth credentials belong in a `Secret`, not the ConfigMap.
 ```yaml
 spec:
   containers:
-    - name: a-workbench
+    - name: workbench
       env:
         - name: PLUGINS_DIR
           value: /srv/awb-plugins

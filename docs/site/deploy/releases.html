@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Releases &amp; upgrades — a-workbench Docs</title>
+<title>Releases &amp; upgrades — workbench Docs</title>
 <meta name="description" content="How versions are cut, what the release-candidate convention buys you, what CI does, and how to upgrade a running deployment.">
-<meta property="og:title" content="Releases &amp; upgrades — a-workbench">
+<meta property="og:title" content="Releases &amp; upgrades — workbench">
 <meta property="og:description" content="How versions are cut, what the release-candidate convention buys you, what CI does, and how to upgrade a running deployment.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="../index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -79,7 +79,7 @@ out as an RC first. Pull it explicitly by tag:</p>
 single-architecture image built on the GitHub-hosted <code>amd64</code> runner. On Apple
 Silicon or Graviton it runs under emulation if your Docker supports it, and
 fails to start if it does not. Build the image yourself on the target
-architecture (<code>docker build -t a-workbench .</code>) for ARM hosts.</p>
+architecture (<code>docker build -t workbench .</code>) for ARM hosts.</p>
 </div></div>
 
 
@@ -133,8 +133,8 @@ matrix, with a <code>postgres:16</code> service container. The PostgreSQL half o
 database adapter suite skips itself without a live server, which would leave the
 backend untested, so CI provides one via <code>TEST_POSTGRES_URL</code>.</p>
 <p>Steps: <code>npm ci</code> → <code>npm run lint</code> → <code>npm run build</code> →
-<code>npm run typecheck:tests -w @a-workbench/server</code> →
-<code>npm run test:coverage -w @a-workbench/server</code> → Codecov upload with
+<code>npm run typecheck:tests -w @workbench/server</code> →
+<code>npm run test:coverage -w @workbench/server</code> → Codecov upload with
 <code>fail_ci_if_error: true</code>.</p>
 <p>Two things to know about that list. <code>npm run lint</code> is a no-op — no package defines
 a <code>lint</code> script, so the turbo task resolves to zero work and exits 0. And the
@@ -177,7 +177,7 @@ MCP access and refresh token, connect token, curl session, and jot cookie at onc
 <h3 id="move-to-the-new-version-and-restart">Move to the new version and restart<a class="anchor" href="#move-to-the-new-version-and-restart" aria-label="Link to Move to the new version and restart">#</a></h3>
 <p>What this step is depends on how your Compose file gets the image, and the
 committed one is not what most people assume.</p>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`docker compose pull` does not fetch a release with the shipped file</span></div><div class="callout-body"><p>The <code>a-workbench</code> service in the committed <code>docker-compose.yml</code> declares
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`docker compose pull` does not fetch a release with the shipped file</span></div><div class="callout-body"><p>The <code>workbench</code> service in the committed <code>docker-compose.yml</code> declares
 <code>build: .</code> and <strong>no <code>image:</code> key</strong>. Compose skips a service with no <code>image:</code> on
 <code>pull</code> — it prints a &quot;must be built from source&quot; warning and pulls nothing — and
 <code>up -d</code> then rebuilds from whatever is in your local working tree. The published
@@ -188,7 +188,7 @@ GHCR tag is never fetched. Pick one of the two procedures below.</p>
 <code>build:</code>, in an override file so the repo copy stays untouched:</p>
 <div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml"># docker-compose.override.yml
 services:
-  a-workbench:
+  workbench:
     image: ghcr.io/&lt;owner&gt;/&lt;repo&gt;:v0.25.0</code></pre></div>
 <p><code>&lt;owner&gt;/&lt;repo&gt;</code> is your repository path lowercased — the workflow lowercases
 <code>GITHUB_REPOSITORY</code> before tagging. Then, for each upgrade, edit the tag in that
@@ -224,7 +224,7 @@ the two secrets. Treat those as one-way.</p>
     <nav class="prevnext"><a class="pn pn-prev" href="observability.html"><span class="pn-dir">Previous</span><span class="pn-label">Observability</span></a><a class="pn pn-next" href="../reference/meta-tools.html"><span class="pn-dir">Next</span><span class="pn-label">MCP meta-tools</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/releases.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 

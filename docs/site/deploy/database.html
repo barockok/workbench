@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Database — a-workbench Docs</title>
+<title>Database — workbench Docs</title>
 <meta name="description" content="Choosing SQLite or PostgreSQL, what else derives from DATABASE_URL, migrating between them, cluster mode, and the dialect traps that reach operators.">
-<meta property="og:title" content="Database — a-workbench">
+<meta property="og:title" content="Database — workbench">
 <meta property="og:description" content="Choosing SQLite or PostgreSQL, what else derives from DATABASE_URL, migrating between them, cluster mode, and the dialect traps that reach operators.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="../assets/docs.css">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -25,7 +25,7 @@
     </button>
     <a class="brand" href="../index.html">
       <span class="brand-mark" aria-hidden="true">w</span>
-      <span class="brand-name">a-workbench</span>
+      <span class="brand-name">workbench</span>
       <span class="brand-sub">Docs</span>
     </a>
     <button class="search-btn" type="button" data-search-open>
@@ -204,14 +204,14 @@ path, else <code>/data/tokens.db</code>. Target: <code>TARGET_DATABASE_URL</code
 export TARGET_DATABASE_URL=postgres://user:pw@db.internal:5432/workbench</code></pre></div>
 <p>Passwords are redacted from the script&#39;s log output.</p>
 <h3 id="dry-run">Dry run<a class="anchor" href="#dry-run" aria-label="Link to Dry run">#</a></h3>
-<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run migrate:sqlite-to-postgres -w @a-workbench/server</code></pre></div>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run migrate:sqlite-to-postgres -w @workbench/server</code></pre></div>
 <p>Inside the container the built script is invoked directly:</p>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">tsx server/migrate/sqlite-to-postgres.js</code></pre></div>
 <p>The dry run applies the production schema to the target, diffs source against
 target columns and reports any source-only column that will not be copied, and
 refuses a non-empty target unless you pass <code>--allow-nonempty</code>.</p>
 <h3 id="apply">Apply<a class="anchor" href="#apply" aria-label="Link to Apply">#</a></h3>
-<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run migrate:sqlite-to-postgres -w @a-workbench/server -- --apply --skip=pending_auth,oauth_auth_codes</code></pre></div>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run migrate:sqlite-to-postgres -w @workbench/server -- --apply --skip=pending_auth,oauth_auth_codes</code></pre></div>
 <p><code>pending_auth</code> and <code>oauth_auth_codes</code> are minutes-lived handshake state. Skip them
 unless the cutover is immediate.</p>
 <p>The copy is one transaction, batched and rowid-paged, inserting with
@@ -271,7 +271,7 @@ the name it inserts into whichever backend is configured, PostgreSQL included.</
     <nav class="prevnext"><a class="pn pn-prev" href="docker.html"><span class="pn-dir">Previous</span><span class="pn-label">Docker &amp; Compose</span></a><a class="pn pn-next" href="portal-sso.html"><span class="pn-dir">Next</span><span class="pn-label">Portal SSO</span></a></nav>
     <footer class="page-foot">
       <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/database.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
-      <span>a-workbench v0.24.0</span>
+      <span>workbench v0.24.0</span>
     </footer>
   </main>
 
