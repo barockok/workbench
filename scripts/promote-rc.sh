@@ -28,7 +28,18 @@ STABLE_VERSION="${BASH_REMATCH[1]}"
 STABLE_TAG="v${STABLE_VERSION}"
 NOTES="docs/releases/${STABLE_TAG}.md"
 
-git fetch --tags --quiet origin
+# Not --quiet: a rejected tag update is the most likely failure here, and the
+# reason is only in git's own output. This repo's history was rewritten with
+# filter-repo when it was published, so a clone made before that has tags
+# pointing at pre-rewrite commits and this fetch fails with "would clobber
+# existing tag" — which, silenced, looks exactly like the script dying for no
+# reason.
+if ! git fetch --tags origin; then
+  die "git fetch --tags failed (see above).
+  If it reported 'would clobber existing tag', your local tags point at
+  pre-rewrite commits. Take origin as the source of truth and retry:
+      git fetch --tags --force origin"
+fi
 
 git rev-parse -q --verify "refs/tags/${RC_TAG}" >/dev/null \
   || die "$RC_TAG does not exist — cut the RC first"
