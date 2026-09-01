@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works — a-workbench Docs</title>
+<meta name="description" content="The packages, the path a tool call takes, where credentials live, and what the portal is for.">
+<meta property="og:title" content="How it works — a-workbench">
+<meta property="og:description" content="The packages, the path a tool call takes, where credentials live, and what the portal is for.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab active" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Introduction</p><ul><li><a class="" href="../index.html">What is a-workbench?</a></li><li><a class="" href="quickstart.html">Quickstart</a></li><li><a class="active" href="how-it-works.html">How it works</a></li><li><a class="" href="concepts.html">Core concepts</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Connect an agent</p><ul><li><a class="" href="connect-claude-code.html">Claude Code</a></li><li><a class="" href="connect-other-clients.html">Other MCP clients</a></li><li><a class="" href="first-connection.html">Your first integration</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Introduction</p>
+          <h1>How it works</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">The packages, the path a tool call takes, where credentials live, and what the portal is for.</p>
+      <p>a-workbench is one Fastify process. It serves the MCP endpoint, the portal API, the
+portal&#39;s static build, the OAuth 2.1 authorization server, the curl proxy, and the
+jots host — all on the same port, registered in a fixed order so API routes win and
+the single-page app only catches genuine client-route 404s.</p>
+<h2 id="the-packages">The packages<a class="anchor" href="#the-packages" aria-label="Link to The packages">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Package</th><th>What it is</th></tr></thead><tbody>
+<tr><td><code>packages/shared</code></td><td>Types and Zod schemas shared by server and portal — <code>Integration</code>, the four auth configs, <code>ToolDefinition</code>.</td></tr>
+<tr><td><code>packages/server</code></td><td>Fastify app: MCP endpoint, meta-tools, plugin loader and registry, auth (portal SSO, API keys, OAuth 2.1 AS, plugin OAuth), the browser-session machinery, audit log, metrics.</td></tr>
+<tr><td><code>packages/portal</code></td><td>Vite + React + TanStack Query SPA. Built to static files and served by the server in production.</td></tr>
+<tr><td><code>packages/plugins</code></td><td>The 16 shipped integrations, one directory each: <code>manifest.ts</code> plus <code>tools/index.ts</code>.</td></tr>
+</tbody></table></div>
+<p>Two more integrations — <code>browser</code> and <code>jots</code> — live inside the server source rather
+than under <code>packages/plugins</code>. Their handlers reach directly into the browser
+session and the jot store, and keeping them out of the plugin directory keeps those
+capabilities out of the plugin context, so a third-party plugin can never drive a
+user&#39;s logged-in capture browser. Their names are reserved: a plugin directory
+called <code>browser</code> or <code>jots</code> is refused at load.</p>
+<h2 id="what-a-tool-call-does">What a tool call does<a class="anchor" href="#what-a-tool-call-does" aria-label="Link to What a tool call does">#</a></h2>
+<p><code>tools/list</code> returns only the meta-tools. A plugin tool is reached through
+<code>execute_tools</code>, which resolves the name against the registry and runs it.</p>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+  participant A as Agent
+  participant M as POST /mcp
+  participant E as execute_tools
+  participant R as Registry
+  participant D as Token store
+  participant P as Provider API
+  participant L as Audit log
+
+  A-&gt;&gt;M: tools/call execute_tools&lt;br/&gt;{executions:[{tool,args}]}
+  M-&gt;&gt;M: resolve user (api key / OAuth / session)
+  M-&gt;&gt;E: validated meta-tool args
+  E-&gt;&gt;R: look up tool by name
+  R--&gt;&gt;E: integration + Zod inputSchema + handler
+  E-&gt;&gt;D: connected?
+  alt not connected
+    D--&gt;&gt;E: no credential
+    E--&gt;&gt;A: {error:&quot;NOT_CONNECTED&quot;, integration, message}
+  else connected
+    E-&gt;&gt;E: safeParse args (applies Zod defaults)
+    E-&gt;&gt;R: handler(ctx, args)
+    R-&gt;&gt;D: ctx.getToken() — decrypt, refresh if near expiry
+    R-&gt;&gt;P: ctx.http(url) with credential injected
+    P--&gt;&gt;R: response
+    R--&gt;&gt;E: result
+    E-&gt;&gt;L: EXECUTE — user, integration, tool, success, duration
+    E--&gt;&gt;A: {results:[{result}]}
+  end</pre></div>
+<p>Four things about that path are worth knowing before you write a client.</p>
+<p><strong>Failures come back as successes.</strong> Inside <code>tools/call</code>, only two things produce a
+JSON-RPC <code>error</code>: an unknown meta-tool name, and meta-tool arguments that fail their
+schema — both code <code>-32602</code>. (The endpoint also emits <code>-32601 Method not found</code> for an
+unrecognised method and <code>-32001 Unauthorized</code> for a missing or bad credential.) A plugin tool that doesn&#39;t exist, isn&#39;t connected, or throws arrives
+as a <em>successful</em> result whose text content contains <code>{&quot;results&quot;:[{&quot;error&quot;: …}]}</code>.
+A client that only inspects the JSON-RPC <code>error</code> field will read tool failures as
+successes.</p>
+<p><strong><code>NOT_CONNECTED</code> is the cue to connect.</strong> It is the only error shape carrying
+extra fields — <code>integration</code> and a <code>message</code> naming the <code>connect()</code> call to make.</p>
+<p><strong>Arguments are validated against the plugin&#39;s own Zod schema</strong> before the handler
+runs, so <code>.default()</code> values are filled in. A validation failure returns
+<code>Invalid arguments for &lt;tool&gt;: …</code> rather than reaching the handler.</p>
+<p><strong>Batches are concurrent and independent.</strong> <code>execute_tools</code> runs up to 8 at a time
+through a bounded pool and returns <code>results</code> index-aligned with <code>executions</code>. One
+failure does not abort the others.</p>
+<h2 id="where-credentials-live">Where credentials live<a class="anchor" href="#where-credentials-live" aria-label="Link to Where credentials live">#</a></h2>
+<p>Everything persistent is one row per user per integration in a <code>connections</code> table,
+in SQLite or PostgreSQL — the backend is chosen by whether <code>DATABASE_URL</code> starts
+with <code>postgres://</code> or <code>postgresql://</code>. Anything else is treated as a SQLite file path.</p>
+<div class="table-wrap"><table><thead><tr><th>Column</th><th>Contents</th></tr></thead><tbody>
+<tr><td><code>access_token</code></td><td>AES-256-GCM ciphertext. For cookie integrations this holds a sentinel; the bundle is in <code>cookies</code>.</td></tr>
+<tr><td><code>refresh_token</code></td><td>AES-256-GCM ciphertext.</td></tr>
+<tr><td><code>cookies</code></td><td>AES-256-GCM ciphertext of the captured cookie bundle.</td></tr>
+<tr><td><code>expires_at</code>, <code>scopes</code></td><td>Plaintext.</td></tr>
+<tr><td><code>config</code></td><td>Plaintext JSON — per-connection settings such as a self-hosted instance origin or a New Relic region.</td></tr>
+</tbody></table></div>
+<p>The key is <code>ENCRYPTION_KEY</code>, read once at module load. The stored layout is a
+16-byte IV, a 16-byte auth tag, then ciphertext.</p>
+<p>Third-party tokens refresh lazily, on use: when <code>ctx.getToken()</code> sees the token
+expiring within 30 seconds it performs a <code>refresh_token</code> exchange, re-stores the
+result, and hands back the new token. There is no background refresh job. If no
+refresh token was stored, the call throws.</p>
+<p>Tokens the <em>agent</em> uses to reach the workbench are a different set. See
+<a href="connect-other-clients.html">Other MCP clients</a> for the three-credential model.</p>
+<h2 id="connecting-an-integration">Connecting an integration<a class="anchor" href="#connecting-an-integration" aria-label="Link to Connecting an integration">#</a></h2>
+<p>An OAuth connection is started by the agent or the portal, consented in a browser,
+and completed by a server-side callback. The agent never sees the provider token.</p>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+  participant A as Agent
+  participant W as Workbench
+  participant U as User's browser
+  participant P as Provider
+
+  A-&gt;&gt;W: connect({integration})
+  W-&gt;&gt;W: create PENDING record + PKCE verifier
+  W--&gt;&gt;A: {connectionId, type:&quot;oauth2&quot;, url}
+  A-&gt;&gt;A: wait_for_connection({connectionId})
+  A--&gt;&gt;U: opens url
+  U-&gt;&gt;P: consent screen
+  P--&gt;&gt;U: redirect with ?code
+  U-&gt;&gt;W: GET /api/auth/plugin/:integration/callback
+  W-&gt;&gt;P: exchange code (+ code_verifier)
+  P--&gt;&gt;W: access + refresh token
+  W-&gt;&gt;W: encrypt, store, mark CONNECTED
+  W--&gt;&gt;U: redirect to portal
+  W--&gt;&gt;A: wait_for_connection → CONNECTED</pre></div>
+<p>The callback path is <code>/api/auth/plugin/:integration/callback</code> for every plugin —
+the <code>/plugin/</code> segment exists so it cannot collide with the portal&#39;s own
+<code>/api/auth/google/callback</code>. That is the URL to register in a provider console.</p>
+<p>PKCE is used on every plugin OAuth flow, confidential clients included; the
+verifier stays server-side. Each plugin has its own client credentials, named from
+the plugin in upper snake case — <code>google-gmail</code> becomes <code>GOOGLE_GMAIL_CLIENT_ID</code>
+and <code>GOOGLE_GMAIL_CLIENT_SECRET</code>. An unset secret with a set ID is valid and means
+a public, PKCE-only client.</p>
+<p><code>wait_for_connection</code> polls once a second and returns <code>CONNECTED</code>, <code>TIMEOUT</code>, or
+<code>EXPIRED</code> — or <code>{ error: &quot;Unknown connectionId&quot; }</code> if the id does not exist or
+belongs to another user. The pending record is in-process, so it is not shared
+across cluster workers.</p>
+<p>Not every auth mode goes through <code>connect</code>. API-key integrations are connected
+from the portal, which renders the manifest&#39;s declared fields and posts them;
+there is no agent-side path. Cookie integrations return a portal login URL the
+user opens to sign in live and capture a session.</p>
+<h2 id="what-the-portal-is-for">What the portal is for<a class="anchor" href="#what-the-portal-is-for" aria-label="Link to What the portal is for">#</a></h2>
+<p>The portal is the human half. The agent cannot do any of it.</p>
+<ul>
+<li>Sign in through Google or Keycloak SSO. There is no local password login.</li>
+<li>Mint, reveal, rotate, and revoke the workbench API key.</li>
+<li>Connect and disconnect integrations, including the API-key and cookie flows the
+agent has no access to.</li>
+<li>See which MCP clients hold live refresh tokens on the account, and revoke one.
+Revocation deletes refresh tokens and outstanding authorization codes; access
+tokens already issued are self-contained JWTs and lapse at their TTL.</li>
+<li>Drive a live browser session for cookie capture, over an origin-gated CDP
+WebSocket proxy.</li>
+</ul>
+<p>In production the built SPA is served by the same process, so the portal origin and
+the <code>/mcp</code> origin are the same host.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="quickstart.html"><span class="pn-dir">Previous</span><span class="pn-label">Quickstart</span></a><a class="pn pn-next" href="concepts.html"><span class="pn-dir">Next</span><span class="pn-label">Core concepts</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/start/how-it-works.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#the-packages">The packages</a></li><li class="toc-h2"><a href="#what-a-tool-call-does">What a tool call does</a></li><li class="toc-h2"><a href="#where-credentials-live">Where credentials live</a></li><li class="toc-h2"><a href="#connecting-an-integration">Connecting an integration</a></li><li class="toc-h2"><a href="#what-the-portal-is-for">What the portal is for</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

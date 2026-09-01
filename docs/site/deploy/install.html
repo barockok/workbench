@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install — a-workbench Docs</title>
+<meta name="description" content="Run the server from source — Node and npm requirements, the workspace layout, the two required secrets, and how to create your first user.">
+<meta property="og:title" content="Install — a-workbench">
+<meta property="og:description" content="Run the server from source — Node and npm requirements, the workspace layout, the two required secrets, and how to create your first user.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab" href="../guides/discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab active" href="install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Running the server</p><ul><li><a class="active" href="install.html">Install</a></li><li><a class="" href="docker.html">Docker &amp; Compose</a></li><li><a class="" href="database.html">Database</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Production</p><ul><li><a class="" href="portal-sso.html">Portal SSO</a></li><li><a class="" href="security.html">Security model</a></li><li><a class="" href="observability.html">Observability</a></li><li><a class="" href="releases.html">Releases &amp; upgrades</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Running the server</p>
+          <h1>Install</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Run the server from source — Node and npm requirements, the workspace layout, the two required secrets, and how to create your first user.</p>
+      <p>a-workbench is an npm workspace monorepo. There is one server process, one React
+portal that the server also serves as static files in production, and a set of
+plugin packages the server imports at boot.</p>
+<h2 id="requirements">Requirements<a class="anchor" href="#requirements" aria-label="Link to Requirements">#</a></h2>
+<p>No package declares an <code>engines</code> field, so the effective floor comes from what is
+actually built and tested:</p>
+<div class="table-wrap"><table><thead><tr><th></th><th>Version</th><th>Where that comes from</th></tr></thead><tbody>
+<tr><td>Node</td><td>20 or 22</td><td>CI matrix runs both; the release build and the Docker image use 20</td></tr>
+<tr><td>npm</td><td>10.2.0</td><td><code>packageManager</code> in the root <code>package.json</code></td></tr>
+</tbody></table></div>
+<p>Chromium is only needed for cookie-auth and browser-session integrations. In the
+Docker image it is baked in; locally, Playwright installs it as a dependency.</p>
+<h2 id="workspace-layout">Workspace layout<a class="anchor" href="#workspace-layout" aria-label="Link to Workspace layout">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Package</th><th>Name</th><th>What it is</th></tr></thead><tbody>
+<tr><td><code>packages/shared</code></td><td><code>@a-workbench/shared</code></td><td>Types and zod schemas shared by server and portal</td></tr>
+<tr><td><code>packages/server</code></td><td><code>@a-workbench/server</code></td><td>Fastify app: MCP endpoint, HTTP API, auth, plugin loader</td></tr>
+<tr><td><code>packages/portal</code></td><td><code>@a-workbench/portal</code></td><td>Vite + React connection-management UI</td></tr>
+<tr><td><code>packages/plugins</code></td><td>—</td><td>The 16 built-in integrations, one directory each</td></tr>
+<tr><td><code>packages/sample-oauth</code></td><td><code>@a-workbench/sample-oauth</code></td><td>A throwaway OAuth provider for testing the connect flow</td></tr>
+</tbody></table></div>
+<h2 id="commands">Commands<a class="anchor" href="#commands" aria-label="Link to Commands">#</a></h2>
+<p>All four root scripts are thin <code>turbo</code> wrappers.</p>
+<div class="table-wrap"><table><thead><tr><th>Command</th><th>Task graph</th><th>What actually runs</th></tr></thead><tbody>
+<tr><td><code>npm run build</code></td><td><code>dependsOn: [&quot;^build&quot;]</code> — topological</td><td><code>shared</code> → <code>tsc</code>; <code>server</code> → <code>tsc</code>; <code>portal</code> → <code>tsc &amp;&amp; vite build</code>; <code>sample-oauth</code> → <code>tsc</code></td></tr>
+<tr><td><code>npm run test</code></td><td><code>dependsOn: [&quot;build&quot;]</code></td><td><code>server</code> → <code>NODE_ENV=test vitest run</code>; <code>shared</code> → <code>vitest run</code></td></tr>
+<tr><td><code>npm run dev</code></td><td><code>cache: false</code>, <code>persistent</code></td><td><code>server</code> → <code>tsx watch --env-file=../../.env src/index.ts</code>; <code>portal</code> → <code>vite</code>; <code>sample-oauth</code> → <code>tsx watch</code></td></tr>
+<tr><td><code>npm run lint</code></td><td>—</td><td>Nothing. No package defines a <code>lint</code> script, so the task resolves to zero work and exits 0</td></tr>
+</tbody></table></div>
+<p>The <code>test</code> task declares <code>ENCRYPTION_KEY</code> and <code>NODE_ENV</code> in its turbo <code>env</code> list,
+so those two values are part of the cache key — a run under a different
+encryption key never reuses a cached result.</p>
+<p>Two server-only scripts are worth knowing:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm run typecheck:tests -w @a-workbench/server   # tsconfig.json covers only src/
+npm run test:coverage   -w @a-workbench/server   # what CI runs</code></pre></div>
+<h2 id="minimum-viable-configuration">Minimum viable configuration<a class="anchor" href="#minimum-viable-configuration" aria-label="Link to Minimum viable configuration">#</a></h2>
+<p>Two variables are required. Everything else has a default.</p>
+<div class="table-wrap"><table><thead><tr><th>Variable</th><th>Requirement</th><th>Generate with</th></tr></thead><tbody>
+<tr><td><code>ENCRYPTION_KEY</code></td><td>exactly 64 characters — 32 bytes of hex</td><td><code>openssl rand -hex 32</code></td></tr>
+<tr><td><code>SESSION_SECRET</code></td><td>at least 32 characters</td><td><code>openssl rand -base64 32</code></td></tr>
+</tbody></table></div>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cp .env.example .env
+printf 'ENCRYPTION_KEY=%s\n' &quot;$(openssl rand -hex 32)&quot; &gt;&gt; .env
+printf 'SESSION_SECRET=%s\n' &quot;$(openssl rand -base64 32)&quot; &gt;&gt; .env</code></pre></div>
+<p><code>ENCRYPTION_KEY</code> is the AES-256-GCM key for every stored OAuth token, cookie
+bundle, and API key copy. <code>SESSION_SECRET</code> signs four HS256 JWT types — the portal
+session, MCP OAuth access tokens, connect tokens, and curl-session tokens — and
+also keys the jot unlock cookie, which is a plain HMAC-SHA256 digest rather than a
+JWT. Rotating the secret invalidates all five at once.</p>
+<p>Both default to the empty string outside tests, and both have a length
+constraint, so leaving them unset is a validation failure rather than a silent
+weak default.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">A bad value crashes the process at boot</span></div><div class="callout-body"><p>The whole configuration is one zod schema, and <code>configSchema.parse(process.env)</code>
+runs at module import time. A short <code>SESSION_SECRET</code>, a 63-character
+<code>ENCRYPTION_KEY</code>, a non-URL <code>SERVER_PUBLIC_URL</code>, or <code>CLUSTER_ENABLED=yes</code>
+(the enum accepts only <code>true</code>/<code>false</code>/<code>1</code>/<code>0</code>) aborts startup before any
+route, plugin, or database call runs.</p>
+</div></div>
+
+<p>The full table is in <a href="../reference/environment.html">environment variables</a>.</p>
+<h2 id="dev-ports">Dev ports<a class="anchor" href="#dev-ports" aria-label="Link to Dev ports">#</a></h2>
+<p>The Vite dev server binds port 3000 with <code>strictPort: true</code> and proxies <code>/api</code>
+(with WebSocket upgrade) and <code>/callback</code> to <code>http://localhost:3001</code>. The intended
+dev layout is therefore <strong>portal on 3000, server on 3001</strong>.</p>
+<p><code>PORTAL_URL</code> defaults to <code>http://localhost:5173</code>, which is Vite&#39;s stock port and
+not the one this repo uses. <code>PORTAL_URL</code> is half of the WebSocket origin
+allowlist for the CDP live-view proxies, so leaving the default in place makes
+browser-session capture fail with a 403.</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cat &gt;&gt; .env &lt;&lt;'EOF'
+PORT=3001
+PORTAL_URL=http://localhost:3000
+SERVER_PUBLIC_URL=http://localhost:3001
+EOF</code></pre></div>
+<p>Then:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">npm install
+npm run dev</code></pre></div>
+<h2 id="create-the-first-user">Create the first user<a class="anchor" href="#create-the-first-user" aria-label="Link to Create the first user">#</a></h2>
+<p>There is no local password login and no user-creation endpoint. Users are created
+either by an SSO callback (see <a href="portal-sso.html">portal SSO</a>) or by the seed script,
+which is the way to get going without configuring an identity provider.</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">cd packages/server
+npx tsx --env-file=../../.env scripts/seed-local-user.ts [userId]</code></pre></div>
+<p>The user id defaults to <code>local-dev-user</code>. The script prints a workbench API key —
+send it as the <code>x-workbench-api-key</code> header to authenticate against both <code>/api/*</code>
+and <code>/mcp</code>. Re-running for the same user id rotates the key.</p>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">`POST /api/admin/users` does not exist</span></div><div class="callout-body"><p>Older onboarding docs described an admin user-creation endpoint. There is no
+<code>/api/admin/*</code> route in the server. Use the seed script or SSO.</p>
+</div></div>
+
+<p>To rotate or reveal a key later, the portal-authenticated routes are
+<code>POST /api/keys</code>, <code>GET /api/keys</code>, <code>GET /api/keys/reveal</code>, and <code>DELETE /api/keys</code>.</p>
+<h2 id="testing-oauth-without-a-real-provider">Testing OAuth without a real provider<a class="anchor" href="#testing-oauth-without-a-real-provider" aria-label="Link to Testing OAuth without a real provider">#</a></h2>
+<p><code>packages/sample-oauth</code> is a minimal OAuth authorization server that listens on
+port 3002 and is wired into <code>docker-compose.yml</code> as its own service. It exists so
+contributors can exercise the plugin OAuth connect flow — authorize, callback,
+token exchange — without registering an application with Google, Atlassian, or
+anyone else. <code>npm run dev</code> starts it alongside the server.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="../plugins/auth-modes.html"><span class="pn-dir">Previous</span><span class="pn-label">Auth modes</span></a><a class="pn pn-next" href="docker.html"><span class="pn-dir">Next</span><span class="pn-label">Docker &amp; Compose</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/deploy/install.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#requirements">Requirements</a></li><li class="toc-h2"><a href="#workspace-layout">Workspace layout</a></li><li class="toc-h2"><a href="#commands">Commands</a></li><li class="toc-h2"><a href="#minimum-viable-configuration">Minimum viable configuration</a></li><li class="toc-h2"><a href="#dev-ports">Dev ports</a></li><li class="toc-h2"><a href="#create-the-first-user">Create the first user</a></li><li class="toc-h2"><a href="#testing-oauth-without-a-real-provider">Testing OAuth without a real provider</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>

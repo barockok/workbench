@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to a-workbench, newest first. The latest release also lives in `RELEASE_NOTES.md`.
+All notable changes to a-workbench, newest first. Full notes for each release live in `docs/releases/<tag>.md`.
 
 ---
 

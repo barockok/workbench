@@ -1,81 +1,104 @@
+<div align="center">
+
 # a-workbench
+
+**Self-hosted MCP tool aggregator.** One endpoint, per-user OAuth, 178 tools across 16 integrations — behind 9 meta-tools.
+
+[**Documentation**](docs/site/_content/index.md) ·
+[Quickstart](docs/site/_content/start/quickstart.md) ·
+[Integrations](docs/site/_content/integrations/index.md) ·
+[Build a plugin](docs/site/_content/plugins/index.md) ·
+[Deploy](docs/site/_content/deploy/install.md)
 
 [![CI](https://github.com/barockok/workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/barockok/workbench/actions)
 [![codecov](https://codecov.io/gh/barockok/workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/barockok/workbench)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Self-hosted MCP tool aggregator for AI agents.
+</div>
 
-## Features
+---
 
-- **Meta-tool pattern** — 5 static tools, unlimited integrations
-- **Plugin SDK** — easy to add new integrations
-- **Per-user OAuth** — secure token storage with AES-256-GCM
-- **React portal** — connection management UI
-- **Pluggable audit log** — SQLite, stdout, or Kafka
+Give an agent one MCP endpoint instead of sixteen. a-workbench holds a separate
+OAuth connection per user per provider, encrypts every token at rest, and exposes
+every integration through a fixed set of nine meta-tools — so the agent's tool
+list stays the same size whether one integration is connected or all of them.
 
-## Quick Start
+```mermaid
+flowchart LR
+  Agent["Agent"] -->|JSON-RPC| MCP["POST /mcp"]
+  MCP --> Meta["9 meta-tools"]
+  Meta --> Reg["Plugin registry<br/>16 integrations · 178 tools"]
+  Reg -->|credential injected| APIs["Jira · GitHub · Slack · Google · …"]
+  Portal["Portal"] --> Store[("Encrypted tokens")]
+  Meta -.-> Store
+```
+
+## Quickstart
 
 ```bash
-# Setup
-cp .env.example .env
+git clone https://github.com/barockok/workbench.git && cd workbench
 npm install
 
-# Dev
+cp .env.example .env
+# Both are required — the server refuses to boot without them.
+echo "ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env
+echo "SESSION_SECRET=$(openssl rand -base64 32)" >> .env
+
 npm run dev
-
-# Test
-npm run test
-
-# Build
-npm run build
-
-# Docker
-docker-compose up -d
 ```
 
-## Configuration
+Then open the portal, connect an integration, mint an API key, and point your MCP
+client at `http://localhost:3000/mcp`. The full walkthrough is in the
+[Quickstart](docs/site/_content/start/quickstart.md).
 
-Copy `.env.example` to `.env` and fill in the required values. See [docs/architecture.md](docs/architecture.md) for details on each variable.
+## Documentation
 
-### Google Workspace SSO (optional)
+The docs are the product surface — start there, not here.
 
-To enable Google Sign-In:
+| Section | What's in it |
+|---|---|
+| [Get started](docs/site/_content/index.md) | What it is, how it works, connecting an agent |
+| [Guides](docs/site/_content/guides/discovering-tools.md) | Discovering and executing tools, OAuth, browser sessions, raw API calls, troubleshooting |
+| [Integrations](docs/site/_content/integrations/index.md) | Every provider: exact scopes, setup steps, full tool list |
+| [Build plugins](docs/site/_content/plugins/index.md) | Manifest reference, plugin context API, the four auth modes |
+| [Deploy](docs/site/_content/deploy/install.md) | Docker, PostgreSQL, portal SSO, security, observability, releases |
+| [Reference](docs/site/_content/reference/meta-tools.md) | All 9 meta-tools, every HTTP route, every environment variable, the tool catalog |
+| [Field notes](docs/site/_content/field-notes/index.md) | Production failures, root causes, and what changed |
 
-1. Create OAuth 2.0 credentials in [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. Add `http://localhost:5173/auth/google/callback` as an authorized redirect URI
-3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in your `.env`
-4. Set `SESSION_SECRET` to a random 32+ character string for JWT signing
+## What's in the box
 
-## Architecture
+| | |
+|---|---|
+| Integrations | 16 on disk, plus 2 internal (`browser`, `jots`) |
+| Tools | 178 plugin tools, reached through 9 meta-tools |
+| Auth modes | `oauth2`, `apikey`, `cookie`, `none` |
+| Agent auth | Workbench API key or OAuth 2.1 (dynamic registration + PKCE) |
+| Portal SSO | Google, Keycloak, or both |
+| Database | SQLite or PostgreSQL, with a migration path between them |
+| Stack | TypeScript, Fastify, MCP TypeScript SDK, React portal |
 
-See [docs/architecture.md](docs/architecture.md).
+## Development
 
-## Usage
-
-See [docs/how-to-use.md](docs/how-to-use.md).
-
-## Onboarding
-
-See [docs/how-to-onboard.md](docs/how-to-onboard.md).
-
-## Adding a Plugin
-
-```typescript
-// plugins/my-integration/manifest.ts
-export default {
-  name: "my-integration",
-  version: "1.0.0",
-  auth: { type: "none" },
-};
+```bash
+npm run dev      # start dev servers
+npm run test     # run tests
+npm run build    # build all packages
+npm run lint     # lint all packages
 ```
 
-## TODO
+The docs site is generated from Markdown by a script with no framework:
 
-- [ ] Admin docs: how to get credentials (Google app ID, Slack token, Jira OAuth, etc.)
-- [ ] Claude skill: `/run-workbench` — start local dev server
-- [ ] Claude skill: `/new-plugin` — scaffold new integration plugin
-- [ ] Claude skill: `/deploy-workbench` — deploy to production
+```bash
+node docs/site/build.mjs   # _content/*.md + nav.json → static HTML in docs/site/
+```
+
+Rebuild and commit the output with any content change — CI fails the docs build
+if `docs/site` is out of date with its source.
+
+See [Contributing](docs/site/_content/reference/contributing.md)
+for the branch, commit, and release conventions, and
+[SECURITY.md](SECURITY.md) for reporting a vulnerability.
 
 ## License
 
-MIT
+[MIT](LICENSE)

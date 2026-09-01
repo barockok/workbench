@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OAuth connections — a-workbench Docs</title>
+<meta name="description" content="Connecting a user's account to a provider, how tokens are stored and refreshed, and how to revoke access.">
+<meta property="og:title" content="OAuth connections — a-workbench">
+<meta property="og:description" content="Connecting a user's account to a provider, how tokens are stored and refreshed, and how to revoke access.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%2523b1410c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'23'%20font-family%3D'Helvetica%2CArial%2Csans-serif'%20font-size%3D'19'%20font-weight%3D'700'%20fill%3D'white'%20text-anchor%3D'middle'%3Ew%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/docs.css">
+<script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-btn" type="button" aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+    </button>
+    <a class="brand" href="../index.html">
+      <span class="brand-mark" aria-hidden="true">w</span>
+      <span class="brand-name">a-workbench</span>
+      <span class="brand-sub">Docs</span>
+    </a>
+    <button class="search-btn" type="button" data-search-open>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <span>Search</span><kbd>⌘K</kbd>
+    </button>
+    <div class="topbar-actions">
+      <a class="ghost" href="https://github.com/barockok/workbench" target="_blank" rel="noopener">GitHub</a>
+      <button class="theme-btn" type="button" aria-label="Toggle theme">
+        <svg class="i-sun" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2"/><path d="M8 1v1.6M8 13.4V15M15 8h-1.6M2.6 8H1M12.9 3.1l-1.1 1.1M4.2 11.8l-1.1 1.1M12.9 12.9l-1.1-1.1M4.2 4.2 3.1 3.1"/></svg>
+        <svg class="i-moon" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="topnav" aria-label="Sections"><div class="topnav-inner"><a class="topnav-tab" href="../index.html">Get started</a><a class="topnav-tab active" href="discovering-tools.html">Guides</a><a class="topnav-tab" href="../integrations/index.html">Integrations</a><a class="topnav-tab" href="../plugins/index.html">Build plugins</a><a class="topnav-tab" href="../deploy/install.html">Deploy</a><a class="topnav-tab" href="../reference/meta-tools.html">Reference</a><a class="topnav-tab" href="../field-notes/index.html">Field notes</a></div></nav>
+</header>
+
+<div class="shell">
+  <aside class="sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-inner"><div class="nav-group"><p class="nav-group-title">Working with tools</p><ul><li><a class="" href="discovering-tools.html">Discovering tools</a></li><li><a class="" href="executing-tools.html">Executing tools</a></li><li><a class="" href="curl-session.html">Raw API calls</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Authentication</p><ul><li><a class="active" href="oauth-connections.html">OAuth connections</a></li><li><a class="" href="api-key-connections.html">API-key connections</a></li><li><a class="" href="browser-sessions.html">Browser sessions</a></li><li><a class="" href="self-hosted-instances.html">Self-hosted instances</a></li></ul></div><div class="nav-group"><p class="nav-group-title">Operating</p><ul><li><a class="" href="jots.html">Jots file store</a></li><li><a class="" href="troubleshooting.html">Troubleshooting</a></li></ul></div></div>
+  </aside>
+
+  <main id="main" class="content">
+    <article class="prose">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow">Authentication</p>
+          <h1>OAuth connections</h1>
+        </div>
+        <button class="copy-page" type="button" title="Copy this page as Markdown for an agent">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 4 12h1.5"/></svg>
+          <span>Copy page</span>
+        </button>
+      </div>
+      <p class="lede">Connecting a user's account to a provider, how tokens are stored and refreshed, and how to revoke access.</p>
+      <p>Every OAuth connection in a-workbench is <strong>per user, per integration</strong>. There is one row
+in <code>connections</code> keyed on that pair, holding an encrypted access token and refresh
+token. Connecting GitHub connects <em>your</em> GitHub, not the server&#39;s.</p>
+<p>There are two vocabularies here and it is worth keeping them apart:</p>
+<div class="table-wrap"><table><thead><tr><th>Term</th><th>Direction</th><th>Managed by</th></tr></thead><tbody>
+<tr><td><strong>Connection</strong></td><td>workbench → a SaaS provider (GitHub, Jira, Slack)</td><td><code>connect</code>, the portal, <code>/api/connections</code></td></tr>
+<tr><td><strong>Agent</strong></td><td>an MCP client → your workbench account</td><td>OAuth 2.1 at <code>/authorize</code>, <code>/api/agents</code></td></tr>
+</tbody></table></div>
+<p>This page covers both, in that order.</p>
+<h2 id="starting-a-connection-from-the-agent">Starting a connection from the agent<a class="anchor" href="#starting-a-connection-from-the-agent" aria-label="Link to Starting a connection from the agent">#</a></h2>
+<p><code>connect</code> takes one integration name and returns a URL for the user to open.</p>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/call&quot;,&quot;params&quot;:{
+  &quot;name&quot;: &quot;connect&quot;, &quot;arguments&quot;: { &quot;integration&quot;: &quot;github&quot; }
+}}</code></pre></div>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;connectionId&quot;: &quot;6f0e…-…&quot;, &quot;type&quot;: &quot;oauth2&quot;,
+  &quot;url&quot;: &quot;https://github.com/login/oauth/authorize?client_id=…&amp;state=…&amp;code_challenge=…&quot; }</code></pre></div>
+<p><code>get_auth_url</code> is a deprecated alias with the identical handler — prefer <code>connect</code>.</p>
+<p>Error returns, all as a normal result object:</p>
+<div class="table-wrap"><table><thead><tr><th>Response</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>{&quot;error&quot;:&quot;Integration not found&quot;}</code></td><td>Not in the registry</td></tr>
+<tr><td><code>{&quot;error&quot;:&quot;&lt;name&gt; is built-in and always connected — no connect needed.&quot;}</code></td><td><code>auth.type: &quot;none&quot;</code> (<code>browser</code>, <code>jots</code>)</td></tr>
+<tr><td><code>{&quot;error&quot;:&quot;&lt;provider message&gt;&quot;}</code></td><td>Usually missing client credentials on the server</td></tr>
+</tbody></table></div>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">`connect` has no API-key branch</span></div><div class="callout-body"><p>An <code>apikey</code> integration falls into the OAuth path and errors out. API-key
+integrations are connected from the portal — see
+<a href="api-key-connections.html">API-key connections</a>.</p>
+</div></div>
+
+<p>Starting a connect also creates a <strong>pending record</strong>: an in-process entry with status
+<code>PENDING</code>, a <code>connectionId</code>, and an expiry of <code>CONNECT_TTL_SECONDS</code> (default 600). This
+record is what <code>wait_for_connection</code> polls. It is held in memory, not the database.</p>
+<h2 id="waiting-for-it-to-complete">Waiting for it to complete<a class="anchor" href="#waiting-for-it-to-complete" aria-label="Link to Waiting for it to complete">#</a></h2>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:2,&quot;method&quot;:&quot;tools/call&quot;,&quot;params&quot;:{
+  &quot;name&quot;: &quot;wait_for_connection&quot;,
+  &quot;arguments&quot;: { &quot;connectionId&quot;: &quot;6f0e…-…&quot;, &quot;timeoutSec&quot;: 300 }
+}}</code></pre></div>
+<p><code>timeoutSec</code> is optional — a positive integer, maximum 900, default 300. The handler
+polls once per second and returns one of:</p>
+<div class="table-wrap"><table><thead><tr><th>Result</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>{&quot;status&quot;:&quot;CONNECTED&quot;}</code></td><td>The callback landed and the token is stored</td></tr>
+<tr><td><code>{&quot;status&quot;:&quot;EXPIRED&quot;}</code></td><td>The pending record passed <code>CONNECT_TTL_SECONDS</code></td></tr>
+<tr><td><code>{&quot;status&quot;:&quot;TIMEOUT&quot;}</code></td><td>Your <code>timeoutSec</code> elapsed first; the record is reaped to <code>EXPIRED</code> and cannot be revived — call <code>connect()</code> again</td></tr>
+<tr><td><code>{&quot;error&quot;:&quot;Unknown connectionId&quot;}</code></td><td>No such record — <strong>or</strong> it belongs to another user</td></tr>
+</tbody></table></div>
+<p>That last row is deliberate: a record owned by someone else returns the identical shape
+as one that does not exist, so the endpoint is not an existence oracle.</p>
+<div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
+    participant U as User
+    participant A as Agent
+    participant W as workbench
+    participant P as Provider
+    A-&gt;&gt;W: connect(&quot;github&quot;)
+    W-&gt;&gt;W: create PENDING record, PKCE verifier
+    W--&gt;&gt;A: connectionId + authorize URL
+    A-&gt;&gt;U: open this URL
+    A-&gt;&gt;W: wait_for_connection(connectionId)
+    U-&gt;&gt;P: sign in, grant scopes
+    P-&gt;&gt;W: GET /api/auth/plugin/github/callback?code&amp;state
+    W-&gt;&gt;P: POST token endpoint (code + verifier)
+    P--&gt;&gt;W: access_token + refresh_token
+    W-&gt;&gt;W: encrypt, store, mark CONNECTED
+    W--&gt;&gt;U: 302 back to the portal
+    W--&gt;&gt;A: status CONNECTED
+    A-&gt;&gt;W: execute_tools [github_list_prs]</pre></div>
+<h2 id="what-actually-marks-a-connection-connected">What actually marks a connection CONNECTED<a class="anchor" href="#what-actually-marks-a-connection-connected" aria-label="Link to What actually marks a connection CONNECTED">#</a></h2>
+<p>The provider redirects to <code>GET /api/auth/plugin/&lt;integration&gt;/callback</code> — note the
+<code>/plugin/</code> segment; it exists so provider callbacks cannot collide with the portal&#39;s own
+SSO callback. The handler validates the single-use <code>state</code>, exchanges the code (with the
+PKCE verifier held server-side), stores the tokens, and flips the pending record.</p>
+<p>Two details worth knowing:</p>
+<ul>
+<li><strong>PKCE is used on every plugin OAuth flow</strong>, confidential clients included. The
+verifier lives in <code>pending_auth</code>, never in the browser.</li>
+<li>The pending record is flipped by <code>(userId, integration)</code>, not by <code>connectionId</code> — the
+callback does not carry one. If a user starts two connects for the same integration,
+the newest pending record wins.</li>
+</ul>
+<p>After the callback the browser lands back on the portal at
+<code>PORTAL_URL#connected=&lt;integration&gt;</code>.</p>
+<p>Whether an integration reports connected afterwards is not a stored flag. It is
+recomputed each time: <code>auth.type: &quot;none&quot;</code> is always connected, <code>cookie</code> requires at
+least one unexpired cookie, and everything else requires a stored access token.</p>
+<h2 id="connecting-from-the-portal-instead">Connecting from the portal instead<a class="anchor" href="#connecting-from-the-portal-instead" aria-label="Link to Connecting from the portal instead">#</a></h2>
+<p>The portal path skips <code>connect</code> entirely. <code>GET /api/auth/:integration</code> returns a
+type-tagged response, and the portal acts on it — redirecting the browser for <code>oauth2</code>,
+opening the API-key modal for <code>apikey</code>, opening the live login view for <code>cookie</code>.
+Integrations declaring an <code>instance</code> block prompt for the instance URL first.</p>
+<p>An <code>oauth2</code> integration whose client credentials are not configured on the server
+returns <strong>503</strong> here, and shows as unconfigured in the integration list.</p>
+<h2 id="token-storage">Token storage<a class="anchor" href="#token-storage" aria-label="Link to Token storage">#</a></h2>
+<div class="table-wrap"><table><thead><tr><th>Field</th><th>Encrypted at rest</th></tr></thead><tbody>
+<tr><td><code>access_token</code></td><td>yes — AES-256-GCM</td></tr>
+<tr><td><code>refresh_token</code></td><td>yes — AES-256-GCM</td></tr>
+<tr><td><code>expires_at</code>, <code>scopes</code></td><td>no</td></tr>
+<tr><td><code>config</code> (instance URL, region)</td><td>no</td></tr>
+</tbody></table></div>
+<p>The key is <code>ENCRYPTION_KEY</code>, 64 hex characters, read <strong>once at module load</strong>.</p>
+<div class="callout callout-danger"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="m5.8 5.8 4.4 4.4M10.2 5.8l-4.4 4.4"/></svg></span><span class="callout-title">Changing `ENCRYPTION_KEY` orphans every stored credential</span></div><div class="callout-body"><p>There is no re-encryption path. Rotating the key requires a restart and makes every
+existing token and cookie bundle undecryptable — every user reconnects every
+integration. Back it up with the same care as the database.</p>
+</div></div>
+
+<h2 id="refresh-and-rotation">Refresh and rotation<a class="anchor" href="#refresh-and-rotation" aria-label="Link to Refresh and rotation">#</a></h2>
+<p>Refresh is <strong>lazy and on use</strong>. There is no background job. When a tool call or a
+proxied request asks for the token, the context checks whether it expires within 30
+seconds; if so it posts <code>grant_type=refresh_token</code> to the provider&#39;s token endpoint,
+recomputes the expiry, and re-stores.</p>
+<ul>
+<li>If the provider does not return a new refresh token, the old one is kept.</li>
+<li>If nothing was stored to refresh with, the call fails with
+<code>Token expired and no refresh_token stored</code>. The fix is to reconnect — and usually to
+add the provider&#39;s offline-access scope so a refresh token is issued at all.</li>
+<li>The re-store uses <code>COALESCE</code> on <code>config</code>, so a refresh never wipes a connection&#39;s
+instance URL or region.</li>
+</ul>
+<h2 id="disconnecting">Disconnecting<a class="anchor" href="#disconnecting" aria-label="Link to Disconnecting">#</a></h2>
+<p>From the portal, the Disconnect button on the integration. Over HTTP:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl -X DELETE https://workbench.example.com/api/connections/github \
+  -H &quot;x-workbench-api-key: $KEY&quot;
+# {&quot;success&quot;:true}</code></pre></div>
+<div class="table-wrap"><table><thead><tr><th>Response</th><th>Cause</th></tr></thead><tbody>
+<tr><td><code>{&quot;success&quot;:true}</code></td><td>The row was deleted</td></tr>
+<tr><td>404</td><td>Unknown integration</td></tr>
+<tr><td>400 <code>Built-in integration cannot be disconnected</code></td><td><code>auth.type: &quot;none&quot;</code></td></tr>
+</tbody></table></div>
+<p>This deletes the local row and nothing else. <strong>No provider-side revocation is
+attempted</strong> — the token may remain valid at the provider until it expires or the user
+revokes the app there. For a full revoke, remove the authorization in the provider&#39;s own
+account settings as well.</p>
+<div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">`/api/*` does not accept an MCP OAuth access token</span></div><div class="callout-body"><p>These routes take a portal session JWT (<code>Authorization: Bearer</code>) or an API key
+(<code>x-workbench-api-key</code>). An OAuth access token authenticates <code>/mcp</code> only.</p>
+</div></div>
+
+<h2 id="connected-agents-which-clients-hold-tokens-on-your-account">Connected agents: which clients hold tokens on your account<a class="anchor" href="#connected-agents-which-clients-hold-tokens-on-your-account" aria-label="Link to Connected agents: which clients hold tokens on your account">#</a></h2>
+<p>Separate from provider connections is the list of <strong>MCP clients</strong> that have been
+authorized against your workbench account through OAuth 2.1 — a Claude Code install, a
+desktop client, anything that ran the <code>/authorize</code> flow. Each holds a rotating refresh
+token good for 30 days.</p>
+<p>The portal shows these in the agents panel. Over HTTP:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl https://workbench.example.com/api/agents \
+  -H &quot;x-workbench-api-key: $KEY&quot;</code></pre></div>
+<div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{
+  &quot;agents&quot;: [
+    {
+      &quot;client_id&quot;: &quot;a1b2c3d4e5f60718&quot;,
+      &quot;client_name&quot;: &quot;Claude Code&quot;,
+      &quot;scopes&quot;: [&quot;mcp&quot;],
+      &quot;connected_since&quot;: 1756400000,
+      &quot;expires_at&quot;: 1758992000
+    }
+  ]
+}</code></pre></div>
+<p>Rows are grouped by <code>client_id</code> from live refresh tokens, so a client that has never
+been authorized — or whose tokens have all expired — does not appear. <code>connected_since</code>
+survives token rotation: the original creation time is carried forward each time the
+refresh token is exchanged.</p>
+<p>To revoke one:</p>
+<div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl -X DELETE https://workbench.example.com/api/agents/a1b2c3d4e5f60718 \
+  -H &quot;x-workbench-api-key: $KEY&quot;
+# {&quot;revoked&quot;: 1}</code></pre></div>
+<p>This deletes that client&#39;s refresh tokens and any outstanding authorization codes for
+your user. It is idempotent — revoking twice returns <code>{&quot;revoked&quot;: 0}</code>.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Revocation is soft: existing access tokens survive until they expire</span></div><div class="callout-body"><p>Access tokens are self-contained JWTs and are not checked against a revocation list.
+A client holding a live one keeps working until it lapses — up to
+<code>OAUTH_ACCESS_TOKEN_TTL_SECONDS</code>, default one hour. It just cannot mint another
+afterwards. If you need an immediate cutoff, rotating <code>SESSION_SECRET</code> invalidates
+every issued token at once, including portal sessions.</p>
+</div></div>
+
+<p>Revoking an agent does not touch your provider connections. The client loses access to
+your workbench; your GitHub and Jira tokens stay stored.</p>
+
+    </article>
+    <nav class="prevnext"><a class="pn pn-prev" href="curl-session.html"><span class="pn-dir">Previous</span><span class="pn-label">Raw API calls</span></a><a class="pn pn-next" href="api-key-connections.html"><span class="pn-dir">Next</span><span class="pn-label">API-key connections</span></a></nav>
+    <footer class="page-foot">
+      <a href="https://github.com/barockok/workbench/edit/main/docs/site/_content/guides/oauth-connections.md" target="_blank" rel="noopener">Edit this page on GitHub</a>
+      <span>a-workbench v0.24.0</span>
+    </footer>
+  </main>
+
+  <div class="toc-col"><nav class="toc" aria-label="On this page"><p class="toc-title">On this page</p><ul><li class="toc-h2"><a href="#starting-a-connection-from-the-agent">Starting a connection from the agent</a></li><li class="toc-h2"><a href="#waiting-for-it-to-complete">Waiting for it to complete</a></li><li class="toc-h2"><a href="#what-actually-marks-a-connection-connected">What actually marks a connection CONNECTED</a></li><li class="toc-h2"><a href="#connecting-from-the-portal-instead">Connecting from the portal instead</a></li><li class="toc-h2"><a href="#token-storage">Token storage</a></li><li class="toc-h2"><a href="#refresh-and-rotation">Refresh and rotation</a></li><li class="toc-h2"><a href="#disconnecting">Disconnecting</a></li><li class="toc-h2"><a href="#connected-agents-which-clients-hold-tokens-on-your-account">Connected agents: which clients hold tokens on your account</a></li></ul></nav></div>
+</div>
+
+<div class="search-overlay" hidden>
+  <div class="search-modal" role="dialog" aria-modal="true" aria-label="Search documentation">
+    <div class="search-input-row">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+      <input type="search" placeholder="Search the docs…" aria-label="Search" autocomplete="off">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="search-results" role="listbox"></div>
+  </div>
+</div>
+
+<script>window.__WB_BASE__="../";</script>
+<script src="../assets/docs.js" defer></script>
+</body>
+</html>
