@@ -192,7 +192,7 @@ point <code>PLUGINS_DIR</code> at the mount:</p>
 <p><code>:ro</code> keeps the server from ever mutating your plugin tree.</p>
 <h3 id="kubernetes">Kubernetes<a class="anchor" href="#kubernetes" aria-label="Link to Kubernetes">#</a></h3>
 <p>The same shape: mount something at <code>PLUGINS_DIR</code>. A <code>ConfigMap</code> works for a small
-plugin; a <code>PersistentVolumeClaim</code> is better once you ship a logo or several tool
+plugin. A <code>PersistentVolumeClaim</code> is better once you ship a logo or several tool
 files. OAuth credentials belong in a <code>Secret</code>, not the ConfigMap.</p>
 <div class="code" data-lang="yaml"><div class="code-bar"><span class="code-lang">yaml</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-yaml">spec:
   containers:

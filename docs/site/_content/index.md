@@ -34,7 +34,7 @@ flowchart TB
   Portal -.OAuth consent.-> APIs
 ```
 
-The agent never holds a provider credential. It names a tool; the server looks up
+The agent never holds a provider credential. It names a tool. The server looks up
 that user's stored token, injects it into the outbound request, and returns the
 response.
 
@@ -52,7 +52,7 @@ workbench advertises only the 9 meta-tools. Everything else is reached by name:
 3. `execute_tools` runs one or many, concurrently, in a single call.
 
 The same discipline applies on the way back. A tool result is serialized into one
-text block capped at **60,000 characters**; past that it is truncated with a notice
+text block capped at **60,000 characters**. Past that it is truncated with a notice
 telling the agent to narrow the request with `limit`, `fields`, or pagination.
 Truncated output is deliberately not valid JSON, so a client cannot silently parse
 a half-response as complete.

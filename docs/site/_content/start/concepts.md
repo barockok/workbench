@@ -7,7 +7,7 @@ description: The nine words the rest of the documentation assumes you know.
 
 One third-party service, as workbench sees it: a name, a version, a declared auth
 mode, an optional logo and categories, and an optional proxy base URL. `github`,
-`slack`, `atlassian-jira`, `newrelic` are integrations. Sixteen ship on disk; two
+`slack`, `atlassian-jira`, `newrelic` are integrations. Sixteen ship on disk. Two
 more (`browser`, `jots`) are built into the server.
 
 An integration's auth mode decides everything about how it connects and how
@@ -21,13 +21,13 @@ appears in `list_integrations` alongside a per-user `connected` flag.
 
 The on-disk form of an integration: a directory containing exactly two import
 targets, `manifest.ts` (default-exporting the `Integration`) and `tools/index.ts`
-(exporting the tools). Built-ins live in `packages/plugins`; your own go in
+(exporting the tools). Built-ins live in `packages/plugins`. Your own go in
 `PLUGINS_DIR`.
 
 Plugins load once at boot. There is no hot reload and no unload — the imports are
 ESM-cached, so picking up an edit means restarting the server. A plugin that fails
-to load is logged and skipped; the server still boots and every other plugin still
-loads, which means a broken plugin shows up as *silently absent from the catalog*
+to load is logged and skipped. The server still boots and every other plugin still
+loads. A broken plugin therefore shows up as *silently absent from the catalog*
 rather than as a crash.
 
 **Why it matters:** "integration" is the concept, "plugin" is the thing you write
@@ -91,9 +91,9 @@ separate Jira tokens and see separate connection states.
 
 Distinct from the transient *pending connection* — the in-process record created by
 `connect()` and polled by `wait_for_connection()`. It is `PENDING` only for the minutes
-an OAuth handshake is in flight; once terminal (`CONNECTED` or `EXPIRED`) it is kept for
-another hour before a 60-second sweep prunes it, so a wait that is still running can
-read the outcome.
+an OAuth handshake is in flight. Once terminal (`CONNECTED` or `EXPIRED`) it is kept for
+another hour before a 60-second sweep prunes it. A wait that is still running can
+therefore read the outcome.
 
 **Why it matters:** `NOT_CONNECTED` from a tool call means this row is missing, and
 the fix is `connect('<integration>')`.
@@ -107,8 +107,8 @@ different things: capturing cookies for `cookie`-auth integrations, and the
 
 There is one warm Chromium per user, and the two uses **share** it: capture and every
 `browser_*` tool resolve the same session, so an agent can be driving the browser a user
-is logging in through. Idle sessions are killed after `BROWSER_SESSION_TTL_SECONDS`
-(default 300); the profile survives.
+is logging in through. The server kills idle sessions after `BROWSER_SESSION_TTL_SECONDS`
+(default 300). The profile survives.
 
 `BROWSER_SESSION_BUSY` is not a conflict between those two uses. It appears only while a
 spawn for that user is still in flight, or when a profile reset is requested while the
@@ -126,8 +126,9 @@ and how an agent hands control back to you mid-task.
 ## Curl session
 
 A short-lived escape hatch. `curl_session(['github'])` mints a 15-minute token
-scoped to the named integrations; requests to `<SERVER_PUBLIC_URL>/c/<integration>/<path>`
-carrying it are forwarded upstream with the user's real credential injected. It
+scoped to the named integrations. The server forwards requests to
+`<SERVER_PUBLIC_URL>/c/<integration>/<path>` carrying that token upstream, with the
+user's real credential injected. It
 covers provider endpoints no shipped tool wraps.
 
 Only integrations whose manifest declares a `proxy` block accept it, and validation
@@ -146,7 +147,7 @@ connected, nothing is minted.
 A static site the agent can deploy and host: `deploy_jot` returns a single-use
 upload URL, you push a gzip tarball, and it is served at `/j/<name>/`. Names are
 global and creator-locked, and a jot can be password-gated. `update_jot` patches a
-live jot instead of replacing it, so a single data file can be refreshed on its own;
+live jot instead of replacing it, so a single data file can be refreshed on its own.
 `list_jot_files` shows what a jot currently holds.
 
 Jots are served on an opaque origin under a sandbox CSP, so a jot's JavaScript

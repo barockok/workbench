@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">Scopes and complete tool lists for each of the seven google-* plugins.</p>
-      <p>Seven plugins, 39 tools between them, each connected independently. Operator setup — Cloud project, consent screen, and the seven OAuth clients — is on <a href="google.html">Google setup &amp; scopes</a>; this page is the per-plugin breakdown.</p>
+      <p>Seven plugins, 39 tools between them, each connected independently. Operator setup — Cloud project, consent screen, and the seven OAuth clients — is on <a href="google.html">Google setup &amp; scopes</a>. This page is the per-plugin breakdown.</p>
 <div class="table-wrap"><table><thead><tr><th>Plugin</th><th>Tools</th><th>Proxy base</th></tr></thead><tbody>
 <tr><td><code>google-gmail</code></td><td>8</td><td><code>https://gmail.googleapis.com/gmail/v1</code></td></tr>
 <tr><td><code>google-drive</code></td><td>8</td><td><code>https://www.googleapis.com/drive/v3</code></td></tr>
@@ -111,7 +111,7 @@
 <tr><td><code>google_calendar_delete_event</code></td><td>Delete an event permanently</td></tr>
 <tr><td><code>google_calendar_freebusy</code></td><td>Find busy intervals across calendars between two times</td></tr>
 </tbody></table></div>
-<p>Every tool defaults to the <code>primary</code> calendar. Call <code>google_calendar_freebusy</code> before creating an event to avoid double-booking, and prefer <code>google_calendar_update_event</code> over delete-and-recreate when only the time or details change — attendees are notified on delete.</p>
+<p>Every tool defaults to the <code>primary</code> calendar. Call <code>google_calendar_freebusy</code> before you create an event, to avoid double-booking. Prefer <code>google_calendar_update_event</code> over delete-and-recreate when only the time or the details change, because a delete notifies attendees.</p>
 <h2 id="google-docs">Google Docs<a class="anchor" href="#google-docs" aria-label="Link to Google Docs">#</a></h2>
 <p><strong>Scopes:</strong> <code>https://www.googleapis.com/auth/documents</code>, <code>https://www.googleapis.com/auth/drive.file</code></p>
 <div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
@@ -131,7 +131,7 @@
 <tr><td><code>google_sheets_append</code></td><td>Append rows to the end of a table or log</td></tr>
 <tr><td><code>google_sheets_create</code></td><td>Create an empty spreadsheet, optionally with named tabs</td></tr>
 </tbody></table></div>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`google_sheets_write` replaces, it does not add</span></div><div class="callout-body"><p>Writing to <code>Sheet1!A1:C10</code> overwrites whatever is in those cells. To add rows to a log or table without touching existing data, use <code>google_sheets_append</code> with a column range such as <code>Sheet1!A:C</code> — Sheets finds the table and inserts after it.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">`google_sheets_write` replaces, it does not add</span></div><div class="callout-body"><p>Writing to <code>Sheet1!A1:C10</code> overwrites whatever is in those cells. To add rows to a log or table without touching existing data, use <code>google_sheets_append</code> with a column range such as <code>Sheet1!A:C</code>. Sheets finds the table and inserts after it.</p>
 </div></div>
 
 <h2 id="google-slides">Google Slides<a class="anchor" href="#google-slides" aria-label="Link to Google Slides">#</a></h2>
@@ -143,13 +143,13 @@
 <tr><td><code>google_slides_batch_update</code></td><td>Insert text, create or delete slides</td></tr>
 <tr><td><code>google_slides_create_from_markdown</code></td><td>Build a deck from Markdown</td></tr>
 </tbody></table></div>
-<p><code>google_slides_create_from_markdown</code> splits slides on <code>---</code> and handles tables, bullets, and quotes; <code>|||</code> makes a two-column layout. It is far less work than assembling the same deck through <code>google_slides_batch_update</code>.</p>
+<p><code>google_slides_create_from_markdown</code> splits slides on <code>---</code> and handles tables, bullets, and quotes. <code>|||</code> makes a two-column layout. It is far less work than assembling the same deck through <code>google_slides_batch_update</code>.</p>
 <h2 id="google-gemini">Google Gemini<a class="anchor" href="#google-gemini" aria-label="Link to Google Gemini">#</a></h2>
 <p><strong>Scope:</strong> <code>https://www.googleapis.com/auth/generative-language.retriever</code></p>
 <div class="table-wrap"><table><thead><tr><th>Tool</th><th>Purpose</th></tr></thead><tbody>
 <tr><td><code>google_gemini_generate</code></td><td>Generate content from a prompt; <code>model</code> defaults to <code>gemini-1.5-flash</code></td></tr>
 </tbody></table></div>
-<p>The Generative Language API is quota-limited by Google independently of the other Google plugins; see <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank" rel="noopener">the Gemini API rate-limit documentation<span class="ext" aria-hidden="true">↗</span></a>.</p>
+<p>Google quota-limits the Generative Language API independently of the other Google plugins. See <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank" rel="noopener">the Gemini API rate-limit documentation<span class="ext" aria-hidden="true">↗</span></a>.</p>
 
     </article>
     <nav class="prevnext"><a class="pn pn-prev" href="google.html"><span class="pn-dir">Previous</span><span class="pn-label">Setup &amp; scopes</span></a><a class="pn pn-next" href="slack.html"><span class="pn-dir">Next</span><span class="pn-label">Slack</span></a></nav>

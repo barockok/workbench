@@ -177,7 +177,7 @@ services:
 ### Kubernetes
 
 The same shape: mount something at `PLUGINS_DIR`. A `ConfigMap` works for a small
-plugin; a `PersistentVolumeClaim` is better once you ship a logo or several tool
+plugin. A `PersistentVolumeClaim` is better once you ship a logo or several tool
 files. OAuth credentials belong in a `Secret`, not the ConfigMap.
 
 ```yaml

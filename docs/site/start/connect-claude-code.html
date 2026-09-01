@@ -62,7 +62,7 @@
       </div>
       <p class="lede">Wire Claude Code to a workbench with either an API key or OAuth, and fix it when it doesn't appear.</p>
       <p>Claude Code reaches a workbench over HTTP as a remote MCP server. Configuration is
-one entry in <code>.mcp.json</code>; the only real decision is which credential it carries.</p>
+one entry in <code>.mcp.json</code>. The only real decision is which credential it carries.</p>
 <h2 id="pick-an-auth-path">Pick an auth path<a class="anchor" href="#pick-an-auth-path" aria-label="Link to Pick an auth path">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th>Use</th><th>Auth</th><th>Config needs</th></tr></thead><tbody>
 <tr><td>Interactive — you, at a terminal</td><td>OAuth browser login</td><td>server <code>url</code> only</td></tr>
@@ -114,7 +114,7 @@ auth problem. Go back and validate the JSON.</p>
 <p>On first use the client discovers the authorization server from the 401 challenge,
 registers itself through Dynamic Client Registration, and opens a browser to sign
 in with <strong>Google</strong> — the workbench&#39;s <code>/authorize</code> redirects there specifically, and
-fails if <code>GOOGLE_CLIENT_ID</code> is unset. Keycloak covers portal login only; it cannot
+fails if <code>GOOGLE_CLIENT_ID</code> is unset. Keycloak covers portal login only. It cannot
 complete this flow, so a Keycloak-only deployment must use the API-key path above.
 After you sign in, the client holds an access token and a refresh token and renews
 them on its own — you do not repeat this.</p>
@@ -146,7 +146,7 @@ touches no integration.</p>
 <h2 id="what-claude-code-sees">What Claude Code sees<a class="anchor" href="#what-claude-code-sees" aria-label="Link to What Claude Code sees">#</a></h2>
 <p>Only the nine meta-tools, prefixed by the server name — <code>mcp__workbench__search_tools</code>,
 <code>mcp__workbench__execute_tools</code>, and so on. Plugin tools are never advertised
-individually; they are reached by name through <code>execute_tools</code>. That is the point
+individually. An agent reaches them by name through <code>execute_tools</code>. That is the point
 of the design, and it is why adding integrations does not grow the tool list.</p>
 <p>Next: <a href="first-connection.html">Your first integration</a>.</p>
 

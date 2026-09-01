@@ -63,7 +63,7 @@
       <p class="lede">The Prometheus metrics endpoint and the metrics it emits, OpenTelemetry tracing, and the audit log destinations.</p>
       <p>Three separate mechanisms: Prometheus metrics on <code>/metrics</code>, OpenTelemetry spans,
 and an audit log of tool executions. Metrics and the audit log work out of the
-box; tracing needs an exporter you configure yourself.</p>
+box. Tracing needs an exporter you configure yourself.</p>
 <h2 id="metrics">Metrics<a class="anchor" href="#metrics" aria-label="Link to Metrics">#</a></h2>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl http://localhost:3000/metrics</code></pre></div>
 <p><code>GET /metrics</code> serves a Prometheus text exposition from a dedicated registry. It
@@ -139,10 +139,10 @@ selects where it goes.</p>
 <tr><td><code>kafka</code></td><td><strong>Not implemented.</strong> Logs &quot;Kafka not implemented, falling back to stdout&quot; to stderr and prints the JSON line</td></tr>
 </tbody></table></div>
 <p>Despite the name, <code>sqlite</code> writes to whichever backend <code>DATABASE_URL</code> selects —
-including PostgreSQL. The <code>success</code> column is bound as a real boolean because
-PostgreSQL rejects <code>1</code>/<code>0</code> for <code>BOOLEAN</code>; <code>created_at</code> is unix seconds. Two
+including PostgreSQL. The <code>success</code> column is bound as a real boolean, because
+PostgreSQL rejects <code>1</code>/<code>0</code> for <code>BOOLEAN</code>. <code>created_at</code> is unix seconds. Two
 indexes support querying: <code>(user_id, created_at)</code> and <code>(integration, created_at)</code>.</p>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Kafka is not wired up</span></div><div class="callout-body"><p><code>AUDIT_LOG_KAFKA_BROKERS</code> and <code>AUDIT_LOG_KAFKA_TOPIC</code> are declared in the config
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Kafka is declared but not connected</span></div><div class="callout-body"><p><code>AUDIT_LOG_KAFKA_BROKERS</code> and <code>AUDIT_LOG_KAFKA_TOPIC</code> are declared in the config
 schema — so setting them is accepted and validated — but no code anywhere reads
 either variable, and the Kafka destination writes to stdout. If you need events
 in Kafka, use <code>AUDIT_LOG_DEST=stdout</code> and ship them from your log pipeline.</p>

@@ -3,9 +3,9 @@ title: Integrations
 description: Every integration workbench ships with, how connecting works, and the conventions every provider setup follows.
 ---
 
-An integration is a plugin: a manifest that declares how to authenticate, plus a set of tools your agent can call. A stock install loads **16 plugins from disk (178 tools)** plus **two internal plugins built into the server** — `browser` (9 tools) and `jots` (3 tools). That is 190 tools behind one MCP endpoint — reached through `execute_tools`, not listed individually: `tools/list` on `/mcp` returns only the 9 meta-tools.
+An integration is a plugin: a manifest that declares how to authenticate, plus a set of tools your agent can call. A stock install loads **16 plugins from disk (178 tools)**. It adds **two internal plugins built into the server**: `browser` (9 tools) and `jots` (5 tools). That is 192 tools behind one MCP endpoint. An agent reaches them through `execute_tools` rather than a list: `tools/list` on `/mcp` returns only the 9 meta-tools.
 
-Credentials are per user. You register one OAuth app per integration as the operator; each user then grants their own access, and their tokens are stored encrypted against their own account.
+Credentials are per user. As the operator, you register one OAuth app per integration. Each user then grants their own access. The server stores each user's tokens encrypted against their own account.
 
 ## Every shipped integration
 
@@ -67,9 +67,9 @@ sequenceDiagram
     W-->>A: status CONNECTED
 ```
 
-`connect` creates a pending record whose TTL is `CONNECT_TTL_SECONDS` (default 600). `wait_for_connection` polls once a second and returns `{ status }` of `CONNECTED`, `TIMEOUT`, or `EXPIRED`; its `timeoutSec` defaults to 300 and caps at 900. There is a fourth outcome to handle: an id that does not exist — or one that belongs to another user, which returns the same shape so it cannot be used as an existence oracle — comes back as `{ error: "Unknown connectionId" }` immediately. Users who prefer the UI can skip both and press **Connect** on the portal's Connections page.
+`connect` creates a pending record whose TTL is `CONNECT_TTL_SECONDS` (default 600). `wait_for_connection` polls once a second. It returns `{ status }` of `CONNECTED`, `TIMEOUT`, or `EXPIRED`. Its `timeoutSec` defaults to 300 and caps at 900. A fourth outcome needs handling: an id that does not exist returns `{ error: "Unknown connectionId" }` immediately. An id that belongs to another user returns that same shape, so it cannot be used as an existence oracle. Users who prefer the UI can skip both and press **Connect** on the portal's Connections page.
 
-Tokens land in the `connections` table encrypted with AES-256-GCM, one row per user per integration. Refresh happens lazily: the next tool call that finds the access token within 30 seconds of expiry refreshes it first. There is no background refresh job, so an integration whose provider issued no refresh token will fail on first use after expiry rather than silently reconnecting.
+Tokens land in the `connections` table encrypted with AES-256-GCM, one row per user per integration. Refresh happens lazily: the next tool call that finds the access token within 30 seconds of expiry refreshes it first. There is no background refresh job. An integration whose provider issued no refresh token fails on first use after expiry. It does not reconnect on its own.
 
 ## Shared conventions
 
@@ -84,7 +84,7 @@ ${SERVER_PUBLIC_URL}/api/auth/plugin/<integration-id>/callback
 The `/plugin/` segment is not optional — it exists so plugin callbacks never collide with the portal's own `/api/auth/google/callback` SSO route.
 
 > [!WARNING] The single most common setup failure
-> A callback registered as `/api/auth/github/callback` (no `/plugin/`) fails with a `redirect_uri` mismatch at consent time. Use the integration's full id, exactly as it appears in the table above — `atlassian-jira`, not `jira`; `google-gmail`, not `google`.
+> A callback registered as `/api/auth/github/callback` (no `/plugin/`) fails with a `redirect_uri` mismatch at consent time. Use the integration's full id, exactly as it appears in the table above: `atlassian-jira`, not `jira`, and `google-gmail`, not `google`.
 
 ### Where client credentials come from
 
@@ -96,7 +96,7 @@ Client id and secret are read straight from the environment. The variable prefix
 | `atlassian-jira` | `ATLASSIAN_JIRA_CLIENT_ID` / `ATLASSIAN_JIRA_CLIENT_SECRET` |
 | `google-gmail` | `GOOGLE_GMAIL_CLIENT_ID` / `GOOGLE_GMAIL_CLIENT_SECRET` |
 
-There is **no fallback and no sharing**: `atlassian-jira` and `atlassian-confluence` read separate variables even if you point them at the same Atlassian app, and `GOOGLE_CLIENT_ID` is portal SSO only — it is never used by a `google-*` plugin. A plugin whose `_CLIENT_ID` is unset shows as `Not configured` in the portal: the card reads `Auth not configured`, renders no Connect button, and is not clickable at all.
+There is **no fallback and no sharing**. `atlassian-jira` and `atlassian-confluence` read separate variables, even if you point them at the same Atlassian app. `GOOGLE_CLIENT_ID` is portal SSO only, and no `google-*` plugin ever uses it. A plugin whose `_CLIENT_ID` is unset shows as `Not configured` in the portal. Its card reads `Auth not configured`, renders no Connect button, and is not clickable.
 
 An unset or empty `_CLIENT_SECRET` is not an error: the server then treats the integration as a public client and runs PKCE only. PKCE runs on every flow regardless, confidential clients included, with the verifier held server-side.
 
@@ -108,8 +108,8 @@ Scopes live in the plugin manifest and are sent verbatim in the authorize reques
 2. Add the matching permission in the provider's console.
 3. Have every connected user disconnect and reconnect.
 
-A refresh token never upgrades its own scope grant. Adding a scope to a manifest without a reconnect produces 401s or `missing_scope` on exactly the new tools, while every previously working tool keeps working — which is what makes it confusing to diagnose.
+A refresh token never upgrades its own scope grant. Adding a scope to a manifest without a reconnect produces 401s or `missing_scope` on exactly the new tools. Every tool that worked before keeps working, which is what makes this hard to diagnose.
 
 ### Raw API access
 
-Fifteen of the sixteen on-disk plugins declare a `proxy` base, which makes them eligible for `curl_session` — a short-lived token that lets an agent make arbitrary authenticated calls against the provider through `/c/<integration>/<path>`. The credential is injected server-side and never handed to the agent. It is a high-risk escape hatch, not a normal path; see [Raw API calls](../guides/curl-session.md).
+Fifteen of the sixteen on-disk plugins declare a `proxy` base. That makes them eligible for `curl_session`, a short-lived token. It lets an agent make arbitrary authenticated calls against the provider through `/c/<integration>/<path>`. The server injects the credential and never hands it to the agent. This is a high-risk escape hatch, not a normal path. See [Raw API calls](../guides/curl-session.md).

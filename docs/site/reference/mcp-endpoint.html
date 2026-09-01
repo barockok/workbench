@@ -179,10 +179,10 @@ network boundary you trust.</p>
 </div></div>
 
 <h3 id="pkce-and-the-state-ticket-sso-resumption">PKCE and the state-ticket SSO resumption<a class="anchor" href="#pkce-and-the-state-ticket-sso-resumption" aria-label="Link to PKCE and the state-ticket SSO resumption">#</a></h3>
-<p><code>GET /authorize</code> validates, in order: the <code>client_id</code> resolves to a registered
-client; <code>response_type</code> is <code>code</code>; the <code>redirect_uri</code> is an exact member of that
-client&#39;s registered list (no prefix matching); and <code>code_challenge</code> is present with
-<code>code_challenge_method=S256</code>. PKCE is mandatory and <code>plain</code> is rejected.</p>
+<p><code>GET /authorize</code> validates four things, in order. The <code>client_id</code> resolves to a
+registered client. <code>response_type</code> is <code>code</code>. The <code>redirect_uri</code> is an exact member
+of that client&#39;s registered list, with no prefix matching. <code>code_challenge</code> is
+present with <code>code_challenge_method=S256</code>. PKCE is mandatory and <code>plain</code> is rejected.</p>
 <p>The problem it then solves: the user is not logged in yet, and the authorization
 request has to survive a round trip through Google SSO. It does that with a ticket.</p>
 <div class="mermaid-wrap"><pre class="mermaid">sequenceDiagram
@@ -199,14 +199,14 @@ request has to survive a round trip through Google SSO. It does that with a tick
   C-&gt;&gt;W: POST /token (code + code_verifier)
   W--&gt;&gt;C: access_token + refresh_token</pre></div>
 <p>The validated authorization request is stored as a pending row keyed by a random
-ticket with a 600-second TTL; <code>scope</code> defaults to <code>mcp</code> and <code>resource</code> to
+ticket with a 600-second TTL. <code>scope</code> defaults to <code>mcp</code>, and <code>resource</code> to
 <code>&lt;SERVER_PUBLIC_URL&gt;/mcp</code>. The server also sets an <code>awb_oauth_binding</code> cookie —
 httpOnly, <code>SameSite=Lax</code>, <code>Max-Age=600</code>, and <code>Secure</code> when <code>SERVER_PUBLIC_URL</code> is
 https — and appends the ticket to the SSO state as <code>&lt;ssoState&gt;.&lt;ticket&gt;</code>.</p>
 <p>On the Google callback the ticket row is looked up and <strong>deleted unconditionally</strong>,
-so it is single-use whatever the outcome. The binding cookie is compared to the
-stored value with a constant-time comparison; a missing or mismatched binding is
-the login-CSRF guard and aborts the resumption. If resumption fails the callback
+so it is single-use whatever the outcome. The server compares the binding cookie to the
+stored value with a constant-time comparison. A missing or mismatched binding is
+the login-CSRF guard, and aborts the resumption. If resumption fails the callback
 falls through to a normal portal login rather than erroring, and the cookie is
 cleared either way.</p>
 <p>Authorization codes are 32 random bytes with a <strong>60-second TTL</strong>. Redeeming one

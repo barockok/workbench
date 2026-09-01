@@ -3,7 +3,7 @@ title: Bitbucket
 description: Connect Bitbucket Cloud so an agent can browse repositories, run the full pull-request review loop, and drive Pipelines.
 ---
 
-The Bitbucket integration covers a complete review cycle: list repos, open a pull request, read its diff, comment inline, approve or request changes, then merge or decline. It also triggers, polls, and stops Bitbucket Pipelines, and can mint a short-lived authenticated clone URL.
+The Bitbucket integration covers a complete review cycle. It can list repos, open a pull request, read its diff, comment inline, approve or request changes, then merge or decline. It also triggers, polls, and stops Bitbucket Pipelines. It can mint a short-lived authenticated clone URL.
 
 ## At a glance
 
@@ -61,7 +61,7 @@ Save, then expand the consumer in the list to reveal **Key** (the client id) and
 | `account` | Read account and workspace membership — backs workspace defaulting and user search |
 
 > [!WARNING] Adding `pipeline` and `pipeline:write` forces a reconnect
-> These two were added after the integration first shipped. Anyone who connected before must disconnect and reconnect; existing tokens carry the old grant and the three Pipelines tools return 403 until they do. Adding the scopes to the consumer is not enough on its own.
+> These two were added after the integration first shipped. Anyone who connected before must disconnect and reconnect. Existing tokens carry the old grant, and the three Pipelines tools return 403 until they do. Adding the scopes to the consumer is not enough on its own.
 
 ## Server configuration
 
@@ -111,9 +111,9 @@ wait_for_connection({ connectionId })
 > [!WARNING] Naming the PR author as a reviewer makes the create call fail
 > Bitbucket rejects a pull request whose reviewer list includes its own author, and the failure is not obvious from the error. `bitbucket_create_pr` filters the author out of `reviewers` before sending. It also upserts: if an open PR already exists from the same source branch, the call updates that PR instead of creating a second one.
 
-`bitbucket_get_file` needs a real ref. A branch name or a 40-character SHA works; the literal `HEAD` does not, on this API.
+`bitbucket_get_file` needs a real ref. A branch name or a 40-character SHA works. The literal `HEAD` does not, on this API.
 
-The token in `bitbucket_get_clone_url` is the user's live OAuth access token, embedded in a URL. It is short-lived, and the URL dies with it — mint it immediately before use and never persist it to a file, remote, or shell history.
+The token in `bitbucket_get_clone_url` is the user's live OAuth access token, embedded in a URL. It is short-lived, and the URL dies with it. Mint it immediately before use. Never persist it to a file, a remote, or shell history.
 
 Bitbucket attaches a repository's default reviewers to new pull requests, so a PR can come back with reviewers you did not name. `bitbucket_list_default_reviewers` shows who those are for a repo.
 

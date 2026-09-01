@@ -110,7 +110,7 @@ replayed across a redirect hop to somewhere else.
 
 A connection counts as connected when a bundle exists **and at least one cookie in it is
 unexpired** — not when none have expired. Session bundles routinely mix a long-lived
-refresh cookie with short-lived junk; requiring all of them to be live would report every
+refresh cookie with short-lived junk. Requiring all of them to be live would report every
 working session as broken within the hour.
 
 ### Capture with zero cookies is a hard failure
@@ -215,7 +215,7 @@ For an authenticated proxy, note the shape of the constraint:
   for an **`http://`** proxy with `CAPTURE_PROXY_USERNAME` and `CAPTURE_PROXY_PASSWORD`
   set alongside `CAPTURE_PROXY`. `CAPTURE_PROXY` on its own is enough to route traffic —
   it becomes Chromium's `--proxy-server` regardless. It is the *credential* handler that
-  needs all three; with only one or two set, the proxy is used but nothing answers its
+  needs all three. With only one or two set, the proxy is used but nothing answers its
   auth challenge.
 - For SOCKS5, use IP allow-listing at the proxy instead of credentials.
 

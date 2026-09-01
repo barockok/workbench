@@ -121,7 +121,7 @@ prefixes. There is no DNS resolution, so a public name pointing at a private add
 not caught by this rule.</p>
 <h3 id="allow-listing-the-instance">Allow-listing the instance<a class="anchor" href="#allow-listing-the-instance" aria-label="Link to Allow-listing the instance">#</a></h3>
 <p>An arbitrary origin is <strong>not</strong> accepted just because it normalizes cleanly. The manifest&#39;s
-cloud default is always allowed; any other origin must appear in a per-plugin
+cloud default is always allowed. Any other origin must appear in a per-plugin
 environment variable:</p>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">GITLAB_ALLOWED_INSTANCES=https://gitlab.example.com,https://gitlab.eu.example.com</code></pre></div>
 <p>The variable name is the plugin name, kebab-case converted to upper snake case, plus
@@ -190,7 +190,7 @@ the consent screen on your instance.</p>
 <div class="callout callout-note"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4M8 4.8v.6"/></svg></span><span class="callout-title">One client id per workbench, not per instance</span></div><div class="callout-body"><p><code>GITLAB_CLIENT_ID</code> is a single value. If you need to reach two different self-hosted
 instances that each issued you different credentials, one set of credentials has to be
 registered on both — or the second instance needs its own plugin. The allow-list
-supports multiple origins; the client credentials do not.</p>
+supports multiple origins. The client credentials do not.</p>
 </div></div>
 
     </article>

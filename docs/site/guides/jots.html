@@ -166,7 +166,7 @@ failure.</p>
 <tr><td>3</td><td><code>JOT_NAME_TAKEN</code></td><td>The name exists and belongs to a different user</td></tr>
 </tbody></table></div>
 <div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Jot names are global and creator-locked</span></div><div class="callout-body"><p>There is no per-user namespace. <code>report</code> is one name across the whole server, owned by
-whoever deployed it first. The original owner can redeploy it freely; everyone else
+whoever deployed it first. The original owner can redeploy it freely. Everyone else
 gets <code>JOT_NAME_TAKEN</code> and cannot overwrite or delete it. On a shared workbench, prefix
 your names.</p>
 </div></div>
@@ -277,7 +277,7 @@ default. On a small volume, point it somewhere with room.</p>
 though the names share one namespace. In-flight staging directories are skipped.</p>
 <div class="code" data-lang="json"><div class="code-bar"><span class="code-lang">json</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-json">{ &quot;executions&quot;: [ { &quot;tool&quot;: &quot;delete_jot&quot;, &quot;args&quot;: { &quot;name&quot;: &quot;release-report&quot; } } ] }</code></pre></div>
 <p>Returns <code>{&quot;ok&quot;: true}</code>, or <code>{&quot;error&quot;:&quot;FORBIDDEN&quot;}</code> / <code>{&quot;error&quot;:&quot;NOT_FOUND&quot;}</code>. Deletion
-is immediate and removes the directory; the name becomes available again.</p>
+is immediate and removes the directory. The name becomes available again.</p>
 
     </article>
     <nav class="prevnext"><a class="pn pn-prev" href="self-hosted-instances.html"><span class="pn-dir">Previous</span><span class="pn-label">Self-hosted instances</span></a><a class="pn pn-next" href="troubleshooting.html"><span class="pn-dir">Next</span><span class="pn-label">Troubleshooting</span></a></nav>

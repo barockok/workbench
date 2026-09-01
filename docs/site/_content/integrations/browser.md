@@ -3,9 +3,9 @@ title: Browser
 description: The built-in headless browser an agent drives directly — navigate, click, type, read, screenshot, and hand control to a human.
 ---
 
-`browser` is an internal plugin: it lives in the server's own source rather than under `PLUGINS_DIR`, and it declares `auth: { type: "none" }`, so it is always connected and needs no setup. Its nine tools drive a warm headless Chromium session that belongs to one user.
+`browser` is an internal plugin. It lives in the server's own source rather than under `PLUGINS_DIR`, and it declares `auth: { type: "none" }`. It is therefore always connected and needs no setup. Its nine tools drive a warm headless Chromium session that belongs to one user.
 
-It is internal on purpose. The handlers reach straight into the browser-session layer, and keeping that out of the plugin context means a third-party plugin can never drive a user's logged-in browser and walk off with their cookies. The name `browser` is reserved — a plugin directory using it is refused at load time.
+It is internal on purpose. The handlers reach straight into the browser-session layer. Keeping that out of the plugin context means a third-party plugin can never drive a user's logged-in browser and steal their cookies. The name `browser` is reserved, and a plugin directory using it is refused at load time.
 
 ## At a glance
 
@@ -18,11 +18,11 @@ It is internal on purpose. The handlers reach straight into the browser-session 
 
 ## The per-user session model
 
-There is exactly one browser per user, backed by a persistent profile on disk. Every action tool opens the session if it is not already running and refreshes its idle timer, so a sequence of calls reuses one warm browser rather than paying startup cost each time.
+There is exactly one browser per user, backed by a persistent profile on disk. Every action tool opens the session if it is not already running, and refreshes its idle timer. A sequence of calls therefore reuses one warm browser instead of paying the startup cost each time.
 
-That single browser is also what the cookie-auth capture flow uses, and the two **share** it rather than excluding each other: capture and the `browser_*` tools resolve the same warm session, so a capture can start while an agent is driving. `browser_close` ends the process while keeping the profile — the logged-in state survives.
+The cookie-auth capture flow uses that same browser. The two **share** it rather than excluding each other. Capture and the `browser_*` tools resolve the same warm session, so a capture can start while an agent is driving. `browser_close` ends the process but keeps the profile, so the logged-in state survives.
 
-Because the profile persists, sites the user logged into stay logged in across sessions. An idle session is killed after `BROWSER_SESSION_TTL_SECONDS`; the profile itself is separately subject to `BROWSER_PROFILE_TTL_DAYS`.
+Because the profile persists, sites the user logged into stay logged in across sessions. The server kills an idle session after `BROWSER_SESSION_TTL_SECONDS`. The profile itself is separately subject to `BROWSER_PROFILE_TTL_DAYS`.
 
 ## Tools
 
@@ -52,7 +52,7 @@ The cheaper habit is to prefer `browser_read_text` for text-heavy pages, forms, 
 
 `browser_live_url` returns a URL into the portal's browser canvas — `${PORTAL_URL}/browser?t=<token>` — carrying a signed token whose lifetime is `CONNECT_TTL_SECONDS` (default 600 seconds).
 
-Opening it attaches a live view of the *same* session the agent is driving. A person can take over by hand — solve a CAPTCHA, complete an SSO prompt, click through a consent screen — and then leave the page; the agent's next tool call continues in the browser they just used. This is the escape hatch for anything an agent cannot or should not do itself.
+Opening it attaches a live view of the *same* session the agent is driving. A person can take over by hand to solve a CAPTCHA, complete an SSO prompt, or click through a consent screen. They can then leave the page. The agent's next tool call continues in the browser they just used. This is the escape hatch for anything an agent cannot or should not do itself.
 
 The live-view connection is authorized on its first WebSocket frame, not through the URL, and the browser canvas only accepts connections from allowed origins.
 

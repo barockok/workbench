@@ -26,7 +26,7 @@ Kebab-case in the directory name becomes upper snake in the env vars:
 ### Write the manifest
 
 `manifest.ts` default-exports an `Integration`. Only `name`, `version`, and
-`auth` are required; the rest control how the integration appears in the portal
+`auth` are required. The rest control how the integration appears in the portal,
 and whether the [curl proxy](../guides/curl-session.md) is available for it.
 
 ```ts
@@ -161,7 +161,7 @@ single-execution variant — for one tool, pass a one-element array.
 ```
 
 The response is a `results` array in the same order as `executions`. One tool
-failing does not abort the others; its entry carries an `error` instead of a
+failing does not abort the others. Its entry carries an `error` instead of a
 `result`.
 
 To confirm the tool is registered before calling it:
@@ -238,9 +238,9 @@ By the time your handler runs, the executor has already:
 
 - confirmed the integration is connected, returning
   `{ error: "NOT_CONNECTED", integration, message }` to the agent if not
-  (`auth.type: "none"` counts as always connected; `cookie` checks for live
-  cookies; everything else requires a stored token);
-- validated and defaulted the args;
+  (`auth.type: "none"` counts as always connected, `cookie` checks for live
+  cookies, and everything else requires a stored token)
+- validated and defaulted the args
 - built the `ToolContext` for `(userId, tool.integration)`.
 
 Handlers do not need to catch their own errors — a throw is caught and converted

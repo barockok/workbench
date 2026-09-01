@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">Connect Atlassian Confluence Cloud so an agent can read, search, create, update, and delete wiki pages.</p>
-      <p>The Confluence integration lets an agent find a page by full-text search, read its body, write a new page into a space, and update or delete an existing one. It runs on Confluence REST v2 (<code>/wiki/api/v2/pages</code>, <code>/wiki/api/v2/spaces</code>); search stays on the CQL endpoint, which has no v2 equivalent.</p>
+      <p>The Confluence integration lets an agent find a page by full-text search and read its body. It can also write a new page into a space, and update or delete an existing one. It runs on Confluence REST v2: <code>/wiki/api/v2/pages</code> and <code>/wiki/api/v2/spaces</code>. Search stays on the CQL endpoint, which has no v2 equivalent.</p>
 <h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td>Plugin id</td><td><code>atlassian-confluence</code></td></tr>
@@ -78,7 +78,7 @@ without notice. If what you see differs, follow <a href="https://developer.atlas
 below) are unaffected.</p>
 </div></div>
 
-<p>The console is the same one Jira uses; only the API and scopes differ.</p>
+<p>The console is the same one Jira uses. Only the API and scopes differ.</p>
 <div class="steps">
 
 <h3 id="create-the-app">Create the app<a class="anchor" href="#create-the-app" aria-label="Link to Create the app">#</a></h3>
@@ -102,7 +102,7 @@ below) are unaffected.</p>
 <tr><td><code>search:confluence</code></td><td>CQL full-text search — backs <code>confluence_search_pages</code></td></tr>
 <tr><td><code>offline_access</code></td><td>Issue a refresh token</td></tr>
 </tbody></table></div>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The classic scopes no longer work</span></div><div class="callout-body"><p><code>read:confluence-content.summary</code>, <code>write:confluence-content</code>, and <code>read:confluence-space.summary</code> authorize the v1 content API. This integration was migrated to REST v2 after v1 page reads stopped working against live sites: an app configured with the classic scopes connects successfully and then fails every page operation. Consult <a href="https://developer.atlassian.com/cloud/confluence/rest/v2/intro/" target="_blank" rel="noopener">Atlassian&#39;s Confluence REST documentation<span class="ext" aria-hidden="true">↗</span></a> for the API&#39;s current status. If you are carrying forward an older setup, swap to the granular scope set and have every user reconnect — changing scopes always requires reconsent.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">The classic scopes no longer work</span></div><div class="callout-body"><p><code>read:confluence-content.summary</code>, <code>write:confluence-content</code>, and <code>read:confluence-space.summary</code> authorize the v1 content API. This integration moved to REST v2 after v1 page reads stopped working against live sites. An app configured with the classic scopes connects successfully, then fails every page operation. Consult <a href="https://developer.atlassian.com/cloud/confluence/rest/v2/intro/" target="_blank" rel="noopener">Atlassian&#39;s Confluence REST documentation<span class="ext" aria-hidden="true">↗</span></a> for the API&#39;s current status. If you are carrying forward an older setup, swap to the granular scope set and have every user reconnect. Changing scopes always requires reconsent.</p>
 </div></div>
 
 <h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
@@ -124,9 +124,9 @@ wait_for_connection({ connectionId })</code></pre></div>
 <tr><td><code>confluence_list_spaces</code></td><td>List spaces as <code>{ key, name, id, url }</code></td></tr>
 </tbody></table></div>
 <h2 id="notes-and-gotchas">Notes and gotchas<a class="anchor" href="#notes-and-gotchas" aria-label="Link to Notes and gotchas">#</a></h2>
-<p>Page bodies are Confluence storage format, which is XHTML. Plain text works for simple pages; anything with structure has to be valid storage-format markup.</p>
-<p><code>confluence_update_page</code> takes the page&#39;s <strong>current</strong> version number, not the next one. The API stores version + 1 and rejects a stale number, so read the page with <code>confluence_get_page</code> immediately before updating rather than reusing a version from earlier in the conversation.</p>
-<p>Space keys are the human-facing identifier but v2 addresses spaces by numeric id. The plugin resolves key to id internally; you can pass a <code>spaceId</code> directly to skip the lookup.</p>
+<p>Page bodies are Confluence storage format, which is XHTML. Plain text works for simple pages. Anything with structure has to be valid storage-format markup.</p>
+<p><code>confluence_update_page</code> takes the page&#39;s <strong>current</strong> version number, not the next one. The API stores version + 1 and rejects a stale number. Read the page with <code>confluence_get_page</code> immediately before you update it. Do not reuse a version from earlier in the conversation.</p>
+<p>Space keys are the human-facing identifier but v2 addresses spaces by numeric id. The plugin resolves key to id internally. You can pass a <code>spaceId</code> directly to skip the lookup.</p>
 <p>Deletion is a move to the space trash. It cannot be undone through this API — recovery is a manual restore in the Confluence UI.</p>
 
     </article>

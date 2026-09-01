@@ -129,7 +129,7 @@ product. Details in the [context reference](context.md).
 ## The `auth` block
 
 Four shapes, discriminated by `type`. The full field list, portal behaviour, and
-worked examples for each are in [auth modes](auth-modes.md); this is the type
+worked examples for each are in [auth modes](auth-modes.md). This is the type
 surface.
 
 ```ts

@@ -84,7 +84,7 @@ not caught by this rule.
 ### Allow-listing the instance
 
 An arbitrary origin is **not** accepted just because it normalizes cleanly. The manifest's
-cloud default is always allowed; any other origin must appear in a per-plugin
+cloud default is always allowed. Any other origin must appear in a per-plugin
 environment variable:
 
 ```bash
@@ -191,4 +191,4 @@ The projects returned should be your instance's, not `gitlab.com`'s.
 > `GITLAB_CLIENT_ID` is a single value. If you need to reach two different self-hosted
 > instances that each issued you different credentials, one set of credentials has to be
 > registered on both — or the second instance needs its own plugin. The allow-list
-> supports multiple origins; the client credentials do not.
+> supports multiple origins. The client credentials do not.

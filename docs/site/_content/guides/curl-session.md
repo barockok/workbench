@@ -3,9 +3,9 @@ title: Raw API calls with curl_session
 description: Mint a short-lived proxy token that forwards arbitrary HTTP requests to a provider's API with your credential injected.
 ---
 
-The tool catalog is wide but not complete. GitHub alone has hundreds of endpoints; the
+The tool catalog is wide but not complete. GitHub alone has hundreds of endpoints, and the
 plugin wraps 28 of them. When the endpoint you need has no tool, `curl_session` is the
-escape hatch: it mints a 15-minute token that lets you send **any** HTTP request to that
+escape hatch. It mints a 15-minute token that lets you send **any** HTTP request to that
 provider's API through the workbench, with your real credential attached server-side.
 
 You never see the credential. The proxy injects it.
@@ -15,9 +15,9 @@ You never see the credential. The proxy injects it.
 > integrations, including destructive writes. Anything reachable with the user's
 > credential is reachable through the minted token. The tool description instructs the
 > calling agent to name the integrations and the intended action, and to wait for
-> explicit user approval, before invoking it — and not to mint speculatively or as a
-> default first step. An MCP client that surfaces tool descriptions will show this to
-> the user; one that does not, will not. As the operator, treat a minted curl session as
+> explicit user approval, before invoking it. It also instructs the agent not to mint
+> speculatively or as a default first step. An MCP client that surfaces tool
+> descriptions shows this to the user. One that does not, does not. As the operator, treat a minted curl session as
 > a consent event worth auditing.
 
 ## When to reach for it
@@ -29,7 +29,7 @@ You never see the credential. The proxy injects it.
 | You want a permanent capability | Write a plugin tool instead |
 
 Prefer a tool where one exists. Tool calls get argument validation, per-tool audit
-entries, and per-tool metrics; a proxied request gets an HTTP request log and nothing
+entries, and per-tool metrics. A proxied request gets an HTTP request log and nothing
 tool-shaped.
 
 ## Minting a session
@@ -124,7 +124,7 @@ on a tool call.
 ## How the target base is resolved
 
 An integration is proxy-capable only if its manifest declares a `proxy` block. Fifteen
-of the sixteen shipped plugins do; `httpbin-cookie` does not.
+of the sixteen shipped plugins do. `httpbin-cookie` does not.
 
 ### Static `baseUrl`
 

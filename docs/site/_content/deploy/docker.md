@@ -119,7 +119,7 @@ Loading happens in two independent passes, and only the second one is governed b
 
 So pointing `PLUGINS_DIR` somewhere else does not unload the built-ins, and it
 cannot be used to relocate them either. In the image the working directory is
-`/app`, so the built-in probe finds `/app/plugins`; `PLUGINS_DIR` defaults to
+`/app`, so the built-in probe finds `/app/plugins`. `PLUGINS_DIR` defaults to
 `./plugins`, which resolves to that same directory, which is why the default
 configuration loads the built-ins once rather than twice — the external pass skips
 built-in directory names. The loader also refuses to load a directory named

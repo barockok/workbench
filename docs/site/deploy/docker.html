@@ -156,7 +156,7 @@ at import.</p>
 </tbody></table></div>
 <p>So pointing <code>PLUGINS_DIR</code> somewhere else does not unload the built-ins, and it
 cannot be used to relocate them either. In the image the working directory is
-<code>/app</code>, so the built-in probe finds <code>/app/plugins</code>; <code>PLUGINS_DIR</code> defaults to
+<code>/app</code>, so the built-in probe finds <code>/app/plugins</code>. <code>PLUGINS_DIR</code> defaults to
 <code>./plugins</code>, which resolves to that same directory, which is why the default
 configuration loads the built-ins once rather than twice — the external pass skips
 built-in directory names. The loader also refuses to load a directory named

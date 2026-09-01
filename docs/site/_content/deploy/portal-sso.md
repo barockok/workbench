@@ -4,9 +4,9 @@ description: Configuring Google or Keycloak login for the portal — redirect UR
 ---
 
 The portal has no password login. Users sign in through an OIDC provider, and a
-user row is created on first successful callback. Two providers are supported and
-both are optional; you can enable either, both, or neither (in which case the only
-way to create a user is the seed script — see [install](install.md)).
+user row is created on first successful callback. Two providers are supported, and
+both are optional. You can enable either, both, or neither. With neither, the only
+way to create a user is the seed script — see [install](install.md).
 
 | Provider | Enabled when | Callback URL |
 |---|---|---|
@@ -19,7 +19,7 @@ way to create a user is the seed script — see [install](install.md)).
 > `${PORTAL_URL}/auth/google/callback`. That value is wrong and will fail with a
 > `redirect_uri_mismatch` in the provider console. The same helper builds the URI
 > for both the authorize redirect and the token exchange, so the two are always
-> byte-identical; there is nothing to align by hand except what you register with
+> byte-identical. There is nothing to align by hand except what you register with
 > the provider.
 
 ## Google
@@ -41,8 +41,8 @@ of Google's two published issuer spellings — `https://accounts.google.com` and
 bare `accounts.google.com` — with the audience pinned to `GOOGLE_CLIENT_ID` and 60
 seconds of clock tolerance, then checks the nonce.
 
-Accounts whose email is not verified are rejected. A returning user is matched on
-`google_sub`; otherwise the server links by email address; otherwise it creates a
+Accounts whose email is not verified are rejected. The server matches a returning user on
+`google_sub`. Failing that, it links by email address. Failing that, it creates a
 new user.
 
 `GOOGLE_CLIENT_ID` alone is enough to make the provider appear and to build an
@@ -78,12 +78,12 @@ created on `keycloak_sub`. It is a confidential-client flow with no PKCE.
 Two behavioural differences to be aware of:
 
 - **Email verification is checked more loosely.** Keycloak logins are rejected only
-  when the token carries `email_verified: false`; an absent claim passes. Google
+  when the token carries `email_verified: false`. An absent claim passes. Google
   rejects an absent claim too. Configure the realm to emit the claim if you rely
   on it.
 - **Keycloak cannot complete an MCP `/authorize` handshake.** The MCP OAuth
   authorize endpoint hardcodes the Google authorize URL, and the Keycloak callback
-  never resumes an authorize ticket. Keycloak works for portal login; agents
+  never resumes an authorize ticket. Keycloak works for portal login. Agents
   authorizing over MCP OAuth 2.1 need Google configured. Agents can also
   authenticate with a workbench API key, which is provider-independent.
 
@@ -123,7 +123,7 @@ there itself. The only route that answers with a 302 to Google is the MCP OAuth
 
 The session is a stateless **HS256 JWT** signed with `SESSION_SECRET`. Claims are
 `sub` (the user id), `email`, `iat`, `exp`, plus `aud` and `iss` both set to
-`workbench`; verification enforces the audience, the issuer, and 5 seconds of
+`workbench`. Verification enforces the audience, the issuer, and 5 seconds of
 clock tolerance. The lifetime is **24 hours**.
 
 After either callback the server redirects to `PORTAL_URL` with the token in the

@@ -3,9 +3,9 @@ title: Google setup & scopes
 description: Create the Google Cloud project, consent screen, and seven OAuth clients that the google-* plugins need.
 ---
 
-Google Workspace ships as **seven separate plugins**, one per product. Each has its own manifest, its own scopes, its own OAuth client, and its own row in the connections table. A user who connects Gmail grants Gmail only; Drive stays unconnected until they connect it too.
+Google Workspace ships as **seven separate plugins**, one per product. Each has its own manifest, its own scopes, its own OAuth client, and its own row in the connections table. A user who connects Gmail grants Gmail only. Drive stays unconnected until they connect it too.
 
-That split is the point — one consent prompt per product, and no way for a Calendar tool to reach a user's mail — but it means the operator setup is one Cloud project with several clients rather than one client for everything.
+That split is the point: one consent prompt per product, and no way for a Calendar tool to reach a user's mail. It does mean the operator setup is one Cloud project with several clients, rather than one client for everything.
 
 | Plugin | Scopes |
 |---|---|
@@ -21,7 +21,7 @@ Per-plugin tool lists are on [Google tools](google-tools.md).
 
 ## The shared scope model
 
-Each plugin asks for the narrowest scope that still lets its tools work, plus `drive.file` where the product needs to create or find its own documents.
+Each plugin asks for the narrowest scope that still lets its tools work. It adds `drive.file` where the product needs to create or find its own documents.
 
 `drive.file` is per-file, not per-drive: it grants access only to files the app itself created or the user explicitly opened with it. That is why Docs, Sheets, and Slides can create documents and search for their own without holding the full `drive` scope. The `google-drive` plugin does hold full `drive`, because a general file manager has to see files it did not create.
 
@@ -113,7 +113,7 @@ GOOGLE_GEMINI_CLIENT_SECRET=...
 ```
 
 > [!WARNING] `GOOGLE_CLIENT_ID` is not a fallback
-> It configures portal SSO and nothing else. A `google-*` plugin with no `_CLIENT_ID` of its own shows as unconfigured in the portal and will not connect, no matter what `GOOGLE_CLIENT_ID` is set to.
+> It configures portal SSO and nothing else. A `google-*` plugin with no `_CLIENT_ID` of its own shows as unconfigured in the portal. It will not connect, no matter what `GOOGLE_CLIENT_ID` is set to.
 
 ## Connect
 
@@ -130,7 +130,7 @@ The server adds `access_type=offline`, `prompt=consent`, and `include_granted_sc
 
 ## Notes and gotchas
 
-Several of these scopes — the Gmail and Drive ones especially — are ones Google classes as sensitive or restricted, which means an External app publishing to Production goes through Google's verification process, and an app whose scopes are restricted has additional requirements on top. What that process demands is Google's to define and changes over time; check [Google's OAuth verification documentation](https://support.google.com/cloud/answer/13463073) before you plan around it. An Internal Workspace app does not go through it.
+Google classes several of these scopes as sensitive or restricted, the Gmail and Drive ones especially. An External app publishing to Production therefore goes through Google's verification process. An app whose scopes are restricted has additional requirements on top. Google defines what that process demands, and it changes over time. Check [Google's OAuth verification documentation](https://support.google.com/cloud/answer/13463073) before you plan around it. An Internal Workspace app does not go through it.
 
 `Error 400: redirect_uri_mismatch` means the URI registered on the client and the one the server sends are not the same string. Register exactly what this server builds — scheme, host, port, and path all matter, and `/api/auth/plugin/google-gmail/callback` is not the same as the portal's own `/api/auth/google/callback`.
 

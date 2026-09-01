@@ -61,7 +61,7 @@
         </button>
       </div>
       <p class="lede">Connect Bitbucket Cloud so an agent can browse repositories, run the full pull-request review loop, and drive Pipelines.</p>
-      <p>The Bitbucket integration covers a complete review cycle: list repos, open a pull request, read its diff, comment inline, approve or request changes, then merge or decline. It also triggers, polls, and stops Bitbucket Pipelines, and can mint a short-lived authenticated clone URL.</p>
+      <p>The Bitbucket integration covers a complete review cycle. It can list repos, open a pull request, read its diff, comment inline, approve or request changes, then merge or decline. It also triggers, polls, and stops Bitbucket Pipelines. It can mint a short-lived authenticated clone URL.</p>
 <h2 id="at-a-glance">At a glance<a class="anchor" href="#at-a-glance" aria-label="Link to At a glance">#</a></h2>
 <div class="table-wrap"><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td>Plugin id</td><td><code>atlassian-bitbucket</code></td></tr>
@@ -105,7 +105,7 @@ below) are unaffected.</p>
 <tr><td><code>pipeline:write</code></td><td>Trigger and stop Pipelines runs</td></tr>
 <tr><td><code>account</code></td><td>Read account and workspace membership — backs workspace defaulting and user search</td></tr>
 </tbody></table></div>
-<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Adding `pipeline` and `pipeline:write` forces a reconnect</span></div><div class="callout-body"><p>These two were added after the integration first shipped. Anyone who connected before must disconnect and reconnect; existing tokens carry the old grant and the three Pipelines tools return 403 until they do. Adding the scopes to the consumer is not enough on its own.</p>
+<div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Adding `pipeline` and `pipeline:write` forces a reconnect</span></div><div class="callout-body"><p>These two were added after the integration first shipped. Anyone who connected before must disconnect and reconnect. Existing tokens carry the old grant, and the three Pipelines tools return 403 until they do. Adding the scopes to the consumer is not enough on its own.</p>
 </div></div>
 
 <h2 id="server-configuration">Server configuration<a class="anchor" href="#server-configuration" aria-label="Link to Server configuration">#</a></h2>
@@ -143,8 +143,8 @@ wait_for_connection({ connectionId })</code></pre></div>
 <div class="callout callout-warning"><div class="callout-head"><span class="callout-icon"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2 1.5 13.5h13L8 2Z"/><path d="M8 6.5v3.2M8 11.6v.5"/></svg></span><span class="callout-title">Naming the PR author as a reviewer makes the create call fail</span></div><div class="callout-body"><p>Bitbucket rejects a pull request whose reviewer list includes its own author, and the failure is not obvious from the error. <code>bitbucket_create_pr</code> filters the author out of <code>reviewers</code> before sending. It also upserts: if an open PR already exists from the same source branch, the call updates that PR instead of creating a second one.</p>
 </div></div>
 
-<p><code>bitbucket_get_file</code> needs a real ref. A branch name or a 40-character SHA works; the literal <code>HEAD</code> does not, on this API.</p>
-<p>The token in <code>bitbucket_get_clone_url</code> is the user&#39;s live OAuth access token, embedded in a URL. It is short-lived, and the URL dies with it — mint it immediately before use and never persist it to a file, remote, or shell history.</p>
+<p><code>bitbucket_get_file</code> needs a real ref. A branch name or a 40-character SHA works. The literal <code>HEAD</code> does not, on this API.</p>
+<p>The token in <code>bitbucket_get_clone_url</code> is the user&#39;s live OAuth access token, embedded in a URL. It is short-lived, and the URL dies with it. Mint it immediately before use. Never persist it to a file, a remote, or shell history.</p>
 <p>Bitbucket attaches a repository&#39;s default reviewers to new pull requests, so a PR can come back with reviewers you did not name. <code>bitbucket_list_default_reviewers</code> shows who those are for a repo.</p>
 <p>Bitbucket issues short-lived access tokens and rotates refresh tokens (see <a href="https://developer.atlassian.com/cloud/bitbucket/oauth-2/" target="_blank" rel="noopener">Atlassian&#39;s Bitbucket OAuth 2.0 documentation<span class="ext" aria-hidden="true">↗</span></a> for current lifetimes). The server refreshes 30 seconds before expiry and stores each new refresh token automatically, keeping the previous one when the response carries none.</p>
 

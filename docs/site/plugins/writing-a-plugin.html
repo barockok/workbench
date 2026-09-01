@@ -76,7 +76,7 @@ before you register anything with the provider.</p>
 <code>google-gemini</code> → <code>GOOGLE_GEMINI_CLIENT_ID</code> / <code>GOOGLE_GEMINI_CLIENT_SECRET</code>.</p>
 <h3 id="write-the-manifest">Write the manifest<a class="anchor" href="#write-the-manifest" aria-label="Link to Write the manifest">#</a></h3>
 <p><code>manifest.ts</code> default-exports an <code>Integration</code>. Only <code>name</code>, <code>version</code>, and
-<code>auth</code> are required; the rest control how the integration appears in the portal
+<code>auth</code> are required. The rest control how the integration appears in the portal,
 and whether the <a href="../guides/curl-session.html">curl proxy</a> is available for it.</p>
 <div class="code" data-lang="ts"><div class="code-bar"><span class="code-lang">ts</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-ts">// manifest.ts
 export default {
@@ -170,7 +170,7 @@ single-execution variant — for one tool, pass a one-element array.</p>
   ]
 }</code></pre></div>
 <p>The response is a <code>results</code> array in the same order as <code>executions</code>. One tool
-failing does not abort the others; its entry carries an <code>error</code> instead of a
+failing does not abort the others. Its entry carries an <code>error</code> instead of a
 <code>result</code>.</p>
 <p>To confirm the tool is registered before calling it:</p>
 <div class="code" data-lang="bash"><div class="code-bar"><span class="code-lang">bash</span><button class="copy" type="button" aria-label="Copy code">Copy</button></div><pre><code class="language-bash">curl -s -X POST $SERVER_PUBLIC_URL/mcp \
@@ -229,9 +229,9 @@ MCP client can consume a portable JSON Schema without knowing about Zod.</li>
 <ul>
 <li>confirmed the integration is connected, returning
 <code>{ error: &quot;NOT_CONNECTED&quot;, integration, message }</code> to the agent if not
-(<code>auth.type: &quot;none&quot;</code> counts as always connected; <code>cookie</code> checks for live
-cookies; everything else requires a stored token);</li>
-<li>validated and defaulted the args;</li>
+(<code>auth.type: &quot;none&quot;</code> counts as always connected, <code>cookie</code> checks for live
+cookies, and everything else requires a stored token)</li>
+<li>validated and defaulted the args</li>
 <li>built the <code>ToolContext</code> for <code>(userId, tool.integration)</code>.</li>
 </ul>
 <p>Handlers do not need to catch their own errors — a throw is caught and converted

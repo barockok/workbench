@@ -162,7 +162,7 @@ failure.
 
 > [!WARNING] Jot names are global and creator-locked
 > There is no per-user namespace. `report` is one name across the whole server, owned by
-> whoever deployed it first. The original owner can redeploy it freely; everyone else
+> whoever deployed it first. The original owner can redeploy it freely. Everyone else
 > gets `JOT_NAME_TAKEN` and cannot overwrite or delete it. On a shared workbench, prefix
 > your names.
 
@@ -315,4 +315,4 @@ though the names share one namespace. In-flight staging directories are skipped.
 ```
 
 Returns `{"ok": true}`, or `{"error":"FORBIDDEN"}` / `{"error":"NOT_FOUND"}`. Deletion
-is immediate and removes the directory; the name becomes available again.
+is immediate and removes the directory. The name becomes available again.
