@@ -7,8 +7,8 @@ Prepare a new release of a-workbench.
 1. **Document Review**
    - Read `docs/site/_content/` — check every page the release touches for
      outdated info, and verify any command you changed still runs
-   - Rebuild the site (`node docs/site/build.mjs`) and commit the output; the
-     docs CI job fails if the generated HTML is out of date
+   - Rebuild the site (`node docs/site/build.mjs`) to check it still builds;
+     the output in `docs/site/_site/` is not committed
    - Read `CHANGELOG.md` — the cumulative history; note last version at the top
 
 2. **Determine Version**
