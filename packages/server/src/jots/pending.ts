@@ -4,10 +4,22 @@ import { config } from "../config";
 export interface PendingDeploy {
   owner: string;
   name: string;
-  access: "public" | "password";
+  // "replace" publishes the archive as the whole jot; "patch" overlays it onto
+  // the live tree. A patch token carries no access/passwordHash — those are
+  // read from the live manifest at commit, so a patch can never change gating.
+  mode: "replace" | "patch";
+  access?: "public" | "password";
   passwordHash?: string;
+  cors?: boolean;
+  deletes?: string[];
   expiresAt: number;
 }
+
+// `mode` is optional at the call site and defaults to "replace" so existing
+// deploy callers are unaffected.
+export type MintInput = Omit<PendingDeploy, "expiresAt" | "mode"> & {
+  mode?: "replace" | "patch";
+};
 
 const pending = new Map<string, PendingDeploy>();
 
@@ -17,10 +29,10 @@ export function _setNowForTest(fn: () => number): void {
   now = fn;
 }
 
-export function mint(input: Omit<PendingDeploy, "expiresAt">): { token: string; expiresAt: number } {
+export function mint(input: MintInput): { token: string; expiresAt: number } {
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = now() + config.JOTS_UPLOAD_TTL_SECONDS * 1000;
-  pending.set(token, { ...input, expiresAt });
+  pending.set(token, { ...input, mode: input.mode ?? "replace", expiresAt });
   return { token, expiresAt };
 }
 

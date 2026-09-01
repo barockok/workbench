@@ -7,10 +7,10 @@ let tmp: string;
 
 vi.mock("../../src/jots/dir", () => ({ jotsRoot: () => tmp }));
 vi.mock("../../src/config", () => ({
-  config: { JOTS_MAX_BYTES: 1000, SERVER_PUBLIC_URL: "https://wb.test", NODE_ENV: "test" },
+  config: { JOTS_MAX_BYTES: 1000, JOTS_MAX_FILES: 1000, SERVER_PUBLIC_URL: "https://wb.test", NODE_ENV: "test" },
 }));
 
-import { deployJot, commitJotDir, listJots, deleteJot, readManifest } from "../../src/jots/store";
+import { deployJot, commitJotDir, listJots, deleteJot, readManifest, listJotFiles } from "../../src/jots/store";
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "jots-"));
@@ -123,5 +123,38 @@ describe("jots/store", () => {
   it("listJots returns [] when the jots root does not exist", () => {
     fs.rmSync(tmp, { recursive: true, force: true });
     expect(listJots("u1")).toEqual([]);
+  });
+});
+
+describe("jots/store listJotFiles", () => {
+  it("lists files recursively, excluding the manifest", () => {
+    deployJot({
+      name: "site", owner: "u1", access: "public",
+      files: [file("index.html", "hi"), file("data/app.json", "{}"), file("a/b/c.txt", "xyz")],
+    });
+    const r = listJotFiles("site", "u1");
+    expect("files" in r).toBe(true);
+    const files = (r as { files: { path: string; bytes: number }[] }).files;
+    expect(files.map((f) => f.path)).toEqual(["a/b/c.txt", "data/app.json", "index.html"]);
+    expect(files.find((f) => f.path === "index.html")!.bytes).toBe(2);
+    expect(files.some((f) => f.path.includes("jot.json"))).toBe(false);
+  });
+
+  it("refuses a jot owned by someone else, and an unknown name", () => {
+    deployJot({ name: "site", owner: "u1", access: "public", files: [file("index.html", "hi")] });
+    expect(listJotFiles("site", "u2")).toEqual({ error: "FORBIDDEN" });
+    expect(listJotFiles("nope", "u1")).toEqual({ error: "NOT_FOUND" });
+  });
+});
+
+describe("jots/store cors flag", () => {
+  it("persists cors on the manifest and preserves it across a commit", () => {
+    deployJot({ name: "site", owner: "u1", access: "public", cors: true, files: [file("index.html", "hi")] });
+    expect(readManifest("site")?.cors).toBe(true);
+  });
+
+  it("omits cors when not requested", () => {
+    deployJot({ name: "site", owner: "u1", access: "public", files: [file("index.html", "hi")] });
+    expect(readManifest("site")?.cors).toBeUndefined();
   });
 });

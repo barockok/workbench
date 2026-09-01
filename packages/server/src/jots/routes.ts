@@ -4,8 +4,8 @@ import crypto from "node:crypto";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { config } from "../config";
 import { jotsRoot } from "./dir";
-import { isValidJotName, resolveInside, MANIFEST } from "./paths";
-import { readManifest, commitJotDir } from "./store";
+import { isValidJotName, resolveInside, safeRelPath, MANIFEST } from "./paths";
+import { readManifest, commitJotDir, Manifest } from "./store";
 import { contentType } from "./mime";
 import { verifyPassword, makeToken, verifyToken, cookieName } from "./auth";
 import { consume } from "./pending";
@@ -65,17 +65,53 @@ function unlockPage(jotName: string, error: boolean): string {
 // requests to /api or /mcp. allow-scripts + allow-forms keep jots and the
 // unlock form working. Trade-off: a jot cannot fetch its own data files
 // (opaque origin is cross-origin to itself); jots must be self-contained.
-function setJotSecurityHeaders(reply: FastifyReply): void {
+// A sandboxed jot is its own opaque origin, so `fetch('./data.json')` from its
+// own script counts as cross-origin and needs CORS to be readable. Opt-in per
+// jot, and public-only: an opaque-origin fetch carries no cookies, so on a
+// password jot the request would just 401 anyway.
+function corsEnabled(manifest: Manifest | null | undefined): boolean {
+  return !!manifest && manifest.access === "public" && manifest.cors === true;
+}
+
+const CORS_METHODS = "GET, HEAD, OPTIONS";
+
+function setJotSecurityHeaders(reply: FastifyReply, manifest?: Manifest | null): void {
   reply.header("content-security-policy", "sandbox allow-scripts allow-forms");
   reply.header("x-content-type-options", "nosniff");
   reply.header("x-frame-options", "SAMEORIGIN");
-  reply.header("cross-origin-resource-policy", "same-origin");
+  if (corsEnabled(manifest)) {
+    reply.header("access-control-allow-origin", "*");
+    reply.header("cross-origin-resource-policy", "cross-origin");
+  } else {
+    reply.header("cross-origin-resource-policy", "same-origin");
+  }
 }
 
-function streamFile(reply: FastifyReply, filePath: string): void {
-  setJotSecurityHeaders(reply);
+function streamFile(reply: FastifyReply, filePath: string, manifest?: Manifest | null): void {
+  setJotSecurityHeaders(reply, manifest);
   reply.header("content-type", contentType(filePath));
   reply.send(fs.readFileSync(filePath));
+}
+
+// Post-merge guard. extractTarGzToDir caps the *archive*; a patch overlays it
+// onto an existing tree, so the merged result has to be measured again.
+function measureTree(dir: string): { files: number; bytes: number } {
+  let files = 0;
+  let bytes = 0;
+  const walk = (d: string, isRoot: boolean): void => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (e.isDirectory()) {
+        walk(path.join(d, e.name), false);
+        continue;
+      }
+      if (!e.isFile()) continue;
+      if (isRoot && e.name === MANIFEST) continue;
+      files++;
+      bytes += fs.statSync(path.join(d, e.name)).size;
+    }
+  };
+  walk(dir, true);
+  return { files, bytes };
 }
 
 export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
@@ -142,9 +178,42 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
     const pending = consume(req.params.token);
     if (!pending) return reply.code(404).send("Not found");
 
+    // A patch inherits gating from the live jot rather than from the token, so
+    // an update can never silently change who can read the jot.
+    let access: "public" | "password";
+    let passwordHash: string | undefined;
+    let cors: boolean | undefined;
+    if (pending.mode === "patch") {
+      const live = readManifest(pending.name);
+      if (!live) return reply.code(404).send({ error: "NOT_FOUND" });
+      if (live.owner !== pending.owner) return reply.code(403).send({ error: "FORBIDDEN" });
+      access = live.access;
+      passwordHash = live.hash;
+      cors = pending.cors ?? live.cors;
+    } else {
+      if (!pending.access) return reply.code(400).send({ error: "INVALID_ACCESS" });
+      access = pending.access;
+      passwordHash = pending.passwordHash;
+      cors = pending.cors;
+    }
+
     fs.mkdirSync(jotsRoot(), { recursive: true });
     const tmpDir = path.join(jotsRoot(), `${pending.name}.up-${crypto.randomBytes(4).toString("hex")}`);
     fs.mkdirSync(tmpDir, { recursive: true });
+
+    if (pending.mode === "patch") {
+      // Stage a copy of the live tree, drop the deleted paths, then let the
+      // archive overlay it — so an uploaded path wins over a delete of itself.
+      fs.cpSync(path.join(jotsRoot(), pending.name), tmpDir, { recursive: true });
+      for (const d of pending.deletes ?? []) {
+        const rel = safeRelPath(d);
+        if (!rel) {
+          fs.rmSync(tmpDir, { recursive: true, force: true });
+          return reply.code(400).send({ error: "INVALID_PATH" });
+        }
+        fs.rmSync(path.join(tmpDir, rel), { recursive: true, force: true });
+      }
+    }
 
     try {
       await extractTarGzToDir(req.raw, tmpDir);
@@ -157,8 +226,19 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: "BAD_ARCHIVE" });
     }
 
+    if (pending.mode === "patch") {
+      const merged = measureTree(tmpDir);
+      const overflow =
+        merged.bytes > config.JOTS_MAX_BYTES ? "TOO_LARGE" : merged.files > config.JOTS_MAX_FILES ? "TOO_MANY_FILES" : null;
+      if (overflow) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+        return reply.code(413).send({ error: overflow });
+      }
+    }
+
     // A jot is a site: the root must have an index.html, or `/j/<name>/` 404s.
-    // Reject loudly here instead of publishing a jot that serves nothing.
+    // Reject loudly here instead of publishing a jot that serves nothing. A
+    // patch normally inherits one from the staged copy of the live tree.
     if (!fs.existsSync(path.join(tmpDir, "index.html"))) {
       fs.rmSync(tmpDir, { recursive: true, force: true });
       return reply.code(400).send({ error: "NO_INDEX" });
@@ -167,8 +247,9 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
     const result = commitJotDir({
       name: pending.name,
       owner: pending.owner,
-      access: pending.access,
-      passwordHash: pending.passwordHash,
+      access,
+      passwordHash,
+      cors,
       srcDir: tmpDir,
     });
     if ("error" in result) {
@@ -178,6 +259,21 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(status).send(result);
     }
     return reply.code(200).send(result);
+  });
+
+  // Preflight, only for jots that opted into cross-origin reads. Anything else
+  // 404s so a jot's CORS posture isn't discoverable by probing.
+  app.options<{ Params: { name: string; "*": string } }>("/j/:name/*", async (req, reply) => {
+    const { name } = req.params;
+    if (!isValidJotName(name)) return reply.code(404).send("Not found");
+    const manifest = readManifest(name);
+    if (!corsEnabled(manifest)) return reply.code(404).send("Not found");
+    return reply
+      .header("access-control-allow-origin", "*")
+      .header("access-control-allow-methods", CORS_METHODS)
+      .header("access-control-max-age", "600")
+      .code(204)
+      .send();
   });
 
   app.get<{ Params: { name: string; "*": string } }>("/j/:name/*", async (req, reply) => {
@@ -193,7 +289,7 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
       const ok = verifyToken(secret(), name, manifest.hash ?? "", cookies[cookieName(name)]);
       if (!ok) {
         if (wantsHtml(req)) {
-          setJotSecurityHeaders(reply);
+          setJotSecurityHeaders(reply, null);
           return reply.code(200).type("text/html; charset=utf-8").send(unlockPage(name, false));
         }
         return reply.code(401).send("Unauthorized");
@@ -216,8 +312,8 @@ export async function registerJotRoutes(app: FastifyInstance): Promise<void> {
     if (stat.isDirectory()) {
       const idx = path.join(filePath, "index.html");
       if (!fs.existsSync(idx)) return reply.code(404).send("Not found");
-      return streamFile(reply, idx);
+      return streamFile(reply, idx, manifest);
     }
-    return streamFile(reply, filePath);
+    return streamFile(reply, filePath, manifest);
   });
 }
