@@ -103,12 +103,16 @@ Checks, in order:
 On success, by auth type:
 
 - **cookie** — `ensureSession(userId)`, navigate to `integ.auth.loginUrl`, and
-  return `{ type: "cookie", integration, loginUrl, cdpProxyUrl, sessionId }`.
-  No `cdpToken` in the response; see "CDP authorization" below.
+  return `{ type: "cookie", integration, loginUrl, cdpProxyUrl, sessionId, cdpToken }`.
 - **oauth2** — `createAuthState` + `buildPluginAuthUrl`, return
   `{ type: "oauth2", url }` for the page to redirect to.
 - **`__browser__`** — `ensureSession(userId)` and return
-  `{ type: "browser", cdpProxyUrl, sessionId }`.
+  `{ type: "browser", cdpProxyUrl, sessionId, cdpToken }`.
+
+The `cdpToken` is still needed — `getWarmCdpEndpoint`
+(`packages/server/src/auth/browser-session.ts:180`) gates attachment on it — but
+it is now handed to a caller who has already proved they own the account,
+instead of riding in a URL anyone could hold.
 
 The mismatch response deliberately names the integration. The human already
 knows which integration the agent asked about, so naming it leaks nothing they
@@ -127,7 +131,8 @@ to anyone who cannot also authenticate as account A.
 `portalUserId` when the caller has a portal session, and falls back to a connect
 JWT when it does not. After this change the page always has a session, so the
 connect-JWT branch is removed. `CdpScreencast` sends the portal session token
-instead of the link token.
+instead of the link token, and keeps sending the `cdpToken` from the redeem
+response as a second factor pinning the socket to one warm session.
 
 This is what actually closes the live-browser exposure. Gating the redeem
 endpoint alone would still leave a token that authenticates a CDP websocket.
@@ -155,12 +160,13 @@ return as the right account. It offers no way to proceed.
 
 ### Existing endpoints
 
-`/api/connect/session` is replaced by `redeem` and is removed — it returned the
-cookie login details and a `cdpToken` on the strength of the link token alone,
-which is the defect itself.
+`/api/connect/session` and `/api/connect/browser-session` are both replaced by
+`redeem` and removed. Each returned live-view details and a `cdpToken` on the
+strength of the link token alone, which is the defect itself; `redeem` answers
+the same questions behind the session check.
 
-`/api/connect/capture` and `/api/connect/browser-session` stay, because capture
-and live-view attachment are separate acts from redemption. Both gain the same
+`/api/connect/capture` stays, because capture is a separate act from redemption
+and happens after the human has finished logging in. It gains the same
 session-plus-match check, so the gate holds against a direct API call and does
 not depend on the page behaving.
 
@@ -189,6 +195,7 @@ Server tests, per path:
 - Redeem with an expired link token returns 401.
 - `/api/connect/capture` with a valid link token but a mismatched session
   returns 403, so the gate does not depend on `redeem` having run.
+- `/api/connect/session` and `/api/connect/browser-session` are gone (404).
 - `authorizeCdpFrame` rejects a frame whose only credential is a connect JWT.
 - OAuth: `buildPluginAuthUrl` is not reached before a successful handshake.
 
