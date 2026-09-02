@@ -22,7 +22,7 @@ import {
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { signConnectToken } from "../auth/connect-token";
-import { markConnected, startReaper, redeemPending, getPending } from "../auth/connections";
+import { markConnected, startReaper, redeemPending, getPending, createPending } from "../auth/connections";
 import { resumeAuthorize } from "../auth/oauth-server/resume";
 import { listAgents, revokeAgent } from "../auth/oauth-server/agents";
 import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
@@ -544,14 +544,14 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     try {
       const s = await ensureSession(user.userId);
       if (url) await navigate(s, url);
+      const rec = createPending({
+        userId: user.userId,
+        integration: "__browser__",
+        type: "cookie",
+        ttlSeconds: config.CONNECT_TTL_SECONDS,
+      });
       const token = await signConnectToken(
-        {
-          connectionId: user.userId,
-          userId: user.userId,
-          integration: "__browser__",
-          sessionId: user.userId,
-          cdpToken: s.cdpToken,
-        },
+        { connectionId: rec.connectionId, userId: user.userId, integration: "__browser__", sessionId: user.userId, cdpToken: "" },
         config.CONNECT_TTL_SECONDS
       );
       return { url: `${config.PORTAL_URL}/browser?t=${token}` };
