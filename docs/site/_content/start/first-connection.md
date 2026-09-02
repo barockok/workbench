@@ -45,12 +45,16 @@ names, logos, and tool counts are portal-API territory.
 {
   "connectionId": "3f0c1a2e-…",
   "type": "oauth2",
-  "url": "https://github.com/login/oauth/authorize?client_id=…&state=…"
+  "url": "https://workbench.example.com/connect/github?t=eyJhbGciOi…"
 }
 ```
 
-Give the user that URL. Do not try to fetch it — it is a consent page for a human
-browser.
+Give the user that URL. Do not try to fetch it — it is a workbench link for a
+human browser, not the provider's consent page. It names this agent's workbench
+user, and opening it requires being signed in to workbench as that same user; a
+different signed-in user gets a mismatch page instead of a credential prompt. Only
+after that check passes does the server build the actual provider consent URL and
+send the human there.
 
 A few responses to expect instead:
 
@@ -60,8 +64,9 @@ A few responses to expect instead:
 | `{"error":"<name> is built-in and always connected — no connect needed."}` | `browser` and `jots`. |
 | `{"error":"…not configured"}` | The operator has not set `<PLUGIN>_CLIENT_ID` / `_SECRET`. |
 
-For a cookie integration, `connect` returns `type: "cookie"` and a portal login URL
-instead — the user opens it, signs in live, and clicks Capture.
+For a cookie integration, `connect` returns `type: "cookie"` and the same shape of
+workbench link — the user opens it, and after the account check, signs in to the
+target service live and clicks Capture.
 
 `get_auth_url` is a deprecated alias with an identical handler. Use `connect`.
 

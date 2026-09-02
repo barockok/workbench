@@ -10,7 +10,6 @@ export interface ConnectTokenPayload {
   userId: string;
   integration: string;
   sessionId: string;
-  cdpToken: string;
 }
 
 export async function signConnectToken(
@@ -22,7 +21,6 @@ export async function signConnectToken(
     sub: payload.userId,
     integration: payload.integration,
     sessionId: payload.sessionId,
-    cdpToken: payload.cdpToken,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -42,8 +40,7 @@ export async function verifyConnectToken(token: string): Promise<ConnectTokenPay
     typeof payload.connectionId !== "string" ||
     typeof payload.sub !== "string" ||
     typeof payload.integration !== "string" ||
-    typeof payload.sessionId !== "string" ||
-    typeof payload.cdpToken !== "string"
+    typeof payload.sessionId !== "string"
   ) {
     throw new Error("Invalid connect token payload");
   }
@@ -52,6 +49,5 @@ export async function verifyConnectToken(token: string): Promise<ConnectTokenPay
     userId: payload.sub,
     integration: payload.integration,
     sessionId: payload.sessionId,
-    cdpToken: payload.cdpToken,
   };
 }

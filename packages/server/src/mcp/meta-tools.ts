@@ -9,11 +9,15 @@ import { hasValidCookies } from "../auth/cookie";
 import { withSpan } from "../telemetry/tracing";
 import { toolExecutionsTotal, toolExecutionDuration } from "../telemetry/metrics";
 import { config } from "../config";
-import { buildPluginAuthUrl } from "../auth/plugin-oauth";
 import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
 import { signCurlToken } from "../auth/curl-session";
-import { ensureSession, navigate } from "../auth/browser-session";
+
+// `connect` and `get_auth_url` are the same tool under two names (kept for
+// backward compatibility) — one description, so the security claim in it
+// can't drift between the two copies.
+const CONNECT_DESCRIPTION =
+  "Begin connecting an integration. Returns a connectionId and a workbench URL for the user to open. The user must be signed in to workbench as the same account this agent is connected to; the link will not work for anyone else. Call wait_for_connection afterward.";
 
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
 // can call `.safeParse` directly without hand-rolled casts. `handler` is kept
@@ -38,29 +42,24 @@ async function startConnect(
     return { error: `${integration} is built-in and always connected — no connect needed.` };
   }
   const ttl = config.CONNECT_TTL_SECONDS;
-
-  if (integ.auth.type === "cookie") {
-    try {
-      const session = await ensureSession(userId);
-      await navigate(session, integ.auth.loginUrl);
-      const rec = createPending({ userId, integration, type: "cookie", ttlSeconds: ttl });
-      const jwt = await signConnectToken(
-        { connectionId: rec.connectionId, userId, integration, sessionId: userId, cdpToken: session.cdpToken },
-        ttl
-      );
-      return { connectionId: rec.connectionId, type: "cookie", url: `${config.PORTAL_URL}/connect/${integration}?t=${jwt}` };
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) };
-    }
+  if (integ.auth.type !== "cookie" && integ.auth.type !== "oauth2") {
+    return { error: `${integration} cannot be connected from the agent — connect it from the portal.` };
   }
 
-  try {
-    const rec = createPending({ userId, integration, type: "oauth2", ttlSeconds: ttl });
-    const url = await buildPluginAuthUrl(userId, integration);
-    return { connectionId: rec.connectionId, type: "oauth2", url };
-  } catch (err) {
-    return { error: err instanceof Error ? err.message : String(err) };
-  }
+  // The link is a claim, not a capability: it names the integration and the
+  // workbench user it was minted for, and nothing else. Warming a browser
+  // session or building a provider consent URL happens at /api/connect/redeem,
+  // once a human has proved they own this account.
+  const rec = createPending({ userId, integration, type: integ.auth.type, ttlSeconds: ttl });
+  const jwt = await signConnectToken(
+    { connectionId: rec.connectionId, userId, integration, sessionId: userId },
+    ttl
+  );
+  return {
+    connectionId: rec.connectionId,
+    type: integ.auth.type,
+    url: `${config.PORTAL_URL}/connect/${integration}?t=${jwt}`,
+  };
 }
 
 // Core single-tool execution: connection check, schema validation, audit, run.
@@ -309,7 +308,7 @@ export const metaTools = [
   },
   {
     name: "connect",
-    description: "Begin connecting an integration. For oauth2, returns a URL (OAuth consent page) and a connectionId; call wait_for_connection afterward. For cookie integrations, always returns a portal login URL and a connectionId — the user opens it to log in live and click Capture; call wait_for_connection afterward.",
+    description: CONNECT_DESCRIPTION,
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
@@ -332,7 +331,7 @@ export const metaTools = [
   },
   {
     name: "get_auth_url",
-    description: "Deprecated alias of connect(). Get a URL to connect an integration.",
+    description: CONNECT_DESCRIPTION,
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },

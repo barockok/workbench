@@ -11,6 +11,13 @@ export interface PendingConnection {
   status: ConnectionStatus;
   createdAt: number; // unix seconds
   expiresAt: number; // unix seconds
+  /**
+   * Set when a human proved ownership of `userId` and redeemed the link. A
+   * record carrying this cannot be redeemed again, so a leaked link URL is
+   * inert once used. Distinct from `status`, which stays PENDING until the
+   * connection actually completes.
+   */
+  redeemedAt?: number;
 }
 
 const store = new Map<string, PendingConnection>();
@@ -41,6 +48,20 @@ export function createPending(args: {
 
 export function getPending(connectionId: string): PendingConnection | undefined {
   return store.get(connectionId);
+}
+
+/**
+ * Spend a connect link. Returns the record on the first call and stamps
+ * `redeemedAt`; returns null for an unknown, expired, or already-redeemed
+ * connectionId. Callers must treat null as "link consumed" and do no work.
+ */
+export function redeemPending(connectionId: string): PendingConnection | null {
+  const rec = store.get(connectionId);
+  if (!rec) return null;
+  if (rec.redeemedAt !== undefined) return null;
+  if (rec.expiresAt <= nowSec()) return null;
+  rec.redeemedAt = nowSec();
+  return rec;
 }
 
 /**
