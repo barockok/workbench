@@ -10,6 +10,10 @@ const COPY: Record<string, { title: string; detail: string }> = {
     title: "Link already used",
     detail: "A connect link works once. Ask your agent for a new one.",
   },
+  AUTH_REQUIRED: {
+    title: "Your session expired",
+    detail: "Sign in again, then open the connect link once more.",
+  },
   UNKNOWN: {
     title: "Could not open this link",
     detail: "Ask your agent to generate a new connect link.",

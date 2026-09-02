@@ -547,6 +547,8 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       const rec = createPending({
         userId: user.userId,
         integration: "__browser__",
+        // "cookie" is a stand-in: ConnectionType has no browser member, and
+        // type is never read back for a "__browser__" record.
         type: "cookie",
         ttlSeconds: config.CONNECT_TTL_SECONDS,
       });
