@@ -198,17 +198,10 @@ async function main() {
             return;
           }
           // Verify the caller is the same portal user who started the
-          // cookie session. The browser can't set Authorization on a WS,
-          // but it can include its bearer in the first auth frame. The
-          // public magic-link /connect page has no portal session, so it
-          // presents its connect JWT here instead; authorizeCdpFrame accepts
-          // it only when it verifies AND is bound to exactly this session
-          // (integration + sessionId + cdpToken), scoping the connect JWT to
-          // the route's :integration so a token minted for another
-          // integration can't be replayed against the shared warm-session map.
+          // cookie session. The browser can't set Authorization on a WS, but
+          // it can include its bearer in the first auth frame.
           const portalUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
-          const routeIntegration = (request.params as { integration: string }).integration;
-          const target = await authorizeCdpFrame(msg, portalUserId, routeIntegration);
+          const target = await authorizeCdpFrame(msg, portalUserId);
           if (!target) {
             try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
             return;
@@ -287,9 +280,7 @@ async function main() {
           return;
         }
         const portalUserId = await getUserIdFromAuth(`Bearer ${msg.bearer}`);
-        // This proxy pins the connect JWT to the "__browser__" literal so a
-        // token minted for a cookie proxy can't be replayed here.
-        const target = await authorizeCdpFrame(msg, portalUserId, "__browser__");
+        const target = await authorizeCdpFrame(msg, portalUserId);
         if (!target) {
           try { browserWs.close(4401, "Unauthorized"); } catch { /* noop */ }
           return;

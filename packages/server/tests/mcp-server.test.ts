@@ -246,8 +246,8 @@ describe("handleMcpRequest", () => {
     expect(parsed.url).toContain("/connect/legacy");
   });
 
-  it("navigates to loginUrl when connecting a cookie integration", async () => {
-    const { navigate } = await import("../src/auth/browser-session");
+  it("does not navigate or warm a session when connecting a cookie integration", async () => {
+    const { navigate, ensureSession } = await import("../src/auth/browser-session");
     vi.spyOn(registry, "getIntegration").mockReturnValue({
       name: "legacy",
       version: "1.0.0",
@@ -259,10 +259,10 @@ describe("handleMcpRequest", () => {
       "user-1"
     );
 
-    expect(vi.mocked(navigate)).toHaveBeenCalledWith(
-      expect.objectContaining({ cdpToken: "cdp-1" }),
-      "https://legacy.com/login"
-    );
+    // Warming a session and navigating happens at /api/connect/redeem, once a
+    // human has proved they own this account — not at mint time.
+    expect(vi.mocked(navigate)).not.toHaveBeenCalled();
+    expect(vi.mocked(ensureSession)).not.toHaveBeenCalled();
   });
 
   it("treats none-auth (built-in) tools as always connected", async () => {
