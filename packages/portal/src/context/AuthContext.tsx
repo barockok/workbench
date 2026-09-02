@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { safeReturnPath } from "../return-path";
 
 interface AuthUser {
   id: string;
@@ -15,23 +16,34 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-function readBootToken(): string | null {
-  if (typeof window === "undefined") return null;
+function readBootToken(): { token: string | null; fromHash: boolean } {
+  if (typeof window === "undefined") return { token: null, fromHash: false };
   const hash = window.location.hash;
   if (hash.startsWith("#token=")) {
     const bootToken = decodeURIComponent(hash.slice(7));
     localStorage.setItem("awb_token", bootToken);
     // Strip the token from URL so it doesn't linger in history.
     history.replaceState(null, "", window.location.pathname + window.location.search);
-    return bootToken;
+    return { token: bootToken, fromHash: true };
   }
-  return localStorage.getItem("awb_token");
+  return { token: localStorage.getItem("awb_token"), fromHash: false };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(readBootToken);
+  // Both SSO callbacks return to the portal root with the token in the hash,
+  // never through /login — so Login's own return-path handling never runs
+  // for that navigation. Consume the return path here instead, once, at boot.
+  const [boot] = useState(readBootToken);
+  const [token, setToken] = useState<string | null>(boot.token);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!boot.fromHash) return;
+    const returnTo = sessionStorage.getItem("awb_return_to");
+    sessionStorage.removeItem("awb_return_to");
+    window.location.replace(safeReturnPath(returnTo));
+  }, [boot.fromHash]);
 
   useEffect(() => {
     if (!token) { setIsLoading(false); return; }

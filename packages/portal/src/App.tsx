@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
@@ -16,13 +17,19 @@ function Boot({ label = "INIT" }: { label?: string }) {
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
+  const dest = location.pathname + location.search;
+
+  // SSO always returns to the portal root, so remember where the human was
+  // headed. A connect link is useless if login drops them on the dashboard.
+  // This is a side effect, so it runs in an effect, not during render.
+  useEffect(() => {
+    if (!isLoading && !user) {
+      sessionStorage.setItem("awb_return_to", dest);
+    }
+  }, [isLoading, user, dest]);
+
   if (isLoading) return <Boot label="VERIFY SESSION" />;
-  if (!user) {
-    // SSO always returns to the portal root, so remember where the human was
-    // headed. A connect link is useless if login drops them on the dashboard.
-    sessionStorage.setItem("awb_return_to", location.pathname + location.search);
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 

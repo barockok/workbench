@@ -147,10 +147,14 @@ that user out of every cookie integration at once.
 
 These back the `/connect/:integration` and `/browser` portal pages. Both routes
 require a portal session — `/connect/:integration` and `/browser` are wrapped in
-the portal's `RequireAuth`, so a signed-out visitor is bounced to login first. Each
-request also carries the connect-link JWT (from the page's `?t=` query param) in
-the body, and the server 403s if the link's `userId` does not match the signed-in
-session.
+the portal's `RequireAuth`, so a signed-out visitor is bounced to login first. The
+intended destination is stashed in `sessionStorage` before the redirect and
+consumed once a session exists again — both SSO callbacks land the browser on the
+portal root with the session token in the URL hash, so that consumption happens
+at boot in `AuthContext`, not on `/login` (which only handles a human who already
+holds a session and lands there directly). Each request also carries the
+connect-link JWT (from the page's `?t=` query param) in the body, and the server
+403s if the link's `userId` does not match the signed-in session.
 
 | Method | Path | Carrier | Response |
 |---|---|---|---|
@@ -175,10 +179,11 @@ WebSocket upgrades. Identical mechanism.
   `protocol//host`.
 - **Auth is in-band, not in the URL.** The first client frame must be JSON
   `{ type: "auth", sessionId, cdpToken }`, authorized against the portal session
-  behind the WebSocket upgrade — a connect JWT cannot authenticate this socket. The
-  integration is pinned to the route's `:integration` on the cookie proxy and to
-  the literal `__browser__` on the browser proxy, so a token minted for one cannot
-  be replayed on the other.
+  behind the WebSocket upgrade — a connect JWT cannot authenticate this socket.
+  Authorization resolves the warm session by `(userId, cdpToken)` alone; nothing
+  pins it to which of the two routes the frame arrived on, but that is harmless
+  since only a portal session — not a connect link — can produce a valid frame in
+  the first place.
 - On success the server sends `{"type":"ready"}` and proxies. Frames are normalised
   to text in both directions, because Chromium closes on binary opcodes.
 
