@@ -27,8 +27,7 @@ describe("authorizeCdpFrame", () => {
     getWarmCdpEndpointMock.mockReturnValue(ENDPOINT);
     const result = await authorizeCdpFrame(
       { sessionId: "user-1", cdpToken: "tok-1" },
-      "user-1",
-      "__browser__"
+      "user-1"
     );
     expect(result).toBe(ENDPOINT);
     expect(getWarmCdpEndpointMock).toHaveBeenCalledWith("user-1", "tok-1");
@@ -40,8 +39,7 @@ describe("authorizeCdpFrame", () => {
     getWarmCdpEndpointMock.mockReturnValue(ENDPOINT);
     const result = await authorizeCdpFrame(
       { sessionId: "user-2", cdpToken: "tok-1" },
-      "user-1",
-      "__browser__"
+      "user-1"
     );
     expect(result).toBeNull();
     expect(getWarmCdpEndpointMock).not.toHaveBeenCalled();
@@ -50,8 +48,7 @@ describe("authorizeCdpFrame", () => {
   it("rejects a frame whose only credential is a connect JWT", async () => {
     const result = await authorizeCdpFrame(
       { sessionId: "user-1", cdpToken: "tok-1", bearer: "jwt" } as never,
-      null,
-      "__browser__"
+      null
     );
     expect(result).toBeNull();
     expect(verifyConnectTokenMock).not.toHaveBeenCalled();
@@ -62,8 +59,7 @@ describe("authorizeCdpFrame", () => {
     getWarmCdpEndpointMock.mockReturnValue(null);
     const result = await authorizeCdpFrame(
       { sessionId: "user-1", cdpToken: "tok-1" },
-      "user-1",
-      "__browser__"
+      "user-1"
     );
     expect(result).toBeNull();
     expect(getWarmCdpEndpointMock).toHaveBeenCalledWith("user-1", "tok-1");
@@ -72,8 +68,7 @@ describe("authorizeCdpFrame", () => {
   it("returns null when there is neither a portal user nor a bearer", async () => {
     const result = await authorizeCdpFrame(
       { sessionId: "user-1", cdpToken: "tok-1" },
-      null,
-      "__browser__"
+      null
     );
     expect(result).toBeNull();
     expect(verifyConnectTokenMock).not.toHaveBeenCalled();
