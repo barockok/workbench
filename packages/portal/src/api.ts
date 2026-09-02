@@ -217,26 +217,48 @@ export async function cancelCookieAuth(integration: string): Promise<void> {
   });
 }
 
-export async function connectSession(jwt: string) {
-  const res = await fetch(`${API_URL}/api/connect/session`, {
-    headers: { authorization: `Bearer ${jwt}` },
-  });
-  if (!res.ok) throw new Error((await res.json()).error ?? "Link invalid");
-  return res.json() as Promise<{
-    integration: string;
-    loginUrl: string;
-    cdpProxyUrl: string;
-    sessionId: string;
-    cdpToken: string;
-  }>;
+export type RedeemResult =
+  | { type: "cookie"; integration: string; loginUrl: string; cdpProxyUrl: string; sessionId: string; cdpToken: string }
+  | { type: "oauth2"; url: string }
+  | { type: "browser"; cdpProxyUrl: string; sessionId: string; cdpToken: string };
+
+export type ConnectLinkCode =
+  | "AUTH_REQUIRED" | "LINK_INVALID" | "LINK_CONSUMED" | "ACCOUNT_MISMATCH" | "UNKNOWN";
+
+export class ConnectLinkError extends Error {
+  code: ConnectLinkCode;
+  integration?: string;
+  constructor(code: ConnectLinkCode, integration?: string) {
+    super(code);
+    this.code = code;
+    this.integration = integration;
+  }
 }
 
-export async function connectCapture(jwt: string) {
+async function connectLinkError(res: Response): Promise<ConnectLinkError> {
+  const body = await res.json().catch(() => ({}));
+  const known: ConnectLinkCode[] = ["AUTH_REQUIRED", "LINK_INVALID", "LINK_CONSUMED", "ACCOUNT_MISMATCH"];
+  const code = known.includes(body.error) ? (body.error as ConnectLinkCode) : "UNKNOWN";
+  return new ConnectLinkError(code, body.integration);
+}
+
+export async function redeemConnectLink(token: string): Promise<RedeemResult> {
+  const res = await fetch(`${API_URL}/api/connect/redeem`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ token }),
+  });
+  if (!res.ok) throw await connectLinkError(res);
+  return res.json();
+}
+
+export async function connectCapture(token: string) {
   const res = await fetch(`${API_URL}/api/connect/capture`, {
     method: "POST",
-    headers: { authorization: `Bearer ${jwt}` },
+    headers: getHeaders(),
+    body: JSON.stringify({ token }),
   });
-  if (!res.ok) throw new Error((await res.json()).error ?? "Capture failed");
+  if (!res.ok) throw await connectLinkError(res);
   return res.json() as Promise<{ success: boolean; cookieCount: number }>;
 }
 
@@ -287,12 +309,6 @@ export async function revokeApiKey(): Promise<{ success: boolean }> {
   });
   if (!res.ok) throw new Error("Failed to revoke key");
   return res.json();
-}
-
-export async function connectBrowserSession(jwt: string) {
-  const res = await fetch(`${API_URL}/api/connect/browser-session?t=${encodeURIComponent(jwt)}`);
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Link invalid");
-  return res.json() as Promise<{ cdpProxyUrl: string; sessionId: string; cdpToken: string }>;
 }
 
 export async function resetBrowserSession(): Promise<{ success: boolean }> {
