@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -15,8 +15,14 @@ function Boot({ label = "INIT" }: { label?: string }) {
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
   if (isLoading) return <Boot label="VERIFY SESSION" />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    // SSO always returns to the portal root, so remember where the human was
+    // headed. A connect link is useless if login drops them on the dashboard.
+    sessionStorage.setItem("awb_return_to", location.pathname + location.search);
+    return <Navigate to="/login" replace />;
+  }
   return <>{children}</>;
 }
 
@@ -24,8 +30,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/connect/:integration" element={<Connect />} />
-      <Route path="/browser" element={<BrowserView />} />
+      <Route path="/connect/:integration" element={<RequireAuth><Connect /></RequireAuth>} />
+      <Route path="/browser" element={<RequireAuth><BrowserView /></RequireAuth>} />
       <Route
         path="/*"
         element={

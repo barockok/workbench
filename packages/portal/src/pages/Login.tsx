@@ -8,7 +8,11 @@ export default function Login() {
   const [providers, setProviders] = useState<string[]>([]);
 
   useEffect(() => {
-    if (token) window.location.href = "/";
+    if (!token) return;
+    const returnTo = sessionStorage.getItem("awb_return_to");
+    sessionStorage.removeItem("awb_return_to");
+    // Only ever an in-app path — never trust a stored value as a full URL.
+    window.location.href = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
   }, [login, token]);
 
   useEffect(() => {
