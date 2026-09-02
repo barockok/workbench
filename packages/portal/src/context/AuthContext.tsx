@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { safeReturnPath } from "../return-path";
 
 interface AuthUser {
@@ -37,13 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(boot.token);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!boot.fromHash) return;
     const returnTo = sessionStorage.getItem("awb_return_to");
     sessionStorage.removeItem("awb_return_to");
-    window.location.replace(safeReturnPath(returnTo));
-  }, [boot.fromHash]);
+    const dest = safeReturnPath(returnTo);
+    // SPA navigation — avoids a full page reload that would abort the concurrent
+    // /api/auth/me fetch and clear the token from localStorage before the reload.
+    if (dest !== "/") navigate(dest, { replace: true });
+  }, [boot.fromHash, navigate]);
 
   useEffect(() => {
     if (!token) { setIsLoading(false); return; }
