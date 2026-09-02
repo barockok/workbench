@@ -142,6 +142,8 @@ const tools: PluginTool[] = [
       const rec = createPending({
         userId: ctx.userId,
         integration: "__browser__",
+        // "cookie" is a stand-in: ConnectionType has no browser member, and
+        // type is never read back for a "__browser__" record.
         type: "cookie",
         ttlSeconds: config.CONNECT_TTL_SECONDS,
       });

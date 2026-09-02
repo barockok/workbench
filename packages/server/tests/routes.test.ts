@@ -1357,6 +1357,23 @@ describe("API routes", () => {
       expect(res.json().error).toBe("LINK_INVALID");
     });
 
+    it("410s LINK_CONSUMED for a valid link whose pending record is gone", async () => {
+      // A valid, well-signed JWT but no matching pending record — e.g. the
+      // server restarted and the in-memory pending store was lost.
+      const token = await mintLink("user-1", "legacy", "connection-never-registered");
+
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/redeem",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { token },
+      });
+
+      expect(res.statusCode).toBe(410);
+      expect(res.json().error).toBe("LINK_CONSUMED");
+    });
+
     it("410s LINK_CONSUMED on a second redemption", async () => {
       const { ensureSession } = await import("../src/auth/browser-session");
       vi.mocked(ensureSession).mockResolvedValue({ cdpToken: "cdp-1" } as never);

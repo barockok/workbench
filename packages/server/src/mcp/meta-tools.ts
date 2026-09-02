@@ -13,6 +13,12 @@ import { createPending, getPending, reapOne } from "../auth/connections";
 import { signConnectToken } from "../auth/connect-token";
 import { signCurlToken } from "../auth/curl-session";
 
+// `connect` and `get_auth_url` are the same tool under two names (kept for
+// backward compatibility) — one description, so the security claim in it
+// can't drift between the two copies.
+const CONNECT_DESCRIPTION =
+  "Begin connecting an integration. Returns a connectionId and a workbench URL for the user to open. The user must be signed in to workbench as the same account this agent is connected to; the link will not work for anyone else. Call wait_for_connection afterward.";
+
 // Shape of a meta-tool definition. `inputSchema` is a real Zod schema so we
 // can call `.safeParse` directly without hand-rolled casts. `handler` is kept
 // loosely typed because each tool has its own ctx/args signature.
@@ -302,7 +308,7 @@ export const metaTools = [
   },
   {
     name: "connect",
-    description: "Begin connecting an integration. Returns a connectionId and a workbench URL for the user to open. The user must be signed in to workbench as the same account this agent is connected to; the link will not work for anyone else. Call wait_for_connection afterward.",
+    description: CONNECT_DESCRIPTION,
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
@@ -325,7 +331,7 @@ export const metaTools = [
   },
   {
     name: "get_auth_url",
-    description: "Begin connecting an integration. Returns a connectionId and a workbench URL for the user to open. The user must be signed in to workbench as the same account this agent is connected to; the link will not work for anyone else. Call wait_for_connection afterward.",
+    description: CONNECT_DESCRIPTION,
     inputSchema: z.object({ integration: z.string() }),
     handler: (ctx: { userId: string }, args: { integration: string }) => startConnect(ctx.userId, args.integration),
   },
