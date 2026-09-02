@@ -78,7 +78,7 @@ silently wins a name collision. Prefix your own tools with your integration name
 |---|---|
 | `confluence_create_page` | Create a page in a space |
 | `confluence_search_pages` | CQL full-text search |
-| `confluence_get_page` | Page body, version, and space |
+| `confluence_get_page` | Page body, version, space, and attachments |
 | `confluence_list_spaces` | List spaces |
 | `confluence_update_page` | Update a page — takes the current version number |
 | `confluence_delete_page` | Move a page to the space trash |
