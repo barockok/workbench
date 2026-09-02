@@ -46,7 +46,7 @@ async function startConnect(
   // once a human has proved they own this account.
   const rec = createPending({ userId, integration, type: integ.auth.type, ttlSeconds: ttl });
   const jwt = await signConnectToken(
-    { connectionId: rec.connectionId, userId, integration, sessionId: userId, cdpToken: "" },
+    { connectionId: rec.connectionId, userId, integration, sessionId: userId },
     ttl
   );
   return {

@@ -146,7 +146,7 @@ const tools: PluginTool[] = [
         ttlSeconds: config.CONNECT_TTL_SECONDS,
       });
       const jwt = await signConnectToken(
-        { connectionId: rec.connectionId, userId: ctx.userId, integration: "__browser__", sessionId: ctx.userId, cdpToken: "" },
+        { connectionId: rec.connectionId, userId: ctx.userId, integration: "__browser__", sessionId: ctx.userId },
         config.CONNECT_TTL_SECONDS
       );
       return { url: `${config.PORTAL_URL}/browser?t=${jwt}` };

@@ -551,7 +551,7 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
         ttlSeconds: config.CONNECT_TTL_SECONDS,
       });
       const token = await signConnectToken(
-        { connectionId: rec.connectionId, userId: user.userId, integration: "__browser__", sessionId: user.userId, cdpToken: "" },
+        { connectionId: rec.connectionId, userId: user.userId, integration: "__browser__", sessionId: user.userId },
         config.CONNECT_TTL_SECONDS
       );
       return { url: `${config.PORTAL_URL}/browser?t=${token}` };
