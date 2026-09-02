@@ -45,9 +45,11 @@ sequenceDiagram
 ```
 
 An agent can start the same flow: `connect("<integration>")` on a cookie integration
-returns a portal login URL carrying a short-lived connect token, then
-`wait_for_connection` blocks until Capture succeeds. The user does not need a portal
-session to use that link.
+returns a workbench link carrying a short-lived connect token, then
+`wait_for_connection` blocks until Capture succeeds. The link names the workbench
+user the agent is connected to, and the user does need a portal session to use it —
+they must be signed in as that same user, or the server refuses with a mismatch
+error instead of warming the browser session.
 
 ## Per-user profiles
 

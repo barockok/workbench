@@ -32,7 +32,7 @@ page.
 | Portal session JWT | `Authorization: Bearer <jwt>` | protected `/api/*` routes |
 | Workbench API key | `x-workbench-api-key: <hex>` | protected `/api/*` routes **and** `/mcp` |
 | OAuth 2.1 access token | `Authorization: Bearer <jwt>` | `/mcp` only |
-| Connect JWT (magic link) | `Authorization: Bearer <jwt>` or `?t=` | `/api/connect/*`, CDP auth frame |
+| Connect JWT (link claim) | request body `token`, alongside a portal session | `/api/connect/redeem`, `/api/connect/capture` |
 | Curl-session JWT | `Authorization: Bearer <jwt>` | `/c/:integration/*` |
 | Jot password cookie | `Cookie` | `/j/:name/*` on password-gated jots |
 
@@ -143,16 +143,26 @@ it cannot collide with `/api/auth/google/callback`.
 `POST /api/browser-session/reset` wipes the whole per-user browser profile, logging
 that user out of every cookie integration at once.
 
-## Connect-JWT (magic-link) endpoints
+## Connect-link endpoints
 
-These serve the account-less `/connect/:integration` and `/browser` portal pages. They
-take a connect JWT, not a portal session.
+These back the `/connect/:integration` and `/browser` portal pages. Both routes
+require a portal session — `/connect/:integration` and `/browser` are wrapped in
+the portal's `RequireAuth`, so a signed-out visitor is bounced to login first. Each
+request also carries the connect-link JWT (from the page's `?t=` query param) in
+the body, and the server 403s if the link's `userId` does not match the signed-in
+session.
 
 | Method | Path | Carrier | Response |
 |---|---|---|---|
-| GET | `/api/connect/session` | `Authorization: Bearer <connectJWT>` | `{ integration, loginUrl, cdpProxyUrl, sessionId, cdpToken }`. 401 missing/invalid/expired; 404 if not cookie-auth |
-| POST | `/api/connect/capture` | `Authorization: Bearer <connectJWT>` | `{ success: true, cookieCount }`. 401; 404; **400 on zero cookies** |
-| GET | `/api/connect/browser-session` | query `?t=<connectJWT>` | `{ cdpProxyUrl, sessionId, cdpToken }`. 400 missing token; 401 invalid/expired; **400 unless the token's integration is `__browser__`** |
+| POST | `/api/connect/redeem` | portal session + body `{ token }` | oauth2: `{ type: "oauth2", url }` (the provider consent URL, built here for the first time). cookie / `__browser__`: `{ type, cdpProxyUrl, sessionId, cdpToken, ... }`, warming the browser session as part of this call. 401 `AUTH_REQUIRED`/`LINK_INVALID`; **403 `ACCOUNT_MISMATCH`**; 410 `LINK_CONSUMED` (single-use) |
+| POST | `/api/connect/capture` | portal session + body `{ token }` | `{ success: true, cookieCount }`. 401 `AUTH_REQUIRED`/`LINK_INVALID`; **403 `ACCOUNT_MISMATCH`**; 404; **400 on zero cookies** |
+
+`GET /api/connect/session` and `GET /api/connect/browser-session` are gone — both
+let a token alone stand in for a person, which is what let a connect link minted
+for one workbench user be redeemed by whoever opened it. `POST /api/connect/redeem`
+replaces both: the provider consent URL and the warm browser session are now
+side effects of a successful redeem, not something the link carries or triggers on
+its own.
 
 ## CDP WebSocket proxies
 
@@ -164,10 +174,11 @@ WebSocket upgrades. Identical mechanism.
   allowlist is exactly `PORTAL_URL` and `SERVER_PUBLIC_URL`, normalised to
   `protocol//host`.
 - **Auth is in-band, not in the URL.** The first client frame must be JSON
-  `{ type: "auth", sessionId, cdpToken, bearer }`, where `bearer` is a session JWT or
-  a connect JWT. The integration is pinned to the route's `:integration` on the
-  cookie proxy and to the literal `__browser__` on the browser proxy, so a token
-  minted for one cannot be replayed on the other.
+  `{ type: "auth", sessionId, cdpToken }`, authorized against the portal session
+  behind the WebSocket upgrade — a connect JWT cannot authenticate this socket. The
+  integration is pinned to the route's `:integration` on the cookie proxy and to
+  the literal `__browser__` on the browser proxy, so a token minted for one cannot
+  be replayed on the other.
 - On success the server sends `{"type":"ready"}` and proxies. Frames are normalised
   to text in both directions, because Chromium closes on binary opcodes.
 
