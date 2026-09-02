@@ -1,23 +1,38 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { connectSession, connectCapture } from "../api";
+import { redeemConnectLink, connectCapture, ConnectLinkError } from "../api";
+import type { RedeemResult } from "../api";
 import CdpScreencast from "../components/CdpScreencast";
+import ConnectLinkProblem from "../components/ConnectLinkProblem";
 
-type SessionInfo = Awaited<ReturnType<typeof connectSession>>;
+type CookieInfo = Extract<RedeemResult, { type: "cookie" }>;
 
 export default function Connect() {
   const { integration } = useParams();
   const [search] = useSearchParams();
   const jwt = search.get("t") ?? "";
 
-  const [info, setInfo] = useState<SessionInfo | null>(null);
+  const [info, setInfo] = useState<CookieInfo | null>(null);
+  const [problem, setProblem] = useState<ConnectLinkError | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [done, setDone] = useState(false);
+  const redeemed = useRef(false);
 
   useEffect(() => {
+    if (redeemed.current) return;
+    redeemed.current = true;
     if (!jwt) { setError("Missing link token."); return; }
-    connectSession(jwt).then(setInfo).catch((e) => setError(e.message));
+    redeemConnectLink(jwt)
+      .then((result) => {
+        if (result.type === "oauth2") { window.location.href = result.url; return; }
+        if (result.type === "cookie") { setInfo(result); return; }
+        setError("Unexpected link type.");
+      })
+      .catch((e) => {
+        if (e instanceof ConnectLinkError) setProblem(e);
+        else setError(e instanceof Error ? e.message : "Link failed");
+      });
   }, [jwt]);
 
   async function handleCapture() {
@@ -27,12 +42,14 @@ export default function Connect() {
       await connectCapture(jwt);
       setDone(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Capture failed");
+      if (e instanceof ConnectLinkError) setProblem(e);
+      else setError(e instanceof Error ? e.message : "Capture failed");
     } finally {
       setCapturing(false);
     }
   }
 
+  if (problem) return <ConnectLinkProblem error={problem} />;
   if (done) {
     return <div className="boot"><span>CONNECTED — {integration}. You can close this tab and return to your agent.</span></div>;
   }
@@ -54,7 +71,7 @@ export default function Connect() {
           <div><b>02</b> — Click "Capture session" once authenticated.</div>
         </div>
         <div className="modal-body" style={{ padding: 0, background: "#000" }}>
-          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} bearer={jwt} />
+          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
         </div>
         {error && <div className="modal-error">ERR — {error}</div>}
         <div className="modal-foot">

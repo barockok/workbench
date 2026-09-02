@@ -1,21 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { connectBrowserSession } from "../api";
+import { redeemConnectLink, ConnectLinkError } from "../api";
+import type { RedeemResult } from "../api";
 import CdpScreencast from "../components/CdpScreencast";
+import ConnectLinkProblem from "../components/ConnectLinkProblem";
 
-type Info = Awaited<ReturnType<typeof connectBrowserSession>>;
+type BrowserInfo = Extract<RedeemResult, { type: "browser" }>;
 
 export default function BrowserView() {
   const [search] = useSearchParams();
   const jwt = search.get("t") ?? "";
-  const [info, setInfo] = useState<Info | null>(null);
+  const [info, setInfo] = useState<BrowserInfo | null>(null);
+  const [problem, setProblem] = useState<ConnectLinkError | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const redeemed = useRef(false);
 
   useEffect(() => {
+    if (redeemed.current) return;
+    redeemed.current = true;
     if (!jwt) { setError("Missing link token."); return; }
-    connectBrowserSession(jwt).then(setInfo).catch((e) => setError(e.message));
+    redeemConnectLink(jwt)
+      .then((result) => {
+        if (result.type === "browser") { setInfo(result); return; }
+        setError("Unexpected link type.");
+      })
+      .catch((e) => {
+        if (e instanceof ConnectLinkError) setProblem(e);
+        else setError(e instanceof Error ? e.message : "Link failed");
+      });
   }, [jwt]);
 
+  if (problem) return <ConnectLinkProblem error={problem} />;
   if (error && !info) {
     return <div className="boot"><span>ERR — {error}</span></div>;
   }
@@ -33,7 +48,7 @@ export default function BrowserView() {
           <div>You are driving the live browser. Close this tab to hand control back to your agent.</div>
         </div>
         <div className="modal-body" style={{ padding: 0, background: "#000" }}>
-          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} bearer={jwt} />
+          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
         </div>
         {error && <div className="modal-error">ERR — {error}</div>}
       </div>
