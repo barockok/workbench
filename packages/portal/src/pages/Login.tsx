@@ -2,6 +2,17 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchAuthUrl, fetchKeycloakAuthUrl, fetchProviders } from "../api";
 
+// Only ever an in-app path. A stored value is never trusted as a URL: a
+// protocol-relative form ("//host") or a backslash form ("/\host", which some
+// browsers normalize to "//host") would navigate off-origin after login.
+function safeReturnPath(value: string | null): string {
+  if (!value) return "/";
+  if (!value.startsWith("/")) return "/";
+  if (value.startsWith("//")) return "/";
+  if (value.includes("\\")) return "/";
+  return value;
+}
+
 export default function Login() {
   const { login, token } = useAuth();
   const [error, setError] = useState("");
@@ -11,8 +22,7 @@ export default function Login() {
     if (!token) return;
     const returnTo = sessionStorage.getItem("awb_return_to");
     sessionStorage.removeItem("awb_return_to");
-    // Only ever an in-app path — never trust a stored value as a full URL.
-    window.location.href = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
+    window.location.href = safeReturnPath(returnTo);
   }, [login, token]);
 
   useEffect(() => {
