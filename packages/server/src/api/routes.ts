@@ -655,68 +655,42 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(400).send({ error: "Integration is not connectable by link" });
   });
 
-  // Connect-JWT endpoints (used by the /connect magic-link page — no portal session)
-  app.get("/api/connect/session", async (request, reply) => {
-    const auth = request.headers.authorization;
-    if (!auth?.startsWith("Bearer ")) return reply.status(401).send({ error: "Unauthorized" });
-    let payload;
-    try { payload = await verifyConnectToken(auth.slice(7)); }
-    catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
-    const integ = registry.getIntegration(payload.integration);
-    if (!integ || integ.auth.type !== "cookie") return reply.status(404).send({ error: "Integration not found" });
-    return {
-      integration: payload.integration,
-      loginUrl: integ.auth.loginUrl,
-      cdpProxyUrl: `/api/auth/cookie/${payload.integration}/cdp`,
-      sessionId: payload.userId,
-      cdpToken: payload.cdpToken,
-    };
-  });
+  // Capture the cookies now present in the user's warm browser session. The
+  // portal session proves who is asking; the link token says which pending
+  // connection they are completing. Both must name the same user — checking
+  // only the link is what let a third party's login be stored under someone
+  // else's account.
+  app.post<{ Body: { token?: string } }>("/api/connect/capture", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) return reply.status(401).send({ error: "AUTH_REQUIRED" });
 
-  app.post("/api/connect/capture", async (request, reply) => {
-    const auth = request.headers.authorization;
-    if (!auth?.startsWith("Bearer ")) return reply.status(401).send({ error: "Unauthorized" });
+    const linkToken = request.body?.token;
+    if (!linkToken) return reply.status(401).send({ error: "LINK_INVALID" });
+
     let payload;
-    try { payload = await verifyConnectToken(auth.slice(7)); }
-    catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
+    try { payload = await verifyConnectToken(linkToken); }
+    catch { return reply.status(401).send({ error: "LINK_INVALID" }); }
+
+    if (payload.userId !== user.userId) {
+      return reply.status(403).send({ error: "ACCOUNT_MISMATCH", integration: payload.integration });
+    }
+
     const integ = registry.getIntegration(payload.integration);
     if (!integ || integ.auth.type !== "cookie") {
       return reply.status(404).send({ error: "Cookie integration not found" });
     }
     try {
-      const data = await captureLiveCookies(payload.userId, integ.auth.targetDomain, integ.auth.cookieDomains);
+      const data = await captureLiveCookies(user.userId, integ.auth.targetDomain, integ.auth.cookieDomains);
       if (data.cookies.length === 0) {
         return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
       }
-      await storeCookies(payload.userId, payload.integration, data);
-      markConnected(payload.userId, payload.integration);
+      await storeCookies(user.userId, payload.integration, data);
+      markConnected(user.userId, payload.integration);
       return { success: true, cookieCount: data.cookies.length };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });
     }
-  });
-
-  // Live-view token exchange for the browser session. The /browser magic-link
-  // page presents its connect JWT and gets back the relative CDP proxy URL +
-  // the token to send in the WS auth frame. Mirrors /api/connect/session.
-  app.get("/api/connect/browser-session", async (request, reply) => {
-    const token = (request.query as { t?: string }).t;
-    if (!token) return reply.status(400).send({ error: "Missing token" });
-    let payload;
-    try {
-      payload = await verifyConnectToken(token);
-    } catch {
-      return reply.status(401).send({ error: "Link invalid or expired" });
-    }
-    if (payload.integration !== "__browser__") {
-      return reply.status(400).send({ error: "Not a browser-session link" });
-    }
-    return {
-      cdpProxyUrl: "/api/browser-session/cdp",
-      sessionId: payload.sessionId,
-      cdpToken: payload.cdpToken,
-    };
   });
 
   // Connection status per integration
