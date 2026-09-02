@@ -150,13 +150,12 @@ This is deliberately leaner than the portal's `/api/integrations` — it carries
 
 ## connect
 
-Begin connecting an integration and get back a URL for the user to open.
+Begin connecting an integration and get back a workbench link for the user to open.
 
-**Description as the client sees it:** *Begin connecting an integration. For oauth2,
-returns a URL (OAuth consent page) and a connectionId; call wait_for_connection
-afterward. For cookie integrations, always returns a portal login URL and a
-connectionId — the user opens it to log in live and click Capture; call
-wait_for_connection afterward.*
+**Description as the client sees it:** *Begin connecting an integration. Returns a
+connectionId and a workbench URL for the user to open. The user must be signed in
+to workbench as the same account this agent is connected to; the link will not
+work for anyone else. Call wait_for_connection afterward.*
 
 | Parameter | Type | Required | Default | Description |
 |---|---|---|---|---|
@@ -166,12 +165,21 @@ Response depends on the integration's declared auth type:
 
 | Auth type | Response |
 |---|---|
-| `oauth2` | `{ connectionId, type: "oauth2", url }` — `url` is the provider consent page |
-| `cookie` | `{ connectionId, type: "cookie", url }` — `url` is a portal login page carrying a short-lived connect token; it also warms the user's browser session and navigates it to the login page |
+| `oauth2` | `{ connectionId, type: "oauth2", url }` — `url` is a workbench link, `<PORTAL_URL>/connect/<integration>?t=<jwt>` |
+| `cookie` | `{ connectionId, type: "cookie", url }` — same workbench link shape as oauth2 |
 | `none` | `{ error: "<name> is built-in and always connected — no connect needed." }` |
 | unknown | `{ error: "Integration not found" }` |
 
-The pending record lives for `CONNECT_TTL_SECONDS` (default 600).
+For both auth types `url` only ever points back at workbench. Minting it does not
+contact the provider and does not warm a browser session — neither the provider
+consent URL nor the browser session is built until the link is redeemed. The
+pending record lives for `CONNECT_TTL_SECONDS` (default 600).
+
+> [!NOTE] A connect link only works for the account it was minted for
+> The link names the workbench user the agent is connected to. Whoever opens it
+> must be signed in to workbench as that same user. A different signed-in user
+> gets a mismatch page and cannot proceed, so a forwarded link cannot attach
+> someone else's credential to this account.
 
 > [!NOTE] API-key integrations do not connect from the agent
 > `connect` has no `apikey` branch. An API-key integration falls into the OAuth path
