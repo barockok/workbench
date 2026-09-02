@@ -6,7 +6,6 @@ const payload = {
   userId: "user-1",
   integration: "jira",
   sessionId: "sess-1",
-  cdpToken: "cdp-1",
 };
 
 describe("connect-token", () => {
@@ -17,7 +16,12 @@ describe("connect-token", () => {
     expect(decoded.userId).toBe("user-1");
     expect(decoded.integration).toBe("jira");
     expect(decoded.sessionId).toBe("sess-1");
-    expect(decoded.cdpToken).toBe("cdp-1");
+  });
+
+  it("does not carry a cdpToken", async () => {
+    const token = await signConnectToken(payload, 600);
+    const decoded = await verifyConnectToken(token);
+    expect("cdpToken" in decoded).toBe(false);
   });
 
   it("rejects a tampered/garbage token", async () => {

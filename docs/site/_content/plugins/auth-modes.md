@@ -42,9 +42,13 @@ to `${SERVER_PUBLIC_URL}/api/auth/plugin/<name>/callback`, and put the
 credentials in env vars named from the plugin name (`google-gemini` →
 `GOOGLE_GEMINI_CLIENT_ID` / `GOOGLE_GEMINI_CLIENT_SECRET`).
 
-**What the user sees.** Clicking Connect redirects them to the provider's consent
-screen and back. From an agent, `connect({ integration })` returns that URL plus
-a `connectionId` to pass to `wait_for_connection`.
+**What the user sees.** From the portal, clicking Connect redirects them to the
+provider's consent screen and back. From an agent, `connect({ integration })`
+returns a workbench link plus a `connectionId` to pass to `wait_for_connection` —
+not the provider URL directly. The link names the workbench user the agent is
+connected to; opening it while signed in as anyone else produces a mismatch page
+instead of the consent screen. Only after that check passes does the server build
+the provider's consent URL and send the user there.
 
 **Refresh tokens.** `ctx.getToken()` refreshes automatically 30 seconds before
 expiry, but only if a `refresh_token` was issued. That usually requires an
@@ -198,7 +202,10 @@ export const getHeaders = {
 
 **What the user sees.** A portal login view where they complete the real login
 flow in a live browser session, then click Capture. From an agent,
-`connect({ integration })` returns the portal login URL and a `connectionId`.
+`connect({ integration })` returns a workbench link and a `connectionId`. Opening
+the link requires being signed in to workbench as the user the agent is connected
+to; only then does the server warm the browser session and show the live login
+view.
 
 **What `ctx.http()` does.** Checks the URL host against `targetDomain` plus
 `cookieDomains` — this check is mandatory and cannot be disabled — filters

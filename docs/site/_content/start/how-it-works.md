@@ -111,6 +111,11 @@ Tokens the *agent* uses to reach the workbench are a different set. See
 An OAuth connection is started by the agent or the portal, consented in a browser,
 and completed by a server-side callback. The agent never sees the provider token.
 
+A link minted by `connect` is a claim, not a capability: it names the workbench
+user it was minted for, but carries no PKCE verifier and builds no provider URL by
+itself. The provider consent URL is only built after the human opening the link
+has proven — via their own portal session — that they are that same user.
+
 ```mermaid
 sequenceDiagram
   participant A as Agent
@@ -119,18 +124,27 @@ sequenceDiagram
   participant P as Provider
 
   A->>W: connect({integration})
-  W->>W: create PENDING record + PKCE verifier
+  W->>W: create PENDING record
   W-->>A: {connectionId, type:"oauth2", url}
+  Note over W,A: url is a workbench link, not a provider URL
   A->>A: wait_for_connection({connectionId})
   A-->>U: opens url
-  U->>P: consent screen
-  P-->>U: redirect with ?code
-  U->>W: GET /api/auth/plugin/:integration/callback
-  W->>P: exchange code (+ code_verifier)
-  P-->>W: access + refresh token
-  W->>W: encrypt, store, mark CONNECTED
-  W-->>U: redirect to portal
-  W-->>A: wait_for_connection → CONNECTED
+  U->>W: sign in to workbench (if not already)
+  U->>W: POST /api/connect/redeem {token}
+  alt link's user != signed-in user
+    W-->>U: 403 ACCOUNT_MISMATCH
+  else match
+    W->>W: create PKCE verifier, build provider URL
+    W-->>U: {type:"oauth2", url: provider consent URL}
+    U->>P: consent screen
+    P-->>U: redirect with ?code
+    U->>W: GET /api/auth/plugin/:integration/callback
+    W->>P: exchange code (+ code_verifier)
+    P-->>W: access + refresh token
+    W->>W: encrypt, store, mark CONNECTED
+    W-->>U: redirect to portal
+    W-->>A: wait_for_connection → CONNECTED
+  end
 ```
 
 The callback path is `/api/auth/plugin/:integration/callback` for every plugin —
@@ -150,8 +164,10 @@ across cluster workers.
 
 Not every auth mode goes through `connect`. API-key integrations are connected
 from the portal, which renders the manifest's declared fields and posts them.
-there is no agent-side path. Cookie integrations return a portal login URL the
-user opens to sign in live and capture a session.
+there is no agent-side path. Cookie integrations return the same kind of
+workbench link — the user opens it, and once their session matches the account
+the link was minted for, signs in to the target service live and captures a
+session.
 
 ## What the portal is for
 
