@@ -261,7 +261,7 @@ describe("meta-tools", () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg as any);
       const tool = findTool("get_auth_url");
       const result = await tool.handler({ userId: "user-1" }, { integration: "test-integ" });
-      expect(result.url).toContain("provider.example");
+      expect(result.url).toContain("/connect/test-integ?t=jwt-123");
       expect(result.connectionId).toBe("conn-1");
     });
     it("returns cookie magic-link (alias of connect)", async () => {
@@ -286,10 +286,28 @@ describe("meta-tools", () => {
       const result = await tool.handler({ userId: "user-1" }, { integration: "test-integ" });
       expect(result.connectionId).toBe("conn-1");
       expect(result.type).toBe("oauth2");
-      expect(result.url).toContain("provider.example");
+      expect(result.url).toContain("/connect/test-integ?t=jwt-123");
     });
 
-    it("returns a portal magic-link + connectionId for cookie and navigates to loginUrl", async () => {
+    it("connect returns a workbench link for an oauth2 integration", async () => {
+      const { buildPluginAuthUrl } = await import("../src/auth/plugin-oauth");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "github",
+        version: "1.0.0",
+        auth: { type: "oauth2" as const, scopes: ["repo"] },
+      } as never);
+
+      const tool = findTool("connect");
+      const result = await tool.handler({ userId: "user-1" }, { integration: "github" });
+
+      expect(result.type).toBe("oauth2");
+      expect(result.url).toMatch(/\/connect\/github\?t=/);
+      expect(result.url).not.toContain("provider.example");
+      // The provider URL is built at redeem time, by a proven owner.
+      expect(buildPluginAuthUrl).not.toHaveBeenCalled();
+    });
+
+    it("returns a portal magic-link + connectionId for cookie without navigating to loginUrl", async () => {
       const { navigate } = await import("../src/auth/browser-session");
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieInteg as any);
       const tool = findTool("connect");
@@ -297,10 +315,27 @@ describe("meta-tools", () => {
       expect(result.connectionId).toBe("conn-1");
       expect(result.type).toBe("cookie");
       expect(result.url).toContain("/connect/legacy?t=jwt-123");
-      expect(vi.mocked(navigate)).toHaveBeenCalledWith(
-        expect.objectContaining({ cdpToken: "tok-123" }),
-        mockCookieInteg.auth.loginUrl
-      );
+      expect(vi.mocked(navigate)).not.toHaveBeenCalled();
+    });
+
+    it("connect does not warm a browser session for a cookie integration", async () => {
+      const { ensureSession } = await import("../src/auth/browser-session");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "legacy",
+        version: "1.0.0",
+        auth: {
+          type: "cookie" as const,
+          loginUrl: "https://legacy.example.com/login",
+          targetDomain: "legacy.example.com",
+          cookieDomains: [],
+        },
+      } as never);
+
+      const result = await findTool("connect").handler({ userId: "user-1" }, { integration: "legacy" });
+
+      expect(result.type).toBe("cookie");
+      expect(result.url).toMatch(/\/connect\/legacy\?t=/);
+      expect(ensureSession).not.toHaveBeenCalled();
     });
 
     it("always returns a login link, even when live cookies already exist (cookie)", async () => {

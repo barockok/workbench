@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchAuthUrl, fetchKeycloakAuthUrl, fetchProviders } from "../api";
+import { safeReturnPath } from "../return-path";
 
 export default function Login() {
   const { login, token } = useAuth();
   const [error, setError] = useState("");
   const [providers, setProviders] = useState<string[]>([]);
 
+  // This only fires for a human who already holds a session and lands on
+  // /login directly (e.g. a stale tab). The SSO-callback case is handled at
+  // boot in AuthContext, since both callbacks return to the portal root and
+  // never mount this page.
   useEffect(() => {
-    if (token) window.location.href = "/";
+    if (!token) return;
+    const returnTo = sessionStorage.getItem("awb_return_to");
+    sessionStorage.removeItem("awb_return_to");
+    window.location.href = safeReturnPath(returnTo);
   }, [login, token]);
 
   useEffect(() => {

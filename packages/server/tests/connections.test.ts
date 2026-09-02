@@ -5,6 +5,7 @@ import {
   getPending,
   markConnected,
   reapExpired,
+  redeemPending,
   _clearAll,
 } from "../src/auth/connections";
 
@@ -75,5 +76,30 @@ describe("pending-connection store", () => {
     });
     await reapExpired(); // PENDING → EXPIRED, but not pruned (within grace)
     expect(getPending(rec.connectionId)?.status).toBe("EXPIRED");
+  });
+
+  it("redeems a pending record once and stamps redeemedAt", () => {
+    const rec = createPending({ userId: "u1", integration: "jira", type: "cookie", ttlSeconds: 600 });
+    const first = redeemPending(rec.connectionId);
+    expect(first).not.toBeNull();
+    expect(first!.connectionId).toBe(rec.connectionId);
+    expect(first!.redeemedAt).toBeGreaterThan(0);
+    // Still PENDING: wait_for_connection must keep waiting until the flow completes.
+    expect(first!.status).toBe("PENDING");
+  });
+
+  it("refuses a second redemption of the same record", () => {
+    const rec = createPending({ userId: "u1", integration: "jira", type: "cookie", ttlSeconds: 600 });
+    expect(redeemPending(rec.connectionId)).not.toBeNull();
+    expect(redeemPending(rec.connectionId)).toBeNull();
+  });
+
+  it("refuses an unknown connectionId", () => {
+    expect(redeemPending("no-such-id")).toBeNull();
+  });
+
+  it("refuses an expired record", () => {
+    const rec = createPending({ userId: "u1", integration: "jira", type: "cookie", ttlSeconds: -1 });
+    expect(redeemPending(rec.connectionId)).toBeNull();
   });
 });

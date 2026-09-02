@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Plugin, PluginTool } from "../registry";
 import { config } from "../../config";
 import { signConnectToken } from "../../auth/connect-token";
+import { createPending } from "../../auth/connections";
 import {
   ensureSession,
   touch,
@@ -136,10 +137,18 @@ const tools: PluginTool[] = [
     integration: BROWSER_INTEGRATION_NAME,
     inputSchema: z.object({}),
     handler: async (ctx: any) => {
-      const s = await ensureSession(ctx.userId);
-      touch(ctx.userId);
+      // No ensureSession here: the session is warmed at redeem time, after the
+      // opener proves they own this account.
+      const rec = createPending({
+        userId: ctx.userId,
+        integration: "__browser__",
+        // "cookie" is a stand-in: ConnectionType has no browser member, and
+        // type is never read back for a "__browser__" record.
+        type: "cookie",
+        ttlSeconds: config.CONNECT_TTL_SECONDS,
+      });
       const jwt = await signConnectToken(
-        { connectionId: ctx.userId, userId: ctx.userId, integration: "__browser__", sessionId: ctx.userId, cdpToken: s.cdpToken },
+        { connectionId: rec.connectionId, userId: ctx.userId, integration: "__browser__", sessionId: ctx.userId },
         config.CONNECT_TTL_SECONDS
       );
       return { url: `${config.PORTAL_URL}/browser?t=${jwt}` };

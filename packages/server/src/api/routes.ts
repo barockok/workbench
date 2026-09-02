@@ -22,7 +22,7 @@ import {
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { signConnectToken } from "../auth/connect-token";
-import { markConnected, startReaper } from "../auth/connections";
+import { markConnected, startReaper, redeemPending, getPending, createPending } from "../auth/connections";
 import { resumeAuthorize } from "../auth/oauth-server/resume";
 import { listAgents, revokeAgent } from "../auth/oauth-server/agents";
 import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
@@ -544,14 +544,16 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     try {
       const s = await ensureSession(user.userId);
       if (url) await navigate(s, url);
+      const rec = createPending({
+        userId: user.userId,
+        integration: "__browser__",
+        // "cookie" is a stand-in: ConnectionType has no browser member, and
+        // type is never read back for a "__browser__" record.
+        type: "cookie",
+        ttlSeconds: config.CONNECT_TTL_SECONDS,
+      });
       const token = await signConnectToken(
-        {
-          connectionId: user.userId,
-          userId: user.userId,
-          integration: "__browser__",
-          sessionId: user.userId,
-          cdpToken: s.cdpToken,
-        },
+        { connectionId: rec.connectionId, userId: user.userId, integration: "__browser__", sessionId: user.userId },
         config.CONNECT_TTL_SECONDS
       );
       return { url: `${config.PORTAL_URL}/browser?t=${token}` };
@@ -573,68 +575,124 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     return { success: true };
   });
 
-  // Connect-JWT endpoints (used by the /connect magic-link page — no portal session)
-  app.get("/api/connect/session", async (request, reply) => {
-    const auth = request.headers.authorization;
-    if (!auth?.startsWith("Bearer ")) return reply.status(401).send({ error: "Unauthorized" });
+  // Connect-link handshake. A connect link names an integration and the
+  // workbench user it was minted for; it is a claim, not a capability. The
+  // human redeeming it must prove they own that same workbench account. Only
+  // after the match does any side effect run — warming a browser session or
+  // writing a pending_auth row before that point is what let a link minted for
+  // account A capture a credential belonging to whoever opened it.
+  app.post<{ Body: { token?: string } }>("/api/connect/redeem", async (request, reply) => {
+    // Session first, so an unauthenticated hit never spends a valid link.
+    const user = await authenticate(request);
+    if (!user) return reply.status(401).send({ error: "AUTH_REQUIRED" });
+
+    const token = request.body?.token;
+    if (!token) return reply.status(401).send({ error: "LINK_INVALID" });
+
     let payload;
-    try { payload = await verifyConnectToken(auth.slice(7)); }
-    catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
+    try {
+      payload = await verifyConnectToken(token);
+    } catch {
+      return reply.status(401).send({ error: "LINK_INVALID" });
+    }
+
+    // The mismatch check runs before redeemPending, so a wrong-account attempt
+    // leaves the link usable by its rightful owner.
+    if (payload.userId !== user.userId) {
+      return reply.status(403).send({ error: "ACCOUNT_MISMATCH", integration: payload.integration });
+    }
+
+    const rec = getPending(payload.connectionId);
+    if (!rec || rec.userId !== payload.userId) {
+      return reply.status(410).send({ error: "LINK_CONSUMED" });
+    }
+    if (!redeemPending(payload.connectionId)) {
+      return reply.status(410).send({ error: "LINK_CONSUMED" });
+    }
+
+    if (payload.integration === "__browser__") {
+      try {
+        const session = await ensureSession(user.userId);
+        return {
+          type: "browser",
+          cdpProxyUrl: "/api/browser-session/cdp",
+          sessionId: user.userId,
+          cdpToken: session.cdpToken,
+        };
+      } catch (err) {
+        return reply.status(400).send({ error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
     const integ = registry.getIntegration(payload.integration);
-    if (!integ || integ.auth.type !== "cookie") return reply.status(404).send({ error: "Integration not found" });
-    return {
-      integration: payload.integration,
-      loginUrl: integ.auth.loginUrl,
-      cdpProxyUrl: `/api/auth/cookie/${payload.integration}/cdp`,
-      sessionId: payload.userId,
-      cdpToken: payload.cdpToken,
-    };
+    if (!integ) return reply.status(404).send({ error: "Integration not found" });
+
+    if (integ.auth.type === "cookie") {
+      try {
+        const session = await ensureSession(user.userId);
+        await navigate(session, integ.auth.loginUrl);
+        return {
+          type: "cookie",
+          integration: payload.integration,
+          loginUrl: integ.auth.loginUrl,
+          cdpProxyUrl: `/api/auth/cookie/${payload.integration}/cdp`,
+          sessionId: user.userId,
+          // From the warm session, not the link.
+          cdpToken: session.cdpToken,
+        };
+      } catch (err) {
+        return reply.status(400).send({ error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    if (integ.auth.type === "oauth2") {
+      try {
+        const url = await buildPluginAuthUrl(user.userId, payload.integration);
+        return { type: "oauth2", url };
+      } catch (err) {
+        return reply.status(503).send({ error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    return reply.status(400).send({ error: "Integration is not connectable by link" });
   });
 
-  app.post("/api/connect/capture", async (request, reply) => {
-    const auth = request.headers.authorization;
-    if (!auth?.startsWith("Bearer ")) return reply.status(401).send({ error: "Unauthorized" });
+  // Capture the cookies now present in the user's warm browser session. The
+  // portal session proves who is asking; the link token says which pending
+  // connection they are completing. Both must name the same user — checking
+  // only the link is what let a third party's login be stored under someone
+  // else's account.
+  app.post<{ Body: { token?: string } }>("/api/connect/capture", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) return reply.status(401).send({ error: "AUTH_REQUIRED" });
+
+    const linkToken = request.body?.token;
+    if (!linkToken) return reply.status(401).send({ error: "LINK_INVALID" });
+
     let payload;
-    try { payload = await verifyConnectToken(auth.slice(7)); }
-    catch { return reply.status(401).send({ error: "Invalid or expired link" }); }
+    try { payload = await verifyConnectToken(linkToken); }
+    catch { return reply.status(401).send({ error: "LINK_INVALID" }); }
+
+    if (payload.userId !== user.userId) {
+      return reply.status(403).send({ error: "ACCOUNT_MISMATCH", integration: payload.integration });
+    }
+
     const integ = registry.getIntegration(payload.integration);
     if (!integ || integ.auth.type !== "cookie") {
       return reply.status(404).send({ error: "Cookie integration not found" });
     }
     try {
-      const data = await captureLiveCookies(payload.userId, integ.auth.targetDomain, integ.auth.cookieDomains);
+      const data = await captureLiveCookies(user.userId, integ.auth.targetDomain, integ.auth.cookieDomains);
       if (data.cookies.length === 0) {
         return reply.status(400).send({ error: "No cookies captured. Complete login before capturing." });
       }
-      await storeCookies(payload.userId, payload.integration, data);
-      markConnected(payload.userId, payload.integration);
+      await storeCookies(user.userId, payload.integration, data);
+      markConnected(user.userId, payload.integration);
       return { success: true, cookieCount: data.cookies.length };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return reply.status(400).send({ error: message });
     }
-  });
-
-  // Live-view token exchange for the browser session. The /browser magic-link
-  // page presents its connect JWT and gets back the relative CDP proxy URL +
-  // the token to send in the WS auth frame. Mirrors /api/connect/session.
-  app.get("/api/connect/browser-session", async (request, reply) => {
-    const token = (request.query as { t?: string }).t;
-    if (!token) return reply.status(400).send({ error: "Missing token" });
-    let payload;
-    try {
-      payload = await verifyConnectToken(token);
-    } catch {
-      return reply.status(401).send({ error: "Link invalid or expired" });
-    }
-    if (payload.integration !== "__browser__") {
-      return reply.status(400).send({ error: "Not a browser-session link" });
-    }
-    return {
-      cdpProxyUrl: "/api/browser-session/cdp",
-      sessionId: payload.sessionId,
-      cdpToken: payload.cdpToken,
-    };
   });
 
   // Connection status per integration
