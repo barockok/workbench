@@ -19,6 +19,7 @@ Credentials are per user. As the operator, you register one OAuth app per integr
 | `slack` | OAuth 2.0 (user token) | 18 | [Slack](slack.md) |
 | `asana` | OAuth 2.0 | 8 | [Asana](asana.md) |
 | `newrelic` | API key | 13 | [New Relic](newrelic.md) |
+| `clevertap` | API key (multi-project) | 19 | [CleverTap](clevertap.md) |
 | `google-gmail` | OAuth 2.0 | 8 | [Google tools](google-tools.md) |
 | `google-drive` | OAuth 2.0 | 8 | [Google tools](google-tools.md) |
 | `google-docs` | OAuth 2.0 | 5 | [Google tools](google-tools.md) |
@@ -41,6 +42,7 @@ Credentials are per user. As the operator, you register one OAuth app per integr
 - [Slack](slack.md) — Messages, channels, search, and files, as the connecting user.
 - [Asana](asana.md) — Projects, tasks, assignments, and comments.
 - [New Relic](newrelic.md) — NRQL, entities, dashboards, and alerting via NerdGraph.
+- [CleverTap](clevertap.md) — Profiles, events, campaigns, and reports (read-only, multi-project).
 - [Google setup](google.md) — One Cloud project, one consent screen, seven OAuth clients.
 - [Google tools](google-tools.md) — Gmail, Drive, Docs, Sheets, Slides, Calendar, Gemini.
 - [Browser](browser.md) — The built-in headless browser your agent drives directly.
