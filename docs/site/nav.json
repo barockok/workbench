@@ -191,6 +191,11 @@
               "path": "integrations/newrelic",
               "label": "New Relic",
               "layout": "wide"
+            },
+            {
+              "path": "integrations/clevertap",
+              "label": "CleverTap",
+              "layout": "wide"
             }
           ]
         },
