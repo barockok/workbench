@@ -19,6 +19,10 @@ export default {
       "write:page:confluence",
       "delete:page:confluence",
       "read:space:confluence",
+      // Backs the attachment list on confluence_get_page. Tokens minted before
+      // this was added simply return no `attachments` field — the lookup is
+      // best-effort — so existing connections degrade rather than break.
+      "read:attachment:confluence",
       "search:confluence",
       "offline_access",
     ],
