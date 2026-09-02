@@ -22,7 +22,7 @@ import {
 } from "../auth/cookie";
 import { verifyConnectToken } from "../auth/connect-token";
 import { signConnectToken } from "../auth/connect-token";
-import { markConnected, startReaper } from "../auth/connections";
+import { markConnected, startReaper, redeemPending, getPending } from "../auth/connections";
 import { resumeAuthorize } from "../auth/oauth-server/resume";
 import { listAgents, revokeAgent } from "../auth/oauth-server/agents";
 import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
@@ -571,6 +571,88 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     // Capture shares the per-user browser session, which browser-use may also be
     // driving — do not kill it here. The idle reaper reclaims it on its own.
     return { success: true };
+  });
+
+  // Connect-link handshake. A connect link names an integration and the
+  // workbench user it was minted for; it is a claim, not a capability. The
+  // human redeeming it must prove they own that same workbench account. Only
+  // after the match does any side effect run — warming a browser session or
+  // writing a pending_auth row before that point is what let a link minted for
+  // account A capture a credential belonging to whoever opened it.
+  app.post<{ Body: { token?: string } }>("/api/connect/redeem", async (request, reply) => {
+    // Session first, so an unauthenticated hit never spends a valid link.
+    const user = await authenticate(request);
+    if (!user) return reply.status(401).send({ error: "AUTH_REQUIRED" });
+
+    const token = request.body?.token;
+    if (!token) return reply.status(401).send({ error: "LINK_INVALID" });
+
+    let payload;
+    try {
+      payload = await verifyConnectToken(token);
+    } catch {
+      return reply.status(401).send({ error: "LINK_INVALID" });
+    }
+
+    // The mismatch check runs before redeemPending, so a wrong-account attempt
+    // leaves the link usable by its rightful owner.
+    if (payload.userId !== user.userId) {
+      return reply.status(403).send({ error: "ACCOUNT_MISMATCH", integration: payload.integration });
+    }
+
+    const rec = getPending(payload.connectionId);
+    if (!rec || rec.userId !== payload.userId) {
+      return reply.status(410).send({ error: "LINK_CONSUMED" });
+    }
+    if (!redeemPending(payload.connectionId)) {
+      return reply.status(410).send({ error: "LINK_CONSUMED" });
+    }
+
+    if (payload.integration === "__browser__") {
+      try {
+        const session = await ensureSession(user.userId);
+        return {
+          type: "browser",
+          cdpProxyUrl: "/api/browser-session/cdp",
+          sessionId: user.userId,
+          cdpToken: session.cdpToken,
+        };
+      } catch (err) {
+        return reply.status(400).send({ error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    const integ = registry.getIntegration(payload.integration);
+    if (!integ) return reply.status(404).send({ error: "Integration not found" });
+
+    if (integ.auth.type === "cookie") {
+      try {
+        const session = await ensureSession(user.userId);
+        await navigate(session, integ.auth.loginUrl);
+        return {
+          type: "cookie",
+          integration: payload.integration,
+          loginUrl: integ.auth.loginUrl,
+          cdpProxyUrl: `/api/auth/cookie/${payload.integration}/cdp`,
+          sessionId: user.userId,
+          // From the warm session, not the link.
+          cdpToken: session.cdpToken,
+        };
+      } catch (err) {
+        return reply.status(400).send({ error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    if (integ.auth.type === "oauth2") {
+      try {
+        const url = await buildPluginAuthUrl(user.userId, payload.integration);
+        return { type: "oauth2", url };
+      } catch (err) {
+        return reply.status(503).send({ error: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    return reply.status(400).send({ error: "Integration is not connectable by link" });
   });
 
   // Connect-JWT endpoints (used by the /connect magic-link page — no portal session)

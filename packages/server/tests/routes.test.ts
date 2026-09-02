@@ -4,7 +4,7 @@ import { registerApiRoutes } from "../src/api/routes";
 import { db } from "../src/db";
 import { registry } from "../src/plugins/registry";
 import { signConnectToken } from "../src/auth/connect-token";
-import { stopReaper } from "../src/auth/connections";
+import { stopReaper, createPending, getPending, _clearAll } from "../src/auth/connections";
 
 vi.mock("../src/config", () => ({
   config: {
@@ -39,6 +39,7 @@ vi.mock("../src/auth/session", () => ({
   signSession: vi.fn(() => "signed-jwt-token"),
   verifySession: vi.fn((token: string) => {
     if (token === "valid-jwt") return { userId: "user-1", email: "test@example.com" };
+    if (token === "other-jwt") return { userId: "user-2", email: "other@example.com" };
     throw new Error("Invalid token");
   }),
 }));
@@ -655,7 +656,10 @@ describe("API routes", () => {
     it("returns 503 when oauth client not configured", async () => {
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockOauthInteg);
       const { buildPluginAuthUrl } = await import("../src/auth/plugin-oauth");
-      vi.mocked(buildPluginAuthUrl).mockImplementation(() => {
+      // Once, not persistent: clearAllMocks() between tests clears call history
+      // but not implementations, so a non-"Once" override here would leak into
+      // every later test that calls buildPluginAuthUrl.
+      vi.mocked(buildPluginAuthUrl).mockImplementationOnce(() => {
         throw new Error("OAuth client not configured for slack");
       });
       const app = await buildApp();
@@ -1286,6 +1290,189 @@ describe("API routes", () => {
         payload: { session: bundle },
       });
       expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe("POST /api/connect/redeem", () => {
+    const cookieInteg = {
+      name: "legacy",
+      version: "1.0.0",
+      auth: {
+        type: "cookie" as const,
+        loginUrl: "https://legacy.example.com/login",
+        targetDomain: "legacy.example.com",
+        cookieDomains: [],
+      },
+    };
+
+    async function mintLink(userId: string, integration: string, connectionId: string) {
+      // ConnectTokenPayload still requires cdpToken (unchanged, out of scope for this
+      // task); the redeem endpoint ignores it and pulls the real token from the
+      // warm session instead, so a placeholder here is fine.
+      return signConnectToken({ connectionId, userId, integration, sessionId: userId, cdpToken: "link-cdp-unused" }, 600);
+    }
+
+    beforeEach(() => {
+      _clearAll();
+    });
+
+    it("returns cookie login details when the session owns the link", async () => {
+      const { ensureSession, navigate } = await import("../src/auth/browser-session");
+      vi.mocked(ensureSession).mockResolvedValue({ cdpToken: "cdp-1" } as never);
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg as never);
+      const rec = createPending({ userId: "user-1", integration: "legacy", type: "cookie", ttlSeconds: 600 });
+      const token = await mintLink("user-1", "legacy", rec.connectionId);
+
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/redeem",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { token },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body.type).toBe("cookie");
+      expect(body.integration).toBe("legacy");
+      expect(body.loginUrl).toBe("https://legacy.example.com/login");
+      expect(body.cdpProxyUrl).toBe("/api/auth/cookie/legacy/cdp");
+      expect(body.sessionId).toBe("user-1");
+      // The cdpToken comes from the warm session, not from the link.
+      expect(body.cdpToken).toBe("cdp-1");
+      expect(navigate).toHaveBeenCalled();
+    });
+
+    it("403s ACCOUNT_MISMATCH and does no work when a different user redeems", async () => {
+      const { ensureSession } = await import("../src/auth/browser-session");
+      vi.mocked(ensureSession).mockResolvedValue({ cdpToken: "cdp-1" } as never);
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg as never);
+      const rec = createPending({ userId: "user-1", integration: "legacy", type: "cookie", ttlSeconds: 600 });
+      const token = await mintLink("user-1", "legacy", rec.connectionId);
+
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/redeem",
+        headers: { authorization: "Bearer other-jwt" },
+        payload: { token },
+      });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.json().error).toBe("ACCOUNT_MISMATCH");
+      expect(res.json().integration).toBe("legacy");
+      // No side effects: no browser session warmed, and the link is not spent.
+      expect(ensureSession).not.toHaveBeenCalled();
+      expect(getPending(rec.connectionId)!.redeemedAt).toBeUndefined();
+    });
+
+    it("401s AUTH_REQUIRED with no session, without spending the link", async () => {
+      const rec = createPending({ userId: "user-1", integration: "legacy", type: "cookie", ttlSeconds: 600 });
+      const token = await mintLink("user-1", "legacy", rec.connectionId);
+
+      const app = await buildApp();
+      const res = await app.inject({ method: "POST", url: "/api/connect/redeem", payload: { token } });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.json().error).toBe("AUTH_REQUIRED");
+      expect(getPending(rec.connectionId)!.redeemedAt).toBeUndefined();
+    });
+
+    it("401s LINK_INVALID on a garbage link token", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/redeem",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { token: "not-a-jwt" },
+      });
+      expect(res.statusCode).toBe(401);
+      expect(res.json().error).toBe("LINK_INVALID");
+    });
+
+    it("410s LINK_CONSUMED on a second redemption", async () => {
+      const { ensureSession } = await import("../src/auth/browser-session");
+      vi.mocked(ensureSession).mockResolvedValue({ cdpToken: "cdp-1" } as never);
+      vi.spyOn(registry, "getIntegration").mockReturnValue(cookieInteg as never);
+      const rec = createPending({ userId: "user-1", integration: "legacy", type: "cookie", ttlSeconds: 600 });
+      const token = await mintLink("user-1", "legacy", rec.connectionId);
+
+      const app = await buildApp();
+      const headers = { authorization: "Bearer valid-jwt" };
+      const first = await app.inject({ method: "POST", url: "/api/connect/redeem", headers, payload: { token } });
+      expect(first.statusCode).toBe(200);
+      const second = await app.inject({ method: "POST", url: "/api/connect/redeem", headers, payload: { token } });
+      expect(second.statusCode).toBe(410);
+      expect(second.json().error).toBe("LINK_CONSUMED");
+    });
+
+    it("returns the provider URL for an oauth2 link, built only after the match", async () => {
+      const { buildPluginAuthUrl } = await import("../src/auth/plugin-oauth");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "github",
+        version: "1.0.0",
+        auth: { type: "oauth2" as const, scopes: ["repo"] },
+      } as never);
+      const rec = createPending({ userId: "user-1", integration: "github", type: "oauth2", ttlSeconds: 600 });
+      const token = await mintLink("user-1", "github", rec.connectionId);
+
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/redeem",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { token },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json().type).toBe("oauth2");
+      expect(res.json().url).toBe("https://example.com/oauth?plugin=1");
+      expect(buildPluginAuthUrl).toHaveBeenCalledWith("user-1", "github");
+    });
+
+    it("does not build a provider URL when the redeemer is the wrong user", async () => {
+      const { buildPluginAuthUrl } = await import("../src/auth/plugin-oauth");
+      vi.spyOn(registry, "getIntegration").mockReturnValue({
+        name: "github",
+        version: "1.0.0",
+        auth: { type: "oauth2" as const, scopes: ["repo"] },
+      } as never);
+      const rec = createPending({ userId: "user-1", integration: "github", type: "oauth2", ttlSeconds: 600 });
+      const token = await mintLink("user-1", "github", rec.connectionId);
+
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/redeem",
+        headers: { authorization: "Bearer other-jwt" },
+        payload: { token },
+      });
+
+      expect(res.statusCode).toBe(403);
+      expect(buildPluginAuthUrl).not.toHaveBeenCalled();
+    });
+
+    it("returns browser-session details for a __browser__ link", async () => {
+      const { ensureSession } = await import("../src/auth/browser-session");
+      vi.mocked(ensureSession).mockResolvedValue({ cdpToken: "cdp-1" } as never);
+      const rec = createPending({ userId: "user-1", integration: "__browser__", type: "cookie", ttlSeconds: 600 });
+      const token = await mintLink("user-1", "__browser__", rec.connectionId);
+
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/connect/redeem",
+        headers: { authorization: "Bearer valid-jwt" },
+        payload: { token },
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({
+        type: "browser",
+        cdpProxyUrl: "/api/browser-session/cdp",
+        sessionId: "user-1",
+        cdpToken: "cdp-1",
+      });
     });
   });
 });
