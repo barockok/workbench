@@ -23,6 +23,7 @@ const builtinPlugins = [
   "slack",
   "newrelic",
   "httpbin-cookie",
+  "clevertap",
 ];
 
 function findPluginsBasePath(): string | undefined {
