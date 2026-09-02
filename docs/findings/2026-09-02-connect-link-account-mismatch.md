@@ -74,3 +74,12 @@ provider URL, a `cdpToken`, session details) in the token itself, and any new
 redemption path must re-derive the side effect only after checking the redeeming
 session's `userId` against the link's. Treat the link as proof of "this
 connection was requested for user X," never as proof of "the bearer is user X."
+
+The pre-existing in-memory pending-connection store limitation (one process,
+not shared across replicas) got slightly worse here. Redemption now requires
+the pending record to be present on whichever node serves `/api/connect/redeem`
+— previously a stateless bearer-token check could be served by any node. And
+`browser_live_url` now creates a pending record where it previously created
+none, so in cluster mode a `/browser` link now breaks — 410 `LINK_CONSUMED` —
+if the redeem request lands on a different node than the one that minted it,
+where it previously worked because there was nothing node-local to miss.
