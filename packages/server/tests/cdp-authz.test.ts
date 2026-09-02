@@ -47,95 +47,14 @@ describe("authorizeCdpFrame", () => {
     expect(getWarmCdpEndpointMock).not.toHaveBeenCalled();
   });
 
-  it("accepts a valid connect JWT with matching integration+sessionId+cdpToken", async () => {
-    verifyConnectTokenMock.mockResolvedValue({
-      userId: "user-1",
-      integration: "jira",
-      sessionId: "user-1",
-      cdpToken: "tok-1",
-    });
-    getWarmCdpEndpointMock.mockReturnValue(ENDPOINT);
+  it("rejects a frame whose only credential is a connect JWT", async () => {
     const result = await authorizeCdpFrame(
-      { sessionId: "user-1", cdpToken: "tok-1", bearer: "jwt" },
-      null,
-      "jira"
-    );
-    expect(result).toBe(ENDPOINT);
-    expect(verifyConnectTokenMock).toHaveBeenCalledWith("jwt");
-    expect(getWarmCdpEndpointMock).toHaveBeenCalledWith("user-1", "tok-1");
-  });
-
-  it("rejects a connect JWT scoped to the wrong integration (cross-proxy replay guard)", async () => {
-    // JWT minted for the browser-session proxy, replayed against a cookie proxy.
-    verifyConnectTokenMock.mockResolvedValue({
-      userId: "user-1",
-      integration: "__browser__",
-      sessionId: "user-1",
-      cdpToken: "tok-1",
-    });
-    getWarmCdpEndpointMock.mockReturnValue(ENDPOINT);
-    const result = await authorizeCdpFrame(
-      { sessionId: "user-1", cdpToken: "tok-1", bearer: "jwt" },
-      null,
-      "jira"
-    );
-    expect(result).toBeNull();
-    expect(getWarmCdpEndpointMock).not.toHaveBeenCalled();
-  });
-
-  it("rejects a connect JWT scoped to an integration when __browser__ is expected", async () => {
-    verifyConnectTokenMock.mockResolvedValue({
-      userId: "user-1",
-      integration: "jira",
-      sessionId: "user-1",
-      cdpToken: "tok-1",
-    });
-    const result = await authorizeCdpFrame(
-      { sessionId: "user-1", cdpToken: "tok-1", bearer: "jwt" },
+      { sessionId: "user-1", cdpToken: "tok-1", bearer: "jwt" } as never,
       null,
       "__browser__"
     );
     expect(result).toBeNull();
-  });
-
-  it("rejects a connect JWT with mismatched sessionId", async () => {
-    verifyConnectTokenMock.mockResolvedValue({
-      userId: "user-1",
-      integration: "jira",
-      sessionId: "user-OTHER",
-      cdpToken: "tok-1",
-    });
-    const result = await authorizeCdpFrame(
-      { sessionId: "user-1", cdpToken: "tok-1", bearer: "jwt" },
-      null,
-      "jira"
-    );
-    expect(result).toBeNull();
-  });
-
-  it("rejects a connect JWT with mismatched cdpToken", async () => {
-    verifyConnectTokenMock.mockResolvedValue({
-      userId: "user-1",
-      integration: "jira",
-      sessionId: "user-1",
-      cdpToken: "tok-OTHER",
-    });
-    const result = await authorizeCdpFrame(
-      { sessionId: "user-1", cdpToken: "tok-1", bearer: "jwt" },
-      null,
-      "jira"
-    );
-    expect(result).toBeNull();
-  });
-
-  it("returns null when verifyConnectToken throws (bad token)", async () => {
-    verifyConnectTokenMock.mockRejectedValue(new Error("bad token"));
-    const result = await authorizeCdpFrame(
-      { sessionId: "user-1", cdpToken: "tok-1", bearer: "not-a-jwt" },
-      null,
-      "jira"
-    );
-    expect(result).toBeNull();
+    expect(verifyConnectTokenMock).not.toHaveBeenCalled();
     expect(getWarmCdpEndpointMock).not.toHaveBeenCalled();
   });
 

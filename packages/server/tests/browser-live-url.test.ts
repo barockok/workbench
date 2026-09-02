@@ -45,7 +45,6 @@ describe("browser_live_url", () => {
         connectionId: "conn-1",
         userId: "u1",
         sessionId: "u1",
-        cdpToken: "",
         integration: "__browser__",
       }),
       expect.any(Number)

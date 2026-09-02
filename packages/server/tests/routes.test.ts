@@ -847,7 +847,7 @@ describe("API routes", () => {
         capturedAt: Math.floor(Date.now() / 1000),
       });
       const token = await signConnectToken(
-        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1", cdpToken: "t1" },
+        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1" },
         600
       );
       const app = await buildApp();
@@ -868,7 +868,7 @@ describe("API routes", () => {
       const { storeCookies } = await import("../src/auth/cookie");
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockCookieIntegForConnect);
       const token = await signConnectToken(
-        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1", cdpToken: "t1" },
+        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1" },
         600
       );
       const app = await buildApp();
@@ -887,7 +887,7 @@ describe("API routes", () => {
 
     it("POST /api/connect/capture 401s with a valid link but no session", async () => {
       const token = await signConnectToken(
-        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1", cdpToken: "t1" },
+        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1" },
         600
       );
       const app = await buildApp();
@@ -919,7 +919,7 @@ describe("API routes", () => {
         capturedAt: 1,
       });
       const token = await signConnectToken(
-        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1", cdpToken: "t1" },
+        { connectionId: "c1", userId: "user-1", integration: "legacy", sessionId: "user-1" },
         600
       );
       const app = await buildApp();
@@ -1276,10 +1276,7 @@ describe("API routes", () => {
     };
 
     async function mintLink(userId: string, integration: string, connectionId: string) {
-      // ConnectTokenPayload still requires cdpToken (unchanged, out of scope for this
-      // task); the redeem endpoint ignores it and pulls the real token from the
-      // warm session instead, so a placeholder here is fine.
-      return signConnectToken({ connectionId, userId, integration, sessionId: userId, cdpToken: "link-cdp-unused" }, 600);
+      return signConnectToken({ connectionId, userId, integration, sessionId: userId }, 600);
     }
 
     beforeEach(() => {
