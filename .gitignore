@@ -36,3 +36,6 @@ temp/
 
 # Generated docs site (built by docs/site/build.mjs in CI)
 docs/site/_site/
+
+# Generated copy of the shared design tokens (build.mjs copies this in on every build)
+docs/site/assets/tokens.css
