@@ -1056,6 +1056,45 @@ body::before {
 .ui-input-error { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
 .ui-input:disabled { opacity: .6; cursor: not-allowed; }
 
+/* ui/Modal */
+.ui-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-16);
+  z-index: 50;
+}
+.ui-modal {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--s-16);
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  outline: none;
+}
+.ui-modal-sm { max-width: 320px; }
+.ui-modal-md { max-width: 400px; }
+.ui-modal-lg { max-width: 560px; }
+.ui-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--s-12);
+}
+.ui-modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.ui-modal-body { color: var(--text-2); font-size: 14px; }
+.ui-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-8);
+  margin-top: var(--s-16);
+}
+
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
   scrollbar-width: thin;                       /* Firefox */
