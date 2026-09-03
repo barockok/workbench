@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAgents, revokeAgent, ConnectedAgent } from "../api";
+import { Badge } from "./ui/Badge";
+import { Button } from "./ui/Button";
 
 function rel(unixSeconds: number): string {
   if (!unixSeconds) return "—";
@@ -33,7 +35,7 @@ export default function AgentsPanel() {
   return (
     <section className="agents-panel">
       <div className="eyebrow"><span className="dot" /> // connected agents ── oauth clients</div>
-      {error && <div className="login-error" style={{ margin: "8px 0" }}>ERR — {error}</div>}
+      {error && <div className="ui-form-error" style={{ margin: "8px 0" }}>ERR — {error}</div>}
       {isLoading ? (
         <p className="card-meta">Loading agents…</p>
       ) : agents.length === 0 ? (
@@ -47,18 +49,18 @@ export default function AgentsPanel() {
                 <span className="card-meta"> · connected {rel(a.connected_since)}</span>
                 {a.scopes.length > 0 && (
                   <div className="integ-tags">
-                    {a.scopes.map((s) => <span key={s} className="integ-tag">{s}</span>)}
+                    {a.scopes.map((s) => <Badge key={s} variant="neutral">{s}</Badge>)}
                   </div>
                 )}
               </div>
-              <button
-                className="btn-disconnect"
+              <Button
+                variant="danger"
                 onClick={() => handleRevoke(a)}
                 disabled={revoke.isPending}
                 title="Revoke this agent"
               >
                 {revoke.isPending ? "…" : "Revoke"}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
