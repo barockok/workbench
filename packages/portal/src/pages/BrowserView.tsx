@@ -40,7 +40,7 @@ export default function BrowserView() {
   }
 
   return (
-    <Modal open onClose={() => {}} title="Browser session">
+    <Modal open onClose={() => {}} title="Browser session" size="xl" dismissible={false}>
       <div className="modal-instructions">
         <div>You are driving the live browser. Close this tab to hand control back to your agent.</div>
       </div>

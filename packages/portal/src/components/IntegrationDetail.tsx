@@ -63,7 +63,7 @@ function BrowserControls() {
       <div className="session-transfer-row">
         <Button variant="danger" onClick={onClear} disabled={busy}>Clear session</Button>
       </div>
-      {msg && <div className={msg.ok ? "session-transfer-ok" : "login-error"}>{msg.text}</div>}
+      {msg && <div className={msg.ok ? "session-transfer-ok" : "ui-form-error"}>{msg.text}</div>}
     </div>
   );
 }
@@ -135,7 +135,7 @@ function SessionTransfer({ name }: { name: string }) {
       <div className="session-transfer-row">
         <Button onClick={onImport} disabled={busy || !paste.trim()}>Import session ↑</Button>
       </div>
-      {msg && <div className={msg.ok ? "session-transfer-ok" : "login-error"}>{msg.text}</div>}
+      {msg && <div className={msg.ok ? "session-transfer-ok" : "ui-form-error"}>{msg.text}</div>}
     </div>
   );
 }

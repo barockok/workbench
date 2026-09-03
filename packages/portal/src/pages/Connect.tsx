@@ -64,6 +64,8 @@ export default function Connect() {
 
   return (
     <Modal open onClose={() => {}} title={<>Connect <span>{info.integration}</span></>}
+      size="xl"
+      dismissible={false}
       footer={
         <Button onClick={handleCapture} disabled={capturing}>
           {capturing ? "Capturing…" : "Capture session"}

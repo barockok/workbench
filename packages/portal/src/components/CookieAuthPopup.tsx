@@ -42,6 +42,7 @@ export default function CookieAuthPopup({ integration, cdpProxyUrl, cdpToken, se
       open
       onClose={handleCancel}
       title={<>Pair <span>{integration}</span></>}
+      size="xl"
       footer={
         <>
           <Button variant="ghost" onClick={handleCancel}>Cancel</Button>
