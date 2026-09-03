@@ -6,10 +6,10 @@ import Dashboard from "./pages/Dashboard";
 import Connect from "./pages/Connect";
 import BrowserView from "./pages/BrowserView";
 
-function Boot({ label = "INIT" }: { label?: string }) {
+function Boot({ label = "Loading" }: { label?: string }) {
   return (
-    <div className="boot">
-      <span>{label}<span className="blinker" /></span>
+    <div className="ui-loading">
+      <span>{label}…</span>
     </div>
   );
 }
@@ -28,7 +28,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, user, dest]);
 
-  if (isLoading) return <Boot label="VERIFY SESSION" />;
+  if (isLoading) return <Boot label="Verifying session" />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
