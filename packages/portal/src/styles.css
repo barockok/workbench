@@ -592,9 +592,9 @@ body {
   padding: 12px 18px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
-  color: var(--ink-dim);
+  color: var(--text-2);
   display: grid;
   gap: 4px;
 }
