@@ -1000,6 +1000,26 @@ body::before {
 .ui-button-danger { background: var(--danger); color: #fff; }
 .ui-button-danger:hover:not(:disabled) { filter: brightness(0.9); }
 
+/* ui/Badge */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  border-radius: var(--radius-full);
+  padding: 3px var(--s-8);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ui-badge-primary { background: var(--accent-soft); color: var(--accent-hover); }
+.ui-badge-blue { background: var(--info-soft); color: var(--info); }
+.ui-badge-green { background: var(--ok-soft); color: var(--ok); }
+.ui-badge-orange { background: var(--warn-soft); color: var(--warn); }
+.ui-badge-red { background: var(--danger-soft); color: var(--danger); }
+.ui-badge-yellow { background: var(--warn-soft); color: var(--warn); }
+.ui-badge-neutral { background: var(--bg-sunk); color: var(--text-3); }
+
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
   scrollbar-width: thin;                       /* Firefox */
