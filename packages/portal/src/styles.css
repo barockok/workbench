@@ -1095,6 +1095,36 @@ body::before {
   margin-top: var(--s-16);
 }
 
+/* ui/BottomSheet */
+.ui-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+.ui-sheet {
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: var(--s-16);
+  width: 100%;
+  overflow-y: auto;
+  outline: none;
+}
+.ui-sheet-sm { max-height: 420px; }
+.ui-sheet-md { max-height: 560px; }
+.ui-sheet-fullscreen { max-height: 100vh; height: 100vh; }
+.ui-sheet-grip {
+  width: 32px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--border);
+  margin: 0 auto var(--s-12);
+}
+
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
   scrollbar-width: thin;                       /* Firefox */
