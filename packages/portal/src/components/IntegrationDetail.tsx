@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchIntegration, exportSession, importSession, openBrowserLiveUrl, resetBrowserSession } from "../api";
 import IntegrationLogo from "./IntegrationLogo";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
+import { Input } from "./ui/Input";
+import { Badge } from "./ui/Badge";
 
 // Built-in browser controls: open a live view (optionally at a URL) and clear
 // the persistent profile. Replaces the old standalone BrowserSessionPanel.
@@ -48,17 +52,16 @@ function BrowserControls() {
         navigate there first.
       </p>
       <div className="session-transfer-row">
-        <input
-          className="session-transfer-paste"
+        <Input
           style={{ flex: 1 }}
           placeholder="https://example.com (optional)"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
         />
-        <button className="btn-connect" onClick={onOpen} disabled={busy}>Open live view →</button>
+        <Button onClick={onOpen} disabled={busy}>Open live view →</Button>
       </div>
       <div className="session-transfer-row">
-        <button className="btn-disconnect" onClick={onClear} disabled={busy}>Clear session</button>
+        <Button variant="danger" onClick={onClear} disabled={busy}>Clear session</Button>
       </div>
       {msg && <div className={msg.ok ? "session-transfer-ok" : "login-error"}>{msg.text}</div>}
     </div>
@@ -120,17 +123,17 @@ function SessionTransfer({ name }: { name: string }) {
         workbench whose IP the provider blocks (e.g. a headless/in-cluster instance).
       </p>
       <div className="session-transfer-row">
-        <button className="btn-ghost" onClick={onExport} disabled={busy}>Export session ↓</button>
+        <Button variant="ghost" onClick={onExport} disabled={busy}>Export session ↓</Button>
       </div>
       <textarea
-        className="session-transfer-paste"
+        className="ui-input"
         placeholder="Paste an exported session bundle JSON here…"
         value={paste}
         onChange={(e) => setPaste(e.target.value)}
         rows={4}
       />
       <div className="session-transfer-row">
-        <button className="btn-connect" onClick={onImport} disabled={busy || !paste.trim()}>Import session ↑</button>
+        <Button onClick={onImport} disabled={busy || !paste.trim()}>Import session ↑</Button>
       </div>
       {msg && <div className={msg.ok ? "session-transfer-ok" : "login-error"}>{msg.text}</div>}
     </div>
@@ -157,60 +160,59 @@ export default function IntegrationDetail({
   });
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <div className="integ-detail-title">
-            <IntegrationLogo name={name} displayName={data?.displayName} logo={data?.logo} size={44} />
-            <div>
-              <h2 className="modal-title">{data?.displayName || name}</h2>
-              <div className="card-ver">v{data?.version ?? "—"} · {data?.authType ?? "…"}</div>
-            </div>
+    <Modal
+      open
+      onClose={onClose}
+      size="lg"
+      title={
+        <div className="integ-detail-title">
+          <IntegrationLogo name={name} displayName={data?.displayName} logo={data?.logo} size={44} />
+          <div>
+            <div>{data?.displayName || name}</div>
+            <div className="card-ver">v{data?.version ?? "—"} · {data?.authType ?? "…"}</div>
           </div>
-          <button className="btn-ghost" onClick={onClose}>Close</button>
         </div>
-
-        <div className="modal-body modal-detail-body">
-          {isLoading && <div className="boot"><span>LOADING<span className="blinker" /></span></div>}
-          {error && <div className="login-error">ERR — failed to load</div>}
-          {data && (
-            <>
-              {data.description && <p className="integ-detail-desc">{data.description}</p>}
-              {data.categories && data.categories.length > 0 && (
-                <div className="integ-tags">
-                  {data.categories.map((c) => <span key={c} className="integ-tag">{c}</span>)}
-                </div>
-              )}
-              {data.authType === "cookie" && <SessionTransfer name={name} />}
-              {name === "browser" && <BrowserControls />}
-              <div className="integ-tools-head">
-                <span>Tools</span><span className="count">{data.tools.length}</span>
-              </div>
-              <ul className="integ-tool-list">
-                {data.tools.map((t) => (
-                  <li key={t.name} className="integ-tool">
-                    <code className="integ-tool-name">{t.name}</code>
-                    <span className="integ-tool-desc">{t.description}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-
-        {data?.authType !== "none" && (
-          <div className="modal-foot">
+      }
+      footer={
+        data?.authType !== "none" ? (
+          <>
             {connected && (
-              <button className="btn-disconnect" onClick={() => onDisconnect(name)}>
+              <Button variant="danger" onClick={() => onDisconnect(name)}>
                 Disconnect
-              </button>
+              </Button>
             )}
-            <button className={connected ? "btn-ghost" : "btn-connect"} onClick={() => onConnect(name)}>
+            <Button variant={connected ? "ghost" : "primary"} onClick={() => onConnect(name)}>
               {connected ? "Re-authorize" : "Connect →"}
-            </button>
+            </Button>
+          </>
+        ) : undefined
+      }
+    >
+      {isLoading && <div className="ui-loading">Loading…</div>}
+      {error && <div className="ui-form-error">ERR — failed to load</div>}
+      {data && (
+        <>
+          {data.description && <p className="integ-detail-desc">{data.description}</p>}
+          {data.categories && data.categories.length > 0 && (
+            <div className="integ-tags">
+              {data.categories.map((c) => <Badge key={c} variant="neutral">{c}</Badge>)}
+            </div>
+          )}
+          {data.authType === "cookie" && <SessionTransfer name={name} />}
+          {name === "browser" && <BrowserControls />}
+          <div className="integ-tools-head">
+            <span>Tools</span><Badge variant="neutral">{data.tools.length}</Badge>
           </div>
-        )}
-      </div>
-    </div>
+          <ul className="integ-tool-list">
+            {data.tools.map((t) => (
+              <li key={t.name} className="integ-tool">
+                <code className="integ-tool-name">{t.name}</code>
+                <span className="integ-tool-desc">{t.description}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </Modal>
   );
 }
