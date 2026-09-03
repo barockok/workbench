@@ -50,8 +50,6 @@ export default function ConnectLinkProblem({ error }: { error: ConnectLinkError 
 
   const copy = COPY[error.code] ?? COPY.UNKNOWN;
   return (
-    <div className="boot">
-      <span>{copy.title} — {copy.detail}</span>
-    </div>
+    <div className="ui-loading">{copy.title} — {copy.detail}</div>
   );
 }

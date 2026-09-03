@@ -9,6 +9,12 @@ import AgentsPanel from "../components/AgentsPanel";
 import IntegrationLogo from "../components/IntegrationLogo";
 import IntegrationDetail from "../components/IntegrationDetail";
 import { ApiKeyField } from "../api";
+import { NavigationHeader } from "../components/ui/NavigationHeader";
+import { ThemeToggle } from "../components/ui/ThemeToggle";
+import { Card } from "../components/ui/Card";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { Select } from "../components/ui/Input";
 
 interface CookieAuthState {
   integration: string;
@@ -145,36 +151,22 @@ export default function Dashboard() {
   }
 
   if (isLoading) {
-    return (
-      <div className="boot">
-        <span>LOADING REGISTRY<span className="blinker" /></span>
-      </div>
-    );
+    return <div className="ui-loading">Loading registry…</div>;
   }
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark" />
-          <span className="brand-name">workbench</span>
-          <span className="brand-slash">/</span>
-          <span className="brand-tag">operator console</span>
-        </div>
-
-        <div className="status-strip">
-          <span><b>{integrations.length}</b> integrations</span>
-          <span className="sep">·</span>
-          <span><b>{connectedCount}</b> live</span>
-          <span className="sep">·</span>
-          <span>node <b>online</b></span>
-        </div>
-
-        <div className="user-block">
-          {user?.email && <span className="user-email">{user.email}</span>}
-          <button onClick={logout} className="btn-ghost">Sign out</button>
-        </div>
-      </header>
+      <NavigationHeader
+        title="workbench"
+        trailing={
+          <>
+            <span className="card-meta">{integrations.length} integrations · {connectedCount} live</span>
+            {user?.email && <span className="user-email">{user.email}</span>}
+            <ThemeToggle />
+            <Button variant="ghost" onClick={logout}>Sign out</Button>
+          </>
+        }
+      />
 
       <main className="main">
         <ApiKeyPanel />
@@ -202,34 +194,36 @@ export default function Dashboard() {
         )}
 
         <div className="filter-row" role="tablist">
-          <button
-            className="filter-chip"
+          <Button
+            variant={filter === "all" ? "primary" : "outline"}
+            size="sm"
             aria-pressed={filter === "all"}
             onClick={() => setFilter("all")}
           >
             All <span className="count">{integrations.length}</span>
-          </button>
-          <button
-            className="filter-chip"
+          </Button>
+          <Button
+            variant={filter === "connected" ? "primary" : "outline"}
+            size="sm"
             aria-pressed={filter === "connected"}
             onClick={() => setFilter("connected")}
           >
             Connected <span className="count">{connectedCount}</span>
-          </button>
-          <button
-            className="filter-chip"
+          </Button>
+          <Button
+            variant={filter === "available" ? "primary" : "outline"}
+            size="sm"
             aria-pressed={filter === "available"}
             onClick={() => setFilter("available")}
           >
             Available <span className="count">{availableCount}</span>
-          </button>
+          </Button>
 
           {categories.length > 0 && (
             <div className="cat-select-wrap">
               <label className="cat-select-label" htmlFor="cat-select">Category</label>
-              <select
+              <Select
                 id="cat-select"
-                className="cat-select"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -237,7 +231,7 @@ export default function Dashboard() {
                 {categories.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
         </div>
@@ -249,10 +243,11 @@ export default function Dashboard() {
             // Not configured (no creds/manual auth) → not connectable, unclickable.
             const clickable = configured;
             return (
-              <article
+              <Card
                 key={i.name}
-                className={`card ${clickable ? "card-clickable" : "card-disabled"}`}
-                style={{ animationDelay: `${Math.min(idx * 35, 600)}ms` }}
+                clickable={clickable}
+                disabled={!clickable}
+                style={{ animationDelay: undefined }}
                 onClick={clickable ? () => setDetail(i.name) : undefined}
                 role={clickable ? "button" : undefined}
                 aria-disabled={clickable ? undefined : true}
@@ -261,10 +256,9 @@ export default function Dashboard() {
               >
                 <div className="card-top">
                   <span className="card-index">№ {pad(idx + 1)}</span>
-                  <span className={`card-status ${connected ? "live" : ""}`}>
-                    <span className="led" />
+                  <Badge variant={connected ? "green" : "neutral"}>
                     {connected ? "Live" : configured ? "Standby" : "Not configured"}
-                  </span>
+                  </Badge>
                 </div>
 
                 <div className="card-head">
@@ -279,7 +273,7 @@ export default function Dashboard() {
 
                 {i.categories && i.categories.length > 0 && (
                   <div className="integ-tags">
-                    {i.categories.map((c) => <span key={c} className="integ-tag">{c}</span>)}
+                    {i.categories.map((c) => <Badge key={c} variant="neutral">{c}</Badge>)}
                   </div>
                 )}
 
@@ -290,57 +284,38 @@ export default function Dashboard() {
                     <>
                       <span className="card-meta">Session active</span>
                       <div className="card-actions">
-                        <button
-                          className="btn-ghost"
-                          onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }}
-                          title="Re-authorize"
-                        >
+                        <Button variant="ghost" onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }} title="Re-authorize">
                           Refresh
-                        </button>
-                        <button
-                          className="btn-disconnect"
-                          onClick={(e) => { e.stopPropagation(); handleDisconnect(i.name); }}
-                          disabled={disconnecting === i.name}
-                          title="Disconnect"
-                        >
+                        </Button>
+                        <Button variant="danger" onClick={(e) => { e.stopPropagation(); handleDisconnect(i.name); }} disabled={disconnecting === i.name} title="Disconnect">
                           {disconnecting === i.name ? "…" : "Disconnect"}
-                        </button>
+                        </Button>
                       </div>
                     </>
                   ) : configured ? (
                     <>
                       <span className="card-meta">Not paired</span>
-                      <button
-                        className="btn-connect"
-                        onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }}
-                      >
+                      <Button onClick={(e) => { e.stopPropagation(); handleConnect(i.name); }}>
                         Connect →
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <span className="card-meta">Auth not configured</span>
                   )}
                 </div>
-              </article>
+              </Card>
             );
           })}
 
           {visible.length === 0 && (
-            <div
-              className="card"
-              style={{ gridColumn: "1 / -1", textAlign: "center", justifyContent: "center", alignItems: "center" }}
-            >
+            <Card style={{ gridColumn: "1 / -1", textAlign: "center" }}>
               <span className="card-meta">No integrations in this filter.</span>
-            </div>
+            </Card>
           )}
         </div>
       </main>
 
-      <footer className="ticker">
-        <span><span className="ok">●</span> system nominal</span>
-        <span>registry sync · {new Date().toISOString().slice(11, 19)} UTC</span>
-        <span>build · <span className="ok">stable</span></span>
-      </footer>
+      <footer className="ui-footer">Registry synced {new Date().toISOString().slice(11, 19)} UTC</footer>
 
       {detail && (
         <IntegrationDetail
