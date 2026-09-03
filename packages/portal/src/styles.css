@@ -633,6 +633,17 @@ body {
   animation: blink 1s steps(2, end) infinite;
 }
 
+/* Boot / loading state */
+.ui-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text-3);
+}
+
 /* modal (cookie auth) */
 .modal-backdrop {
   position: fixed;
