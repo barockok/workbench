@@ -4,6 +4,8 @@ import { redeemConnectLink, connectCapture, ConnectLinkError } from "../api";
 import type { RedeemResult } from "../api";
 import CdpScreencast from "../components/CdpScreencast";
 import ConnectLinkProblem from "../components/ConnectLinkProblem";
+import { Modal } from "../components/ui/Modal";
+import { Button } from "../components/ui/Button";
 
 type CookieInfo = Extract<RedeemResult, { type: "cookie" }>;
 
@@ -61,25 +63,21 @@ export default function Connect() {
   }
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal">
-        <div className="modal-head">
-          <h2 className="modal-title">Connect <span>{info.integration}</span></h2>
-        </div>
-        <div className="modal-instructions">
-          <div><b>01</b> — Log in to the remote browser below.</div>
-          <div><b>02</b> — Click "Capture session" once authenticated.</div>
-        </div>
-        <div className="modal-body" style={{ padding: 0, background: "#000" }}>
-          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
-        </div>
-        {error && <div className="modal-error">ERR — {error}</div>}
-        <div className="modal-foot">
-          <button onClick={handleCapture} disabled={capturing} className="btn-connect">
-            {capturing ? "Capturing…" : "Capture session"}
-          </button>
-        </div>
+    <Modal open onClose={() => {}} title={<>Connect <span>{info.integration}</span></>}
+      footer={
+        <Button onClick={handleCapture} disabled={capturing}>
+          {capturing ? "Capturing…" : "Capture session"}
+        </Button>
+      }
+    >
+      <div className="modal-instructions">
+        <div><b>01</b> — Log in to the remote browser below.</div>
+        <div><b>02</b> — Click "Capture session" once authenticated.</div>
       </div>
-    </div>
+      <div style={{ padding: 0, background: "#000", marginTop: "var(--s-12)" }}>
+        <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
+      </div>
+      {error && <div className="ui-form-error" style={{ marginTop: "var(--s-12)" }}>ERR — {error}</div>}
+    </Modal>
   );
 }
