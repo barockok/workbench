@@ -53,13 +53,13 @@ export default function Connect() {
 
   if (problem) return <ConnectLinkProblem error={problem} />;
   if (done) {
-    return <div className="boot"><span>CONNECTED — {integration}. You can close this tab and return to your agent.</span></div>;
+    return <div className="ui-loading">Connected — {integration}. You can close this tab and return to your agent.</div>;
   }
   if (error && !info) {
-    return <div className="boot"><span>ERR — {error}</span></div>;
+    return <div className="ui-loading">Error — {error}</div>;
   }
   if (!info) {
-    return <div className="boot"><span>LOADING LOGIN<span className="blinker" /></span></div>;
+    return <div className="ui-loading">Loading…</div>;
   }
 
   return (

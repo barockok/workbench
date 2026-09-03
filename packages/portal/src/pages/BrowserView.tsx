@@ -33,10 +33,10 @@ export default function BrowserView() {
 
   if (problem) return <ConnectLinkProblem error={problem} />;
   if (error && !info) {
-    return <div className="boot"><span>ERR — {error}</span></div>;
+    return <div className="ui-loading">Error — {error}</div>;
   }
   if (!info) {
-    return <div className="boot"><span>LOADING BROWSER<span className="blinker" /></span></div>;
+    return <div className="ui-loading">Loading browser…</div>;
   }
 
   return (
