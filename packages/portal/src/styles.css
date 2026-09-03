@@ -1020,6 +1020,20 @@ body::before {
 .ui-badge-yellow { background: var(--warn-soft); color: var(--warn); }
 .ui-badge-neutral { background: var(--bg-sunk); color: var(--text-3); }
 
+/* ui/Card — never nest cards. */
+.ui-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--card-pad);
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+.ui-card-clickable { cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease; }
+.ui-card-clickable:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.ui-card-disabled { opacity: .55; cursor: not-allowed; }
+
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
   scrollbar-width: thin;                       /* Firefox */
