@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiKeyStatus, mintApiKey, revokeApiKey, revealApiKey } from "../api";
+import { Badge } from "./ui/Badge";
+import { Button } from "./ui/Button";
 
 // Server serves the portal, so its origin is also the /mcp origin.
 const MCP_URL = `${window.location.origin}/mcp`;
@@ -102,10 +104,9 @@ export default function ApiKeyPanel() {
     <section className="apikey-panel">
       <div className="apikey-head">
         <div className="eyebrow"><span className="dot" /> // mcp ── access key</div>
-        <span className={`card-status ${hasKey ? "live" : ""}`}>
-          <span className="led" />
+        <Badge variant={hasKey ? "green" : "neutral"}>
           {isLoading ? "…" : hasKey ? "Key active" : "No key"}
-        </span>
+        </Badge>
       </div>
 
       <p className="apikey-blurb">
@@ -113,19 +114,19 @@ export default function ApiKeyPanel() {
         <code>{MCP_URL}</code>. Reveal it anytime below.
       </p>
 
-      {error && <div className="login-error" style={{ marginBottom: 12 }}>ERR — {error}</div>}
+      {error && <div className="ui-form-error" style={{ marginBottom: 12 }}>ERR — {error}</div>}
 
       {/* Freshly minted key — masked by default, with Show toggle + copy. */}
       {revealed && (
         <div className="apikey-reveal">
           <div className="apikey-row">
             <code className="apikey-value">{show ? revealed : maskKey(revealed)}</code>
-            <button className="btn-ghost" onClick={() => setShow((s) => !s)}>
+            <Button variant="ghost" onClick={() => setShow((s) => !s)}>
               {show ? "Hide" : "Show"}
-            </button>
-            <button className="btn-ghost" onClick={() => copy(revealed, "key")}>
+            </Button>
+            <Button variant="ghost" onClick={() => copy(revealed, "key")}>
               {copied === "key" ? "Copied" : "Copy"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -136,26 +137,26 @@ export default function ApiKeyPanel() {
           <div className="apikey-snippet-label">MCP client config (JSON):</div>
           <pre className="apikey-snippet"><code>{configFor(snippetKey)}</code></pre>
           <div className="apikey-actions">
-            <button className="btn-ghost" onClick={() => copy(configFor(copyKey), "cfg")}>
+            <Button variant="ghost" onClick={() => copy(configFor(copyKey), "cfg")}>
               {copied === "cfg" ? "Copied" : "Copy config"}
-            </button>
+            </Button>
             {!revealed && (
-              <button className="btn-ghost" onClick={handleReveal} disabled={busy}>
+              <Button variant="ghost" onClick={handleReveal} disabled={busy}>
                 {busy ? "…" : "Reveal key"}
-              </button>
+              </Button>
             )}
           </div>
         </div>
       )}
 
       <div className="apikey-actions" style={{ marginTop: 14 }}>
-        <button className="btn-connect" onClick={handleMint} disabled={busy}>
+        <Button onClick={handleMint} disabled={busy}>
           {busy ? "Working…" : hasKey || revealed ? "Regenerate key" : "Generate key"}
-        </button>
+        </Button>
         {(hasKey || revealed) && (
-          <button className="btn-disconnect" onClick={handleRevoke} disabled={busy}>
+          <Button variant="danger" onClick={handleRevoke} disabled={busy}>
             Revoke
-          </button>
+          </Button>
         )}
       </div>
     </section>
