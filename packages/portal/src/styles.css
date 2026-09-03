@@ -7,33 +7,12 @@ html, body, #root { height: 100%; }
 
 body {
   background: var(--bg);
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 13px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "ss01", "ss02", "zero", "calt";
-  background-image:
-    radial-gradient(ellipse at 0% 0%, rgba(200, 168, 255, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(120, 100, 200, 0.05) 0%, transparent 55%);
-  background-attachment: fixed;
-}
-
-/* faint grid background */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  background-image:
-    linear-gradient(to right, var(--line-soft) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line-soft) 1px, transparent 1px);
-  background-size: 56px 56px;
-  background-position: -1px -1px;
-  opacity: 0.6;
-  mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, transparent 80%);
 }
 
 /* layout */
@@ -141,7 +120,7 @@ body::before {
 
 /* main */
 .main {
-  padding: 36px 28px 80px;
+  padding: var(--s-32) var(--page-pad-x) var(--s-48);
   max-width: 1320px;
   width: 100%;
   margin: 0 auto;
