@@ -964,6 +964,42 @@ body::before {
 
 .apikey-hint { color: var(--mute); font-size: 11px; align-self: center; }
 
+/* ui/Button */
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-8);
+  font-family: var(--sans);
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.ui-button:disabled { cursor: not-allowed; opacity: .6; }
+
+.ui-button-xs { font-size: 12px; padding: var(--s-4) var(--s-12); }
+.ui-button-sm { font-size: 13px; padding: var(--s-4) var(--s-16); }
+.ui-button-md { font-size: 14px; padding: var(--s-8) var(--s-20); }
+.ui-button-lg { font-size: 15px; padding: var(--s-12) var(--s-24); }
+.ui-button-xl { font-size: 16px; padding: var(--s-12) var(--s-32); }
+
+.ui-button-primary { background: var(--accent); color: #fff; }
+.ui-button-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.ui-button-secondary { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+.ui-button-secondary:hover:not(:disabled) { background: var(--accent-soft); }
+
+.ui-button-outline { background: var(--surface); color: var(--text); border-color: var(--border); }
+.ui-button-outline:hover:not(:disabled) { border-color: var(--border-strong); }
+
+.ui-button-ghost { background: transparent; color: var(--accent); }
+.ui-button-ghost:hover:not(:disabled) { background: var(--accent-soft); }
+
+.ui-button-danger { background: var(--danger); color: #fff; }
+.ui-button-danger:hover:not(:disabled) { filter: brightness(0.9); }
+
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
   scrollbar-width: thin;                       /* Firefox */
