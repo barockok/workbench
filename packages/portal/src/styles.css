@@ -367,12 +367,10 @@ body {
 }
 
 .card-meta {
-  font-family: var(--mono);
-  font-size: 10px;
+  font-family: var(--sans);
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--mute);
+  color: var(--text-3);
 }
 
 /* ticker / footer */
@@ -1093,6 +1091,44 @@ body {
 .ui-nav-header-back { background: none; border: none; color: var(--text); font-size: 18px; cursor: pointer; }
 .ui-nav-header-title { font-family: var(--sans); font-size: 16px; font-weight: 700; color: var(--text); }
 .ui-nav-header-trailing { display: flex; align-items: center; gap: var(--s-12); }
+
+/* AgentsPanel */
+.agents-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-12);
+}
+.agents-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-12);
+}
+.agent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-16);
+  padding: var(--s-12);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.agent-id {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  flex: 1;
+  font-family: var(--sans);
+}
+.agent-id strong {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 14px;
+}
+.agent-id .card-meta {
+  margin: 0;
+}
 
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
