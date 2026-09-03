@@ -1167,6 +1167,24 @@ body::before {
 .ui-selectable-card-title { font-family: var(--sans); font-size: 14px; font-weight: 700; color: var(--text); }
 .ui-selectable-card-desc { font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--text-2); margin-top: var(--s-4); }
 
+/* ui/NavigationHeader */
+.ui-nav-header {
+  height: var(--topbar-h);
+  padding: 0 var(--page-pad-x);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.ui-nav-header-lead { display: flex; align-items: center; gap: var(--s-12); }
+.ui-nav-header-back { background: none; border: none; color: var(--text); font-size: 18px; cursor: pointer; }
+.ui-nav-header-title { font-family: var(--sans); font-size: 16px; font-weight: 700; color: var(--text); }
+.ui-nav-header-trailing { display: flex; align-items: center; gap: var(--s-12); }
+
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
   scrollbar-width: thin;                       /* Firefox */
