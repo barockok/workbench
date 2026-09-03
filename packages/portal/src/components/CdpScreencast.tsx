@@ -185,6 +185,7 @@ export default function CdpScreencast({ cdpProxyUrl, sessionId, cdpToken, width 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     e.preventDefault();
+    e.stopPropagation();
     const isChar = type === "keyDown" && e.key.length === 1;
     ws.send(
       JSON.stringify({

@@ -30,6 +30,7 @@ export default function ConnectLinkProblem({ error }: { error: ConnectLinkError 
       <Modal
         open
         onClose={() => {}}
+        dismissible={false}
         title="Wrong workbench account"
         footer={<Button variant="danger" onClick={logout}>Sign out</Button>}
       >

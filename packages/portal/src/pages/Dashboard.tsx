@@ -188,7 +188,7 @@ export default function Dashboard() {
         </div>
 
         {connectError && (
-          <div className="login-error" style={{ marginBottom: 16 }}>
+          <div className="ui-form-error" style={{ marginBottom: 16 }}>
             ERR — {connectError}
           </div>
         )}

@@ -4,12 +4,13 @@ export interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
+  dismissible?: boolean;
   children: ReactNode;
   footer?: ReactNode;
 }
 
-export function Modal({ open, onClose, title, size = "md", children, footer }: ModalProps) {
+export function Modal({ open, onClose, title, size = "md", dismissible = true, children, footer }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,9 +38,11 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
         {title && (
           <div className="ui-modal-head">
             <h2 className="ui-modal-title">{title}</h2>
-            <button type="button" className="ui-button ui-button-ghost ui-button-sm" onClick={onClose} aria-label="Close">
-              Close
-            </button>
+            {dismissible && (
+              <button type="button" className="ui-button ui-button-ghost ui-button-sm" onClick={onClose} aria-label="Close">
+                Close
+              </button>
+            )}
           </div>
         )}
         <div className="ui-modal-body">{children}</div>
