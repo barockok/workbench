@@ -1,23 +1,6 @@
 /* workbench portal — technical operator console */
 
-:root {
-  --bg: #0b0a10;
-  --bg-elev: #110f18;
-  --panel: #16131f;
-  --line: #25223a;
-  --line-soft: #1c1929;
-  --ink: #e6e3ef;
-  --ink-dim: #8a87a0;
-  --mute: #56536d;
-  --accent: #c8a8ff;
-  --accent-strong: #d6bfff;
-  --accent-soft: rgba(200, 168, 255, 0.10);
-  --accent-edge: rgba(200, 168, 255, 0.35);
-  --danger: #ff6470;
-  --ok: #b6f0c2;
-  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --mono-alt: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-}
+@import "@a-workbench/shared/styles/tokens.css";
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
