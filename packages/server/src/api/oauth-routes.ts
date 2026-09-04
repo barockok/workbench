@@ -89,12 +89,14 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     // Land on the portal's provider-choice page rather than jumping straight to
     // one SSO provider — the portal decides there whether to show a choice or
     // (if the human is already signed in) silently carry the flow through.
+    // Deliberately NOT handing over our own origin as a query param here: the
+    // resume form below posts a live session token, so its target must come
+    // from the portal's own build-time config (VITE_SERVER_URL), never from
+    // anything in this URL — a query param is exactly what an attacker's
+    // crafted link controls, and a bearer token is exactly what must never
+    // follow attacker-controlled input to an attacker-controlled destination.
     const choose = new URL("/authorize/choose", config.PORTAL_URL);
     choose.searchParams.set("ticket", ticket);
-    // The portal and server can be split across ports/domains — hand over our
-    // own absolute origin so the choice page's resume form posts back here,
-    // not to itself (which would miss the awb_oauth_binding cookie above).
-    choose.searchParams.set("resume", new URL("/authorize/resume", config.SERVER_PUBLIC_URL).toString());
     return reply.redirect(choose.toString());
   });
 

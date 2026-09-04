@@ -39,10 +39,11 @@ describe("/authorize", () => {
       "SELECT state FROM pending_auth WHERE integration = '__oauth_authorize__'"
     );
     expect(row?.state).toBe(location.searchParams.get("ticket"));
-    // the choice page can't otherwise know the server's own absolute origin
-    // (portal and server are commonly split across ports/domains) — hand it
-    // over explicitly so the resume form posts back to the right place.
-    expect(location.searchParams.get("resume")).toBe("http://localhost:3000/authorize/resume");
+    // The redirect must carry nothing beyond the ticket: the resume form on
+    // the choice page posts a live session token, and its target must never
+    // be influenced by a URL an attacker could craft (see the ticket=-only
+    // assertion above — no `resume` or other extra param).
+    expect([...location.searchParams.keys()]).toEqual(["ticket"]);
   });
 
   it("still sets the login-CSRF binding cookie on the way to the choice page", async () => {

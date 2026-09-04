@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { fetchProviders, fetchAuthUrl, fetchKeycloakAuthUrl } from "../api";
+import { fetchProviders, fetchAuthUrl, fetchKeycloakAuthUrl, SERVER_URL } from "../api";
 
 // Lands here from the server's GET /authorize — an MCP agent is asking a
 // human to authenticate to workbench itself (not connect one integration).
@@ -11,7 +11,11 @@ import { fetchProviders, fetchAuthUrl, fetchKeycloakAuthUrl } from "../api";
 export default function AuthorizeChoose() {
   const [search] = useSearchParams();
   const ticket = search.get("ticket") ?? "";
-  const resumeUrl = search.get("resume") ?? "";
+  // Deliberately NOT read from the URL: this form posts a live session
+  // token, so its target must come only from our own build-time config
+  // (SERVER_URL), never from a query param a crafted link could set to an
+  // attacker's origin.
+  const resumeUrl = `${SERVER_URL}/authorize/resume`;
   const resumeError = search.get("error");
   const { user, token, isLoading } = useAuth();
   const [providers, setProviders] = useState<string[]>([]);
@@ -62,12 +66,10 @@ export default function AuthorizeChoose() {
 
   return (
     <div className="login-shell">
-      {resumeUrl && (
-        <form ref={formRef} method="POST" action={resumeUrl} style={{ display: "none" }}>
-          <input type="hidden" name="ticket" value={ticket} />
-          <input type="hidden" name="token" value={token ?? ""} />
-        </form>
-      )}
+      <form ref={formRef} method="POST" action={resumeUrl} style={{ display: "none" }}>
+        <input type="hidden" name="ticket" value={ticket} />
+        <input type="hidden" name="token" value={token ?? ""} />
+      </form>
 
       <section className="login-form">
         <div className="login-card">
