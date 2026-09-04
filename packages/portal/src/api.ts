@@ -1,4 +1,11 @@
 const API_URL = import.meta.env.VITE_API_URL || "";
+// The server's own absolute origin, ONLY for the one case that needs a real
+// cross-origin browser navigation rather than a fetch (see AuthorizeChoose's
+// resume form) — same "" = same-origin default as API_URL, but this value
+// must come from build-time config alone, never from a URL query param: it
+// becomes a POST target for a live session token, and attacker-controlled
+// input must never decide where a credential gets sent.
+export const SERVER_URL = import.meta.env.VITE_SERVER_URL || "";
 
 function getHeaders(): HeadersInit {
   const token = localStorage.getItem("awb_token");
