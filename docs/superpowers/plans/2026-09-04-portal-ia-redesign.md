@@ -5077,9 +5077,13 @@ describe("Home", () => {
     return cell?.querySelector(".ui-stat-value")?.textContent ?? "";
   }
 
+  // Every `await` below targets content that cannot exist before the page's
+  // four queries settle. Waiting on a stat LABEL instead would resolve against
+  // the first paint, and the assertions would then read pre-fetch defaults —
+  // which for several of these coincide with the values under test.
   it("shows the four headline numbers", async () => {
     renderPage();
-    await screen.findByText("Tool calls (30d)");
+    await screen.findByText("1,284");
     expect(statValue("Tool calls (30d)")).toBe("1,284");
     expect(statValue("Success rate (30d)")).toBe("97%");
     expect(statValue("Most used app")).toBe("Acme");
@@ -5087,13 +5091,15 @@ describe("Home", () => {
 
   it("counts connected apps from the connections endpoint", async () => {
     renderPage();
-    await screen.findByText("Connected apps");
+    // The app's own link only appears once connections AND integrations resolve.
+    await screen.findByRole("link", { name: "Acme" });
     expect(statValue("Connected apps")).toBe("1");
   });
 
   it("lists connected apps and links to the registry", async () => {
     renderPage();
-    expect(await screen.findByRole("link", { name: "Browse all" })).toHaveAttribute("href", "/apps");
+    expect(await screen.findByText("4 tools")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Browse all" })).toHaveAttribute("href", "/apps");
     expect(screen.getByText("4 tools")).toBeInTheDocument();
   });
 
@@ -5122,7 +5128,10 @@ describe("Home", () => {
     vi.mocked(fetchActivity).mockResolvedValue({ stored: false, events: [], next_cursor: null });
     renderPage();
 
-    await screen.findByText("Tool calls (30d)");
+    // The unstored note only renders once the stats query says so. It appears
+    // twice — the strip's note and the recent-activity empty state — hence
+    // findAllByText.
+    await screen.findAllByText(/somewhere other than its database/);
     // The three activity-derived cells go blank; the connected count does not,
     // because it comes from /api/connections rather than the audit log.
     expect(statValue("Tool calls (30d)")).toBe("—");
@@ -5133,13 +5142,20 @@ describe("Home", () => {
   });
 
   it("reports a null success rate as a dash rather than 0%", async () => {
+    // tool_calls is deliberately non-zero against a null rate. The live
+    // endpoint only returns a null rate when the window is empty, but that
+    // pairing is exactly what makes the zero-calls case untestable here: the
+    // component's pre-fetch defaults render "—" and "0" too, so the assertions
+    // would hold against a component that never fetched. A non-zero count
+    // isolates the null-rate branch and gives the test something to wait on
+    // that cannot exist before the query resolves.
     vi.mocked(fetchStats).mockResolvedValue({
-      stored: true, window_days: 30, tool_calls: 0, success_rate: null, most_used_integration: null,
+      stored: true, window_days: 30, tool_calls: 12, success_rate: null, most_used_integration: null,
     });
     renderPage();
-    await screen.findByText("Success rate (30d)");
+    await screen.findByText("12");
     expect(statValue("Success rate (30d)")).toBe("—");
-    expect(statValue("Tool calls (30d)")).toBe("0");
+    expect(statValue("Tool calls (30d)")).toBe("12");
   });
 });
 ```
