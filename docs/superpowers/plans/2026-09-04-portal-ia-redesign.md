@@ -15,7 +15,7 @@
 Every task's requirements implicitly include these.
 
 - **One radius: `6px`.** The portal overrides `--radius-sm`, `--radius`, `--radius-lg` to `6px`. `--radius-full` appears in exactly one place — the `.ui-toggle-track` — and nowhere else in `packages/portal/src/styles.css`.
-- **No `box-shadow`** anywhere in `packages/portal/src/styles.css` except `.ui-modal` and `.ui-bottom-sheet`.
+- **No `box-shadow`** anywhere in `packages/portal/src/styles.css` except `.ui-modal` and `.ui-sheet`.
 - **No literal color values.** Every color is a `var(--…)` custom property from `packages/shared/styles/tokens.css`. No hex, `rgb()`, or named color in portal CSS or in any component's inline style. The one permitted exception is `#fff` inside existing `.ui-button-primary`/`.ui-button-danger` rules, which already ship on this branch and are not in scope.
 - **Spacing only from the `--s-*` scale**: `--s-2 --s-4 --s-8 --s-12 --s-16 --s-20 --s-24 --s-32 --s-40 --s-48`. Nothing between the steps, no bare `px` gaps or paddings.
 - **Do not edit `packages/shared/styles/tokens.css`.** The docs site consumes it too. All portal-specific geometry lives in `packages/portal/src/styles.css`.
@@ -5359,8 +5359,13 @@ describe("portal stylesheet geometry", () => {
       .split("}")
       .filter((block) => /box-shadow\s*:/.test(block))
       .map((block) => block.split("{")[0].trim());
+    expect(users.length).toBeGreaterThan(0);
     for (const selector of users) {
-      expect(selector).toMatch(/ui-modal|ui-bottom-sheet/);
+      // The modal and the bottom sheet are the only things that genuinely
+      // float above the page. The sheet's class is `ui-sheet`, not
+      // `ui-bottom-sheet` — the component is named BottomSheet but its CSS
+      // is not.
+      expect(selector).toMatch(/ui-modal|ui-sheet/);
     }
   });
 
