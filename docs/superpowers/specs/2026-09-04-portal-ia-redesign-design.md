@@ -206,6 +206,13 @@ Replaces the `IntegrationDetail` modal, which is deleted.
   integration declares one.
 - **Tools** Box: header `Tools ({n})`, one row per tool — mono tool name, then
   its description.
+- **Session transfer** Box, for cookie-auth integrations only: export a captured
+  session bundle, or paste one in. This is a real feature of the modal being
+  retired, not decoration — it is what lets a capture made on a trusted machine
+  be moved into a deployment whose egress IP the provider blocks.
+- **Browser controls** Box, on the built-in `browser` integration only: open a
+  live view (optionally navigating somewhere first) and clear the persistent
+  profile. Also inherited from the retired modal.
 - Unknown `:name` renders a not-found state with a link back to `/apps`.
 
 Integrations that declare an `instance` block currently prompt through
@@ -294,13 +301,17 @@ A malformed cursor is a 400, not a silent full-table scan.
   "window_days": 30,
   "tool_calls": 1284,
   "success_rate": 0.97,
-  "most_used_integration": "jira",
-  "connected": 6
+  "most_used_integration": "jira"
 }
 ```
 
 `success_rate` is `null` when `tool_calls` is 0. `most_used_integration` is
 `null` when no row in the window carries one.
+
+This endpoint deliberately reports **no connected-integration count**. Home
+already fetches `/api/connections` for its "Your apps" section and derives the
+count from it; computing it a second time server-side would mean refactoring
+the connections route for nothing.
 
 ### When `AUDIT_LOG_DEST !== "sqlite"`
 
@@ -320,6 +331,18 @@ rather than a failure.
 | `StatStrip` | Row of label/value cells divided by vertical hairlines |
 | `EmptyState` | Centered message with an optional action, used by every list |
 | `Tabs` | `role="tablist"` text tabs with an underline active state and optional counts |
+| `PageHeader` | Page title, optional actions, optional single toolbar row |
+
+**New — supporting modules**
+
+| File | Responsibility |
+|---|---|
+| `src/components/dialogs/ConfirmDialog.tsx` | Modal standing in for `window.confirm` |
+| `src/components/dialogs/InstanceUrlDialog.tsx` | Modal standing in for `window.prompt` on self-hosted integrations |
+| `src/hooks/useConnectFlow.tsx` | The connect/disconnect state machine and its dialogs, shared by every page offering those actions |
+| `src/components/ActivityTable.tsx` | Day-grouped activity table, shared by `/activity` and Home |
+| `src/format.ts` | Timestamp and duration presentation helpers |
+| `src/mcp-config.ts` | `MCP_URL` and the MCP client config JSON, currently private to `ApiKeyPanel` |
 
 **New — `packages/portal/src/components/shell/`**
 
