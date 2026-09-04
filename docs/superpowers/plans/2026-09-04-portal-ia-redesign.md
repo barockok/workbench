@@ -5429,9 +5429,34 @@ Then change the two pill radii to the shared one:
 ```
 
 And remove the `box-shadow` declaration from any rule that is not `.ui-modal`
-or `.ui-bottom-sheet`. Run this to find them:
+or `.ui-sheet`. Run this to find them:
 
 Run: `grep -n "box-shadow" packages/portal/src/styles.css`
+
+One of those shadows is load-bearing: it is the focus ring on `.ui-input`, and
+the rule beneath it sets `outline: none`. Removing the shadow without replacing
+it leaves every text field in the portal with no keyboard-focus indicator
+beyond a 1px border tint, which the spec forbids. Add a real ring — as an
+`outline`, which is the right property for this and is not a shadow, so the
+guard test stays honest:
+
+```css
+.ui-input:focus-visible {
+  /* A ring, not a shadow: shadows are reserved for genuinely overlaid
+     surfaces, and an outline is what a focus indicator should be anyway.
+     Inset by a pixel so it reads as a ring on the field rather than a halo
+     around it. */
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+```
+
+Leave the existing `.ui-input:focus` border tint beneath it — it still serves
+mouse users, and `:focus-visible` wins for keyboard focus. `.ui-input-valid`
+and `.ui-input-error` stay border-colour-only; those states are carried by text
+elsewhere. Also give `.ui-sheet-grip` `border-radius: var(--radius)` rather than
+dropping its radius entirely — at roughly 4px tall it still reads as a rounded
+handle, and it keeps `--radius-full` down to the toggle alone.
 
 - [ ] **Step 5: Cover the real route table**
 
