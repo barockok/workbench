@@ -1511,8 +1511,14 @@ Then add both routes inside `registerApiRoutes`, immediately after the existing
       status?: string;
     };
 
+    // Only an absent or unparseable limit takes the default. Anything a caller
+    // actually sent — including 0 or a negative — is clamped into 1..100
+    // rather than silently becoming 50.
     const requested = Number(q.limit);
-    const limit = Number.isFinite(requested) && requested > 0 ? Math.min(100, Math.floor(requested)) : 50;
+    const limit =
+      q.limit === undefined || !Number.isFinite(requested)
+        ? 50
+        : Math.min(100, Math.max(1, Math.floor(requested)));
 
     let cursor: { createdAt: number; id: number } | undefined;
     if (q.cursor) {
