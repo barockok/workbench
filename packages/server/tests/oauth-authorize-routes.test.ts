@@ -13,6 +13,7 @@ vi.mock("../src/config", () => ({
 import { registerOAuthRoutes } from "../src/api/oauth-routes";
 import { registerClient } from "../src/auth/oauth-server/clients";
 import { db } from "../src/db";
+import { signSession } from "../src/auth/session";
 
 beforeEach(async () => {
   await db.exec("DELETE FROM oauth_clients");
@@ -80,5 +81,114 @@ describe("/authorize", () => {
     });
     const res = await a.inject({ method: "GET", url: `/authorize?${qs}` });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+// Starts a real /authorize flow and returns the minted ticket plus the
+// awb_oauth_binding cookie the browser would be carrying into /authorize/resume.
+async function startAuthorize(a: Awaited<ReturnType<typeof app>>, redirectUri: string) {
+  const c = await registerClient({ redirect_uris: [redirectUri] });
+  const qs = new URLSearchParams({
+    response_type: "code", client_id: c.client_id, redirect_uri: redirectUri,
+    code_challenge: "abc", code_challenge_method: "S256", scope: "mcp", state: "xyz",
+  });
+  const res = await a.inject({ method: "GET", url: `/authorize?${qs}` });
+  const ticket = new URL(res.headers.location as string).searchParams.get("ticket")!;
+  const setCookie = res.headers["set-cookie"] as string;
+  const cookie = setCookie.split(";")[0]; // "awb_oauth_binding=<value>"
+  return { ticket, cookie };
+}
+
+describe("/authorize/resume", () => {
+  it("redeems an already-signed-in session and redirects to the client's redirect_uri", async () => {
+    const a = await app();
+    const { ticket, cookie } = await startAuthorize(a, "http://127.0.0.1:33418/cb");
+    const token = await signSession({ userId: "user-1", email: "dev@example.com" });
+
+    const res = await a.inject({
+      method: "POST",
+      url: "/authorize/resume",
+      headers: { cookie, "content-type": "application/x-www-form-urlencoded" },
+      payload: `ticket=${ticket}&token=${token}`,
+    });
+
+    expect(res.statusCode).toBe(302);
+    const redirect = new URL(res.headers.location as string);
+    expect(redirect.origin + redirect.pathname).toBe("http://127.0.0.1:33418/cb");
+    expect(redirect.searchParams.get("code")).toBeTruthy();
+  });
+
+  it("sends the human back to the choice page when the session token is invalid", async () => {
+    const a = await app();
+    const { ticket, cookie } = await startAuthorize(a, "http://127.0.0.1:33418/cb");
+
+    const res = await a.inject({
+      method: "POST",
+      url: "/authorize/resume",
+      headers: { cookie, "content-type": "application/x-www-form-urlencoded" },
+      payload: `ticket=${ticket}&token=not-a-real-token`,
+    });
+
+    expect(res.statusCode).toBe(302);
+    const redirect = new URL(res.headers.location as string);
+    expect(redirect.origin + redirect.pathname).toBe("http://localhost:5173/authorize/choose");
+    expect(redirect.searchParams.get("ticket")).toBe(ticket);
+    expect(redirect.searchParams.get("error")).toBeTruthy();
+  });
+
+  it("sends the human back to the choice page when the binding cookie is missing (login-CSRF)", async () => {
+    const a = await app();
+    const { ticket } = await startAuthorize(a, "http://127.0.0.1:33418/cb");
+    const token = await signSession({ userId: "user-1", email: "dev@example.com" });
+
+    const res = await a.inject({
+      method: "POST",
+      url: "/authorize/resume",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: `ticket=${ticket}&token=${token}`,
+    });
+
+    expect(res.statusCode).toBe(302);
+    const redirect = new URL(res.headers.location as string);
+    expect(redirect.origin + redirect.pathname).toBe("http://localhost:5173/authorize/choose");
+    expect(redirect.searchParams.get("error")).toBeTruthy();
+    // single-use: the pending row must be gone even though resume failed
+    const row = await db.get<{ n: number }>("SELECT COUNT(*) AS n FROM pending_auth WHERE state = ?", [ticket]);
+    expect(Number(row?.n)).toBe(0);
+  });
+
+  it("400s when the ticket is missing entirely", async () => {
+    const a = await app();
+    const token = await signSession({ userId: "user-1", email: "dev@example.com" });
+    const res = await a.inject({
+      method: "POST",
+      url: "/authorize/resume",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      payload: `token=${token}`,
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it("is single-use: a second resume with the same ticket fails even with a fresh valid session", async () => {
+    const a = await app();
+    const { ticket, cookie } = await startAuthorize(a, "http://127.0.0.1:33418/cb");
+    const token = await signSession({ userId: "user-1", email: "dev@example.com" });
+
+    const first = await a.inject({
+      method: "POST", url: "/authorize/resume",
+      headers: { cookie, "content-type": "application/x-www-form-urlencoded" },
+      payload: `ticket=${ticket}&token=${token}`,
+    });
+    expect(first.statusCode).toBe(302);
+    expect(new URL(first.headers.location as string).searchParams.get("code")).toBeTruthy();
+
+    const second = await a.inject({
+      method: "POST", url: "/authorize/resume",
+      headers: { cookie, "content-type": "application/x-www-form-urlencoded" },
+      payload: `ticket=${ticket}&token=${token}`,
+    });
+    expect(second.statusCode).toBe(302);
+    const secondRedirect = new URL(second.headers.location as string);
+    expect(secondRedirect.origin + secondRedirect.pathname).toBe("http://localhost:5173/authorize/choose");
   });
 });
