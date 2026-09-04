@@ -96,19 +96,23 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     return { providers };
   });
 
-  app.get("/api/auth/google", async (_request, reply) => {
+  app.get("/api/auth/google", async (request, reply) => {
     if (!config.GOOGLE_CLIENT_ID) {
       return reply.status(503).send({ error: "Google SSO not configured" });
     }
-    const url = await buildAuthUrl();
+    // The choice page passes the /authorize ticket through here so the SSO
+    // callback knows which pending agent-auth flow to resume.
+    const { ticket } = request.query as { ticket?: string };
+    const url = await buildAuthUrl(ticket);
     return { url };
   });
 
-  app.get("/api/auth/keycloak", async (_request, reply) => {
+  app.get("/api/auth/keycloak", async (request, reply) => {
     if (!isKeycloakConfigured()) {
       return reply.status(503).send({ error: "Keycloak SSO not configured" });
     }
-    const url = await buildKeycloakAuthUrl();
+    const { ticket } = request.query as { ticket?: string };
+    const url = await buildKeycloakAuthUrl(ticket);
     return { url };
   });
 
@@ -118,6 +122,21 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     if (!code) return reply.status(400).send({ error: "Missing code" });
     try {
       const { userId, email } = await handleKeycloakCallback(code, state);
+
+      // If SSO was started by an OAuth /authorize, state carries ".<ticket>".
+      const dot = state.indexOf(".");
+      const oauthTicket = dot === -1 ? null : state.slice(dot + 1);
+      if (oauthTicket) {
+        const cookie = request.headers.cookie ?? "";
+        const m = cookie.match(/(?:^|;\s*)awb_oauth_binding=([^;]+)/);
+        const binding = m ? m[1] : undefined;
+        const redirectUrl = await resumeAuthorize(oauthTicket, userId, binding);
+        // Clear the one-time binding cookie.
+        reply.header("Set-Cookie", "awb_oauth_binding=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
+        if (redirectUrl) return reply.redirect(redirectUrl);
+        // binding/ticket invalid -> fall through to portal login
+      }
+
       const token = await signSession({ userId, email });
       const redirect = new URL(config.PORTAL_URL);
       redirect.hash = `token=${token}`;
