@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Connect from "./pages/Connect";
 import BrowserView from "./pages/BrowserView";
+import AuthorizeChoose from "./pages/AuthorizeChoose";
 
 function Boot({ label = "Loading" }: { label?: string }) {
   return (
@@ -37,6 +38,10 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      {/* Public: handles both the signed-out (show a picker) and signed-in
+          (silently resume) cases itself — RequireAuth's unconditional
+          redirect-to-/login doesn't fit either branch. */}
+      <Route path="/authorize/choose" element={<AuthorizeChoose />} />
       <Route path="/connect/:integration" element={<RequireAuth><Connect /></RequireAuth>} />
       <Route path="/browser" element={<RequireAuth><BrowserView /></RequireAuth>} />
       <Route

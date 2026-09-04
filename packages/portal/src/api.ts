@@ -1,4 +1,11 @@
 const API_URL = import.meta.env.VITE_API_URL || "";
+// The server's own absolute origin, ONLY for the one case that needs a real
+// cross-origin browser navigation rather than a fetch (see AuthorizeChoose's
+// resume form) — same "" = same-origin default as API_URL, but this value
+// must come from build-time config alone, never from a URL query param: it
+// becomes a POST target for a live session token, and attacker-controlled
+// input must never decide where a credential gets sent.
+export const SERVER_URL = import.meta.env.VITE_SERVER_URL || "";
 
 function getHeaders(): HeadersInit {
   const token = localStorage.getItem("awb_token");
@@ -82,14 +89,18 @@ export async function fetchProviders(): Promise<{ providers: string[] }> {
   return res.json();
 }
 
-export async function fetchAuthUrl(): Promise<{ url: string }> {
-  const res = await fetch(`${API_URL}/api/auth/google`);
+// `ticket` carries an in-flight agent /authorize request through SSO so its
+// callback knows which pending flow to resume, instead of a normal portal login.
+export async function fetchAuthUrl(ticket?: string): Promise<{ url: string }> {
+  const qs = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
+  const res = await fetch(`${API_URL}/api/auth/google${qs}`);
   if (!res.ok) throw new Error("SSO not configured");
   return res.json();
 }
 
-export async function fetchKeycloakAuthUrl(): Promise<{ url: string }> {
-  const res = await fetch(`${API_URL}/api/auth/keycloak`);
+export async function fetchKeycloakAuthUrl(ticket?: string): Promise<{ url: string }> {
+  const qs = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
+  const res = await fetch(`${API_URL}/api/auth/keycloak${qs}`);
   if (!res.ok) throw new Error("Keycloak SSO not configured");
   return res.json();
 }
