@@ -977,3 +977,123 @@ body {
   font-variant-numeric: tabular-nums;
   color: var(--text-3);
 }
+
+/* --- Shell --- */
+.wb-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+}
+
+.wb-sidebar {
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  padding: var(--s-8);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.wb-brand {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--s-8);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.wb-nav {
+  list-style: none;
+  display: grid;
+  gap: var(--s-2);
+}
+
+.wb-nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+  height: 32px;
+  padding: 0 var(--s-8);
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.wb-nav-item:hover { background: var(--bg-sunk); color: var(--text); }
+
+.wb-nav-item-active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.wb-nav-icon { flex: none; }
+
+.wb-sidebar-foot {
+  margin-top: auto;
+  display: grid;
+  gap: var(--s-2);
+  border-top: 1px solid var(--border);
+  padding-top: var(--s-8);
+}
+
+.wb-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-8);
+  padding: var(--s-8);
+}
+
+.wb-user-email {
+  font-size: 12px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-content {
+  padding: var(--s-24);
+  max-width: 1080px;
+  width: 100%;
+}
+
+/* Below this width the sidebar becomes a top bar and the nav scrolls sideways. */
+@media (max-width: 900px) {
+  .wb-shell { grid-template-columns: 1fr; }
+
+  .wb-sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--s-12);
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .wb-brand { height: auto; }
+  .wb-nav { grid-auto-flow: column; gap: var(--s-4); }
+
+  .wb-sidebar-foot {
+    margin-top: 0;
+    margin-left: auto;
+    grid-auto-flow: column;
+    align-items: center;
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .wb-user { padding: 0; }
+  .wb-user-email { display: none; }
+  .wb-content { padding: var(--s-16); }
+}
