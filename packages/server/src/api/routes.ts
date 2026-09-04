@@ -26,6 +26,13 @@ import { markConnected, startReaper, redeemPending, getPending, createPending } 
 import { resumeAuthorize } from "../auth/oauth-server/resume";
 import { listAgents, revokeAgent } from "../auth/oauth-server/agents";
 import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
+import {
+  auditStored,
+  encodeCursor,
+  decodeCursor,
+  listAuditEvents,
+  summarizeAudit,
+} from "../audit/query";
 
 function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
@@ -771,6 +778,88 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(401).send({ error: "Unauthorized" });
     }
     return { agents: await listAgents(user.userId) };
+  });
+
+  // How far back /api/stats looks. One value, not a query parameter: the
+  // number is a product decision, and letting a caller widen it turns a
+  // constant-cost summary into an unbounded scan.
+  const STATS_WINDOW_DAYS = 30;
+
+  // Tool-call history for the signed-in human. The user id comes from the
+  // session and is never read from input, so asking for someone else's rows
+  // is not expressible.
+  app.get("/api/activity", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    if (!auditStored()) {
+      return { stored: false, events: [], next_cursor: null };
+    }
+
+    const q = request.query as {
+      limit?: string;
+      cursor?: string;
+      integration?: string;
+      status?: string;
+    };
+
+    const requested = Number(q.limit);
+    const limit =
+      q.limit === undefined || !Number.isFinite(requested)
+        ? 50
+        : Math.min(100, Math.max(1, Math.floor(requested)));
+
+    let cursor: { createdAt: number; id: number } | undefined;
+    if (q.cursor) {
+      const decoded = decodeCursor(q.cursor);
+      if (!decoded) {
+        return reply.status(400).send({ error: "invalid_cursor" });
+      }
+      cursor = decoded;
+    }
+
+    const status = q.status === "success" || q.status === "error" ? q.status : undefined;
+
+    // Fetch one extra row: its presence is what tells us another page exists,
+    // without a second COUNT query.
+    const rows = await listAuditEvents({
+      userId: user.userId,
+      limit: limit + 1,
+      cursor,
+      integration: q.integration,
+      status,
+    });
+
+    const events = rows.slice(0, limit);
+    const last = events[events.length - 1];
+    const next_cursor = rows.length > limit && last ? encodeCursor(last.created_at, last.id) : null;
+
+    return { stored: true, events, next_cursor };
+  });
+
+  app.get("/api/stats", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    if (!auditStored()) {
+      return {
+        stored: false,
+        window_days: STATS_WINDOW_DAYS,
+        tool_calls: 0,
+        success_rate: null,
+        most_used_integration: null,
+      };
+    }
+    const s = await summarizeAudit(user.userId, STATS_WINDOW_DAYS);
+    return {
+      stored: true,
+      window_days: STATS_WINDOW_DAYS,
+      tool_calls: s.toolCalls,
+      success_rate: s.successRate,
+      most_used_integration: s.mostUsedIntegration,
+    };
   });
 
   // Revoke an agent: delete the user's refresh tokens for that client (soft
