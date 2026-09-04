@@ -1249,3 +1249,44 @@ body {
 }
 
 .wb-ok { color: var(--ok); font-size: 12px; }
+
+/* --- Activity --- */
+.wb-day-row th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--bg-sunk);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: var(--s-4) var(--s-12);
+}
+
+.wb-cell-time {
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wb-cell-error {
+  margin-top: var(--s-2);
+  font-size: 12px;
+  color: var(--danger);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+.wb-status-ok { color: var(--ok); white-space: nowrap; }
+.wb-status-bad { color: var(--danger); white-space: nowrap; }
+
+.wb-load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--s-16);
+}
