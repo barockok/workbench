@@ -29,6 +29,12 @@ vi.mock("../src/auth/google", () => ({
   handleCallback: vi.fn(),
 }));
 
+vi.mock("../src/auth/keycloak", () => ({
+  isKeycloakConfigured: vi.fn(() => true),
+  buildAuthUrl: vi.fn(() => "https://keycloak.example.com/oauth?test=1"),
+  handleCallback: vi.fn(),
+}));
+
 vi.mock("../src/auth/plugin-oauth", () => ({
   buildPluginAuthUrl: vi.fn(() => "https://example.com/oauth?plugin=1"),
   handlePluginCallback: vi.fn(),
@@ -105,6 +111,23 @@ async function buildApp() {
   return app;
 }
 
+// Seeds a pending_auth row shaped like one /authorize would have created, so a
+// callback's state=`<base>.<ticket>` can resume it — mirrors oauth-resume.test.ts.
+async function seedOAuthAuthorizeTicket(ticket: string, binding: string) {
+  const now = Math.floor(Date.now() / 1000);
+  await db.run(
+    "INSERT INTO pending_auth (state, user_id, integration, expires_at, session_data) VALUES (?, ?, ?, ?, ?)",
+    [
+      ticket, "", "__oauth_authorize__", now + 600,
+      JSON.stringify({
+        clientId: "c1", redirectUri: "http://127.0.0.1:33418/cb",
+        codeChallenge: "challenge", scope: "mcp", state: "client-state", resource: "http://x/mcp",
+        binding,
+      }),
+    ]
+  );
+}
+
 describe("API routes", () => {
   beforeEach(() => {
     db.exec("DELETE FROM users");
@@ -165,6 +188,56 @@ describe("API routes", () => {
       const res = await app.inject({ method: "GET", url: "/api/auth/google/callback?code=abc&state=xyz" });
       expect(res.statusCode).toBe(400);
       expect(JSON.parse(res.body).error).toBe("Invalid state");
+    });
+
+    it("resumes a pending /authorize ticket instead of a normal portal login", async () => {
+      const { handleCallback } = await import("../src/auth/google");
+      vi.mocked(handleCallback).mockResolvedValue({ userId: "user-1", email: "test@example.com" });
+      await seedOAuthAuthorizeTicket("tkt-google", "bind-google");
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/google/callback?code=abc&state=base.tkt-google",
+        headers: { cookie: "awb_oauth_binding=bind-google" },
+      });
+      expect(res.statusCode).toBe(302);
+      const redirect = new URL(res.headers.location as string);
+      expect(redirect.origin + redirect.pathname).toBe("http://127.0.0.1:33418/cb");
+      expect(redirect.searchParams.get("code")).toBeTruthy();
+    });
+  });
+
+  describe("GET /api/auth/keycloak/callback", () => {
+    it("redirects with token on success", async () => {
+      const { handleCallback } = await import("../src/auth/keycloak");
+      vi.mocked(handleCallback).mockResolvedValue({ userId: "user-1", email: "test@example.com" });
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/auth/keycloak/callback?code=abc&state=xyz" });
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toContain("token=signed-jwt-token");
+    });
+
+    it("returns 400 on provider error", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/auth/keycloak/callback?error=access_denied" });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error).toContain("access_denied");
+    });
+
+    it("resumes a pending /authorize ticket instead of a normal portal login", async () => {
+      const { handleCallback } = await import("../src/auth/keycloak");
+      vi.mocked(handleCallback).mockResolvedValue({ userId: "user-1", email: "test@example.com" });
+      await seedOAuthAuthorizeTicket("tkt-keycloak", "bind-keycloak");
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/keycloak/callback?code=abc&state=base.tkt-keycloak",
+        headers: { cookie: "awb_oauth_binding=bind-keycloak" },
+      });
+      expect(res.statusCode).toBe(302);
+      const redirect = new URL(res.headers.location as string);
+      expect(redirect.origin + redirect.pathname).toBe("http://127.0.0.1:33418/cb");
+      expect(redirect.searchParams.get("code")).toBeTruthy();
     });
   });
 
