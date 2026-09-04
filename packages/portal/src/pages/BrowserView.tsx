@@ -47,7 +47,7 @@ export default function BrowserView() {
       <div style={{ padding: 0, background: "#000", marginTop: "var(--s-12)" }}>
         <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
       </div>
-      {error && <div className="ui-form-error" style={{ marginTop: "var(--s-12)" }}>ERR — {error}</div>}
+      {error && <div className="ui-form-error" style={{ marginTop: "var(--s-12)" }}>{error}</div>}
     </Modal>
   );
 }
