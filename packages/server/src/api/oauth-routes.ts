@@ -7,7 +7,8 @@ import { issueRefreshToken, rotateRefreshToken } from "../auth/oauth-server/refr
 import { signAccessToken } from "../auth/oauth-server/tokens";
 import { config } from "../config";
 import { db } from "../db";
-import { buildAuthUrl } from "../auth/google";
+import { resumeAuthorize } from "../auth/oauth-server/resume";
+import { verifySession } from "../auth/session";
 
 export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
   if (!app.hasContentTypeParser("application/x-www-form-urlencoded")) {
@@ -53,7 +54,8 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send({ error: "invalid_request", error_description: "PKCE S256 required" });
     }
 
-    // Stash the validated request under a ticket; resume after Google SSO.
+    // Stash the validated request under a ticket; resume after the human picks
+    // (or is silently carried through, if already signed in) a workbench SSO provider.
     const ticket = crypto.randomBytes(16).toString("hex");
     // Bind this flow to the initiating browser (prevents login CSRF).
     const binding = crypto.randomBytes(16).toString("hex");
@@ -74,14 +76,22 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       ]
     );
 
-    // Bind this flow to the initiating browser. SameSite=Lax so it's sent on
-    // Google's top-level redirect back to our callback. Secure on https origins.
+    // Bind this flow to the initiating browser. SameSite=Lax so it's still sent
+    // on a top-level redirect back to our own origin (an SSO callback, or the
+    // /authorize/resume form-post below) — but never on a cross-site fetch, which
+    // is what makes it a login-CSRF defense rather than just a session id.
+    // Secure on https origins.
     const secure = config.SERVER_PUBLIC_URL.startsWith("https://") ? "; Secure" : "";
     reply.header(
       "Set-Cookie",
       `awb_oauth_binding=${binding}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax${secure}`
     );
-    return reply.redirect(await buildAuthUrl(ticket));
+    // Land on the portal's provider-choice page rather than jumping straight to
+    // one SSO provider — the portal decides there whether to show a choice or
+    // (if the human is already signed in) silently carry the flow through.
+    const choose = new URL("/authorize/choose", config.PORTAL_URL);
+    choose.searchParams.set("ticket", ticket);
+    return reply.redirect(choose.toString());
   });
 
   app.post("/token", async (request, reply) => {

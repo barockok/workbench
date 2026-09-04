@@ -22,7 +22,7 @@ beforeEach(async () => {
 async function app() { const a = Fastify(); await registerOAuthRoutes(a); return a; }
 
 describe("/authorize", () => {
-  it("302s to Google SSO and stores the pending request", async () => {
+  it("302s to the portal's provider-choice landing page and stores the pending request", async () => {
     const c = await registerClient({ redirect_uris: ["http://127.0.0.1:33418/cb"] });
     const a = await app();
     const qs = new URLSearchParams({
@@ -31,12 +31,24 @@ describe("/authorize", () => {
     });
     const res = await a.inject({ method: "GET", url: `/authorize?${qs}` });
     expect(res.statusCode).toBe(302);
-    expect(res.headers.location).toContain("accounts.google.com");
-    // a pending authorize row was stored
-    const row = await db.get<{ n: number }>(
-      "SELECT COUNT(*) AS n FROM pending_auth WHERE integration = '__oauth_authorize__'"
+    const location = new URL(res.headers.location as string);
+    expect(location.origin + location.pathname).toBe("http://localhost:5173/authorize/choose");
+    // a pending authorize row was stored, and its ticket is the one handed to the browser
+    const row = await db.get<{ state: string }>(
+      "SELECT state FROM pending_auth WHERE integration = '__oauth_authorize__'"
     );
-    expect(Number(row?.n)).toBe(1);
+    expect(row?.state).toBe(location.searchParams.get("ticket"));
+  });
+
+  it("still sets the login-CSRF binding cookie on the way to the choice page", async () => {
+    const c = await registerClient({ redirect_uris: ["http://127.0.0.1:33418/cb"] });
+    const a = await app();
+    const qs = new URLSearchParams({
+      response_type: "code", client_id: c.client_id, redirect_uri: "http://127.0.0.1:33418/cb",
+      code_challenge: "abc", code_challenge_method: "S256",
+    });
+    const res = await a.inject({ method: "GET", url: `/authorize?${qs}` });
+    expect(res.headers["set-cookie"]).toMatch(/^awb_oauth_binding=/);
   });
 
   it("400s on an unregistered client", async () => {
