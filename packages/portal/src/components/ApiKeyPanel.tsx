@@ -2,18 +2,18 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiKeyStatus, mintApiKey, revokeApiKey, revealApiKey } from "../api";
 import { MCP_URL, API_KEY_PLACEHOLDER, mcpConfigFor } from "../mcp-config";
-import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 function maskKey(k: string): string {
   return "•".repeat(Math.max(8, k.length - 4)) + k.slice(-4);
 }
 
+export function useApiKeyStatus() {
+  return useQuery({ queryKey: ["api-key-status"], queryFn: getApiKeyStatus });
+}
+
 export default function ApiKeyPanel() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["api-key-status"],
-    queryFn: getApiKeyStatus,
-  });
+  const { data } = useApiKeyStatus();
 
   // Plaintext key. Held after minting; also refetchable via reveal.
   const [revealed, setRevealed] = useState<string | null>(null);
@@ -81,14 +81,7 @@ export default function ApiKeyPanel() {
   const copyKey = revealed ?? API_KEY_PLACEHOLDER;
 
   return (
-    <section className="apikey-panel">
-      <div className="apikey-head">
-        <div className="eyebrow"><span className="dot" /> // mcp ── access key</div>
-        <Badge variant={hasKey ? "green" : "neutral"}>
-          {isLoading ? "…" : hasKey ? "Key active" : "No key"}
-        </Badge>
-      </div>
-
+    <div className="wb-row-stack apikey-body">
       <p className="apikey-blurb">
         Send this key in the <code>x-workbench-api-key</code> header to{" "}
         <code>{MCP_URL}</code>. Reveal it anytime below.
@@ -139,6 +132,6 @@ export default function ApiKeyPanel() {
           </Button>
         )}
       </div>
-    </section>
+    </div>
   );
 }
