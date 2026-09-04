@@ -75,7 +75,6 @@ export default function AuthorizeChoose() {
 
       <section className="login-form">
         <div className="login-card">
-          <div className="login-eyebrow">Authorize agent</div>
           <h1 className="login-title">Approve agent access</h1>
           <p className="login-sub">
             An agent is requesting access to your workbench. Sign in to continue.
