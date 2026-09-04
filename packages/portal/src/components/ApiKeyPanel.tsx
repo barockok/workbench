@@ -1,31 +1,11 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiKeyStatus, mintApiKey, revokeApiKey, revealApiKey } from "../api";
+import { MCP_URL, API_KEY_PLACEHOLDER, mcpConfigFor } from "../mcp-config";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
-
-// Server serves the portal, so its origin is also the /mcp origin.
-const MCP_URL = `${window.location.origin}/mcp`;
-const PLACEHOLDER = "YOUR_API_KEY";
-
 function maskKey(k: string): string {
   return "•".repeat(Math.max(8, k.length - 4)) + k.slice(-4);
-}
-
-// Generic MCP client config — works with any MCP-compatible client.
-function configFor(key: string): string {
-  return JSON.stringify(
-    {
-      mcpServers: {
-        workbench: {
-          url: MCP_URL,
-          headers: { "x-workbench-api-key": key },
-        },
-      },
-    },
-    null,
-    2
-  );
 }
 
 export default function ApiKeyPanel() {
@@ -96,9 +76,9 @@ export default function ApiKeyPanel() {
 
   // The key value to render in the config snippet: real (masked or shown) when
   // freshly minted, else a placeholder so the snippet is always present.
-  const snippetKey = revealed ? (show ? revealed : maskKey(revealed)) : PLACEHOLDER;
+  const snippetKey = revealed ? (show ? revealed : maskKey(revealed)) : API_KEY_PLACEHOLDER;
   // Copy always uses the real key when we have it.
-  const copyKey = revealed ?? PLACEHOLDER;
+  const copyKey = revealed ?? API_KEY_PLACEHOLDER;
 
   return (
     <section className="apikey-panel">
@@ -135,9 +115,9 @@ export default function ApiKeyPanel() {
       {(revealed || hasKey) && (
         <div className="apikey-reveal" style={{ marginTop: 10 }}>
           <div className="apikey-snippet-label">MCP client config (JSON):</div>
-          <pre className="apikey-snippet"><code>{configFor(snippetKey)}</code></pre>
+          <pre className="apikey-snippet"><code>{mcpConfigFor(snippetKey)}</code></pre>
           <div className="apikey-actions">
-            <Button variant="ghost" onClick={() => copy(configFor(copyKey), "cfg")}>
+            <Button variant="ghost" onClick={() => copy(mcpConfigFor(copyKey), "cfg")}>
               {copied === "cfg" ? "Copied" : "Copy config"}
             </Button>
             {!revealed && (
