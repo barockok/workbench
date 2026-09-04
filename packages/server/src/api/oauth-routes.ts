@@ -91,6 +91,10 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     // (if the human is already signed in) silently carry the flow through.
     const choose = new URL("/authorize/choose", config.PORTAL_URL);
     choose.searchParams.set("ticket", ticket);
+    // The portal and server can be split across ports/domains — hand over our
+    // own absolute origin so the choice page's resume form posts back here,
+    // not to itself (which would miss the awb_oauth_binding cookie above).
+    choose.searchParams.set("resume", new URL("/authorize/resume", config.SERVER_PUBLIC_URL).toString());
     return reply.redirect(choose.toString());
   });
 

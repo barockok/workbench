@@ -39,6 +39,10 @@ describe("/authorize", () => {
       "SELECT state FROM pending_auth WHERE integration = '__oauth_authorize__'"
     );
     expect(row?.state).toBe(location.searchParams.get("ticket"));
+    // the choice page can't otherwise know the server's own absolute origin
+    // (portal and server are commonly split across ports/domains) — hand it
+    // over explicitly so the resume form posts back to the right place.
+    expect(location.searchParams.get("resume")).toBe("http://localhost:3000/authorize/resume");
   });
 
   it("still sets the login-CSRF binding cookie on the way to the choice page", async () => {
