@@ -32,23 +32,18 @@ beforeEach(() => {
   sessionStorage.clear();
 });
 
-// Login.tsx does not yet render a "Sign in" heading (Task 17 establishes
-// that); today it renders <h1 className="login-title">Identify<br
-// />terminal<em>.</em></h1>. So this asserts on "Identify" instead. Task 17's
-// implementer should tighten this back to a "Sign in" heading-role query once
-// that heading exists.
 describe("the real route table", () => {
   it("leaves /authorize/choose ungated — an agent-initiated flow must not bounce to /login", async () => {
     renderAt("/authorize/choose?ticket=abc123");
     // The page renders its own signed-out picker rather than redirecting.
     expect(await screen.findByText(/Approve agent access/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Identify/i)).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Sign in" })).toBeNull();
   });
 
   it("gates every shell route behind a session", async () => {
     for (const path of ["/", "/apps", "/apps/acme", "/agents", "/activity", "/settings"]) {
       const { unmount } = renderAt(path);
-      expect(await screen.findByText(/Identify/i)).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
       unmount();
     }
   });
@@ -56,14 +51,14 @@ describe("the real route table", () => {
   it("gates the full-bleed routes too", async () => {
     for (const path of ["/connect/acme", "/browser"]) {
       const { unmount } = renderAt(path);
-      expect(await screen.findByText(/Identify/i)).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
       unmount();
     }
   });
 
   it("remembers where an unauthenticated visitor was headed", async () => {
     renderAt("/apps/acme");
-    await screen.findByText(/Identify/i);
+    await screen.findByRole("heading", { name: "Sign in" });
     expect(sessionStorage.getItem("awb_return_to")).toBe("/apps/acme");
   });
 
@@ -71,6 +66,6 @@ describe("the real route table", () => {
     renderAt("/no-such-page");
     // Unauthenticated, so the redirect lands on the login page — the point is
     // that it redirects at all instead of rendering a blank route.
-    expect(await screen.findByText(/Identify/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
   });
 });

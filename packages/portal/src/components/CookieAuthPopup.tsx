@@ -61,7 +61,7 @@ export default function CookieAuthPopup({ integration, cdpProxyUrl, cdpToken, se
         <CdpScreencast cdpProxyUrl={cdpProxyUrl} sessionId={sessionId} cdpToken={cdpToken} width={1024} />
       </div>
 
-      {error && <div className="ui-form-error" style={{ marginTop: "var(--s-12)" }}>ERR — {error}</div>}
+      {error && <div className="ui-form-error" style={{ marginTop: "var(--s-12)" }}>{error}</div>}
     </Modal>
   );
 }

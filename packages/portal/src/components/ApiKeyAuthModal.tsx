@@ -100,7 +100,7 @@ export default function ApiKeyAuthModal({ integration, displayName, fields, onCl
         ))}
       </div>
 
-      {error && <div className="ui-form-error">ERR — {error}</div>}
+      {error && <div className="ui-form-error">{error}</div>}
     </Modal>
   );
 }

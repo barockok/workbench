@@ -45,40 +45,22 @@ export default function Login() {
   return (
     <div className="login-shell">
       <aside className="login-art">
-        <div className="meta">
-          <span>workbench<span className="sep"> / </span><b>v0.1</b></span>
-          <span className="sep">·</span>
-          <span>mcp aggregator</span>
-        </div>
-
+        <div className="login-art-brand">workbench</div>
         <h1 className="login-art-title">Connect your agent's toolbelt.</h1>
-
-        <div className="specs">
-          <div>
-            <label>TOOLS</label>
-            <strong>71</strong>
-          </div>
-          <div>
-            <label>PLUGINS</label>
-            <strong>08</strong>
-          </div>
-          <div>
-            <label>NODE</label>
-            <strong>online</strong>
-          </div>
-        </div>
+        <p className="login-art-sub">
+          One sign-in pairs your agent sessions to the tools you already use. Credentials stay encrypted on
+          your own instance.
+        </p>
       </aside>
 
       <section className="login-form">
         <div className="login-card">
-          <div className="login-eyebrow">// access ── 01</div>
-          <h1 className="login-title">Identify<br />terminal<em>.</em></h1>
+          <h1 className="login-title">Sign in</h1>
           <p className="login-sub">
-            Sign in to pair your agent sessions to authorized SaaS tools —
-            one identity, one console.
+            Choose how you want to identify yourself to this workbench.
           </p>
 
-          {error && <div className="ui-form-error">ERR — {error}</div>}
+          {error && <div className="ui-form-error">{error}</div>}
 
           {providers.includes("google") && (
             <Button onClick={handleGoogle} variant="outline" size="lg" type="button">
@@ -103,12 +85,8 @@ export default function Login() {
           )}
 
           {providers.length === 0 && (
-            <div className="ui-form-error">ERR — No auth provider configured</div>
+            <div className="ui-form-error">No auth provider configured</div>
           )}
-
-          <div className="login-fine">
-            AES-256-GCM <span>·</span> encrypted at rest <span>·</span> self-hosted
-          </div>
         </div>
       </section>
     </div>

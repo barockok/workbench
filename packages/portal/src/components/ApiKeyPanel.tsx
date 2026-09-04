@@ -87,7 +87,7 @@ export default function ApiKeyPanel() {
         <code>{MCP_URL}</code>. Reveal it anytime below.
       </p>
 
-      {error && <div className="ui-form-error" style={{ marginBottom: 12 }}>ERR — {error}</div>}
+      {error && <div className="ui-form-error" style={{ marginBottom: 12 }}>{error}</div>}
 
       {/* Freshly minted key — masked by default, with Show toggle + copy. */}
       {revealed && (
