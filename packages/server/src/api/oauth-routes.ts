@@ -7,7 +7,8 @@ import { issueRefreshToken, rotateRefreshToken } from "../auth/oauth-server/refr
 import { signAccessToken } from "../auth/oauth-server/tokens";
 import { config } from "../config";
 import { db } from "../db";
-import { buildAuthUrl } from "../auth/google";
+import { resumeAuthorize } from "../auth/oauth-server/resume";
+import { verifySession } from "../auth/session";
 
 export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
   if (!app.hasContentTypeParser("application/x-www-form-urlencoded")) {
@@ -53,7 +54,8 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send({ error: "invalid_request", error_description: "PKCE S256 required" });
     }
 
-    // Stash the validated request under a ticket; resume after Google SSO.
+    // Stash the validated request under a ticket; resume after the human picks
+    // (or is silently carried through, if already signed in) a workbench SSO provider.
     const ticket = crypto.randomBytes(16).toString("hex");
     // Bind this flow to the initiating browser (prevents login CSRF).
     const binding = crypto.randomBytes(16).toString("hex");
@@ -74,14 +76,66 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
       ]
     );
 
-    // Bind this flow to the initiating browser. SameSite=Lax so it's sent on
-    // Google's top-level redirect back to our callback. Secure on https origins.
+    // Bind this flow to the initiating browser. SameSite=Lax so it's still sent
+    // on a top-level redirect back to our own origin (an SSO callback, or the
+    // /authorize/resume form-post below) — but never on a cross-site fetch, which
+    // is what makes it a login-CSRF defense rather than just a session id.
+    // Secure on https origins.
     const secure = config.SERVER_PUBLIC_URL.startsWith("https://") ? "; Secure" : "";
     reply.header(
       "Set-Cookie",
       `awb_oauth_binding=${binding}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax${secure}`
     );
-    return reply.redirect(await buildAuthUrl(ticket));
+    // Land on the portal's provider-choice page rather than jumping straight to
+    // one SSO provider — the portal decides there whether to show a choice or
+    // (if the human is already signed in) silently carry the flow through.
+    // Deliberately NOT handing over our own origin as a query param here: the
+    // resume form below posts a live session token, so its target must come
+    // from the portal's own build-time config (VITE_SERVER_URL), never from
+    // anything in this URL — a query param is exactly what an attacker's
+    // crafted link controls, and a bearer token is exactly what must never
+    // follow attacker-controlled input to an attacker-controlled destination.
+    const choose = new URL("/authorize/choose", config.PORTAL_URL);
+    choose.searchParams.set("ticket", ticket);
+    return reply.redirect(choose.toString());
+  });
+
+  // Silently carries an /authorize flow through for a human who's already
+  // signed in to the portal — the choice page auto-submits this as a real
+  // top-level form POST (not a fetch) specifically so the browser attaches
+  // awb_oauth_binding automatically; a cross-origin fetch never could, and
+  // that's what makes this safe against login CSRF instead of just convenient.
+  app.post("/authorize/resume", async (request, reply) => {
+    const b = (request.body ?? {}) as { ticket?: string; token?: string };
+    if (!b.ticket) {
+      return reply.status(400).send({ error: "invalid_request", error_description: "ticket required" });
+    }
+
+    const backToChoice = (errorCode: string) => {
+      const choose = new URL("/authorize/choose", config.PORTAL_URL);
+      choose.searchParams.set("ticket", b.ticket!);
+      choose.searchParams.set("error", errorCode);
+      return reply.redirect(choose.toString());
+    };
+
+    let userId: string;
+    try {
+      if (!b.token) throw new Error("no token");
+      userId = (await verifySession(b.token)).userId;
+    } catch {
+      return backToChoice("session_invalid");
+    }
+
+    const cookie = request.headers.cookie ?? "";
+    const m = cookie.match(/(?:^|;\s*)awb_oauth_binding=([^;]+)/);
+    const binding = m ? m[1] : undefined;
+
+    const redirectUrl = await resumeAuthorize(b.ticket, userId, binding);
+    // Clear the one-time binding cookie either way — resumeAuthorize already
+    // consumed the pending row, so it can't be retried regardless.
+    reply.header("Set-Cookie", "awb_oauth_binding=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
+    if (!redirectUrl) return backToChoice("resume_failed");
+    return reply.redirect(redirectUrl);
   });
 
   app.post("/token", async (request, reply) => {
