@@ -4859,7 +4859,12 @@ function renderPage() {
   );
 }
 
-beforeEach(() => vi.clearAllMocks());
+// Block body, not an expression body: `vi.clearAllMocks()` returns a value that
+// does not satisfy the hook's expected return type, and `tsc` rejects it. Every
+// other test file in this package already writes it this way.
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("Settings", () => {
   it("titles the page and names its three sections", async () => {
@@ -4910,7 +4915,10 @@ export function useApiKeyStatus() {
 }
 ```
 
-and change the component body's own query to `const { data, isLoading } = useApiKeyStatus();`.
+and change the component body's own query to `const { data } = useApiKeyStatus();`
+— note `isLoading` is deliberately not destructured here: the header block that
+used it is being deleted, and `noUnusedLocals` fails the build on an unused
+binding. The Settings page below still takes `isLoading` for its Box title.
 
 Everything else in the file — mint, reveal, show/hide, copy, revoke, the
 snippet — stays exactly as it is.
@@ -5552,7 +5560,11 @@ vi.mock("../api", () => ({
   fetchKeycloakAuthUrl: vi.fn(),
 }));
 
-beforeEach(() => vi.clearAllMocks());
+// Block body, not an expression body — `tsc` rejects the value `vi.clearAllMocks()`
+// returns as a hook callback's return type.
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("Login", () => {
   it("offers each configured provider", async () => {
