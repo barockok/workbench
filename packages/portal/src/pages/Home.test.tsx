@@ -116,12 +116,19 @@ describe("Home", () => {
   });
 
   it("reports a null success rate as a dash rather than 0%", async () => {
+    // tool_calls is deliberately non-zero against a null rate. The live
+    // endpoint only returns a null rate when the window is empty, but that
+    // pairing is exactly what makes the zero-calls case untestable here: the
+    // component's pre-fetch defaults render "—" and "0" too, so the assertions
+    // would hold against a component that never fetched. A non-zero count
+    // isolates the null-rate branch and gives the test something to wait on
+    // that cannot exist before the query resolves.
     vi.mocked(fetchStats).mockResolvedValue({
-      stored: true, window_days: 30, tool_calls: 0, success_rate: null, most_used_integration: null,
+      stored: true, window_days: 30, tool_calls: 12, success_rate: null, most_used_integration: null,
     });
     renderPage();
-    await screen.findByText("Success rate (30d)");
+    await screen.findByText("12");
     expect(statValue("Success rate (30d)")).toBe("—");
-    expect(statValue("Tool calls (30d)")).toBe("0");
+    expect(statValue("Tool calls (30d)")).toBe("12");
   });
 });
