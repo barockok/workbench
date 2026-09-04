@@ -96,19 +96,23 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     return { providers };
   });
 
-  app.get("/api/auth/google", async (_request, reply) => {
+  app.get("/api/auth/google", async (request, reply) => {
     if (!config.GOOGLE_CLIENT_ID) {
       return reply.status(503).send({ error: "Google SSO not configured" });
     }
-    const url = await buildAuthUrl();
+    // The choice page passes the /authorize ticket through here so the SSO
+    // callback knows which pending agent-auth flow to resume.
+    const { ticket } = request.query as { ticket?: string };
+    const url = await buildAuthUrl(ticket);
     return { url };
   });
 
-  app.get("/api/auth/keycloak", async (_request, reply) => {
+  app.get("/api/auth/keycloak", async (request, reply) => {
     if (!isKeycloakConfigured()) {
       return reply.status(503).send({ error: "Keycloak SSO not configured" });
     }
-    const url = await buildKeycloakAuthUrl();
+    const { ticket } = request.query as { ticket?: string };
+    const url = await buildKeycloakAuthUrl(ticket);
     return { url };
   });
 

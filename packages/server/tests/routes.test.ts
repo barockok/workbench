@@ -156,6 +156,20 @@ describe("API routes", () => {
       expect(res.statusCode).toBe(503);
       config.GOOGLE_CLIENT_ID = original;
     });
+
+    it("threads a ?ticket= through to buildAuthUrl so the choice page can carry an /authorize flow", async () => {
+      const { buildAuthUrl } = await import("../src/auth/google");
+      const app = await buildApp();
+      await app.inject({ method: "GET", url: "/api/auth/google?ticket=tkt-abc" });
+      expect(vi.mocked(buildAuthUrl)).toHaveBeenCalledWith("tkt-abc");
+    });
+
+    it("omits the ticket when none is given", async () => {
+      const { buildAuthUrl } = await import("../src/auth/google");
+      const app = await buildApp();
+      await app.inject({ method: "GET", url: "/api/auth/google" });
+      expect(vi.mocked(buildAuthUrl)).toHaveBeenCalledWith(undefined);
+    });
   });
 
   describe("GET /api/auth/google/callback", () => {
@@ -204,6 +218,37 @@ describe("API routes", () => {
       const redirect = new URL(res.headers.location as string);
       expect(redirect.origin + redirect.pathname).toBe("http://127.0.0.1:33418/cb");
       expect(redirect.searchParams.get("code")).toBeTruthy();
+    });
+  });
+
+  describe("GET /api/auth/keycloak", () => {
+    it("returns auth URL when configured", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/auth/keycloak" });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).url).toContain("keycloak.example.com");
+    });
+
+    it("returns 503 when not configured", async () => {
+      const { isKeycloakConfigured } = await import("../src/auth/keycloak");
+      vi.mocked(isKeycloakConfigured).mockReturnValueOnce(false);
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/auth/keycloak" });
+      expect(res.statusCode).toBe(503);
+    });
+
+    it("threads a ?ticket= through to buildAuthUrl so the choice page can carry an /authorize flow", async () => {
+      const { buildAuthUrl } = await import("../src/auth/keycloak");
+      const app = await buildApp();
+      await app.inject({ method: "GET", url: "/api/auth/keycloak?ticket=tkt-abc" });
+      expect(vi.mocked(buildAuthUrl)).toHaveBeenCalledWith("tkt-abc");
+    });
+
+    it("omits the ticket when none is given", async () => {
+      const { buildAuthUrl } = await import("../src/auth/keycloak");
+      const app = await buildApp();
+      await app.inject({ method: "GET", url: "/api/auth/keycloak" });
+      expect(vi.mocked(buildAuthUrl)).toHaveBeenCalledWith(undefined);
     });
   });
 
