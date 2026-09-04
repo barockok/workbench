@@ -5277,6 +5277,7 @@ now unreachable. Everything the ornament rules styled goes with them.
 - Delete: `packages/portal/src/components/AgentsPanel.tsx`
 - Modify: `packages/portal/src/styles.css`
 - Test: `packages/portal/src/styles.guard.test.ts`
+- Test: `packages/portal/src/App.table.test.tsx`
 
 **Interfaces:**
 - Consumes: every page from Tasks 10-15.
@@ -5383,10 +5384,102 @@ or `.ui-bottom-sheet`. Run this to find them:
 
 Run: `grep -n "box-shadow" packages/portal/src/styles.css`
 
-- [ ] **Step 5: Run the guard and the suite**
+- [ ] **Step 5: Cover the real route table**
+
+`App.routes.test.tsx` (Task 9) builds its own `<Routes>` tree rather than
+rendering `App`, so it mirrors the route table instead of covering it — it
+would not catch `/authorize/choose` being wrapped in `RequireAuth`, the layout
+route losing its auth gate, or the catch-all shadowing a real route. Now that
+`Home` is real and `Dashboard` is gone, `App` can be rendered directly.
+
+Create `packages/portal/src/App.table.test.tsx`:
+
+```tsx
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import App from "./App";
+
+// No session: this is what proves which routes are gated and which are not.
+vi.mock("./context/AuthContext", () => ({
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useAuth: () => ({ user: null, token: null, isLoading: false, login: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock("./api", () => ({
+  fetchProviders: vi.fn(async () => ({ providers: [] })),
+  fetchAuthUrl: vi.fn(),
+  fetchKeycloakAuthUrl: vi.fn(),
+  SERVER_URL: "",
+}));
+
+function renderAt(path: string) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
+beforeEach(() => {
+  sessionStorage.clear();
+});
+
+describe("the real route table", () => {
+  it("leaves /authorize/choose ungated — an agent-initiated flow must not bounce to /login", async () => {
+    renderAt("/authorize/choose?ticket=abc123");
+    // The page renders its own signed-out picker rather than redirecting.
+    expect(await screen.findByText(/Approve agent access/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Sign in" })).toBeNull();
+  });
+
+  it("gates every shell route behind a session", async () => {
+    for (const path of ["/", "/apps", "/apps/acme", "/agents", "/activity", "/settings"]) {
+      const { unmount } = renderAt(path);
+      expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("gates the full-bleed routes too", async () => {
+    for (const path of ["/connect/acme", "/browser"]) {
+      const { unmount } = renderAt(path);
+      expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("remembers where an unauthenticated visitor was headed", async () => {
+    renderAt("/apps/acme");
+    await screen.findByRole("heading", { name: "Sign in" });
+    expect(sessionStorage.getItem("awb_return_to")).toBe("/apps/acme");
+  });
+
+  it("sends an unknown path home rather than rendering nothing", async () => {
+    renderAt("/no-such-page");
+    // Unauthenticated, so the redirect lands on the login page — the point is
+    // that it redirects at all instead of rendering a blank route.
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+  });
+});
+```
+
+This test depends on `Login.tsx` rendering an `<h1>Sign in</h1>`, which Task 17
+establishes. If Task 17 has not landed yet when you run this, adjust the
+assertion to the heading `Login.tsx` actually renders and say so in your report
+— do not change `Login.tsx` here.
+
+- [ ] **Step 6: Run the guards and the suite**
 
 Run: `npm run test -w @a-workbench/portal -- styles.guard`
 Expected: PASS, 3 tests.
+
+Run: `npm run test -w @a-workbench/portal -- App.table`
+Expected: PASS, 5 tests.
 
 Run: `npm run test -w @a-workbench/portal`
 Expected: 133/133 passing.
@@ -5395,7 +5488,7 @@ Run: `npm run build -w @a-workbench/portal`
 Expected: clean — a TypeScript error here means something still imports a
 deleted file.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add -A packages/portal/src
