@@ -862,3 +862,118 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+/* --- Tabs --- */
+.ui-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--s-16);
+}
+
+.ui-tab {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: var(--s-8) var(--s-2);
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-3);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+
+.ui-tab:hover { color: var(--text); }
+
+.ui-tab-active {
+  color: var(--text);
+  font-weight: 500;
+  border-bottom-color: var(--accent);
+}
+
+.ui-tab-count {
+  font-size: 12px;
+  color: var(--text-3);
+  background: var(--bg-sunk);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--s-4);
+}
+
+/* --- StatStrip --- */
+.ui-stat-cells {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.ui-stat {
+  padding: var(--s-12);
+  display: grid;
+  gap: var(--s-4);
+}
+
+.ui-stat + .ui-stat { border-left: 1px solid var(--border); }
+
+.ui-stat-label {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.ui-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.ui-stat-note {
+  border-top: 1px solid var(--border);
+  padding: var(--s-8) var(--s-12);
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* --- EmptyState --- */
+.ui-empty {
+  padding: var(--s-32) var(--s-12);
+  display: grid;
+  gap: var(--s-12);
+  justify-items: center;
+  text-align: center;
+}
+
+.ui-empty-msg {
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+/* --- DataTable --- */
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ui-table th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+  padding: var(--s-8) var(--s-12);
+  background: var(--bg-sunk);
+  border-bottom: 1px solid var(--border);
+}
+
+.ui-table td {
+  padding: var(--s-8) var(--s-12);
+  vertical-align: middle;
+}
+
+.ui-table tbody tr + tr td { border-top: 1px solid var(--border); }
+
+.ui-table .ui-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
