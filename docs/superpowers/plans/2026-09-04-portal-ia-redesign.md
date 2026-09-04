@@ -3966,24 +3966,29 @@ Create `packages/portal/src/format.test.ts`:
 import { describe, it, expect } from "vitest";
 import { dayLabel, timeLabel, durationLabel, relativeTime } from "./format";
 
-// A fixed instant keeps these tests deterministic regardless of when they run.
-const NOW = new Date("2026-09-04T12:00:00Z");
-const SECONDS = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+// Fixed instants keep these deterministic regardless of when they run — but
+// they must be built in LOCAL time, because dayLabel and timeLabel both work
+// in local calendar days. A UTC literal like "2026-09-03T23:00:00Z" is the
+// previous day only for viewers at or west of UTC; east of it that instant is
+// already the next local day, and the test would flip on a developer's laptop.
+const NOW = new Date(2026, 8, 4, 12, 0, 0); // local noon, 4 September 2026
+const at = (y: number, m: number, d: number, hh = 0, mm = 0) =>
+  Math.floor(new Date(y, m, d, hh, mm, 0).getTime() / 1000);
 
 describe("dayLabel", () => {
   it("names today and yesterday", () => {
-    expect(dayLabel(SECONDS("2026-09-04T09:30:00Z"), NOW)).toBe("Today");
-    expect(dayLabel(SECONDS("2026-09-03T23:00:00Z"), NOW)).toBe("Yesterday");
+    expect(dayLabel(at(2026, 8, 4, 9, 30), NOW)).toBe("Today");
+    expect(dayLabel(at(2026, 8, 3, 23, 0), NOW)).toBe("Yesterday");
   });
 
   it("falls back to an ISO date further back", () => {
-    expect(dayLabel(SECONDS("2026-08-28T10:00:00Z"), NOW)).toBe("2026-08-28");
+    expect(dayLabel(at(2026, 7, 28, 10, 0), NOW)).toBe("2026-08-28");
   });
 });
 
 describe("timeLabel", () => {
   it("renders zero-padded hours and minutes", () => {
-    expect(timeLabel(SECONDS("2026-09-04T09:05:00Z"))).toMatch(/^\d{2}:\d{2}$/);
+    expect(timeLabel(at(2026, 8, 4, 9, 5))).toBe("09:05");
   });
 });
 
@@ -4004,13 +4009,13 @@ describe("durationLabel", () => {
 
 describe("relativeTime", () => {
   it("counts minutes, hours and days back", () => {
-    expect(relativeTime(SECONDS("2026-09-04T11:30:00Z"), NOW)).toBe("30m ago");
-    expect(relativeTime(SECONDS("2026-09-04T09:00:00Z"), NOW)).toBe("3h ago");
-    expect(relativeTime(SECONDS("2026-09-01T12:00:00Z"), NOW)).toBe("3d ago");
+    expect(relativeTime(at(2026, 8, 4, 11, 30), NOW)).toBe("30m ago");
+    expect(relativeTime(at(2026, 8, 4, 9, 0), NOW)).toBe("3h ago");
+    expect(relativeTime(at(2026, 8, 1, 12, 0), NOW)).toBe("3d ago");
   });
 
   it("never reports less than a minute", () => {
-    expect(relativeTime(SECONDS("2026-09-04T11:59:50Z"), NOW)).toBe("1m ago");
+    expect(relativeTime(Math.floor(NOW.getTime() / 1000) - 10, NOW)).toBe("1m ago");
   });
 
   it("renders an em dash for a missing timestamp", () => {
@@ -4097,11 +4102,20 @@ vi.mock("../api", () => ({
 
 import { fetchActivity } from "../api";
 
-const NOW = Math.floor(Date.now() / 1000);
+const now = new Date();
+const NOW = Math.floor(now.getTime() / 1000);
+// Yesterday's local noon, not "now minus 25 hours": subtracting a fixed span
+// lands two calendar days back whenever the suite happens to run in the small
+// hours, and the day-grouping assertion below would fail on the clock rather
+// than on the code. Constructing from the local date rolls months and years
+// correctly, and noon keeps it clear of daylight-saving shifts.
+const YESTERDAY = Math.floor(
+  new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12, 0, 0).getTime() / 1000
+);
 
 const EVENTS = [
   { id: 3, integration: "acme", tool: "acme_search", action: "EXECUTE", success: true, error: null, duration_ms: 412, created_at: NOW },
-  { id: 2, integration: "demo-repo", tool: "repo_diff", action: "EXECUTE", success: false, error: "NOT_CONNECTED", duration_ms: 12, created_at: NOW - 90000 },
+  { id: 2, integration: "demo-repo", tool: "repo_diff", action: "EXECUTE", success: false, error: "NOT_CONNECTED", duration_ms: 12, created_at: YESTERDAY },
 ];
 
 function renderPage() {
@@ -4300,7 +4314,12 @@ export default function Activity() {
   const [integration, setIntegration] = useState("all");
   // Pages already fetched, kept so "Load more" appends rather than replaces.
   const [older, setOlder] = useState<ActivityEvent[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
+  // Three states, and the distinction matters: `undefined` means we have not
+  // paged yet, so the cursor to use is whatever the first page returned; a
+  // string means we paged and more remains; `null` means we paged and reached
+  // the end. Collapsing "not yet paged" into "no rows paged in" would break the
+  // ordinary end-of-list case, where the final page comes back empty.
+  const [pagedCursor, setPagedCursor] = useState<string | null | undefined>(undefined);
   const [loadingMore, setLoadingMore] = useState(false);
 
   const filters = useMemo(
@@ -4319,7 +4338,7 @@ export default function Activity() {
   function changeFilter(apply: () => void) {
     apply();
     setOlder([]);
-    setCursor(null);
+    setPagedCursor(undefined);
   }
 
   const { data, isLoading } = useQuery({
@@ -4327,9 +4346,8 @@ export default function Activity() {
     queryFn: () => fetchActivity(filters),
   });
 
-  // The first page's cursor lives in the query result, not in state: state
-  // only tracks how far "Load more" has walked past it.
-  const nextCursor = older.length === 0 ? (data?.next_cursor ?? null) : cursor;
+  // Until "Load more" is pressed, the cursor to offer is the first page's.
+  const nextCursor = pagedCursor === undefined ? (data?.next_cursor ?? null) : pagedCursor;
 
   const { data: registry } = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
 
@@ -4347,7 +4365,7 @@ export default function Activity() {
     try {
       const page = await fetchActivity({ ...filters, cursor: nextCursor });
       setOlder((prev) => [...prev, ...page.events]);
-      setCursor(page.next_cursor);
+      setPagedCursor(page.next_cursor);
     } finally {
       setLoadingMore(false);
     }
