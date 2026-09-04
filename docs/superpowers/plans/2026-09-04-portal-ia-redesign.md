@@ -5670,6 +5670,25 @@ and replace the card's heading block:
 deleting the `<div className="login-eyebrow">// access ── 01</div>` line and the
 `<div className="login-fine">…</div>` block entirely.
 
+Then remove the literal `ERR — ` prefix from every `.ui-form-error` render site
+in the portal — `ERR — {error}` becomes `{error}`, and Login's static
+"No auth provider configured" line loses it too. Seven sites:
+
+```
+packages/portal/src/components/CookieAuthPopup.tsx
+packages/portal/src/components/ApiKeyPanel.tsx
+packages/portal/src/components/ApiKeyAuthModal.tsx
+packages/portal/src/pages/BrowserView.tsx
+packages/portal/src/pages/Connect.tsx
+packages/portal/src/pages/Login.tsx   (two — the dynamic error and the static one)
+```
+
+A shouty faux-console prefix on a plain sentence is invented decoration, ASCII
+ornament and status theatre at once — all three of which this redesign exists to
+remove. `AuthorizeChoose.tsx` already dropped it when it was rebuilt, so leaving
+the rest would keep the branch inconsistent with itself. Change nothing else on
+those lines: the `className`, inline styles and surrounding conditionals stay.
+
 - [ ] **Step 4: Replace the panel styles**
 
 In `packages/portal/src/styles.css`, delete `.login-art .meta`,
