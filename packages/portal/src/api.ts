@@ -82,14 +82,18 @@ export async function fetchProviders(): Promise<{ providers: string[] }> {
   return res.json();
 }
 
-export async function fetchAuthUrl(): Promise<{ url: string }> {
-  const res = await fetch(`${API_URL}/api/auth/google`);
+// `ticket` carries an in-flight agent /authorize request through SSO so its
+// callback knows which pending flow to resume, instead of a normal portal login.
+export async function fetchAuthUrl(ticket?: string): Promise<{ url: string }> {
+  const qs = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
+  const res = await fetch(`${API_URL}/api/auth/google${qs}`);
   if (!res.ok) throw new Error("SSO not configured");
   return res.json();
 }
 
-export async function fetchKeycloakAuthUrl(): Promise<{ url: string }> {
-  const res = await fetch(`${API_URL}/api/auth/keycloak`);
+export async function fetchKeycloakAuthUrl(ticket?: string): Promise<{ url: string }> {
+  const qs = ticket ? `?ticket=${encodeURIComponent(ticket)}` : "";
+  const res = await fetch(`${API_URL}/api/auth/keycloak${qs}`);
   if (!res.ok) throw new Error("Keycloak SSO not configured");
   return res.json();
 }
