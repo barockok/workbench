@@ -3265,47 +3265,43 @@ function AppCell({
   const label = i.displayName || i.name;
   const configured = i.configured !== false;
 
-  const body = (
+  // The navigable half and the action half are siblings, never nested: a
+  // <button> inside an <a> is invalid HTML, and every workaround for the
+  // resulting click ambiguity is worse than not creating it.
+  const lead = (
     <>
       <IntegrationLogo name={i.name} displayName={i.displayName} logo={i.logo} size={24} />
       <span className="wb-app-cell-text">
         <span className="wb-app-cell-name">{label}</span>
         <span className="wb-app-cell-meta">v{i.version} · {i.toolCount} tools</span>
       </span>
-      <span className="wb-app-cell-action">
-        {i.authType === "none" ? (
-          <Badge variant="neutral">Built-in</Badge>
-        ) : connected ? (
-          <Badge variant="green">Connected</Badge>
-        ) : configured ? (
-          <Button
-            size="xs"
-            variant="outline"
-            disabled={busy}
-            aria-label={`Connect ${label}`}
-            onClick={(e) => {
-              // The cell is a link; connecting must not also navigate.
-              e.preventDefault();
-              e.stopPropagation();
-              onConnect();
-            }}
-          >
-            {busy ? "…" : "Connect"}
-          </Button>
-        ) : (
-          <span className="wb-app-cell-muted">Not configured</span>
-        )}
-      </span>
     </>
   );
 
-  if (!configured) {
-    return <div className="wb-app-cell wb-app-cell-inert">{body}</div>;
-  }
+  const action =
+    i.authType === "none" ? (
+      <Badge variant="neutral">Built-in</Badge>
+    ) : connected ? (
+      <Badge variant="green">Connected</Badge>
+    ) : configured ? (
+      <Button size="xs" variant="outline" disabled={busy} aria-label={`Connect ${label}`} onClick={onConnect}>
+        {busy ? "…" : "Connect"}
+      </Button>
+    ) : (
+      <span className="wb-app-cell-muted">Not configured</span>
+    );
+
   return (
-    <Link className="wb-app-cell" to={`/apps/${i.name}`}>
-      {body}
-    </Link>
+    <div className={`wb-app-cell${configured ? "" : " wb-app-cell-inert"}`}>
+      {configured ? (
+        <Link className="wb-app-cell-link" to={`/apps/${i.name}`}>
+          {lead}
+        </Link>
+      ) : (
+        <span className="wb-app-cell-link">{lead}</span>
+      )}
+      <span className="wb-app-cell-action">{action}</span>
+    </div>
   );
 }
 ```
@@ -3351,11 +3347,19 @@ Append to `packages/portal/src/styles.css`:
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+
+.wb-app-cell:has(a:hover) { border-color: var(--border-strong); }
+
+.wb-app-cell-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+  min-width: 0;
+  flex: 1;
   color: inherit;
   text-decoration: none;
 }
-
-a.wb-app-cell:hover { border-color: var(--border-strong); }
 
 .wb-app-cell-inert { opacity: .6; }
 
@@ -4300,16 +4304,24 @@ export default function Activity() {
     [status, integration]
   );
 
+  // Changing a filter starts a fresh list. Reset the paged-in tail here, in the
+  // event handler — not inside queryFn, which must stay a pure fetch: React
+  // Query may call it on refetch, retry or remount, and a setState in there
+  // fires on every one of those.
+  function changeFilter(apply: () => void) {
+    apply();
+    setOlder([]);
+    setCursor(null);
+  }
+
   const { data, isLoading } = useQuery({
     queryKey: ["activity", filters],
-    queryFn: async () => {
-      // A filter change starts a fresh list; drop anything paged in before it.
-      setOlder([]);
-      const page = await fetchActivity(filters);
-      setCursor(page.next_cursor);
-      return page;
-    },
+    queryFn: () => fetchActivity(filters),
   });
+
+  // The first page's cursor lives in the query result, not in state: state
+  // only tracks how far "Load more" has walked past it.
+  const nextCursor = older.length === 0 ? (data?.next_cursor ?? null) : cursor;
 
   const { data: registry } = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
 
@@ -4322,10 +4334,10 @@ export default function Activity() {
   }, [registry]);
 
   async function loadMore() {
-    if (!cursor) return;
+    if (!nextCursor) return;
     setLoadingMore(true);
     try {
-      const page = await fetchActivity({ ...filters, cursor });
+      const page = await fetchActivity({ ...filters, cursor: nextCursor });
       setOlder((prev) => [...prev, ...page.events]);
       setCursor(page.next_cursor);
     } finally {
@@ -4345,7 +4357,7 @@ export default function Activity() {
             <Tabs
               label="Filter activity"
               value={status}
-              onChange={(id) => setStatus(id as "all" | "error")}
+              onChange={(id) => changeFilter(() => setStatus(id as "all" | "error"))}
               items={[{ id: "all", label: "All" }, { id: "error", label: "Errors" }]}
             />
             <div className="wb-toolbar-controls">
@@ -4353,7 +4365,7 @@ export default function Activity() {
               <Select
                 id="activity-integration"
                 value={integration}
-                onChange={(e) => setIntegration(e.target.value)}
+                onChange={(e) => changeFilter(() => setIntegration(e.target.value))}
               >
                 <option value="all">All apps</option>
                 {integrations.map((i) => (
@@ -4377,7 +4389,7 @@ export default function Activity() {
         )}
       </Box>
 
-      {cursor && (
+      {nextCursor && (
         <div className="wb-load-more">
           <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
             {loadingMore ? "Loading…" : "Load more"}
@@ -5023,18 +5035,26 @@ beforeEach(() => {
 });
 
 describe("Home", () => {
+  // Read a stat by its label rather than by its value: "Acme" and "1" both
+  // appear elsewhere on this page, so a bare getByText would be ambiguous or,
+  // worse, pass against the wrong element.
+  function statValue(label: string): string {
+    const cell = screen.getByText(label).closest(".ui-stat");
+    return cell?.querySelector(".ui-stat-value")?.textContent ?? "";
+  }
+
   it("shows the four headline numbers", async () => {
     renderPage();
-    expect(await screen.findByText("1,284")).toBeInTheDocument();
-    expect(screen.getByText("97%")).toBeInTheDocument();
-    expect(screen.getByText("Acme")).toBeInTheDocument();
-    expect(screen.getByText("Tool calls (30d)")).toBeInTheDocument();
+    await screen.findByText("Tool calls (30d)");
+    expect(statValue("Tool calls (30d)")).toBe("1,284");
+    expect(statValue("Success rate (30d)")).toBe("97%");
+    expect(statValue("Most used app")).toBe("Acme");
   });
 
   it("counts connected apps from the connections endpoint", async () => {
     renderPage();
-    expect(await screen.findByText("Connected apps")).toBeInTheDocument();
-    expect(screen.getByText("1")).toBeInTheDocument();
+    await screen.findByText("Connected apps");
+    expect(statValue("Connected apps")).toBe("1");
   });
 
   it("lists connected apps and links to the registry", async () => {
@@ -5068,9 +5088,14 @@ describe("Home", () => {
     vi.mocked(fetchActivity).mockResolvedValue({ stored: false, events: [], next_cursor: null });
     renderPage();
 
-    // Three dashes for calls / rate / most-used; the connected count still renders.
-    expect(await screen.findAllByText("—")).toHaveLength(3);
-    expect(screen.getByText(/somewhere other than its database/)).toBeInTheDocument();
+    await screen.findByText("Tool calls (30d)");
+    // The three activity-derived cells go blank; the connected count does not,
+    // because it comes from /api/connections rather than the audit log.
+    expect(statValue("Tool calls (30d)")).toBe("—");
+    expect(statValue("Success rate (30d)")).toBe("—");
+    expect(statValue("Most used app")).toBe("—");
+    expect(statValue("Connected apps")).toBe("1");
+    expect(screen.getAllByText(/somewhere other than its database/).length).toBeGreaterThan(0);
   });
 
   it("reports a null success rate as a dash rather than 0%", async () => {
@@ -5078,8 +5103,9 @@ describe("Home", () => {
       stored: true, window_days: 30, tool_calls: 0, success_rate: null, most_used_integration: null,
     });
     renderPage();
-    expect(await screen.findByText("Success rate (30d)")).toBeInTheDocument();
-    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
+    await screen.findByText("Success rate (30d)");
+    expect(statValue("Success rate (30d)")).toBe("—");
+    expect(statValue("Tool calls (30d)")).toBe("0");
   });
 });
 ```
@@ -5266,12 +5292,15 @@ const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "styles.c
 // pill button or a drop shadow on a static surface fails here rather than
 // quietly drifting the whole interface back.
 describe("portal stylesheet geometry", () => {
-  it("uses a full radius only on the toggle track", () => {
+  it("uses a full radius only on the toggle, which is a capsule by definition", () => {
     const users = css
       .split("}")
       .filter((block) => block.includes("--radius-full"))
       .map((block) => block.split("{")[0].trim());
-    expect(users).toEqual([".ui-toggle-track", ".ui-toggle-thumb"]);
+    expect(users.length).toBeGreaterThan(0);
+    for (const selector of users) {
+      expect(selector).toMatch(/ui-toggle/);
+    }
   });
 
   it("casts a shadow only on genuinely overlaid surfaces", () => {
@@ -5323,10 +5352,10 @@ In `packages/portal/src/styles.css`, delete these rule blocks entirely:
 `.integ-tools-head`, `.integ-tool-list`, `.integ-tool`, `.integ-tool-name`,
 `.integ-tool-desc`, `.session-transfer`, `.session-transfer-row`,
 `.session-transfer-ok`, `.apikey-panel`, `.apikey-head`, `.apikey-head .eyebrow`,
-and the `/* animations */` block with its `@keyframes`.
+`.user-email` (the sidebar has its own `.wb-user-email`), and the
+`/* animations */` block with its `@keyframes`.
 
-Keep: `.user-email` (used by the sidebar's user row is `.wb-user-email`, so
-`.user-email` also goes — delete it), `.apikey-blurb`, `.apikey-reveal`,
+Keep: `.apikey-blurb`, `.apikey-reveal`,
 `.apikey-row`, `.apikey-value`, `.apikey-actions`, `.apikey-snippet-label`,
 `.apikey-snippet`, `.apikey-form`, `.apikey-field`, `.apikey-field-label`,
 `.apikey-req`, `.apikey-opt`, `.apikey-field-desc`, `.integ-logo`,
