@@ -2985,10 +2985,12 @@ git commit -m "feat(portal): route six pages through the application shell"
 - Consumes: `PageHeader`, `Tabs`, `EmptyState`, `Input`, `Select`, `Badge`, `Button`, `IntegrationLogo`, `useConnectFlow`, `fetchIntegrations`, `fetchConnections`, `IntegrationSummary`.
 - Produces: the `/apps` page. `AppDetail` (Task 11) relies on the route shape `/apps/:name` where `:name` is `IntegrationSummary["name"]`.
 
-Each cell is a `<Link>` to the detail page, except unconfigured integrations,
-which render as a non-interactive `<div>` because there is nothing to do with
-them yet. The connect button inside a cell is a real nested `<button>`; it stops
-propagation so pressing it does not also follow the link.
+Each cell is a `<div>` holding two siblings: a `<Link>` to the detail page over
+the logo and text, and the action element beside it. The connect `<button>` is
+NOT nested inside the anchor — a button inside an `<a>` is invalid HTML, and the
+click-suppression it would need is a symptom, not a fix. For an unconfigured
+integration the `<Link>` becomes a plain `<span>`, so the cell is not navigable
+at all rather than looking navigable and refusing.
 
 - [ ] **Step 1: Write the failing test**
 
