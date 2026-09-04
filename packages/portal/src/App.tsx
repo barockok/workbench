@@ -1,11 +1,17 @@
 import { useEffect } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
 import Connect from "./pages/Connect";
 import BrowserView from "./pages/BrowserView";
 import AuthorizeChoose from "./pages/AuthorizeChoose";
+import { AppShell } from "./components/shell/AppShell";
+import Home from "./pages/Home";
+import Apps from "./pages/Apps";
+import AppDetail from "./pages/AppDetail";
+import Agents from "./pages/Agents";
+import Activity from "./pages/Activity";
+import Settings from "./pages/Settings";
 
 function Boot({ label = "Loading" }: { label?: string }) {
   return (
@@ -42,16 +48,30 @@ function AppRoutes() {
           (silently resume) cases itself — RequireAuth's unconditional
           redirect-to-/login doesn't fit either branch. */}
       <Route path="/authorize/choose" element={<AuthorizeChoose />} />
+      {/* Full-bleed authenticated pages: a connect handoff and the remote
+          browser view both want the whole viewport, so they stay outside the
+          shell. */}
       <Route path="/connect/:integration" element={<RequireAuth><Connect /></RequireAuth>} />
       <Route path="/browser" element={<RequireAuth><BrowserView /></RequireAuth>} />
+
       <Route
-        path="/*"
         element={
           <RequireAuth>
-            <Dashboard />
+            <AppShell>
+              <Outlet />
+            </AppShell>
           </RequireAuth>
         }
-      />
+      >
+        <Route path="/" element={<Home />} />
+        <Route path="/apps" element={<Apps />} />
+        <Route path="/apps/:name" element={<AppDetail />} />
+        <Route path="/agents" element={<Agents />} />
+        <Route path="/activity" element={<Activity />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

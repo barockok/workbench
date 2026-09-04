@@ -1105,3 +1105,47 @@ body {
   font-weight: 500;
   color: var(--text-2);
 }
+
+/* --- Page header --- */
+.wb-page-head { margin-bottom: var(--s-16); }
+
+.wb-page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-12);
+  min-height: 32px;
+}
+
+.wb-page-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.wb-page-actions { display: flex; align-items: center; gap: var(--s-8); }
+
+.wb-page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-12);
+  flex-wrap: wrap;
+  margin-top: var(--s-12);
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-page-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-4);
+  font-size: 12px;
+  color: var(--text-3);
+  text-decoration: none;
+  margin-bottom: var(--s-8);
+}
+
+.wb-page-back:hover { color: var(--text); }
+
+.wb-section-gap > * + * { margin-top: var(--s-16); }
