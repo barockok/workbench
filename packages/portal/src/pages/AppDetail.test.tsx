@@ -1,0 +1,130 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AppDetail from "./AppDetail";
+
+vi.mock("../api", () => ({
+  fetchIntegration: vi.fn(),
+  fetchConnections: vi.fn(),
+  exportSession: vi.fn(),
+  importSession: vi.fn(),
+  openBrowserLiveUrl: vi.fn(),
+  resetBrowserSession: vi.fn(),
+  startIntegrationAuth: vi.fn(),
+  disconnectIntegration: vi.fn(),
+}));
+
+vi.mock("../context/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "u1", email: "dev@example.com" }, token: "t", isLoading: false, login: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock("../components/CookieAuthPopup", () => ({ default: () => null }));
+vi.mock("../components/ApiKeyAuthModal", () => ({ default: () => null }));
+
+import { fetchIntegration, fetchConnections, startIntegrationAuth, disconnectIntegration } from "../api";
+
+const DETAIL = {
+  name: "acme",
+  displayName: "Acme",
+  version: "1.0.0",
+  description: "Track work",
+  categories: ["issues"],
+  toolCount: 2,
+  authType: "oauth2",
+  configured: true,
+  tools: [
+    { name: "acme_search", description: "Search issues" },
+    { name: "acme_create", description: "Create an issue" },
+  ],
+};
+
+function renderAt(name: string) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[`/apps/${name}`]}>
+        <Routes>
+          <Route path="/apps/:name" element={<AppDetail />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(fetchIntegration).mockResolvedValue(DETAIL);
+  vi.mocked(fetchConnections).mockResolvedValue({ connections: [] });
+});
+
+describe("AppDetail", () => {
+  it("titles the page with the display name and links back to the registry", async () => {
+    renderAt("acme");
+    expect(await screen.findByRole("heading", { level: 1, name: "Acme" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Apps/ })).toHaveAttribute("href", "/apps");
+  });
+
+  it("reports the connection state and auth type", async () => {
+    renderAt("acme");
+    expect(await screen.findByText("Not connected")).toBeInTheDocument();
+    expect(screen.getByText("oauth2")).toBeInTheDocument();
+  });
+
+  it("lists every tool with its description", async () => {
+    renderAt("acme");
+    expect(await screen.findByText("acme_search")).toBeInTheDocument();
+    expect(screen.getByText("Create an issue")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tools (2)" })).toBeInTheDocument();
+  });
+
+  it("offers Connect while disconnected", async () => {
+    vi.mocked(startIntegrationAuth).mockResolvedValue({ type: "oauth2", url: "https://example.com/authorize" });
+    renderAt("acme");
+    fireEvent.click(await screen.findByRole("button", { name: "Connect" }));
+    await waitFor(() => expect(startIntegrationAuth).toHaveBeenCalledWith("acme", undefined));
+  });
+
+  it("offers Reconnect and Disconnect once connected, and confirms the disconnect", async () => {
+    vi.mocked(fetchConnections).mockResolvedValue({ connections: [{ name: "acme", connected: true }] });
+    vi.mocked(disconnectIntegration).mockResolvedValue({ success: true });
+    renderAt("acme");
+
+    expect(await screen.findByText("Connected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reconnect" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+    // The confirmation dialog's own Disconnect button, not the header's.
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Disconnect" }));
+    await waitFor(() => expect(disconnectIntegration).toHaveBeenCalledWith("acme"));
+  });
+
+  it("shows session transfer only for cookie integrations", async () => {
+    renderAt("acme");
+    await screen.findByRole("heading", { level: 1, name: "Acme" });
+    expect(screen.queryByRole("heading", { name: "Session transfer" })).toBeNull();
+
+    vi.mocked(fetchIntegration).mockResolvedValue({ ...DETAIL, authType: "cookie" });
+    renderAt("acme");
+    expect(await screen.findByRole("heading", { name: "Session transfer" })).toBeInTheDocument();
+  });
+
+  it("shows browser controls only for the built-in browser", async () => {
+    vi.mocked(fetchIntegration).mockResolvedValue({
+      ...DETAIL,
+      name: "browser",
+      displayName: "Browser",
+      authType: "none",
+    });
+    renderAt("browser");
+    expect(await screen.findByRole("heading", { name: "Browser controls" })).toBeInTheDocument();
+  });
+
+  it("explains an unknown integration instead of rendering an empty page", async () => {
+    vi.mocked(fetchIntegration).mockRejectedValue(new Error("Failed to fetch integration"));
+    renderAt("nope");
+    expect(await screen.findByText("That app isn't in this registry.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to apps" })).toHaveAttribute("href", "/apps");
+  });
+});
