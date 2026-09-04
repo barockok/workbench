@@ -94,6 +94,44 @@ export async function registerOAuthRoutes(app: FastifyInstance): Promise<void> {
     return reply.redirect(choose.toString());
   });
 
+  // Silently carries an /authorize flow through for a human who's already
+  // signed in to the portal — the choice page auto-submits this as a real
+  // top-level form POST (not a fetch) specifically so the browser attaches
+  // awb_oauth_binding automatically; a cross-origin fetch never could, and
+  // that's what makes this safe against login CSRF instead of just convenient.
+  app.post("/authorize/resume", async (request, reply) => {
+    const b = (request.body ?? {}) as { ticket?: string; token?: string };
+    if (!b.ticket) {
+      return reply.status(400).send({ error: "invalid_request", error_description: "ticket required" });
+    }
+
+    const backToChoice = (errorCode: string) => {
+      const choose = new URL("/authorize/choose", config.PORTAL_URL);
+      choose.searchParams.set("ticket", b.ticket!);
+      choose.searchParams.set("error", errorCode);
+      return reply.redirect(choose.toString());
+    };
+
+    let userId: string;
+    try {
+      if (!b.token) throw new Error("no token");
+      userId = (await verifySession(b.token)).userId;
+    } catch {
+      return backToChoice("session_invalid");
+    }
+
+    const cookie = request.headers.cookie ?? "";
+    const m = cookie.match(/(?:^|;\s*)awb_oauth_binding=([^;]+)/);
+    const binding = m ? m[1] : undefined;
+
+    const redirectUrl = await resumeAuthorize(b.ticket, userId, binding);
+    // Clear the one-time binding cookie either way — resumeAuthorize already
+    // consumed the pending row, so it can't be retried regardless.
+    reply.header("Set-Cookie", "awb_oauth_binding=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
+    if (!redirectUrl) return backToChoice("resume_failed");
+    return reply.redirect(redirectUrl);
+  });
+
   app.post("/token", async (request, reply) => {
     const b = (request.body ?? {}) as Record<string, string>;
     const ttl = config.OAUTH_ACCESS_TOKEN_TTL_SECONDS;
