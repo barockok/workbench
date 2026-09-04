@@ -1217,3 +1217,35 @@ body {
 .wb-app-cell-action { margin-left: auto; flex: none; }
 
 .wb-app-cell-muted { font-size: 12px; color: var(--text-4); }
+
+/* --- Detail rows --- */
+.wb-detail-key {
+  flex: none;
+  width: 140px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.wb-detail-val { color: var(--text); }
+
+.wb-detail-desc { color: var(--text-2); font-size: 13px; }
+
+.wb-chip-row { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+
+.wb-mono { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+
+.wb-row-stack {
+  display: grid;
+  gap: var(--s-8);
+  align-items: stretch;
+  justify-items: start;
+}
+
+.wb-inline-row {
+  display: flex;
+  gap: var(--s-8);
+  width: 100%;
+  align-items: center;
+}
+
+.wb-ok { color: var(--ok); font-size: 12px; }
