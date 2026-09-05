@@ -632,6 +632,10 @@ body {
   padding: var(--s-24);
   max-width: 1080px;
   width: 100%;
+  /* Centre the column in the track left over beside the sidebar. Without
+     this the content pins to the left edge and a wide viewport leaves a
+     growing empty gutter on the right. */
+  margin-inline: auto;
 }
 
 /* Below this width the sidebar becomes a top bar and the nav scrolls sideways. */
