@@ -195,7 +195,6 @@ describe("buildPluginAuthUrl", () => {
     // vi.spyOn returns the existing spy when the method is already spied, so
     // call history accumulates across tests in this block. These assertions
     // read mock.calls[0] and mean "the call this test made".
-    vi.clearAllMocks();
     process.env.GOOGLE_GMAIL_CLIENT_ID = "gmail-id";
     process.env.GOOGLE_GMAIL_CLIENT_SECRET = "gmail-secret";
     vi.spyOn(registry, "getIntegration").mockReturnValue(mockIntegration);
@@ -285,7 +284,6 @@ describe("buildPluginAuthUrl", () => {
 
 describe("buildPluginAuthUrl — self-hosted instance", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     process.env.GITLAB_CLIENT_ID = "gl-id";
     process.env.GITLAB_CLIENT_SECRET = "gl-secret";
     process.env.GITLAB_ALLOWED_INSTANCES = "https://gitlab.acme.com";
@@ -337,6 +335,10 @@ describe("buildPluginAuthUrl — self-hosted instance", () => {
 });
 
 describe("handlePluginCallback", () => {
+  // Assertions below read mock.calls[0] meaning "the call this test made".
+  // That holds because vitest.config.ts sets clearMocks — from vitest 4,
+  // vi.spyOn returns the already-installed spy, so history would otherwise
+  // carry across tests in this block.
   beforeEach(() => {
     process.env.GOOGLE_GMAIL_CLIENT_ID = "gmail-id";
     process.env.GOOGLE_GMAIL_CLIENT_SECRET = "gmail-secret";
@@ -453,8 +455,7 @@ describe("handlePluginCallback", () => {
 
   describe("slack user-token extraction", () => {
     beforeEach(() => {
-      vi.clearAllMocks();
-      process.env.SLACK_CLIENT_ID = "slack-id";
+        process.env.SLACK_CLIENT_ID = "slack-id";
       process.env.SLACK_CLIENT_SECRET = "slack-secret";
       vi.spyOn(registry, "getIntegration").mockReturnValue(mockSlackIntegration);
       vi.spyOn(oauth, "verifyAuthState").mockResolvedValue({
