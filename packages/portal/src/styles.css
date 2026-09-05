@@ -870,3 +870,22 @@ body {
   line-height: 1.5;
   overflow-x: auto;
 }
+
+/* --- Links in the content column ---
+   Written at zero specificity via :where() so it is a DEFAULT, not an
+   override: every component rule that deliberately unstyles a link
+   (.wb-app-cell-link, .wb-page-back) still wins without needing !important
+   or a longer selector. The sidebar is outside .wb-content and keeps its
+   own .wb-nav-item treatment.
+
+   Without this, bare <a>s in Box headers, Box rows and empty states fell
+   through to the browser default — blue and underlined, and close to
+   unreadable on the dark surface. */
+:where(.wb-content) :where(a) {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+:where(.wb-content) :where(a):hover {
+  text-decoration: underline;
+}
