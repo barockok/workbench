@@ -288,20 +288,6 @@ body {
 .ui-badge-yellow { background: var(--warn-soft); color: var(--warn); }
 .ui-badge-neutral { background: var(--bg-sunk); color: var(--text-3); }
 
-/* ui/Card — never nest cards. */
-.ui-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--card-pad);
-  display: flex;
-  flex-direction: column;
-  gap: var(--card-gap);
-}
-.ui-card-clickable { cursor: pointer; transition: border-color .15s ease; }
-.ui-card-clickable:hover { border-color: var(--border-strong); }
-.ui-card-disabled { opacity: .55; cursor: not-allowed; }
-
 /* ui/Input, ui/Select */
 .ui-input {
   font-family: var(--sans);
@@ -370,96 +356,6 @@ body {
   gap: var(--s-8);
   margin-top: var(--s-16);
 }
-
-/* ui/BottomSheet */
-.ui-sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 50;
-}
-.ui-sheet {
-  background: var(--surface);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow: var(--shadow-lg);
-  padding: var(--s-16);
-  width: 100%;
-  overflow-y: auto;
-  outline: none;
-}
-.ui-sheet-sm { max-height: 420px; }
-.ui-sheet-md { max-height: 560px; }
-.ui-sheet-fullscreen { max-height: 100vh; height: 100vh; }
-.ui-sheet-grip {
-  width: 32px;
-  height: 4px;
-  border-radius: var(--radius);
-  background: var(--border);
-  margin: 0 auto var(--s-12);
-}
-
-/* ui/Toggle */
-.ui-toggle { display: inline-flex; align-items: center; gap: var(--s-8); cursor: pointer; }
-.ui-toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.ui-toggle-track {
-  display: inline-block;
-  border-radius: var(--radius-full);
-  background: var(--border-strong);
-  transition: background-color .15s ease;
-  position: relative;
-}
-.ui-toggle-sm .ui-toggle-track { width: 32px; height: 20px; }
-.ui-toggle-md .ui-toggle-track { width: 44px; height: 24px; }
-.ui-toggle-thumb {
-  display: block;
-  border-radius: var(--radius-full);
-  background: #fff;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform .15s ease;
-}
-.ui-toggle-sm .ui-toggle-thumb { width: 16px; height: 16px; }
-.ui-toggle-md .ui-toggle-thumb { width: 20px; height: 20px; }
-.ui-toggle input:checked + .ui-toggle-track { background: var(--accent); }
-.ui-toggle-sm input:checked + .ui-toggle-track .ui-toggle-thumb { transform: translateX(12px); }
-.ui-toggle-md input:checked + .ui-toggle-track .ui-toggle-thumb { transform: translateX(20px); }
-.ui-toggle-disabled { opacity: .6; cursor: not-allowed; }
-.ui-toggle-label { font-family: var(--sans); font-size: 14px; color: var(--text); }
-
-/* ui/SelectableCard */
-.ui-selectable-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--s-12);
-  cursor: pointer;
-  transition: border-color .15s ease, background-color .15s ease;
-}
-.ui-selectable-card-active { border-color: var(--accent); background: var(--accent-soft); }
-.ui-selectable-card-disabled { opacity: .55; cursor: not-allowed; }
-.ui-selectable-card-title { font-family: var(--sans); font-size: 14px; font-weight: 700; color: var(--text); }
-.ui-selectable-card-desc { font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--text-2); margin-top: var(--s-4); }
-
-/* ui/NavigationHeader */
-.ui-nav-header {
-  height: var(--topbar-h);
-  padding: 0 var(--page-pad-x);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-.ui-nav-header-lead { display: flex; align-items: center; gap: var(--s-12); }
-.ui-nav-header-back { background: none; border: none; color: var(--text); font-size: 18px; cursor: pointer; }
-.ui-nav-header-title { font-family: var(--sans); font-size: 16px; font-weight: 700; color: var(--text); }
-.ui-nav-header-trailing { display: flex; align-items: center; gap: var(--s-12); }
 
 /* --- themed scrollbars (subtle, matches palette) --- */
 * {
