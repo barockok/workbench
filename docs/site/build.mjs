@@ -353,6 +353,7 @@ function layout({ page, title, description, content, headings }) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="${A}${assetTag('tokens.css')}">
 <link rel="stylesheet" href="${A}${assetTag('docs.css')}">
 <script>(function(){try{var t=localStorage.getItem('wb-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}})();</script>
 </head>
@@ -440,6 +441,7 @@ const searchIndex = [];
 // A full wipe, so a page deleted from nav.json cannot survive in the output.
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
+cpSync(join(ROOT, '..', '..', 'packages', 'shared', 'styles', 'tokens.css'), join(ROOT, 'assets', 'tokens.css'));
 cpSync(join(ROOT, 'assets'), join(OUT, 'assets'), { recursive: true });
 // Without .nojekyll, Pages runs the output through Jekyll and drops every
 // path that starts with an underscore.

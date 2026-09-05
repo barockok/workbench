@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { captureCookies, cancelCookieAuth } from "../api";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
 import CdpScreencast from "./CdpScreencast";
 
 interface Props {
@@ -36,36 +38,30 @@ export default function CookieAuthPopup({ integration, cdpProxyUrl, cdpToken, se
   }
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal">
-        <div className="modal-head">
-          <h2 className="modal-title">Pair <span>{integration}</span></h2>
-          <button onClick={handleCancel} className="btn-ghost" aria-label="Close">Close</button>
-        </div>
-
-        <div className="modal-instructions">
-          <div><b>01</b> — Complete login in the remote browser below (mouse + keyboard streamed via CDP).</div>
-          <div><b>02</b> — Click "Capture session" once authenticated.</div>
-        </div>
-
-        <div className="modal-body" style={{ padding: 0, background: "#000" }}>
-          <CdpScreencast
-            cdpProxyUrl={cdpProxyUrl}
-            sessionId={sessionId}
-            cdpToken={cdpToken}
-            width={1024}
-          />
-        </div>
-
-        {error && <div className="modal-error">ERR — {error}</div>}
-
-        <div className="modal-foot">
-          <button onClick={handleCancel} className="btn-ghost">Cancel</button>
-          <button onClick={handleCapture} disabled={capturing} className="btn-connect">
+    <Modal
+      open
+      onClose={handleCancel}
+      title={<>Pair <span>{integration}</span></>}
+      size="xl"
+      footer={
+        <>
+          <Button variant="ghost" onClick={handleCancel}>Cancel</Button>
+          <Button onClick={handleCapture} disabled={capturing}>
             {capturing ? "Capturing…" : "Capture session"}
-          </button>
-        </div>
+          </Button>
+        </>
+      }
+    >
+      <div className="modal-instructions">
+        <div><b>01</b> — Complete login in the remote browser below (mouse + keyboard streamed via CDP).</div>
+        <div><b>02</b> — Click "Capture session" once authenticated.</div>
       </div>
-    </div>
+
+      <div style={{ padding: 0, background: "#000", marginTop: "var(--s-12)" }}>
+        <CdpScreencast cdpProxyUrl={cdpProxyUrl} sessionId={sessionId} cdpToken={cdpToken} width={1024} />
+      </div>
+
+      {error && <div className="ui-form-error" style={{ marginTop: "var(--s-12)" }}>{error}</div>}
+    </Modal>
   );
 }

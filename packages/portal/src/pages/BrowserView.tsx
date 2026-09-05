@@ -4,6 +4,7 @@ import { redeemConnectLink, ConnectLinkError } from "../api";
 import type { RedeemResult } from "../api";
 import CdpScreencast from "../components/CdpScreencast";
 import ConnectLinkProblem from "../components/ConnectLinkProblem";
+import { Modal } from "../components/ui/Modal";
 
 type BrowserInfo = Extract<RedeemResult, { type: "browser" }>;
 
@@ -32,26 +33,21 @@ export default function BrowserView() {
 
   if (problem) return <ConnectLinkProblem error={problem} />;
   if (error && !info) {
-    return <div className="boot"><span>ERR — {error}</span></div>;
+    return <div className="ui-loading">Error — {error}</div>;
   }
   if (!info) {
-    return <div className="boot"><span>LOADING BROWSER<span className="blinker" /></span></div>;
+    return <div className="ui-loading">Loading browser…</div>;
   }
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <div className="modal">
-        <div className="modal-head">
-          <h2 className="modal-title">Browser session</h2>
-        </div>
-        <div className="modal-instructions">
-          <div>You are driving the live browser. Close this tab to hand control back to your agent.</div>
-        </div>
-        <div className="modal-body" style={{ padding: 0, background: "#000" }}>
-          <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
-        </div>
-        {error && <div className="modal-error">ERR — {error}</div>}
+    <Modal open onClose={() => {}} title="Browser session" size="xl" dismissible={false}>
+      <div className="modal-instructions">
+        <div>You are driving the live browser. Close this tab to hand control back to your agent.</div>
       </div>
-    </div>
+      <div style={{ padding: 0, background: "#000", marginTop: "var(--s-12)" }}>
+        <CdpScreencast cdpProxyUrl={info.cdpProxyUrl} sessionId={info.sessionId} cdpToken={info.cdpToken} width={1024} />
+      </div>
+      {error && <div className="ui-form-error" style={{ marginTop: "var(--s-12)" }}>{error}</div>}
+    </Modal>
   );
 }

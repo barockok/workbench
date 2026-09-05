@@ -1,5 +1,7 @@
 import { useAuth } from "../context/AuthContext";
 import type { ConnectLinkError } from "../api";
+import { Modal } from "./ui/Modal";
+import { Button } from "./ui/Button";
 
 const COPY: Record<string, { title: string; detail: string }> = {
   LINK_INVALID: {
@@ -25,34 +27,30 @@ export default function ConnectLinkProblem({ error }: { error: ConnectLinkError 
 
   if (error.code === "ACCOUNT_MISMATCH") {
     return (
-      <div className="modal-backdrop" role="dialog" aria-modal="true">
-        <div className="modal">
-          <div className="modal-head">
-            <h2 className="modal-title">Wrong workbench account</h2>
+      <Modal
+        open
+        onClose={() => {}}
+        dismissible={false}
+        title="Wrong workbench account"
+        footer={<Button variant="danger" onClick={logout}>Sign out</Button>}
+      >
+        <div className="modal-instructions">
+          <div>
+            This link connects <b>{error.integration}</b> to a different workbench
+            account than the one you are signed in to{user?.email ? ` (${user.email})` : ""}.
           </div>
-          <div className="modal-instructions">
-            <div>
-              This link connects <b>{error.integration}</b> to a different workbench
-              account than the one you are signed in to{user?.email ? ` (${user.email})` : ""}.
-            </div>
-            <div>
-              Connecting from here would attach your credentials to that other
-              account. Sign in as the account the link was made for, or ask your
-              agent for a link for this account.
-            </div>
-          </div>
-          <div className="modal-foot">
-            <button type="button" onClick={logout}>Sign out</button>
+          <div>
+            Connecting from here would attach your credentials to that other
+            account. Sign in as the account the link was made for, or ask your
+            agent for a link for this account.
           </div>
         </div>
-      </div>
+      </Modal>
     );
   }
 
   const copy = COPY[error.code] ?? COPY.UNKNOWN;
   return (
-    <div className="boot">
-      <span>{copy.title} — {copy.detail}</span>
-    </div>
+    <div className="ui-loading">{copy.title} — {copy.detail}</div>
   );
 }

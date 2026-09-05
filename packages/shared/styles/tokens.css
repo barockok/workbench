@@ -1,0 +1,167 @@
+/* Shared design tokens — consumed by both docs/site and packages/portal. */
+
+:root {
+  --bg: #f9faf8;
+  --bg-sunk: #f1f3f0;
+  --surface: #ffffff;
+  --surface-2: #f9faf8;
+  --border: #e5e7eb;
+  --border-strong: #c6cad0;
+
+  --text: #111928;
+  --text-2: #525c6a;
+  --text-3: #6b7280;
+  --text-4: #8e95a3;
+
+  --accent: #853291;
+  --accent-hover: #732c7c;
+  --accent-soft: #fef3ff;
+  --accent-line: #e5b8ef;
+
+  /* The 600/700 steps, not 500: the 500-on-50-tint pairing the palette
+     suggests lands between 2.1:1 and 4.4:1, under the 4.5:1 text minimum. */
+  --ok: #007d55;
+  --ok-soft: #e4fcef;
+  --ok-line: #a8e6c9;
+  --warn: #ad540a;
+  --warn-soft: #fdf4e9;
+  --warn-line: #f6d9ac;
+  --danger: #ac2b26;
+  --danger-soft: #fff4f3;
+  --danger-line: #f5c0bd;
+  --info: #056dce;
+  --info-soft: #edf7ff;
+  --info-line: #b9dcfa;
+
+  --overlay: rgba(17, 25, 40, .8);
+
+  /* Code keeps one dark surface in both themes, drawn from the darkest neutral
+     so it reads as part of the same family rather than a pasted-in terminal. */
+  --code-bg: #111928;
+  --code-text: #e5e7eb;
+  --code-bar: #1b2432;
+
+  /* 6 chips · 8 inputs and default interactive · 12 cards and modals ·
+     full for buttons and badges. */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* 4px base. Steps: 2 4 8 12 16 20 24 32 40 48 — nothing between them. */
+  --s-2: 2px;
+  --s-4: 4px;
+  --s-8: 8px;
+  --s-12: 12px;
+  --s-16: 16px;
+  --s-20: 20px;
+  --s-24: 24px;
+  --s-32: 32px;
+  --s-40: 40px;
+  --s-48: 48px;
+
+  --page-pad-x: 16px;
+  --card-pad: 12px;
+  --section-gap: 12px;
+  --card-gap: 8px;
+
+  --topbar-h: 48px;
+  --topnav-h: 44px;
+  --sidebar-w: 268px;
+  --toc-w: 232px;
+  --content-max: 748px;
+
+  --shadow-sm: 0 1px 2px rgba(17, 25, 40, .05);
+  --shadow-md: 0 4px 16px -4px rgba(17, 25, 40, .12), 0 1px 3px rgba(17, 25, 40, .06);
+  --shadow-lg: 0 24px 60px -12px rgba(17, 25, 40, .28), 0 2px 8px rgba(17, 25, 40, .08);
+}
+
+/* The palette above defines one light theme. The dark values below are derived
+   from it: hues held, the brand lifted out of the 500/600 band (which fails
+   contrast on a dark ground) into the 200/300 band, and the neutrals rotated
+   around the darkest neutral rather than pure grey so both themes read as one
+   family. Kept in sync between the media query and the explicit toggle. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0b1018;
+    --bg-sunk: #070b11;
+    --surface: #111928;
+    --surface-2: #1a2433;
+    --border: #2a3444;
+    --border-strong: #3d4859;
+
+    --text: #f9faf8;
+    --text-2: #c6cad0;
+    --text-3: #8e95a3;
+    --text-4: #6b7280;
+
+    --accent: #d68ee4;
+    --accent-hover: #e5b8ef;
+    --accent-soft: #2a122e;
+    --accent-line: #4a2050;
+
+    --ok: #4fd3a0;
+    --ok-soft: #08251a;
+    --ok-line: #17513a;
+    --warn: #f7b75c;
+    --warn-soft: #2a1d0a;
+    --warn-line: #543a16;
+    --danger: #f2726c;
+    --danger-soft: #2c1211;
+    --danger-line: #5a2523;
+    --info: #5ca8f0;
+    --info-soft: #0a1c2e;
+    --info-line: #1b3e60;
+
+    --code-bg: #0b1018;
+    --code-text: #e5e7eb;
+    --code-bar: #111928;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
+    --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 2px 8px rgba(0, 0, 0, .5);
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #0b1018;
+  --bg-sunk: #070b11;
+  --surface: #111928;
+  --surface-2: #1a2433;
+  --border: #2a3444;
+  --border-strong: #3d4859;
+
+  --text: #f9faf8;
+  --text-2: #c6cad0;
+  --text-3: #8e95a3;
+  --text-4: #6b7280;
+
+  --accent: #d68ee4;
+  --accent-hover: #e5b8ef;
+  --accent-soft: #2a122e;
+  --accent-line: #4a2050;
+
+  --ok: #4fd3a0;
+  --ok-soft: #08251a;
+  --ok-line: #17513a;
+  --warn: #f7b75c;
+  --warn-soft: #2a1d0a;
+  --warn-line: #543a16;
+  --danger: #f2726c;
+  --danger-soft: #2c1211;
+  --danger-line: #5a2523;
+  --info: #5ca8f0;
+  --info-soft: #0a1c2e;
+  --info-line: #1b3e60;
+
+  --code-bg: #0b1018;
+  --code-text: #e5e7eb;
+  --code-bar: #111928;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
+  --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 2px 8px rgba(0, 0, 0, .5);
+}
