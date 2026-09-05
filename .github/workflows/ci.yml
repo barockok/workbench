@@ -16,7 +16,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20, 22]
+        # better-sqlite3 13 declares engines node>=22 and its worker exits
+        # immediately below that; 26 is what the Docker image ships, so the
+        # matrix covers the floor and the shipped runtime.
+        node-version: [22, 26]
 
     # The DbAdapter suite runs the same assertions against SQLite and
     # PostgreSQL. Without a real server the PostgreSQL half skips itself, which
