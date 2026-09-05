@@ -23,7 +23,7 @@ describe("Sidebar", () => {
 
   it("lists every destination", () => {
     renderAt("/");
-    for (const name of ["Home", "Apps", "Agents", "Activity", "Settings", "Help"]) {
+    for (const name of ["Home", "Apps", "Agents", "Activity", "Settings"]) {
       expect(screen.getByRole("link", { name })).toBeInTheDocument();
     }
   });
@@ -45,10 +45,8 @@ describe("Sidebar", () => {
     expect(screen.getByText("dev@example.com")).toBeInTheDocument();
   });
 
-  it("opens Help in a new tab without leaking the referrer", () => {
+  it("keeps Help out of the sidebar — it lives on Settings", () => {
     renderAt("/");
-    const help = screen.getByRole("link", { name: "Help" });
-    expect(help).toHaveAttribute("target", "_blank");
-    expect(help).toHaveAttribute("rel", expect.stringContaining("noreferrer"));
+    expect(screen.queryByRole("link", { name: "Help" })).not.toBeInTheDocument();
   });
 });

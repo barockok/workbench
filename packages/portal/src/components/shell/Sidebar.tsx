@@ -2,8 +2,6 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { ThemeToggle } from "../ui/ThemeToggle";
 
-const HELP_URL = "https://github.com/barockok/workbench";
-
 function Icon({ children }: { children: React.ReactNode }) {
   return (
     <svg
@@ -40,17 +38,12 @@ const AgentsIcon = () => (
   </Icon>
 );
 const ActivityIcon = () => <Icon><path d="M1 8h3l2-5.5L10 13l2-5h3" /></Icon>;
+// A toothed cog, not a hub-and-rays mark: the rayed version read as the sun
+// glyph the theme toggle already uses, two rows below it in the same column.
 const SettingsIcon = () => (
   <Icon>
-    <circle cx="8" cy="8" r="2.4" />
-    <path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.2 3.2l1.1 1.1M11.7 11.7l1.1 1.1M12.8 3.2l-1.1 1.1M4.3 11.7l-1.1 1.1" />
-  </Icon>
-);
-const HelpIcon = () => (
-  <Icon>
-    <circle cx="8" cy="8" r="6.3" />
-    <path d="M6.2 6.2A1.8 1.8 0 1 1 8 8.3v.7" />
-    <path d="M8 11.6h.01" />
+    <circle cx="8" cy="8" r="2.3" />
+    <path d="M12.9 9.8a1.1 1.1 0 0 0 .22 1.21l.04.04a1.33 1.33 0 1 1-1.88 1.88l-.04-.04a1.1 1.1 0 0 0-1.21-.22 1.1 1.1 0 0 0-.67 1v.11a1.33 1.33 0 1 1-2.66 0v-.06a1.1 1.1 0 0 0-.72-1 1.1 1.1 0 0 0-1.21.22l-.04.04a1.33 1.33 0 1 1-1.88-1.88l.04-.04a1.1 1.1 0 0 0 .22-1.21 1.1 1.1 0 0 0-1-.67h-.11a1.33 1.33 0 1 1 0-2.66h.06a1.1 1.1 0 0 0 1-.72 1.1 1.1 0 0 0-.22-1.21l-.04-.04a1.33 1.33 0 1 1 1.88-1.88l.04.04a1.1 1.1 0 0 0 1.21.22h.05a1.1 1.1 0 0 0 .67-1v-.11a1.33 1.33 0 1 1 2.66 0v.06a1.1 1.1 0 0 0 .67 1 1.1 1.1 0 0 0 1.21-.22l.04-.04a1.33 1.33 0 1 1 1.88 1.88l-.04.04a1.1 1.1 0 0 0-.22 1.21v.05a1.1 1.1 0 0 0 1 .67h.11a1.33 1.33 0 1 1 0 2.66h-.06a1.1 1.1 0 0 0-1 .67z" />
   </Icon>
 );
 
@@ -88,10 +81,6 @@ export function Sidebar() {
           <SettingsIcon />
           Settings
         </NavLink>
-        <a className="wb-nav-item" href={HELP_URL} target="_blank" rel="noreferrer noopener">
-          <HelpIcon />
-          Help
-        </a>
         <div className="wb-user">
           <span className="wb-user-email" title={user?.email ?? undefined}>
             {user?.email ?? "Signed in"}

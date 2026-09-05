@@ -32,11 +32,12 @@ beforeEach(() => {
 });
 
 describe("Settings", () => {
-  it("titles the page and names its three sections", async () => {
+  it("titles the page and names its sections", async () => {
     renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "API key" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Help" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Account" })).toBeInTheDocument();
   });
 
@@ -56,5 +57,12 @@ describe("Settings", () => {
   it("offers a theme toggle", () => {
     renderPage();
     expect(screen.getByRole("button", { name: "Toggle theme" })).toBeInTheDocument();
+  });
+
+  it("opens the help link in a new tab without leaking the referrer", () => {
+    renderPage();
+    const help = screen.getByRole("link", { name: "Docs & source on GitHub" });
+    expect(help).toHaveAttribute("target", "_blank");
+    expect(help).toHaveAttribute("rel", expect.stringContaining("noreferrer"));
   });
 });
