@@ -6,6 +6,7 @@ import {
   fetchActivity,
   fetchIntegrations,
   fetchConnections,
+  UNSTORED_MESSAGE,
   type IntegrationSummary,
 } from "../api";
 import { MCP_URL } from "../mcp-config";
@@ -15,20 +16,28 @@ import { Box, BoxRow } from "../components/ui/Box";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Badge } from "../components/ui/Badge";
 import IntegrationLogo from "../components/IntegrationLogo";
-import { ActivityTable } from "../components/ActivityTable";
-import { UNSTORED_MESSAGE } from "./Activity";
+import { ActivityTable, nameForIntegration } from "../components/ActivityTable";
 
 const RECENT_LIMIT = 10;
 const APPS_SHOWN = 8;
 
 export default function Home() {
   const { data: stats } = useQuery({ queryKey: ["stats"], queryFn: fetchStats });
-  const { data: recent } = useQuery({
+  const {
+    data: recent,
+    isError: recentIsError,
+  } = useQuery({
     queryKey: ["activity", { limit: RECENT_LIMIT }],
     queryFn: () => fetchActivity({ limit: RECENT_LIMIT }),
   });
-  const { data: registry } = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
-  const { data: connectionsData } = useQuery({ queryKey: ["connections"], queryFn: fetchConnections });
+  const { data: registry, isError: registryIsError } = useQuery({
+    queryKey: ["integrations"],
+    queryFn: fetchIntegrations,
+  });
+  const { data: connectionsData, isError: connectionsIsError } = useQuery({
+    queryKey: ["connections"],
+    queryFn: fetchConnections,
+  });
 
   const integrations: IntegrationSummary[] = registry?.integrations ?? [];
 
@@ -38,11 +47,9 @@ export default function Home() {
   }, [connectionsData]);
 
   const connectedApps = integrations.filter((i) => connectedNames.has(i.name));
+  const appsError = registryIsError || connectionsIsError;
 
-  const nameFor = useMemo(() => {
-    const map = new Map(integrations.map((i) => [i.name, i.displayName || i.name]));
-    return (name: string) => map.get(name) ?? name;
-  }, [integrations]);
+  const nameFor = useMemo(() => nameForIntegration(integrations), [integrations]);
 
   const stored = stats?.stored ?? true;
   const rate = stats?.success_rate;
@@ -73,7 +80,9 @@ export default function Home() {
         />
 
         <Box title="Your apps" action={<Link to="/apps">Browse all</Link>}>
-          {connectedApps.length === 0 ? (
+          {appsError ? (
+            <div className="ui-form-error">Couldn't load apps.</div>
+          ) : connectedApps.length === 0 ? (
             <EmptyState message="No apps connected yet." action={<Link to="/apps">Browse apps</Link>} />
           ) : (
             <>
@@ -102,7 +111,9 @@ export default function Home() {
         </Box>
 
         <Box title="Recent activity" action={<Link to="/activity">View all</Link>}>
-          {recent && !recent.stored ? (
+          {recentIsError ? (
+            <div className="ui-form-error">Couldn't load activity.</div>
+          ) : recent && !recent.stored ? (
             <EmptyState message={UNSTORED_MESSAGE} />
           ) : (recent?.events.length ?? 0) === 0 ? (
             <EmptyState message="No tool calls recorded yet." />

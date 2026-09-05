@@ -1,7 +1,16 @@
 import { Fragment } from "react";
-import type { ActivityEvent } from "../api";
+import type { ActivityEvent, IntegrationSummary } from "../api";
 import { DataTable } from "./ui/DataTable";
 import { dayLabel, timeLabel, durationLabel } from "../format";
+
+// Shared by every page that feeds ActivityTable: map an integration's stable
+// name to its display name, falling back to the name itself when the
+// registry hasn't loaded or doesn't know it.
+export function nameForIntegration(integrations: IntegrationSummary[]): (name: string) => string {
+  const map = new Map<string, string>();
+  integrations.forEach((i) => map.set(i.name, i.displayName || i.name));
+  return (name: string) => map.get(name) ?? name;
+}
 
 // Rows arrive newest-first; walk them in order and emit a group header row
 // whenever the day changes. No sorting here — the server already ordered them.

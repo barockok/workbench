@@ -14,8 +14,11 @@ import { useConnectFlow } from "../hooks/useConnectFlow";
 type Filter = "all" | "connected" | "available";
 
 export default function Apps() {
-  const { data, isLoading } = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
-  const { data: connectionsData } = useQuery({ queryKey: ["connections"], queryFn: fetchConnections });
+  const { data, isLoading, isError } = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
+  const { data: connectionsData, isError: connectionsIsError } = useQuery({
+    queryKey: ["connections"],
+    queryFn: fetchConnections,
+  });
   const { connect, error, busy, dialogs } = useConnectFlow();
 
   const [filter, setFilter] = useState<Filter>("all");
@@ -112,7 +115,9 @@ export default function Apps() {
 
       {error && <div className="ui-form-error">{error}</div>}
 
-      {visible.length === 0 ? (
+      {isError || connectionsIsError ? (
+        <div className="ui-form-error">Couldn't load apps.</div>
+      ) : visible.length === 0 ? (
         <EmptyState message="No apps match this filter." />
       ) : (
         <div className="wb-app-grid">

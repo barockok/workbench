@@ -9,6 +9,7 @@ vi.mock("../api", () => ({
   fetchActivity: vi.fn(),
   fetchIntegrations: vi.fn(),
   fetchConnections: vi.fn(),
+  UNSTORED_MESSAGE: "This deployment sends audit events somewhere other than its database, so there is nothing to show here. Set AUDIT_LOG_DEST=sqlite to record them.",
 }));
 
 import { fetchStats, fetchActivity, fetchIntegrations, fetchConnections } from "../api";

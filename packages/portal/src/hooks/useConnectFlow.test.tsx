@@ -61,6 +61,7 @@ describe("useConnectFlow", () => {
     fireEvent.click(screen.getByText("do connect"));
 
     await waitFor(() => expect(startIntegrationAuth).toHaveBeenCalledWith("acme", undefined));
+    await waitFor(() => expect(window.location.href).toBe("https://example.com/authorize"));
   });
 
   it("asks for an instance URL first when the integration declares one", async () => {

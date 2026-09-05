@@ -38,6 +38,13 @@ function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
 }
 
+// Fastify parses a repeated query key (`?x=a&x=b`) into an array. Every
+// caller here expects a single string, so take the first value when one
+// arrives as an array rather than passing it through to the SQL binder.
+function firstQueryValue(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
+}
+
 // Whether an integration can actually be connected right now: built-ins
 // (auth "none") and cookie auth are always ready; oauth2 needs client creds
 // present in env; anything else (manual) is not connectable from the UI.
@@ -785,9 +792,11 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
   // constant-cost summary into an unbounded scan.
   const STATS_WINDOW_DAYS = 30;
 
-  // Tool-call history for the signed-in human. The user id comes from the
-  // session and is never read from input, so asking for someone else's rows
-  // is not expressible.
+  // Tool-call history for the caller — the signed-in human, or an agent
+  // holding their `x-workbench-api-key` (authenticate() accepts either, same
+  // as every other route here); either way the user id comes from the
+  // credential and is never read from input, so asking for someone else's
+  // rows is not expressible.
   app.get("/api/activity", async (request, reply) => {
     const user = await authenticate(request);
     if (!user) {
@@ -797,11 +806,17 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return { stored: false, events: [], next_cursor: null };
     }
 
-    const q = request.query as {
-      limit?: string;
-      cursor?: string;
-      integration?: string;
-      status?: string;
+    const raw = request.query as {
+      limit?: string | string[];
+      cursor?: string | string[];
+      integration?: string | string[];
+      status?: string | string[];
+    };
+    const q = {
+      limit: firstQueryValue(raw.limit),
+      cursor: firstQueryValue(raw.cursor),
+      integration: firstQueryValue(raw.integration),
+      status: firstQueryValue(raw.status),
     };
 
     const requested = Number(q.limit);

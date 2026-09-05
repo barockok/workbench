@@ -15,7 +15,7 @@ import { ConfirmDialog } from "../components/dialogs/ConfirmDialog";
 export default function Agents() {
   const qc = useQueryClient();
   const { data: keyStatus } = useQuery({ queryKey: ["api-key-status"], queryFn: getApiKeyStatus });
-  const { data, isLoading } = useQuery({ queryKey: ["agents"], queryFn: fetchAgents });
+  const { data, isLoading, isError } = useQuery({ queryKey: ["agents"], queryFn: fetchAgents });
 
   const [pendingRevoke, setPendingRevoke] = useState<ConnectedAgent | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +78,8 @@ export default function Agents() {
         <Box title={`Connected agents (${agents.length})`}>
           {isLoading ? (
             <div className="ui-loading">Loading agents…</div>
+          ) : isError ? (
+            <div className="ui-form-error">Couldn't load agents.</div>
           ) : agents.length === 0 ? (
             <EmptyState message="No agents connected." />
           ) : (

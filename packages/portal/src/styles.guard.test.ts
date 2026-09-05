@@ -9,29 +9,22 @@ const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "styles.c
 // pill button or a drop shadow on a static surface fails here rather than
 // quietly drifting the whole interface back.
 describe("portal stylesheet geometry", () => {
-  it("uses a full radius only on the toggle, which is a capsule by definition", () => {
+  it("uses one radius everywhere, with no capsule exception", () => {
     const users = css
       .split("}")
       .filter((block) => block.includes("--radius-full"))
       .map((block) => block.split("{")[0].trim());
-    expect(users.length).toBeGreaterThan(0);
-    for (const selector of users) {
-      expect(selector).toMatch(/ui-toggle/);
-    }
+    expect(users).toEqual([]);
   });
 
-  it("casts a shadow only on genuinely overlaid surfaces", () => {
+  it("casts a shadow only on the modal, the only thing that genuinely floats above the page", () => {
     const users = css
       .split("}")
       .filter((block) => /box-shadow\s*:/.test(block))
       .map((block) => block.split("{")[0].trim());
     expect(users.length).toBeGreaterThan(0);
     for (const selector of users) {
-      // The modal and the bottom sheet are the only things that genuinely
-      // float above the page. The sheet's class is `ui-sheet`, not
-      // `ui-bottom-sheet` — the component is named BottomSheet but its CSS
-      // is not.
-      expect(selector).toMatch(/ui-modal|ui-sheet/);
+      expect(selector).toMatch(/ui-modal/);
     }
   });
 

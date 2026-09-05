@@ -81,7 +81,7 @@ export default function ApiKeyPanel() {
   const copyKey = revealed ?? API_KEY_PLACEHOLDER;
 
   return (
-    <div className="wb-row-stack apikey-body">
+    <div className="wb-row-stack">
       <p className="apikey-blurb">
         Send this key in the <code>x-workbench-api-key</code> header to{" "}
         <code>{MCP_URL}</code>. Reveal it anytime below.

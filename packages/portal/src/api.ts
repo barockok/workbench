@@ -383,6 +383,12 @@ export interface ActivityPage {
   next_cursor: string | null;
 }
 
+// Shown wherever a page renders `stored: false` — describes the same API
+// state, so it lives beside the type rather than in whichever page rendered
+// it first.
+export const UNSTORED_MESSAGE =
+  "This deployment sends audit events somewhere other than its database, so there is nothing to show here. Set AUDIT_LOG_DEST=sqlite to record them.";
+
 export interface Stats {
   stored: boolean;
   window_days: number;

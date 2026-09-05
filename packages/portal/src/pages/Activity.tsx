@@ -1,18 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchActivity, fetchIntegrations, type ActivityEvent, type IntegrationSummary } from "../api";
+import { fetchActivity, fetchIntegrations, UNSTORED_MESSAGE, type ActivityEvent, type IntegrationSummary } from "../api";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Box } from "../components/ui/Box";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Tabs } from "../components/ui/Tabs";
 import { Select } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { ActivityTable } from "../components/ActivityTable";
+import { ActivityTable, nameForIntegration } from "../components/ActivityTable";
 
 const PAGE_SIZE = 50;
-
-export const UNSTORED_MESSAGE =
-  "This deployment sends audit events somewhere other than its database, so there is nothing to show here. Set AUDIT_LOG_DEST=sqlite to record them.";
 
 export default function Activity() {
   const [status, setStatus] = useState<"all" | "error">("all");
@@ -26,6 +23,7 @@ export default function Activity() {
   // ordinary end-of-list case, where the final page comes back empty.
   const [pagedCursor, setPagedCursor] = useState<string | null | undefined>(undefined);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
 
   const filters = useMemo(
     () => ({
@@ -44,39 +42,60 @@ export default function Activity() {
     apply();
     setOlder([]);
     setPagedCursor(undefined);
+    setLoadMoreError(null);
   }
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["activity", filters],
     queryFn: () => fetchActivity(filters),
   });
+
+  // Page 1 refetching invalidates everything paged in beneath it — those rows
+  // were positioned relative to a page 1 that no longer exists.
+  const seenBase = useRef<typeof data>(undefined);
+  useEffect(() => {
+    if (data && seenBase.current && data !== seenBase.current) {
+      setOlder([]);
+      setPagedCursor(undefined);
+    }
+    seenBase.current = data;
+  }, [data]);
 
   // Until "Load more" is pressed, the cursor to offer is the first page's.
   const nextCursor = pagedCursor === undefined ? (data?.next_cursor ?? null) : pagedCursor;
 
   const { data: registry } = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
 
-  const nameFor = useMemo(() => {
-    const map = new Map<string, string>();
-    ((registry?.integrations ?? []) as IntegrationSummary[]).forEach((i) =>
-      map.set(i.name, i.displayName || i.name)
-    );
-    return (name: string) => map.get(name) ?? name;
-  }, [registry]);
+  const nameFor = useMemo(
+    () => nameForIntegration((registry?.integrations ?? []) as IntegrationSummary[]),
+    [registry]
+  );
 
   async function loadMore() {
     if (!nextCursor) return;
     setLoadingMore(true);
+    setLoadMoreError(null);
     try {
       const page = await fetchActivity({ ...filters, cursor: nextCursor });
       setOlder((prev) => [...prev, ...page.events]);
       setPagedCursor(page.next_cursor);
+    } catch (e) {
+      setLoadMoreError(e instanceof Error ? e.message : "Couldn't load more activity.");
     } finally {
       setLoadingMore(false);
     }
   }
 
-  const events = [...(data?.events ?? []), ...older];
+  // De-duplicate by id: a page-1 refetch racing with an in-flight "Load more"
+  // can otherwise land the same row in both `data.events` and `older`.
+  const events = useMemo(() => {
+    const seen = new Set<number>();
+    return [...(data?.events ?? []), ...older].filter((e) => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
+  }, [data, older]);
   const integrations = (registry?.integrations ?? []) as IntegrationSummary[];
 
   return (
@@ -111,6 +130,8 @@ export default function Activity() {
       <Box>
         {isLoading ? (
           <div className="ui-loading">Loading activity…</div>
+        ) : isError ? (
+          <div className="ui-form-error">Couldn't load activity.</div>
         ) : data && !data.stored ? (
           <EmptyState message={UNSTORED_MESSAGE} />
         ) : events.length === 0 ? (
@@ -119,6 +140,8 @@ export default function Activity() {
           <ActivityTable events={events} caption="Tool call history" nameFor={nameFor} />
         )}
       </Box>
+
+      {loadMoreError && <div className="ui-form-error">{loadMoreError}</div>}
 
       {nextCursor && (
         <div className="wb-load-more">

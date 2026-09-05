@@ -147,14 +147,22 @@ describe("GET /api/activity", () => {
   });
 
   it("clamps limit into 1..100", async () => {
-    for (let i = 0; i < 3; i++) await seed({ userId: "user-1", tool: `t${i}` });
+    for (let i = 0; i < 101; i++) await seed({ userId: "user-1", tool: `t${i}` });
     const app = await buildApp();
 
     const zero = await app.inject({ method: "GET", url: "/api/activity?limit=0", headers: AUTH });
     expect(JSON.parse(zero.body).events).toHaveLength(1);
 
     const huge = await app.inject({ method: "GET", url: "/api/activity?limit=9999", headers: AUTH });
-    expect(JSON.parse(huge.body).events).toHaveLength(3);
+    expect(JSON.parse(huge.body).events).toHaveLength(100);
+  });
+
+  it("falls back to the default of 50 on a non-numeric limit", async () => {
+    for (let i = 0; i < 60; i++) await seed({ userId: "user-1", tool: `t${i}` });
+    const app = await buildApp();
+
+    const res = await app.inject({ method: "GET", url: "/api/activity?limit=notanumber", headers: AUTH });
+    expect(JSON.parse(res.body).events).toHaveLength(50);
   });
 
   it("reports stored:false when audit events go somewhere other than the database", async () => {

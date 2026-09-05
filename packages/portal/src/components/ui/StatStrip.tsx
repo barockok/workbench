@@ -7,7 +7,7 @@ export interface Stat {
 
 export function StatStrip({ stats, note }: { stats: Stat[]; note?: ReactNode }) {
   return (
-    <section className="ui-box ui-stat-strip">
+    <section className="ui-box">
       <div className="ui-stat-cells">
         {stats.map((s) => (
           <div key={s.label} className="ui-stat">
