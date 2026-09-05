@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { fetchProviders, fetchAuthUrl, fetchKeycloakAuthUrl, SERVER_URL } from "../api";
 import { Button } from "../components/ui/Button";
+import { BrandLockup } from "../components/BrandMark";
 
 // Lands here from the server's GET /authorize — an MCP agent is asking a
 // human to authenticate to workbench itself (not connect one integration).
@@ -52,7 +53,8 @@ export default function AuthorizeChoose() {
 
   if (!ticket) {
     return (
-      <div className="page-center">
+      <div className="page-center page-center-stack">
+        <BrandLockup />
         <div className="login-card">
           <div className="ui-form-error">Missing or invalid link. Ask your agent to try again.</div>
         </div>
@@ -71,7 +73,8 @@ export default function AuthorizeChoose() {
         <input type="hidden" name="token" value={token ?? ""} />
       </form>
 
-      <section className="login-form">
+      <section className="login-form login-form-stack">
+        <BrandLockup />
         <div className="login-card">
           <h1 className="login-title">Approve agent access</h1>
           <p className="login-sub">

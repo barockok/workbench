@@ -71,6 +71,12 @@ describe("ConnectResult", () => {
     expect(screen.queryByText("Connected")).not.toBeInTheDocument();
   });
 
+  it("carries the workbench lockup, since the page sits outside the app shell", async () => {
+    const { container } = renderPage("/connected/acme?status=ok");
+    await waitFor(() => expect(screen.getByText("Connected")).toBeInTheDocument());
+    expect(container.querySelector(".brand-lockup")).toBeInTheDocument();
+  });
+
   it("tints the card green on success so the outcome reads before the words do", async () => {
     const { container } = renderPage("/connected/acme?status=ok");
     await waitFor(() => expect(screen.getByText("Connected")).toBeInTheDocument());

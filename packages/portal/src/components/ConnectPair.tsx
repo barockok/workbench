@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BrandMark } from "./BrandMark";
 
 // The two ends of a connection, workbench on the left and the integration on
 // the right, with the state of the link between them. Shared by the pre-connect
@@ -15,10 +16,7 @@ export function ConnectPair({
   return (
     <div className="connect-pair">
       <div className="connect-pair-end">
-        <span className="connect-pair-mark connect-pair-workbench" aria-hidden>
-          wb
-        </span>
-        <span className="connect-pair-label">workbench</span>
+        <BrandMark size={56} />
       </div>
 
       {/* The dashes carry the state visually; the label carries it to anyone

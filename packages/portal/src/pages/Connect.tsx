@@ -6,6 +6,7 @@ import type { RedeemResult, IntegrationSummary } from "../api";
 import CdpScreencast from "../components/CdpScreencast";
 import ConnectLinkProblem from "../components/ConnectLinkProblem";
 import { ConnectPair } from "../components/ConnectPair";
+import { BrandLockup } from "../components/BrandMark";
 import IntegrationLogo from "../components/IntegrationLogo";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
@@ -81,7 +82,8 @@ export default function Connect() {
 
   if (!info) {
     return (
-      <div className="page-center">
+      <div className="page-center page-center-stack">
+        <BrandLockup />
         <div className="connect-result-card">
           <ConnectPair
             logo={<IntegrationLogo name={integration} displayName={label} logo={integ?.logo} size={44} />}
