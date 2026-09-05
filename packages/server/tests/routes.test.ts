@@ -791,33 +791,79 @@ describe("API routes", () => {
   });
 
   describe("GET /api/auth/plugin/:integration/callback", () => {
-    it("redirects on success", async () => {
+    // Every exit from this route is a redirect to the portal's result page
+    // carrying a status code. The provider's own error text and any exception
+    // message stay server-side: they are attacker-influenced and end up in a
+    // URL the human sees.
+    const RESULT = "http://localhost:5173/connected/slack";
+
+    it("redirects to the result page with status=ok on success", async () => {
       const { handlePluginCallback } = await import("../src/auth/plugin-oauth");
       vi.mocked(handlePluginCallback).mockResolvedValue({ userId: "user-1" });
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/auth/plugin/slack/callback?code=abc&state=xyz" });
       expect(res.statusCode).toBe(302);
-      expect(res.headers.location).toContain("connected=slack");
+      expect(res.headers.location).toBe(`${RESULT}?status=ok`);
     });
 
-    it("returns 400 on provider error", async () => {
+    it("redirects with status=denied when the human rejected the consent screen", async () => {
       const app = await buildApp();
-      const res = await app.inject({ method: "GET", url: "/api/auth/plugin/slack/callback?error=denied" });
-      expect(res.statusCode).toBe(400);
+      const res = await app.inject({ method: "GET", url: "/api/auth/plugin/slack/callback?error=access_denied" });
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe(`${RESULT}?status=denied`);
     });
 
-    it("returns 400 when code or state missing", async () => {
+    it("redirects with status=failed on any other provider error", async () => {
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/auth/plugin/slack/callback?error=server_error" });
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe(`${RESULT}?status=failed`);
+    });
+
+    it("keeps the provider's error text out of the redirect", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/plugin/slack/callback?error=" + encodeURIComponent("tenant acme-internal is not entitled"),
+      });
+      expect(res.headers.location).toBe(`${RESULT}?status=failed`);
+      expect(res.headers.location).not.toContain("acme-internal");
+    });
+
+    it("redirects with status=failed when code or state is missing", async () => {
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/auth/plugin/slack/callback?code=abc" });
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe(`${RESULT}?status=failed`);
     });
 
-    it("returns 400 on handler failure", async () => {
+    it("redirects with status=expired when the pending row is gone", async () => {
       const { handlePluginCallback } = await import("../src/auth/plugin-oauth");
       vi.mocked(handlePluginCallback).mockRejectedValue(new Error("Invalid state"));
       const app = await buildApp();
       const res = await app.inject({ method: "GET", url: "/api/auth/plugin/slack/callback?code=abc&state=xyz" });
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe(`${RESULT}?status=expired`);
+    });
+
+    it("redirects with status=failed on any other handler error, without leaking the message", async () => {
+      const { handlePluginCallback } = await import("../src/auth/plugin-oauth");
+      vi.mocked(handlePluginCallback).mockRejectedValue(new Error("connect ECONNREFUSED 10.1.2.3:443"));
+      const app = await buildApp();
+      const res = await app.inject({ method: "GET", url: "/api/auth/plugin/slack/callback?code=abc&state=xyz" });
+      expect(res.statusCode).toBe(302);
+      expect(res.headers.location).toBe(`${RESULT}?status=failed`);
+      expect(res.headers.location).not.toContain("10.1.2.3");
+    });
+
+    it("cannot be steered off the portal origin by the integration path param", async () => {
+      const app = await buildApp();
+      const res = await app.inject({
+        method: "GET",
+        url: "/api/auth/plugin/..%2F..%2Fevil.example.com/callback?error=access_denied",
+      });
+      expect(res.statusCode).toBe(302);
+      expect(new URL(res.headers.location as string).origin).toBe("http://localhost:5173");
     });
   });
 
