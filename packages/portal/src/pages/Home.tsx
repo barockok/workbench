@@ -16,7 +16,7 @@ import { Box, BoxRow } from "../components/ui/Box";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Badge } from "../components/ui/Badge";
 import IntegrationLogo from "../components/IntegrationLogo";
-import { ActivityTable, nameForIntegration } from "../components/ActivityTable";
+import { ActivityTable, integrationLookup } from "../components/ActivityTable";
 
 const RECENT_LIMIT = 10;
 const APPS_SHOWN = 8;
@@ -49,7 +49,7 @@ export default function Home() {
   const connectedApps = integrations.filter((i) => connectedNames.has(i.name));
   const appsError = registryIsError || connectionsIsError;
 
-  const nameFor = useMemo(() => nameForIntegration(integrations), [integrations]);
+  const appFor = useMemo(() => integrationLookup(integrations), [integrations]);
 
   const stored = stats?.stored ?? true;
   const rate = stats?.success_rate;
@@ -73,7 +73,20 @@ export default function Home() {
             },
             {
               label: "Most used app",
-              value: stored && stats?.most_used_integration ? nameFor(stats.most_used_integration) : "—",
+              value:
+                stored && stats?.most_used_integration ? (
+                  <span className="ui-stat-value-app">
+                    <IntegrationLogo
+                      name={stats.most_used_integration}
+                      displayName={appFor(stats.most_used_integration).label}
+                      logo={appFor(stats.most_used_integration).logo}
+                      size={20}
+                    />
+                    {appFor(stats.most_used_integration).label}
+                  </span>
+                ) : (
+                  "—"
+                ),
             },
             { label: "Connected apps", value: String(connectedApps.length) },
           ]}
@@ -118,7 +131,7 @@ export default function Home() {
           ) : (recent?.events.length ?? 0) === 0 ? (
             <EmptyState message="No tool calls recorded yet." />
           ) : (
-            <ActivityTable events={recent!.events} caption="Ten most recent tool calls" nameFor={nameFor} />
+            <ActivityTable events={recent!.events} caption="Ten most recent tool calls" appFor={appFor} />
           )}
         </Box>
       </div>
