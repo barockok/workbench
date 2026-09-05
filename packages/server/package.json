@@ -21,7 +21,7 @@
     "@opentelemetry/instrumentation-http": "^0.51",
     "@opentelemetry/resources": "^1.24",
     "@opentelemetry/sdk-node": "^0.51",
-    "@opentelemetry/sdk-trace-node": "^1.24",
+    "@opentelemetry/sdk-trace-node": "^2.11",
     "@opentelemetry/semantic-conventions": "^1.24",
     "@types/ws": "^8.18.1",
     "bcryptjs": "^2.4",
