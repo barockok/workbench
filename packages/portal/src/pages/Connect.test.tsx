@@ -66,6 +66,12 @@ describe("Connect", () => {
     expect(redeemConnectLink).not.toHaveBeenCalled();
   });
 
+  it("carries the workbench lockup so the human can see who is asking", async () => {
+    const { container } = renderPage();
+    await screen.findByRole("button", { name: "Connect" });
+    expect(container.querySelector(".brand-lockup")).toBeInTheDocument();
+  });
+
   it("redeems only once the human accepts", async () => {
     vi.mocked(redeemConnectLink).mockResolvedValue(COOKIE_RESULT);
     renderPage();

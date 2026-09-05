@@ -48,6 +48,12 @@ describe("AuthorizeChoose", () => {
     expect(container.querySelector(".page-center")).toBeInTheDocument();
   });
 
+  it("carries the workbench lockup, which the login artwork used to provide", async () => {
+    const { container } = renderPage("/authorize/choose?ticket=tkt-1");
+    await screen.findByRole("heading", { name: "Approve agent access" });
+    expect(container.querySelector(".brand-lockup")).toBeInTheDocument();
+  });
+
   it("still offers the provider it was given", async () => {
     renderPage("/authorize/choose?ticket=tkt-1");
     await waitFor(() =>

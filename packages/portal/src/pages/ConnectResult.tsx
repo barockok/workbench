@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchIntegrations, type IntegrationSummary } from "../api";
 import IntegrationLogo from "../components/IntegrationLogo";
 import { ConnectPair } from "../components/ConnectPair";
+import { BrandLockup } from "../components/BrandMark";
 
 type Status = "ok" | "denied" | "expired" | "failed";
 
@@ -62,7 +63,8 @@ export default function ConnectResult() {
   }, [status]);
 
   return (
-    <div className="page-center">
+    <div className="page-center page-center-stack">
+      <BrandLockup />
       <div className={`connect-result-card${status === "ok" ? " is-ok" : ""}`}>
         <ConnectPair
           connected={status === "ok"}

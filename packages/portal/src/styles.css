@@ -912,6 +912,24 @@ body {
    the link is spent, and the result screen the provider callback redirects
    to. Full-viewport, outside the app shell — a human lands here from a link
    or from a provider, not from the nav. */
+/* The workbench mark and wordmark, matching the docs site's topbar so the two
+   surfaces present the same identity. Used by the pages outside the app shell,
+   which have no sidebar to carry the brand for them. */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  line-height: 1;
+}
+
+.brand-lockup { display: flex; align-items: center; gap: var(--s-8); }
+.brand-name { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--text); }
+
 /* The centring primitive for standalone pages that live outside the app shell
    — the connect handoff, its result, and the agent-approval prompt. The login
    grid is not it: that is two columns, and its first holds artwork these pages
@@ -924,6 +942,14 @@ body {
   padding: var(--s-24);
   background: var(--bg);
 }
+
+/* Lockup above the card, both centred on the same column. */
+.page-center-stack,
+.login-form-stack {
+  flex-direction: column;
+  gap: var(--s-24);
+}
+.login-form-stack { display: flex; align-items: center; }
 
 .connect-result-card {
   display: flex;
@@ -988,16 +1014,6 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
-}
-
-.connect-pair-workbench {
-  font-family: var(--mono);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: .04em;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
 }
 
 .connect-pair-label {
