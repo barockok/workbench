@@ -912,7 +912,11 @@ body {
    the link is spent, and the result screen the provider callback redirects
    to. Full-viewport, outside the app shell — a human lands here from a link
    or from a provider, not from the nav. */
-.connect-result {
+/* The centring primitive for standalone pages that live outside the app shell
+   — the connect handoff, its result, and the agent-approval prompt. The login
+   grid is not it: that is two columns, and its first holds artwork these pages
+   do not render, which left their cards sitting in one half of the viewport. */
+.page-center {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -934,6 +938,21 @@ body {
   background: var(--surface);
   text-align: center;
 }
+
+/* Success is carried by the surface, not by a shadow: this stylesheet reserves
+   shadows for the modal, the one thing that genuinely floats above the page,
+   and styles.guard.test.ts holds that line. */
+.connect-result-card.is-ok {
+  border-color: var(--ok-line);
+  background: var(--ok-soft);
+}
+
+.connect-result-link {
+  font-size: 13px;
+  color: var(--text-3);
+  text-decoration: none;
+}
+.connect-result-link:hover { color: var(--text); text-decoration: underline; }
 
 .connect-result-title { margin: 0; font-size: 18px; font-weight: 600; color: var(--text); }
 .connect-result-detail { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-2); }

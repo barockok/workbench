@@ -81,7 +81,7 @@ export default function Connect() {
 
   if (!info) {
     return (
-      <div className="connect-result">
+      <div className="page-center">
         <div className="connect-result-card">
           <ConnectPair
             logo={<IntegrationLogo name={integration} displayName={label} logo={integ?.logo} size={44} />}
