@@ -6,7 +6,7 @@ import { Badge } from "../components/ui/Badge";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
 import ApiKeyPanel, { useApiKeyStatus } from "../components/ApiKeyPanel";
 
-const HELP_URL = "https://github.com/barockok/workbench";
+const HELP_URL = "https://barockok.github.io/workbench/";
 
 export default function Settings() {
   const { user, logout } = useAuth();
@@ -39,7 +39,7 @@ export default function Settings() {
             <span className="wb-detail-key">Documentation</span>
             <span className="wb-detail-val">
               <a href={HELP_URL} target="_blank" rel="noreferrer noopener">
-                Docs &amp; source on GitHub
+                workbench documentation
               </a>
             </span>
           </BoxRow>
