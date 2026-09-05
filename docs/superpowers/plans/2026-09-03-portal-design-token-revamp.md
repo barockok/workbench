@@ -2548,7 +2548,16 @@ Expected: no matches — every old custom-property name from the pre-revamp `:ro
 
 - [ ] **Step 6: Confirm no attribution or external URL leaked in from the token source**
 
-Run: `git log --oneline docs/superpowers/specs/2026-09-03-portal-design-token-revamp-design.md docs/superpowers/plans/2026-09-03-portal-design-token-revamp.md packages/shared/styles/tokens.css | head -1` then `grep -rniE "amartha|funds-lite|vercel\.app|A-Partner|NG-MIS" packages/shared/styles/tokens.css docs/site/assets/docs.css packages/portal/src` (across the whole tree touched by this plan).
+Run the repository's own pre-commit hygiene pattern — it lives in `CLAUDE.md`
+under **Public Repo Hygiene** — over `packages/shared/styles/tokens.css`,
+`docs/site/assets/docs.css` and `packages/portal/src`, i.e. the whole tree this
+plan touched. Open `CLAUDE.md`, copy the pattern from the pre-commit check, and
+run it by hand.
+
+The pattern is deliberately NOT restated here. A verification step that spells
+out the internal names it is checking for becomes, once committed, exactly the
+leak it exists to prevent — and this line previously did just that.
+
 Expected: no matches — confirms the public-repo hygiene constraint held throughout.
 
 - [ ] **Step 7: Report**
