@@ -6,7 +6,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "fastify": "^4.28"
+    "fastify": "^5.12.3"
   },
   "devDependencies": {
     "typescript": "^5.4",

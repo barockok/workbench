@@ -86,7 +86,10 @@ async function main() {
   app.addHook("onResponse", async (request, reply) => {
     const start = (request as { _metricStart?: number })._metricStart;
     if (!start) return;
-    const route = request.routerPath ?? request.url;
+    // routerPath was removed in Fastify 5; the matched route pattern now
+    // lives on routeOptions. Falling back to the raw URL would explode the
+    // metric's cardinality, since every id would become its own label.
+    const route = request.routeOptions?.url ?? request.url;
     if (route === "/metrics") return;
     const labels = {
       method: request.method,
