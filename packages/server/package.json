@@ -43,7 +43,7 @@
     "@types/pg": "^8.11.0",
     "@types/tar-stream": "^3.1.4",
     "@vitest/coverage-v8": "^4.1.11",
-    "tsx": "^4.15",
+    "tsx": "^4.23",
     "typescript": "^5.4",
     "vitest": "^4.1.11"
   }
