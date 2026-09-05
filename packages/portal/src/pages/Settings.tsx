@@ -6,6 +6,8 @@ import { Badge } from "../components/ui/Badge";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
 import ApiKeyPanel, { useApiKeyStatus } from "../components/ApiKeyPanel";
 
+const HELP_URL = "https://github.com/barockok/workbench";
+
 export default function Settings() {
   const { user, logout } = useAuth();
   const { data, isLoading } = useApiKeyStatus();
@@ -29,6 +31,17 @@ export default function Settings() {
           <BoxRow>
             <span className="wb-detail-key">Theme</span>
             <span className="wb-detail-val"><ThemeToggle /></span>
+          </BoxRow>
+        </Box>
+
+        <Box title="Help">
+          <BoxRow>
+            <span className="wb-detail-key">Documentation</span>
+            <span className="wb-detail-val">
+              <a href={HELP_URL} target="_blank" rel="noreferrer noopener">
+                Docs &amp; source on GitHub
+              </a>
+            </span>
           </BoxRow>
         </Box>
 
