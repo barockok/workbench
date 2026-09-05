@@ -224,7 +224,8 @@ describe("createContext", () => {
     });
 
     it("sends only cookies whose domain matches the target host (browser-like scoping)", async () => {
-      // internal-app repro: capture sweeps in cookies for sibling hosts (sso.*).
+      // Repro from a multi-subdomain provider: capture sweeps in cookies for
+      // sibling hosts (sso.*).
       // Replaying ALL of them to one host bloats the header (nginx 400) and
       // isn't what a browser does. Only host-matching cookies must be sent.
       const { getCookies } = await import("../src/auth/cookie");

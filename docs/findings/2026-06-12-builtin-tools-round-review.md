@@ -31,7 +31,7 @@ Pattern: every handler ends `return res.json()` — zero shaping except google-d
 
 - Internal `browser_*` / `deploy_jot` descriptions: defaults, cost warnings, when-to-use-X-instead-of-Y. Gold standard.
 - `google_sheets_search` uses Drive `fields=` projection — only id/name/modifiedTime per file. The pattern to copy everywhere.
-- External internal-app plugin descriptions (row-size warnings, required-param notes, cross-tool pointers) show the target quality bar.
+- An external plugin's descriptions (row-size warnings, required-param notes, cross-tool pointers) show the target quality bar.
 
 ## Fix directions (priority)
 
