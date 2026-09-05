@@ -2,6 +2,11 @@
 .env
 .env.*
 
+# Local MCP client config. Points at whichever workbench the developer is
+# running — a deployment hostname or localhost — which is machine-specific
+# and, on a public repo, not something to publish.
+.mcp.json
+
 # Data
 data/
 *.db
