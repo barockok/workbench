@@ -157,8 +157,12 @@ body {
   border-radius: var(--radius-sm);
   font-family: var(--mono);
 }
+.apikey-panel { width: 100%; }
 .apikey-actions { display: flex; gap: var(--s-8); }
-.apikey-reveal { display: flex; flex-direction: column; gap: var(--s-8); }
+/* The panel sits in a `justify-items: start` grid, which sizes items to their
+   content — without this the code block inside collapses to its longest line
+   instead of spanning the row, as it does on Agents. */
+.apikey-reveal { display: flex; flex-direction: column; gap: var(--s-8); width: 100%; }
 .apikey-row { display: flex; align-items: center; gap: var(--s-8); }
 .apikey-value {
   flex: 1;
@@ -170,18 +174,6 @@ body {
   border-radius: var(--radius-sm);
   padding: var(--s-8);
   word-break: break-all;
-}
-.apikey-snippet-label { color: var(--text-3); font-size: 11px; font-family: var(--sans); }
-.apikey-snippet {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: var(--s-8) var(--s-12);
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-size: 11.5px;
-  color: var(--text);
-  font-family: var(--mono);
 }
 
 /* --- integration logo + enriched cards + detail --- */

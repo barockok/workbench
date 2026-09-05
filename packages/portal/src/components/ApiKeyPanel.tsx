@@ -81,7 +81,7 @@ export default function ApiKeyPanel() {
   const copyKey = revealed ?? API_KEY_PLACEHOLDER;
 
   return (
-    <div className="wb-row-stack">
+    <div className="wb-row-stack apikey-panel">
       <p className="apikey-blurb">
         Send this key in the <code>x-workbench-api-key</code> header to{" "}
         <code>{MCP_URL}</code>. Reveal it anytime below.
@@ -107,14 +107,13 @@ export default function ApiKeyPanel() {
       {/* Config snippet — always visible once a key exists or was just minted. */}
       {(revealed || hasKey) && (
         <div className="apikey-reveal" style={{ marginTop: 10 }}>
-          <div className="apikey-snippet-label">MCP client config (JSON):</div>
-          <pre className="apikey-snippet"><code>{mcpConfigFor(snippetKey)}</code></pre>
-          <div className="apikey-actions">
-            <Button variant="ghost" onClick={() => copy(mcpConfigFor(copyKey), "cfg")}>
+          <pre className="wb-code"><code>{mcpConfigFor(snippetKey)}</code></pre>
+          <div className="wb-inline-row">
+            <Button variant="outline" onClick={() => copy(mcpConfigFor(copyKey), "cfg")}>
               {copied === "cfg" ? "Copied" : "Copy config"}
             </Button>
             {!revealed && (
-              <Button variant="ghost" onClick={handleReveal} disabled={busy}>
+              <Button variant="outline" onClick={handleReveal} disabled={busy}>
                 {busy ? "…" : "Reveal key"}
               </Button>
             )}
