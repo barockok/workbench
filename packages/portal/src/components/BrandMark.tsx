@@ -13,12 +13,16 @@ export function BrandMark({ size = 24 }: { size?: number }) {
   );
 }
 
-// Mark plus wordmark, for pages that sit outside the app shell and would
-// otherwise carry no identity at all.
-export function BrandLockup({ size = 24 }: { size?: number }) {
+// Mark plus wordmark. Every surface that shows both goes through this, so the
+// gap between them is defined once — hand-assembling the row is how the login
+// hero ended up with the mark jammed against the word.
+//
+// `compact` is the in-chrome scale (sidebar, login hero), where the lockup sits
+// beside navigation rather than introducing a page.
+export function BrandLockup({ size = 24, compact = false }: { size?: number; compact?: boolean }) {
   return (
-    <div className="brand-lockup">
-      <BrandMark size={size} />
+    <div className={`brand-lockup${compact ? " brand-lockup-sm" : ""}`}>
+      <BrandMark size={compact ? 20 : size} />
       <span className="brand-name">workbench</span>
     </div>
   );

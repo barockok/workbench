@@ -66,11 +66,7 @@ body {
   gap: var(--s-32);
   background: var(--surface-2);
 }
-.login-art-brand {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
+.login-art-brand { display: flex; align-items: center; }
 
 .login-art-sub {
   font-size: 14px;
@@ -573,12 +569,7 @@ body {
   height: var(--topbar-h);
   display: flex;
   align-items: center;
-  gap: var(--s-8);
   padding: 0 var(--s-8);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text);
 }
 
 .wb-nav {
@@ -935,6 +926,9 @@ body {
 
 .brand-lockup { display: flex; align-items: center; gap: var(--s-8); }
 .brand-name { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--text); }
+/* In-chrome scale: beside navigation the lockup introduces nothing, so it sits
+   a step down from the one that heads a standalone page. */
+.brand-lockup-sm .brand-name { font-size: 14px; }
 
 /* The centring primitive for standalone pages that live outside the app shell
    — the connect handoff, its result, and the agent-approval prompt. The login

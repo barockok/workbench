@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { ThemeToggle } from "../ui/ThemeToggle";
-import { BrandMark } from "../BrandMark";
+import { BrandLockup } from "../BrandMark";
 
 function Icon({ children }: { children: React.ReactNode }) {
   return (
@@ -65,8 +65,7 @@ export function Sidebar() {
   return (
     <nav className="wb-sidebar" aria-label="Main">
       <div className="wb-brand">
-        <BrandMark size={20} />
-        <span>workbench</span>
+        <BrandLockup compact />
       </div>
 
       <ul className="wb-nav">
