@@ -444,22 +444,37 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
     const { integration } = request.params as { integration: string };
     const { code, state, error } = request.query as Record<string, string>;
 
+    // Every exit is a redirect to the portal's result page carrying a status
+    // code, never a message. The provider's `error` and any exception text are
+    // attacker-influenced and this URL is shown to a human — they go to the log
+    // instead, where an operator can still read them.
+    const result = (status: "ok" | "denied" | "expired" | "failed") => {
+      const url = new URL(config.PORTAL_URL);
+      url.pathname = `${url.pathname.replace(/\/$/, "")}/connected/${encodeURIComponent(integration)}`;
+      url.searchParams.set("status", status);
+      return reply.redirect(url.toString());
+    };
+
     if (error) {
-      return reply.status(400).send({ error: `Provider error: ${error}` });
+      request.log.warn({ integration, providerError: error }, "plugin oauth callback: provider error");
+      return result(error === "access_denied" ? "denied" : "failed");
     }
     if (!code || !state) {
-      return reply.status(400).send({ error: "Missing code or state" });
+      request.log.warn({ integration }, "plugin oauth callback: missing code or state");
+      return result("failed");
     }
 
     try {
       const { userId } = await handlePluginCallback(integration, code, state);
       markConnected(userId, integration);
-      const redirect = new URL(config.PORTAL_URL);
-      redirect.hash = `connected=${integration}`;
-      return reply.redirect(redirect.toString());
+      return result("ok");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return reply.status(400).send({ error: message });
+      request.log.warn({ integration, err: message }, "plugin oauth callback failed");
+      // handlePluginCallback throws this exact string when the pending_auth row
+      // is missing or names another integration — the expired-link case, which
+      // is worth telling the human apart from a genuine failure.
+      return result(message === "Invalid state" ? "expired" : "failed");
     }
   });
 

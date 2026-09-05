@@ -6,7 +6,7 @@
     "domain": "github.io",
     "version": "0.24.0",
     "mark": "w",
-    "favicon": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b1410c'/><text x='16' y='23' font-family='Helvetica,Arial,sans-serif' font-size='19' font-weight='700' fill='white' text-anchor='middle'>w</text></svg>"
+    "favicon": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='1.25' y='1.25' width='29.5' height='29.5' rx='7' fill='#ffffff' stroke='#853291' stroke-width='2.5'/><text x='16' y='23' font-family='Helvetica,Arial,sans-serif' font-size='19' font-weight='700' fill='#853291' text-anchor='middle'>w</text></svg>"
   },
   "tabs": [
     {

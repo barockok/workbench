@@ -1,48 +1,71 @@
-import { useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
-import { redeemConnectLink, connectCapture, ConnectLinkError } from "../api";
-import type { RedeemResult } from "../api";
+import { useMemo, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { fetchIntegrations, redeemConnectLink, connectCapture, ConnectLinkError } from "../api";
+import type { RedeemResult, IntegrationSummary } from "../api";
 import CdpScreencast from "../components/CdpScreencast";
 import ConnectLinkProblem from "../components/ConnectLinkProblem";
+import { ConnectPair } from "../components/ConnectPair";
+import { BrandLockup } from "../components/BrandMark";
+import IntegrationLogo from "../components/IntegrationLogo";
 import { Modal } from "../components/ui/Modal";
 import { Button } from "../components/ui/Button";
 
 type CookieInfo = Extract<RedeemResult, { type: "cookie" }>;
 
 export default function Connect() {
-  const { integration } = useParams();
+  const { integration = "" } = useParams();
   const [search] = useSearchParams();
+  const navigate = useNavigate();
   const jwt = search.get("t") ?? "";
 
   const [info, setInfo] = useState<CookieInfo | null>(null);
   const [problem, setProblem] = useState<ConnectLinkError | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
-  const [done, setDone] = useState(false);
-  const redeemed = useRef(false);
+  const [starting, setStarting] = useState(false);
 
-  useEffect(() => {
-    if (redeemed.current) return;
-    redeemed.current = true;
-    if (!jwt) { setError("Missing link token."); return; }
-    redeemConnectLink(jwt)
-      .then((result) => {
-        if (result.type === "oauth2") { window.location.href = result.url; return; }
-        if (result.type === "cookie") { setInfo(result); return; }
-        setError("Unexpected link type.");
-      })
-      .catch((e) => {
-        if (e instanceof ConnectLinkError) setProblem(e);
-        else setError(e instanceof Error ? e.message : "Link failed");
-      });
-  }, [jwt]);
+  // Named from the registry, not from the link: the token is an opaque claim
+  // until the server has verified it, so nothing inside it drives what the
+  // human is shown.
+  const { data } = useQuery<{ integrations: IntegrationSummary[] }>({
+    queryKey: ["integrations"],
+    queryFn: fetchIntegrations,
+  });
+  const integ = useMemo(
+    () => data?.integrations.find((i) => i.name === integration),
+    [data, integration]
+  );
+  const label = integ?.displayName || integration;
+
+  // Redeeming consumes the link, so it waits for an explicit accept. Doing it
+  // on mount meant opening the tab and closing it burned the link for good.
+  async function handleStart() {
+    setStarting(true);
+    setError(null);
+    // Set before the handoff: the provider round trip leaves the SPA entirely,
+    // and the result page reads this to know it is talking to someone whose
+    // agent sent them here.
+    sessionStorage.setItem("awb_connect_origin", "link");
+    try {
+      const result = await redeemConnectLink(jwt);
+      if (result.type === "oauth2") { window.location.href = result.url; return; }
+      if (result.type === "cookie") { setInfo(result); return; }
+      setError("Unexpected link type.");
+    } catch (e) {
+      if (e instanceof ConnectLinkError) setProblem(e);
+      else setError(e instanceof Error ? e.message : "Link failed");
+    } finally {
+      setStarting(false);
+    }
+  }
 
   async function handleCapture() {
     setCapturing(true);
     setError(null);
     try {
       await connectCapture(jwt);
-      setDone(true);
+      navigate(`/connected/${encodeURIComponent(integration)}?status=ok`, { replace: true });
     } catch (e) {
       if (e instanceof ConnectLinkError) setProblem(e);
       else setError(e instanceof Error ? e.message : "Capture failed");
@@ -52,18 +75,36 @@ export default function Connect() {
   }
 
   if (problem) return <ConnectLinkProblem error={problem} />;
-  if (done) {
-    return <div className="ui-loading">Connected — {integration}. You can close this tab and return to your agent.</div>;
+
+  if (!jwt) {
+    return <div className="ui-loading">Missing link token. Ask your agent for a new connect link.</div>;
   }
-  if (error && !info) {
-    return <div className="ui-loading">Error — {error}</div>;
-  }
+
   if (!info) {
-    return <div className="ui-loading">Loading…</div>;
+    return (
+      <div className="page-center page-center-stack">
+        <BrandLockup />
+        <div className="connect-result-card">
+          <ConnectPair
+            logo={<IntegrationLogo name={integration} displayName={label} logo={integ?.logo} size={44} />}
+            label={label}
+          />
+          <h1 className="connect-result-title">Connect {label}?</h1>
+          <p className="connect-result-detail">
+            Your agent asked to connect this app to workbench. You'll sign in with {label}, and workbench
+            stores the credential encrypted on this instance.
+          </p>
+          <Button onClick={handleStart} disabled={starting}>
+            {starting ? "Starting…" : "Connect"}
+          </Button>
+          {error && <p className="ui-form-error">{error}</p>}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <Modal open onClose={() => {}} title={<>Connect <span>{info.integration}</span></>}
+    <Modal open onClose={() => {}} title={<>Connect <span>{label}</span></>}
       size="xl"
       dismissible={false}
       footer={

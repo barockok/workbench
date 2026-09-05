@@ -41,4 +41,12 @@ describe("Login", () => {
     render(<Login />);
     expect(await screen.findByText("No auth provider configured")).toBeInTheDocument();
   });
+
+  it("carries the workbench mark beside the wordmark", () => {
+    const { container } = render(<Login />);
+    const lockup = container.querySelector(".brand-lockup");
+    expect(lockup).toBeInTheDocument();
+    expect(lockup?.querySelector(".brand-mark")).toHaveTextContent("w");
+    expect(lockup?.querySelector(".brand-name")).toHaveTextContent("workbench");
+  });
 });

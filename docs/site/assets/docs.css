@@ -98,8 +98,11 @@ button { font: inherit; color: inherit; }
 .brand-mark {
   display: inline-flex; align-items: center; justify-content: center;
   width: 24px; height: 24px; border-radius: var(--radius-sm);
-  background: var(--accent); color: #fff;
-  font-size: 12px; font-weight: 700; letter-spacing: -.01em;
+  /* Outline tile — matches the portal's BrandMark. The surface fill is what
+     keeps the glyph readable when the tile sits on a tinted ground. */
+  border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent);
+  font-size: 13px; font-weight: 700; letter-spacing: -.02em;
+  box-sizing: border-box;
   transform: translateY(2px);
 }
 .brand-name { font-weight: 700; font-size: 16px; letter-spacing: -.01em; }

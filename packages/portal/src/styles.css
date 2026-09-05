@@ -66,11 +66,7 @@ body {
   gap: var(--s-32);
   background: var(--surface-2);
 }
-.login-art-brand {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
+.login-art-brand { display: flex; align-items: center; }
 
 .login-art-sub {
   font-size: 14px;
@@ -235,6 +231,9 @@ body {
   border-radius: var(--radius);
   border: 1px solid transparent;
   cursor: pointer;
+  /* The class is worn by <a> as well as <button> — the connect result page
+     links back into the portal — so the UA underline has to go. */
+  text-decoration: none;
   transition: background-color .15s ease, border-color .15s ease, color .15s ease;
 }
 .ui-button:disabled { cursor: not-allowed; opacity: .6; }
@@ -571,10 +570,6 @@ body {
   display: flex;
   align-items: center;
   padding: 0 var(--s-8);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text);
 }
 
 .wb-nav {
@@ -903,3 +898,154 @@ body {
 :where(.wb-content) :where(a):hover {
   text-decoration: underline;
 }
+
+/* ── Connect handoff & result ────────────────────────────────────────────
+   Both ends of the agent-initiated connect flow: the confirm screen before
+   the link is spent, and the result screen the provider callback redirects
+   to. Full-viewport, outside the app shell — a human lands here from a link
+   or from a provider, not from the nav. */
+/* The workbench mark and wordmark, matching the docs site's topbar so the two
+   surfaces present the same identity. Used by the pages outside the app shell,
+   which have no sidebar to carry the brand for them. */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  /* Outline tile: the stroke carries the accent, the surface fill keeps the
+     glyph legible on any ground — including a dark browser tab, where a
+     transparent tile would leave the letter floating on the chrome. */
+  border: 1.5px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.brand-lockup { display: flex; align-items: center; gap: var(--s-8); }
+.brand-name { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--text); }
+/* In-chrome scale: beside navigation the lockup introduces nothing, so it sits
+   a step down from the one that heads a standalone page. */
+.brand-lockup-sm .brand-name { font-size: 14px; }
+
+/* The centring primitive for standalone pages that live outside the app shell
+   — the connect handoff, its result, and the agent-approval prompt. The login
+   grid is not it: that is two columns, and its first holds artwork these pages
+   do not render, which left their cards sitting in one half of the viewport. */
+.page-center {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-24);
+  background: var(--bg);
+}
+
+/* Lockup above the card, both centred on the same column. */
+.page-center-stack,
+.login-form-stack {
+  flex-direction: column;
+  gap: var(--s-24);
+}
+.login-form-stack { display: flex; align-items: center; }
+
+.connect-result-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-16);
+  width: 100%;
+  max-width: 420px;
+  padding: var(--s-32) var(--s-24);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+}
+
+/* Success is carried by the surface, not by a shadow: this stylesheet reserves
+   shadows for the modal, the one thing that genuinely floats above the page,
+   and styles.guard.test.ts holds that line. */
+.connect-result-card.is-ok {
+  border-color: var(--ok-line);
+  background: var(--ok-soft);
+}
+
+.connect-result-link {
+  font-size: 13px;
+  color: var(--text-3);
+  text-decoration: none;
+}
+.connect-result-link:hover { color: var(--text); text-decoration: underline; }
+
+.connect-result-title { margin: 0; font-size: 18px; font-weight: 600; color: var(--text); }
+.connect-result-detail { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-2); }
+.connect-result-cta { margin: 0; font-size: 13px; color: var(--text-3); }
+
+/* The pair: workbench on the left, the integration on the right, the state of
+   the link between them. */
+.connect-pair {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--s-12);
+  width: 100%;
+}
+
+.connect-pair-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-8);
+  /* Flex items default to min-width:auto; a long display name would otherwise
+     push the pair wider than the card. */
+  min-width: 0;
+  flex: 0 1 120px;
+}
+
+.connect-pair-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.connect-pair-label {
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connect-pair-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  /* Line up with the middle of the 56px marks, not with the labels below. */
+  height: 56px;
+  flex: 0 1 64px;
+}
+
+.connect-pair-dash {
+  flex: 1;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.connect-pair-node {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--border-strong);
+}
+
+.connect-pair-link.is-connected .connect-pair-dash,
+.connect-pair-link.is-connected .connect-pair-node { background: var(--ok); }

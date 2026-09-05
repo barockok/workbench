@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { fetchAuthUrl, fetchKeycloakAuthUrl, fetchProviders } from "../api";
 import { safeReturnPath } from "../return-path";
 import { Button } from "../components/ui/Button";
+import { BrandLockup } from "../components/BrandMark";
 
 export default function Login() {
   const { login, token } = useAuth();
@@ -45,7 +46,9 @@ export default function Login() {
   return (
     <div className="login-shell">
       <aside className="login-art">
-        <div className="login-art-brand">workbench</div>
+        <div className="login-art-brand">
+          <BrandLockup compact />
+        </div>
         <h1 className="login-art-title">Connect your agent's toolbelt.</h1>
         <p className="login-art-sub">
           One sign-in pairs your agent sessions to the tools you already use. Credentials stay encrypted on

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Connect from "./pages/Connect";
+import ConnectResult from "./pages/ConnectResult";
 import BrowserView from "./pages/BrowserView";
 import AuthorizeChoose from "./pages/AuthorizeChoose";
 import { AppShell } from "./components/shell/AppShell";
@@ -52,6 +53,9 @@ function AppRoutes() {
           browser view both want the whole viewport, so they stay outside the
           shell. */}
       <Route path="/connect/:integration" element={<RequireAuth><Connect /></RequireAuth>} />
+      {/* Where every finished connect lands — the provider callback redirects
+          here with a status, and the cookie flow navigates here itself. */}
+      <Route path="/connected/:integration" element={<RequireAuth><ConnectResult /></RequireAuth>} />
       <Route path="/browser" element={<RequireAuth><BrowserView /></RequireAuth>} />
 
       <Route

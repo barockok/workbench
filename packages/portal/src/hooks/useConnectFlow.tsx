@@ -51,6 +51,10 @@ export function useConnectFlow() {
   async function start(integ: IntegrationSummary, instanceUrl?: string) {
     setError(null);
     setBusy(integ.name);
+    // This connect started inside the portal, so the result page should offer a
+    // way back rather than telling the human to close the tab. A marker left by
+    // an abandoned connect link earlier in the same tab would say otherwise.
+    sessionStorage.removeItem("awb_connect_origin");
     try {
       const result = await startIntegrationAuth(integ.name, instanceUrl);
 
