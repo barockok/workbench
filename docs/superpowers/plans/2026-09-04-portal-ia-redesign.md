@@ -5768,6 +5768,29 @@ node docs/site/build.mjs
 Expected: all four packages build; the docs site builds with no broken links.
 The shared token file was never edited, but the site build proves it.
 
+- [ ] **Step 2b: Dangling-class sweep**
+
+CSS class names are strings. Nothing type-checks them, no test asserts computed
+style, and deleting a rule that still has a consumer produces a green suite and
+a clean build while silently unstyling a live surface. That failure mode landed
+twice during this branch's execution — the second time on the unauthenticated
+`/authorize/choose` page, which is the one surface a human meets when an agent
+asks them to authorize it. So sweep for it explicitly:
+
+```bash
+grep -o 'className="[^"]*"' -r packages/portal/src --include=*.tsx \
+  | sed 's/.*className="//; s/"$//' | tr ' ' '\n' | sort -u \
+  | while read -r c; do
+      [ -n "$c" ] && ! grep -q "\.$c[ ,{:]" packages/portal/src/styles.css && echo "no rule: $c"
+    done
+```
+
+Expected hits, all benign and all pre-existing — a bare hook class sitting
+alongside a styled sibling on the same element, or a slot wrapper:
+`apikey-body`, `ui-stat-strip`, `ui-empty-action`, and `extra` (a synthetic
+prop inside a test, not a class at all). Anything else in that list is a real
+dangling style: report it rather than fixing it silently.
+
 - [ ] **Step 3: Public-repo hygiene sweep**
 
 Run over every file the branch touched:
@@ -5879,6 +5902,29 @@ carried, and this restructure. State plainly what was verified by test and
 build, and what was not — if no browser was available in the session, say that
 the rendered result was never eyeballed, because that is exactly the gap the
 previous round of this work left behind.
+
+Three things the description must state, because they are the kind of thing a
+reader deserves without having to dig:
+
+1. **One commit misdescribes itself.** `8d298a4`, whose subject is
+   `docs: the bottom sheet's class is ui-sheet, not ui-bottom-sheet`, also
+   carries the 644-line deletion of `Dashboard.tsx`, `IntegrationDetail.tsx`
+   and `AgentsPanel.tsx`. `7278e7d`, whose subject claims that deletion, only
+   touches CSS and tests. The cause was a controller commit made while those
+   deletions were staged in the shared index. History was not rewritten — the
+   branch had ~40 unpushed commits and an open PR, and relabelling one commit
+   was not worth the risk of mangling the line — so the PR body is where a
+   bisector finds out.
+
+2. **The deferred minor findings**, collected from the ledger at
+   `.superpowers/sdd/2026-09-04-portal-ia-redesign/progress.md`. Every review
+   in this run recorded its Minors rather than fixing them; list them so a
+   reader can triage rather than rediscover them.
+
+3. **What the tests do not cover.** Two tests are known to pass against
+   states they do not actually distinguish (recorded as deferred minors), and
+   no test asserts computed CSS at all — which is how a deleted rule with a
+   live consumer slipped through twice.
 
 Do not add any AI co-authorship trailer, and do not name any external product
 as a design reference.
