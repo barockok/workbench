@@ -15,6 +15,10 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/server/package.json ./packages/server/
 COPY packages/portal/package.json ./packages/portal/
 RUN npm ci
+# npm nests a workspace's dependency under packages/<pkg>/node_modules whenever
+# it cannot hoist to the root. Guarantee the directory exists so the runtime
+# stage can copy it unconditionally.
+RUN mkdir -p /app/packages/server/node_modules
 COPY . .
 RUN npm run build
 
@@ -24,6 +28,12 @@ ENV NODE_ENV=production \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 COPY --from=builder /app/packages/server/dist ./server
 COPY --from=builder /app/node_modules ./node_modules
+# Copying only the root tree assumed npm always hoists. It does not: a version
+# that cannot hoist stays under the workspace, and v0.26.0 shipped without
+# tar-stream or the OpenTelemetry SDK because of it. Node resolves
+# server/node_modules before /app/node_modules, so the nested tree lands where
+# the compiled server actually looks for it.
+COPY --from=builder /app/packages/server/node_modules ./server/node_modules
 # node_modules/@a-workbench/* are workspace symlinks into packages/, which isn't
 # shipped — they dangle. Drop them and ship @a-workbench/shared (the only one the
 # server imports) as a real package so its `main` resolves cleanly.
