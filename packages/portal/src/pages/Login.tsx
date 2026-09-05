@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { fetchAuthUrl, fetchKeycloakAuthUrl, fetchProviders } from "../api";
 import { safeReturnPath } from "../return-path";
 import { Button } from "../components/ui/Button";
-import { BrandMark } from "../components/BrandMark";
+import { BrandLockup } from "../components/BrandMark";
 
 export default function Login() {
   const { login, token } = useAuth();
@@ -47,8 +47,7 @@ export default function Login() {
     <div className="login-shell">
       <aside className="login-art">
         <div className="login-art-brand">
-          <BrandMark size={20} />
-          <span>workbench</span>
+          <BrandLockup compact />
         </div>
         <h1 className="login-art-title">Connect your agent's toolbelt.</h1>
         <p className="login-art-sub">

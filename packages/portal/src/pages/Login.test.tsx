@@ -44,6 +44,9 @@ describe("Login", () => {
 
   it("carries the workbench mark beside the wordmark", () => {
     const { container } = render(<Login />);
-    expect(container.querySelector(".brand-mark")).toHaveTextContent("w");
+    const lockup = container.querySelector(".brand-lockup");
+    expect(lockup).toBeInTheDocument();
+    expect(lockup?.querySelector(".brand-mark")).toHaveTextContent("w");
+    expect(lockup?.querySelector(".brand-name")).toHaveTextContent("workbench");
   });
 });
