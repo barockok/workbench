@@ -52,12 +52,10 @@ export default function AuthorizeChoose() {
 
   if (!ticket) {
     return (
-      <div className="login-shell">
-        <section className="login-form">
-          <div className="login-card">
-            <div className="ui-form-error">Missing or invalid link. Ask your agent to try again.</div>
-          </div>
-        </section>
+      <div className="page-center">
+        <div className="login-card">
+          <div className="ui-form-error">Missing or invalid link. Ask your agent to try again.</div>
+        </div>
       </div>
     );
   }
@@ -67,7 +65,7 @@ export default function AuthorizeChoose() {
   const showChoice = !isLoading && (!user || !token || !!resumeError);
 
   return (
-    <div className="login-shell">
+    <div className="page-center">
       <form ref={formRef} method="POST" action={resumeUrl} hidden>
         <input type="hidden" name="ticket" value={ticket} />
         <input type="hidden" name="token" value={token ?? ""} />

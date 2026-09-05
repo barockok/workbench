@@ -71,6 +71,31 @@ describe("ConnectResult", () => {
     expect(screen.queryByText("Connected")).not.toBeInTheDocument();
   });
 
+  it("tints the card green on success so the outcome reads before the words do", async () => {
+    const { container } = renderPage("/connected/acme?status=ok");
+    await waitFor(() => expect(screen.getByText("Connected")).toBeInTheDocument());
+    expect(container.querySelector(".connect-result-card")).toHaveClass("is-ok");
+  });
+
+  it.each(["denied", "expired", "failed"])("leaves the %s card untinted", async (status) => {
+    const { container } = renderPage(`/connected/acme?status=${status}`);
+    await waitFor(() => expect(container.querySelector(".connect-result-card")).toBeInTheDocument());
+    expect(container.querySelector(".connect-result-card")).not.toHaveClass("is-ok");
+  });
+
+  it("offers a way into the portal even when told to close the tab", async () => {
+    sessionStorage.setItem("awb_connect_origin", "link");
+    renderPage("/connected/acme?status=ok");
+    const dash = await screen.findByRole("link", { name: /workbench/i });
+    expect(dash).toHaveAttribute("href", "/");
+  });
+
+  it("offers the dashboard alongside the way back to the app", async () => {
+    renderPage("/connected/acme?status=ok");
+    expect(await screen.findByRole("link", { name: /back to acme/i })).toHaveAttribute("href", "/apps/acme");
+    expect(screen.getByRole("link", { name: /workbench/i })).toHaveAttribute("href", "/");
+  });
+
   it("tells an agent-initiated visitor to return to their agent, and clears the marker", async () => {
     sessionStorage.setItem("awb_connect_origin", "link");
     renderPage("/connected/acme?status=ok");

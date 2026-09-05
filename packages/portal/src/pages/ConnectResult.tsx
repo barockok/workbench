@@ -62,8 +62,8 @@ export default function ConnectResult() {
   }, [status]);
 
   return (
-    <div className="connect-result">
-      <div className="connect-result-card">
+    <div className="page-center">
+      <div className={`connect-result-card${status === "ok" ? " is-ok" : ""}`}>
         <ConnectPair
           connected={status === "ok"}
           logo={
@@ -82,6 +82,12 @@ export default function ConnectResult() {
             Back to {label}
           </Link>
         )}
+
+        {/* Always reachable, including under the close-the-tab line: someone who
+            wants to see what just connected should not have to type a URL. */}
+        <Link className="connect-result-link" to="/">
+          Go to workbench
+        </Link>
       </div>
     </div>
   );
