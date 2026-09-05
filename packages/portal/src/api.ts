@@ -363,3 +363,70 @@ export async function logout() {
   });
   localStorage.removeItem("awb_token");
 }
+
+export interface ActivityEvent {
+  id: number;
+  integration: string | null;
+  tool: string | null;
+  action: string;
+  success: boolean;
+  error: string | null;
+  duration_ms: number | null;
+  /** Unix seconds. */
+  created_at: number;
+}
+
+export interface ActivityPage {
+  /** False when this deployment routes audit events somewhere other than the database. */
+  stored: boolean;
+  events: ActivityEvent[];
+  next_cursor: string | null;
+}
+
+// Shown wherever a page renders `stored: false` — describes the same API
+// state, so it lives beside the type rather than in whichever page rendered
+// it first.
+export const UNSTORED_MESSAGE =
+  "This deployment sends audit events somewhere other than its database, so there is nothing to show here. Set AUDIT_LOG_DEST=sqlite to record them.";
+
+export interface Stats {
+  stored: boolean;
+  window_days: number;
+  tool_calls: number;
+  success_rate: number | null;
+  most_used_integration: string | null;
+}
+
+export async function fetchActivity(opts: {
+  limit?: number;
+  cursor?: string;
+  integration?: string;
+  status?: "success" | "error";
+} = {}): Promise<ActivityPage> {
+  const qs = new URLSearchParams();
+  if (opts.limit) qs.set("limit", String(opts.limit));
+  if (opts.cursor) qs.set("cursor", opts.cursor);
+  if (opts.integration) qs.set("integration", opts.integration);
+  if (opts.status) qs.set("status", opts.status);
+  const suffix = qs.toString() ? `?${qs}` : "";
+
+  const res = await fetch(`${API_URL}/api/activity${suffix}`, { headers: getHeaders() });
+  if (res.status === 401) {
+    localStorage.removeItem("awb_token");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) throw new Error("Failed to fetch activity");
+  return res.json();
+}
+
+export async function fetchStats(): Promise<Stats> {
+  const res = await fetch(`${API_URL}/api/stats`, { headers: getHeaders() });
+  if (res.status === 401) {
+    localStorage.removeItem("awb_token");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) throw new Error("Failed to fetch stats");
+  return res.json();
+}

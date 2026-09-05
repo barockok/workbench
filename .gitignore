@@ -2,6 +2,11 @@
 .env
 .env.*
 
+# Local MCP client config. Points at whichever workbench the developer is
+# running — a deployment hostname or localhost — which is machine-specific
+# and, on a public repo, not something to publish.
+.mcp.json
+
 # Data
 data/
 *.db
@@ -36,3 +41,6 @@ temp/
 
 # Generated docs site (built by docs/site/build.mjs in CI)
 docs/site/_site/
+
+# Generated copy of the shared design tokens (build.mjs copies this in on every build)
+docs/site/assets/tokens.css

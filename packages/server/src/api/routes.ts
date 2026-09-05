@@ -26,9 +26,23 @@ import { markConnected, startReaper, redeemPending, getPending, createPending } 
 import { resumeAuthorize } from "../auth/oauth-server/resume";
 import { listAgents, revokeAgent } from "../auth/oauth-server/agents";
 import { ensureSession, navigate, captureLiveCookies } from "../auth/browser-session";
+import {
+  auditStored,
+  encodeCursor,
+  decodeCursor,
+  listAuditEvents,
+  summarizeAudit,
+} from "../audit/query";
 
 function isUrl(s: string): boolean {
   return /^https?:\/\//i.test(s);
+}
+
+// Fastify parses a repeated query key (`?x=a&x=b`) into an array. Every
+// caller here expects a single string, so take the first value when one
+// arrives as an array rather than passing it through to the SQL binder.
+function firstQueryValue(v: string | string[] | undefined): string | undefined {
+  return Array.isArray(v) ? v[0] : v;
 }
 
 // Whether an integration can actually be connected right now: built-ins
@@ -771,6 +785,96 @@ export async function registerApiRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(401).send({ error: "Unauthorized" });
     }
     return { agents: await listAgents(user.userId) };
+  });
+
+  // How far back /api/stats looks. One value, not a query parameter: the
+  // number is a product decision, and letting a caller widen it turns a
+  // constant-cost summary into an unbounded scan.
+  const STATS_WINDOW_DAYS = 30;
+
+  // Tool-call history for the caller — the signed-in human, or an agent
+  // holding their `x-workbench-api-key` (authenticate() accepts either, same
+  // as every other route here); either way the user id comes from the
+  // credential and is never read from input, so asking for someone else's
+  // rows is not expressible.
+  app.get("/api/activity", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    if (!auditStored()) {
+      return { stored: false, events: [], next_cursor: null };
+    }
+
+    const raw = request.query as {
+      limit?: string | string[];
+      cursor?: string | string[];
+      integration?: string | string[];
+      status?: string | string[];
+    };
+    const q = {
+      limit: firstQueryValue(raw.limit),
+      cursor: firstQueryValue(raw.cursor),
+      integration: firstQueryValue(raw.integration),
+      status: firstQueryValue(raw.status),
+    };
+
+    const requested = Number(q.limit);
+    const limit =
+      q.limit === undefined || !Number.isFinite(requested)
+        ? 50
+        : Math.min(100, Math.max(1, Math.floor(requested)));
+
+    let cursor: { createdAt: number; id: number } | undefined;
+    if (q.cursor) {
+      const decoded = decodeCursor(q.cursor);
+      if (!decoded) {
+        return reply.status(400).send({ error: "invalid_cursor" });
+      }
+      cursor = decoded;
+    }
+
+    const status = q.status === "success" || q.status === "error" ? q.status : undefined;
+
+    // Fetch one extra row: its presence is what tells us another page exists,
+    // without a second COUNT query.
+    const rows = await listAuditEvents({
+      userId: user.userId,
+      limit: limit + 1,
+      cursor,
+      integration: q.integration,
+      status,
+    });
+
+    const events = rows.slice(0, limit);
+    const last = events[events.length - 1];
+    const next_cursor = rows.length > limit && last ? encodeCursor(last.created_at, last.id) : null;
+
+    return { stored: true, events, next_cursor };
+  });
+
+  app.get("/api/stats", async (request, reply) => {
+    const user = await authenticate(request);
+    if (!user) {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    if (!auditStored()) {
+      return {
+        stored: false,
+        window_days: STATS_WINDOW_DAYS,
+        tool_calls: 0,
+        success_rate: null,
+        most_used_integration: null,
+      };
+    }
+    const s = await summarizeAudit(user.userId, STATS_WINDOW_DAYS);
+    return {
+      stored: true,
+      window_days: STATS_WINDOW_DAYS,
+      tool_calls: s.toolCalls,
+      success_rate: s.successRate,
+      most_used_integration: s.mostUsedIntegration,
+    };
   });
 
   // Revoke an agent: delete the user's refresh tokens for that client (soft

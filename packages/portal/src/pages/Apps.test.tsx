@@ -1,0 +1,115 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Apps from "./Apps";
+
+vi.mock("../api", () => ({
+  fetchIntegrations: vi.fn(),
+  fetchConnections: vi.fn(),
+  startIntegrationAuth: vi.fn(),
+  disconnectIntegration: vi.fn(),
+}));
+
+vi.mock("../context/AuthContext", () => ({
+  useAuth: () => ({ user: { id: "u1", email: "dev@example.com" }, token: "t", isLoading: false, login: vi.fn(), logout: vi.fn() }),
+}));
+
+vi.mock("../components/CookieAuthPopup", () => ({ default: () => null }));
+vi.mock("../components/ApiKeyAuthModal", () => ({ default: () => null }));
+
+import { fetchIntegrations, fetchConnections, startIntegrationAuth } from "../api";
+
+const INTEGRATIONS = [
+  { name: "acme", displayName: "Acme", version: "1.0.0", toolCount: 4, categories: ["issues"], configured: true, authType: "oauth2", description: "Track work" },
+  { name: "demo-repo", displayName: "Demo Repo", version: "2.1.0", toolCount: 9, categories: ["code"], configured: true, authType: "oauth2", description: "Review code" },
+  { name: "unwired", displayName: "Unwired", version: "0.1.0", toolCount: 2, categories: ["code"], configured: false, authType: "oauth2" },
+];
+
+function renderPage() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <Apps />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(fetchIntegrations).mockResolvedValue({ integrations: INTEGRATIONS });
+  vi.mocked(fetchConnections).mockResolvedValue({ connections: [{ name: "acme", connected: true }] });
+});
+
+describe("Apps", () => {
+  it("shows a loading state before the registry arrives", () => {
+    vi.mocked(fetchIntegrations).mockReturnValue(new Promise(() => {}));
+    renderPage();
+    expect(screen.getByText("Loading apps…")).toBeInTheDocument();
+  });
+
+  it("lists every integration with its version and tool count", async () => {
+    renderPage();
+    expect(await screen.findByText("Acme")).toBeInTheDocument();
+    expect(screen.getByText("v1.0.0 · 4 tools")).toBeInTheDocument();
+    expect(screen.getByText("Demo Repo")).toBeInTheDocument();
+  });
+
+  it("counts each tab", async () => {
+    renderPage();
+    expect(await screen.findByRole("tab", { name: /All/ })).toHaveTextContent("3");
+    expect(screen.getByRole("tab", { name: /Connected/ })).toHaveTextContent("1");
+    expect(screen.getByRole("tab", { name: /Available/ })).toHaveTextContent("2");
+  });
+
+  it("filters to connected integrations", async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole("tab", { name: /Connected/ }));
+    expect(screen.getByText("Acme")).toBeInTheDocument();
+    expect(screen.queryByText("Demo Repo")).toBeNull();
+  });
+
+  it("filters by search across name and description", async () => {
+    renderPage();
+    await screen.findByText("Acme");
+    fireEvent.change(screen.getByLabelText("Search apps"), { target: { value: "review" } });
+    expect(screen.getByText("Demo Repo")).toBeInTheDocument();
+    expect(screen.queryByText("Acme")).toBeNull();
+  });
+
+  it("filters by category", async () => {
+    renderPage();
+    await screen.findByText("Acme");
+    fireEvent.change(screen.getByLabelText("Category"), { target: { value: "issues" } });
+    expect(screen.getByText("Acme")).toBeInTheDocument();
+    expect(screen.queryByText("Demo Repo")).toBeNull();
+  });
+
+  it("links a configured integration to its detail page", async () => {
+    renderPage();
+    expect(await screen.findByRole("link", { name: /Acme/ })).toHaveAttribute("href", "/apps/acme");
+  });
+
+  it("does not link an integration whose auth is not configured", async () => {
+    renderPage();
+    await screen.findByText("Acme");
+    expect(screen.queryByRole("link", { name: /Unwired/ })).toBeNull();
+    expect(screen.getByText("Not configured")).toBeInTheDocument();
+  });
+
+  it("starts a connect from the cell without following the link", async () => {
+    vi.mocked(startIntegrationAuth).mockResolvedValue({ type: "oauth2", url: "https://example.com/authorize" });
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Connect Demo Repo" }));
+    await waitFor(() => expect(startIntegrationAuth).toHaveBeenCalledWith("demo-repo", undefined));
+  });
+
+  it("explains an empty filter rather than showing a blank grid", async () => {
+    renderPage();
+    await screen.findByText("Acme");
+    fireEvent.change(screen.getByLabelText("Search apps"), { target: { value: "nothing matches this" } });
+    expect(screen.getByText("No apps match this filter.")).toBeInTheDocument();
+  });
+});

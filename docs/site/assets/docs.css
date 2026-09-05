@@ -3,171 +3,36 @@
    Design tokens first, then layout, then prose, then components.
    ========================================================================== */
 
+
+/* Geometry. Matches the portal: this documentation separates with lines, not
+   with elevation or roundness, so the shared token file's 6/8/12 radius ramp
+   collapses to a single value here and nothing is a capsule. tokens.css is
+   left alone — it is shared, and the override belongs to the surface that
+   wants it. */
 :root {
-  --bg: #f9faf8;
-  --bg-sunk: #f1f3f0;
-  --surface: #ffffff;
-  --surface-2: #f9faf8;
-  --border: #e5e7eb;
-  --border-strong: #c6cad0;
-
-  --text: #111928;
-  --text-2: #525c6a;
-  --text-3: #6b7280;
-  --text-4: #8e95a3;
-
-  --accent: #853291;
-  --accent-hover: #732c7c;
-  --accent-soft: #fef3ff;
-  --accent-line: #e5b8ef;
-
-  /* The 600/700 steps, not 500: the 500-on-50-tint pairing the palette
-     suggests lands between 2.1:1 and 4.4:1, under the 4.5:1 text minimum. */
-  --ok: #007d55;
-  --ok-soft: #e4fcef;
-  --ok-line: #a8e6c9;
-  --warn: #ad540a;
-  --warn-soft: #fdf4e9;
-  --warn-line: #f6d9ac;
-  --danger: #ac2b26;
-  --danger-soft: #fff4f3;
-  --danger-line: #f5c0bd;
-  --info: #056dce;
-  --info-soft: #edf7ff;
-  --info-line: #b9dcfa;
-
-  --overlay: rgba(17, 25, 40, .8);
-
-  /* Code keeps one dark surface in both themes, drawn from the darkest neutral
-     so it reads as part of the same family rather than a pasted-in terminal. */
-  --code-bg: #111928;
-  --code-text: #e5e7eb;
-  --code-bar: #1b2432;
-
-  /* 6 chips · 8 inputs and default interactive · 12 cards and modals ·
-     full for buttons and badges. */
   --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --radius-full: 9999px;
-
-  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
-
-  /* 4px base. Steps: 2 4 8 12 16 20 24 32 40 48 — nothing between them. */
-  --s-2: 2px;
-  --s-4: 4px;
-  --s-8: 8px;
-  --s-12: 12px;
-  --s-16: 16px;
-  --s-20: 20px;
-  --s-24: 24px;
-  --s-32: 32px;
-  --s-40: 40px;
-  --s-48: 48px;
-
-  --page-pad-x: 16px;
-  --card-pad: 12px;
-  --section-gap: 12px;
-  --card-gap: 8px;
-
-  --topbar-h: 48px;
-  --topnav-h: 44px;
-  --sidebar-w: 268px;
-  --toc-w: 232px;
-  --content-max: 748px;
-
-  --shadow-sm: 0 1px 2px rgba(17, 25, 40, .05);
-  --shadow-md: 0 4px 16px -4px rgba(17, 25, 40, .12), 0 1px 3px rgba(17, 25, 40, .06);
-  --shadow-lg: 0 24px 60px -12px rgba(17, 25, 40, .28), 0 2px 8px rgba(17, 25, 40, .08);
+  --radius: 6px;
+  --radius-lg: 6px;
 }
 
-/* The palette above defines one light theme. The dark values below are derived
-   from it: hues held, the brand lifted out of the 500/600 band (which fails
-   contrast on a dark ground) into the 200/300 band, and the neutrals rotated
-   around the darkest neutral rather than pure grey so both themes read as one
-   family. Kept in sync between the media query and the explicit toggle. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #0b1018;
-    --bg-sunk: #070b11;
-    --surface: #111928;
-    --surface-2: #1a2433;
-    --border: #2a3444;
-    --border-strong: #3d4859;
-
-    --text: #f9faf8;
-    --text-2: #c6cad0;
-    --text-3: #8e95a3;
-    --text-4: #6b7280;
-
-    --accent: #d68ee4;
-    --accent-hover: #e5b8ef;
-    --accent-soft: #2a122e;
-    --accent-line: #4a2050;
-
-    --ok: #4fd3a0;
-    --ok-soft: #08251a;
-    --ok-line: #17513a;
-    --warn: #f7b75c;
-    --warn-soft: #2a1d0a;
-    --warn-line: #543a16;
-    --danger: #f2726c;
-    --danger-soft: #2c1211;
-    --danger-line: #5a2523;
-    --info: #5ca8f0;
-    --info-soft: #0a1c2e;
-    --info-line: #1b3e60;
-
-    --code-bg: #0b1018;
-    --code-text: #e5e7eb;
-    --code-bar: #111928;
-
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
-    --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
-    --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 2px 8px rgba(0, 0, 0, .5);
-  }
+/* Themed scrollbars, matching the portal: the stock browser bar is the one
+   element on the page that ignores the palette, and it is most obvious in dark
+   mode. Elements that hide their bar entirely (.topnav, .tab-bar) opt out
+   below. */
+* {
+  scrollbar-width: thin;                       /* Firefox */
+  scrollbar-color: var(--border) transparent;  /* thumb / track */
 }
-
-:root[data-theme='dark'] {
-  --bg: #0b1018;
-  --bg-sunk: #070b11;
-  --surface: #111928;
-  --surface-2: #1a2433;
-  --border: #2a3444;
-  --border-strong: #3d4859;
-
-  --text: #f9faf8;
-  --text-2: #c6cad0;
-  --text-3: #8e95a3;
-  --text-4: #6b7280;
-
-  --accent: #d68ee4;
-  --accent-hover: #e5b8ef;
-  --accent-soft: #2a122e;
-  --accent-line: #4a2050;
-
-  --ok: #4fd3a0;
-  --ok-soft: #08251a;
-  --ok-line: #17513a;
-  --warn: #f7b75c;
-  --warn-soft: #2a1d0a;
-  --warn-line: #543a16;
-  --danger: #f2726c;
-  --danger-soft: #2c1211;
-  --danger-line: #5a2523;
-  --info: #5ca8f0;
-  --info-soft: #0a1c2e;
-  --info-line: #1b3e60;
-
-  --code-bg: #0b1018;
-  --code-text: #e5e7eb;
-  --code-bar: #111928;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
-  --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
-  --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, .7), 0 2px 8px rgba(0, 0, 0, .5);
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-line); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
 
 /* --------------------------------------------------------------- reset -- */
 
@@ -224,7 +89,7 @@ button { font: inherit; color: inherit; }
 
 .menu-btn {
   display: none; width: 32px; height: 32px; align-items: center; justify-content: center;
-  background: none; border: 1px solid var(--border); border-radius: var(--radius-full); cursor: pointer; color: var(--text-2);
+  background: none; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; color: var(--text-2);
 }
 .menu-btn svg { width: 16px; height: 16px; }
 
@@ -244,11 +109,11 @@ button { font: inherit; color: inherit; }
   margin-left: auto; margin-right: auto;
   display: flex; align-items: center; gap: var(--s-8);
   width: min(440px, 42vw); padding: 8px 12px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--text-3); font-size: 14px; cursor: pointer;
-  transition: border-color .14s, box-shadow .14s;
+  transition: border-color .14s;
 }
-.search-btn:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.search-btn:hover { border-color: var(--border-strong); }
 .search-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 .search-btn span { flex: 1; text-align: left; }
 .search-btn kbd, .search-input-row kbd {
@@ -259,13 +124,13 @@ button { font: inherit; color: inherit; }
 
 .topbar-actions { display: flex; align-items: center; gap: var(--s-4); flex-shrink: 0; }
 .ghost {
-  padding: 8px 12px; border-radius: var(--radius-full); font-size: 14px; font-weight: 500; color: var(--text-2);
+  padding: 8px 12px; border-radius: var(--radius); font-size: 14px; font-weight: 500; color: var(--text-2);
 }
 .ghost:hover { background: var(--surface-2); color: var(--text); }
 
 .theme-btn {
   width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
-  background: none; border: none; border-radius: var(--radius-full); cursor: pointer; color: var(--text-3);
+  background: none; border: none; border-radius: var(--radius); cursor: pointer; color: var(--text-3);
 }
 .theme-btn:hover { background: var(--surface-2); color: var(--text); }
 .theme-btn svg { width: 16px; height: 16px; }
@@ -315,8 +180,6 @@ button { font: inherit; color: inherit; }
   padding: var(--s-24) var(--s-12) var(--s-48) 0;
   scrollbar-width: thin;
 }
-.sidebar::-webkit-scrollbar { width: 8px; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-full); border: 2px solid var(--bg); }
 
 .nav-group + .nav-group { margin-top: var(--s-24); }
 .nav-group-title {
@@ -364,11 +227,11 @@ button { font: inherit; color: inherit; }
 .copy-page {
   display: inline-flex; align-items: center; gap: var(--s-4); flex-shrink: 0;
   margin-top: var(--s-4); padding: var(--s-8) var(--s-12);
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--text-2); font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: border-color .14s, color .14s, box-shadow .14s;
+  transition: border-color .14s, color .14s;
 }
-.copy-page:hover { border-color: var(--border-strong); color: var(--text); box-shadow: var(--shadow-sm); }
+.copy-page:hover { border-color: var(--border-strong); color: var(--text); }
 .copy-page.done { color: var(--ok); border-color: var(--ok-line); }
 .copy-page svg { width: 14px; height: 14px; }
 @media (max-width: 560px) { .copy-page span { display: none; } .copy-page { padding: var(--s-8); } }
@@ -454,7 +317,6 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .code {
   margin: 0 0 var(--s-24); border-radius: var(--radius-lg);
   border: 1px solid rgba(0, 0, 0, .08);
-  box-shadow: var(--shadow-sm);
   overflow: hidden; background: var(--code-bg);
 }
 :root[data-theme='dark'] .code { border-color: rgba(255, 255, 255, .07); }
@@ -471,7 +333,7 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
   color: #8e95a3;
 }
 .copy {
-  background: none; border: 1px solid rgba(255, 255, 255, .12); border-radius: var(--radius-full);
+  background: none; border: 1px solid rgba(255, 255, 255, .12); border-radius: var(--radius);
   color: #c6cad0; font-size: 12px; padding: var(--s-4) var(--s-8); cursor: pointer;
   transition: background .12s, color .12s;
 }
@@ -547,11 +409,10 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
   display: flex; flex-direction: column; gap: var(--s-4);
   padding: var(--card-pad); border: 1px solid var(--border); border-radius: var(--radius-lg);
   background: var(--surface); color: var(--text);
-  transition: border-color .14s, box-shadow .14s, transform .14s;
+  transition: border-color .14s;
 }
 .card:hover {
-  border-color: var(--accent-line); box-shadow: var(--shadow-md); color: var(--text);
-  transform: translateY(-1px);
+  border-color: var(--accent-line); color: var(--text);
 }
 .card-title { font-weight: 700; font-size: 16px; letter-spacing: -.01em; }
 .card-desc { font-size: 14px; color: var(--text-3); line-height: 1.5; flex: 1; }
@@ -567,7 +428,7 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .steps > h3::before {
   content: counter(step);
   position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  width: var(--s-24); height: var(--s-24); border-radius: var(--radius-full);
+  width: var(--s-24); height: var(--s-24); border-radius: var(--radius);
   background: var(--accent-soft); color: var(--accent);
   border: 1px solid var(--accent-line);
   display: grid; place-items: center; font-size: 12px; font-weight: 700;
@@ -626,9 +487,9 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .pn {
   display: flex; flex-direction: column; gap: var(--s-2); padding: var(--card-pad) var(--s-16);
   border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);
-  transition: border-color .14s, box-shadow .14s;
+  transition: border-color .14s;
 }
-.pn:hover { border-color: var(--accent-line); box-shadow: var(--shadow-sm); }
+.pn:hover { border-color: var(--accent-line); }
 .pn-next { text-align: right; }
 .pn-dir { font-size: 12px; color: var(--text-3); }
 .pn-label { font-size: 14px; font-weight: 700; color: var(--text); }
@@ -695,11 +556,11 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .copy-page {
   display: inline-flex; align-items: center; gap: var(--s-4); flex-shrink: 0;
   margin-top: var(--s-4); padding: var(--s-8) var(--s-12);
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--text-2); font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: border-color .14s, color .14s, box-shadow .14s;
+  transition: border-color .14s, color .14s;
 }
-.copy-page:hover { border-color: var(--border-strong); color: var(--text); box-shadow: var(--shadow-sm); }
+.copy-page:hover { border-color: var(--border-strong); color: var(--text); }
 .copy-page.done { color: var(--ok); border-color: var(--ok-line); }
 .copy-page svg { width: 14px; height: 14px; }
 @media (max-width: 560px) { .copy-page span { display: none; } .copy-page { padding: var(--s-8); } }
