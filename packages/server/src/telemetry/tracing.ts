@@ -11,7 +11,9 @@ try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const resourcesPkg = require("@opentelemetry/resources");
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { SemanticResourceAttributes } = require("@opentelemetry/semantic-conventions");
+  // ATTR_* are the 1.x+ constants; SemanticResourceAttributes is a deprecated
+  // shim that the 2.x line still exports but no longer documents.
+  const { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } = require("@opentelemetry/semantic-conventions");
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { registerInstrumentations } = require("@opentelemetry/instrumentation");
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -23,8 +25,8 @@ try {
     : (attrs: Record<string, unknown>) => new resourcesPkg.Resource(attrs);
 
   const resource = buildResource({
-    [SemanticResourceAttributes.SERVICE_NAME]: "a-workbench",
-    [SemanticResourceAttributes.SERVICE_VERSION]: "0.1.0",
+    [ATTR_SERVICE_NAME]: "a-workbench",
+    [ATTR_SERVICE_VERSION]: "0.1.0",
   });
 
   const provider = new NodeTracerProvider({ resource });
