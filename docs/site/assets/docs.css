@@ -4,6 +4,36 @@
    ========================================================================== */
 
 
+/* Geometry. Matches the portal: this documentation separates with lines, not
+   with elevation or roundness, so the shared token file's 6/8/12 radius ramp
+   collapses to a single value here and nothing is a capsule. tokens.css is
+   left alone — it is shared, and the override belongs to the surface that
+   wants it. */
+:root {
+  --radius-sm: 6px;
+  --radius: 6px;
+  --radius-lg: 6px;
+}
+
+/* Themed scrollbars, matching the portal: the stock browser bar is the one
+   element on the page that ignores the palette, and it is most obvious in dark
+   mode. Elements that hide their bar entirely (.topnav, .tab-bar) opt out
+   below. */
+* {
+  scrollbar-width: thin;                       /* Firefox */
+  scrollbar-color: var(--border) transparent;  /* thumb / track */
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-line); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
 /* --------------------------------------------------------------- reset -- */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -59,7 +89,7 @@ button { font: inherit; color: inherit; }
 
 .menu-btn {
   display: none; width: 32px; height: 32px; align-items: center; justify-content: center;
-  background: none; border: 1px solid var(--border); border-radius: var(--radius-full); cursor: pointer; color: var(--text-2);
+  background: none; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; color: var(--text-2);
 }
 .menu-btn svg { width: 16px; height: 16px; }
 
@@ -79,11 +109,11 @@ button { font: inherit; color: inherit; }
   margin-left: auto; margin-right: auto;
   display: flex; align-items: center; gap: var(--s-8);
   width: min(440px, 42vw); padding: 8px 12px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--text-3); font-size: 14px; cursor: pointer;
-  transition: border-color .14s, box-shadow .14s;
+  transition: border-color .14s;
 }
-.search-btn:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.search-btn:hover { border-color: var(--border-strong); }
 .search-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 .search-btn span { flex: 1; text-align: left; }
 .search-btn kbd, .search-input-row kbd {
@@ -94,13 +124,13 @@ button { font: inherit; color: inherit; }
 
 .topbar-actions { display: flex; align-items: center; gap: var(--s-4); flex-shrink: 0; }
 .ghost {
-  padding: 8px 12px; border-radius: var(--radius-full); font-size: 14px; font-weight: 500; color: var(--text-2);
+  padding: 8px 12px; border-radius: var(--radius); font-size: 14px; font-weight: 500; color: var(--text-2);
 }
 .ghost:hover { background: var(--surface-2); color: var(--text); }
 
 .theme-btn {
   width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
-  background: none; border: none; border-radius: var(--radius-full); cursor: pointer; color: var(--text-3);
+  background: none; border: none; border-radius: var(--radius); cursor: pointer; color: var(--text-3);
 }
 .theme-btn:hover { background: var(--surface-2); color: var(--text); }
 .theme-btn svg { width: 16px; height: 16px; }
@@ -150,8 +180,6 @@ button { font: inherit; color: inherit; }
   padding: var(--s-24) var(--s-12) var(--s-48) 0;
   scrollbar-width: thin;
 }
-.sidebar::-webkit-scrollbar { width: 8px; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-full); border: 2px solid var(--bg); }
 
 .nav-group + .nav-group { margin-top: var(--s-24); }
 .nav-group-title {
@@ -199,11 +227,11 @@ button { font: inherit; color: inherit; }
 .copy-page {
   display: inline-flex; align-items: center; gap: var(--s-4); flex-shrink: 0;
   margin-top: var(--s-4); padding: var(--s-8) var(--s-12);
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--text-2); font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: border-color .14s, color .14s, box-shadow .14s;
+  transition: border-color .14s, color .14s;
 }
-.copy-page:hover { border-color: var(--border-strong); color: var(--text); box-shadow: var(--shadow-sm); }
+.copy-page:hover { border-color: var(--border-strong); color: var(--text); }
 .copy-page.done { color: var(--ok); border-color: var(--ok-line); }
 .copy-page svg { width: 14px; height: 14px; }
 @media (max-width: 560px) { .copy-page span { display: none; } .copy-page { padding: var(--s-8); } }
@@ -289,7 +317,6 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .code {
   margin: 0 0 var(--s-24); border-radius: var(--radius-lg);
   border: 1px solid rgba(0, 0, 0, .08);
-  box-shadow: var(--shadow-sm);
   overflow: hidden; background: var(--code-bg);
 }
 :root[data-theme='dark'] .code { border-color: rgba(255, 255, 255, .07); }
@@ -306,7 +333,7 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
   color: #8e95a3;
 }
 .copy {
-  background: none; border: 1px solid rgba(255, 255, 255, .12); border-radius: var(--radius-full);
+  background: none; border: 1px solid rgba(255, 255, 255, .12); border-radius: var(--radius);
   color: #c6cad0; font-size: 12px; padding: var(--s-4) var(--s-8); cursor: pointer;
   transition: background .12s, color .12s;
 }
@@ -382,11 +409,10 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
   display: flex; flex-direction: column; gap: var(--s-4);
   padding: var(--card-pad); border: 1px solid var(--border); border-radius: var(--radius-lg);
   background: var(--surface); color: var(--text);
-  transition: border-color .14s, box-shadow .14s, transform .14s;
+  transition: border-color .14s;
 }
 .card:hover {
-  border-color: var(--accent-line); box-shadow: var(--shadow-md); color: var(--text);
-  transform: translateY(-1px);
+  border-color: var(--accent-line); color: var(--text);
 }
 .card-title { font-weight: 700; font-size: 16px; letter-spacing: -.01em; }
 .card-desc { font-size: 14px; color: var(--text-3); line-height: 1.5; flex: 1; }
@@ -402,7 +428,7 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .steps > h3::before {
   content: counter(step);
   position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  width: var(--s-24); height: var(--s-24); border-radius: var(--radius-full);
+  width: var(--s-24); height: var(--s-24); border-radius: var(--radius);
   background: var(--accent-soft); color: var(--accent);
   border: 1px solid var(--accent-line);
   display: grid; place-items: center; font-size: 12px; font-weight: 700;
@@ -461,9 +487,9 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .pn {
   display: flex; flex-direction: column; gap: var(--s-2); padding: var(--card-pad) var(--s-16);
   border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);
-  transition: border-color .14s, box-shadow .14s;
+  transition: border-color .14s;
 }
-.pn:hover { border-color: var(--accent-line); box-shadow: var(--shadow-sm); }
+.pn:hover { border-color: var(--accent-line); }
 .pn-next { text-align: right; }
 .pn-dir { font-size: 12px; color: var(--text-3); }
 .pn-label { font-size: 14px; font-weight: 700; color: var(--text); }
@@ -530,11 +556,11 @@ td code, th code { white-space: nowrap; overflow-wrap: normal; }
 .copy-page {
   display: inline-flex; align-items: center; gap: var(--s-4); flex-shrink: 0;
   margin-top: var(--s-4); padding: var(--s-8) var(--s-12);
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   color: var(--text-2); font-size: 14px; font-weight: 500; cursor: pointer;
-  transition: border-color .14s, color .14s, box-shadow .14s;
+  transition: border-color .14s, color .14s;
 }
-.copy-page:hover { border-color: var(--border-strong); color: var(--text); box-shadow: var(--shadow-sm); }
+.copy-page:hover { border-color: var(--border-strong); color: var(--text); }
 .copy-page.done { color: var(--ok); border-color: var(--ok-line); }
 .copy-page svg { width: 14px; height: 14px; }
 @media (max-width: 560px) { .copy-page span { display: none; } .copy-page { padding: var(--s-8); } }
