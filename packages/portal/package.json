@@ -8,7 +8,7 @@
     "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.0",
+    "@tanstack/react-query": "^5.102.8",
     "react": "^19.0",
     "react-dom": "^19.0",
     "react-router-dom": "^7.0"

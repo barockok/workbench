@@ -15,7 +15,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.11",
     "marked": "^16.4.2",
-    "turbo": "^2.9"
+    "turbo": "^2.10.12"
   },
   "dependencies": {
     "pg": "^8.21.0"
