@@ -7,7 +7,7 @@ import { EmptyState } from "../components/ui/EmptyState";
 import { Tabs } from "../components/ui/Tabs";
 import { Select } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { ActivityTable, nameForIntegration } from "../components/ActivityTable";
+import { ActivityTable, integrationLookup } from "../components/ActivityTable";
 
 const PAGE_SIZE = 50;
 
@@ -66,8 +66,8 @@ export default function Activity() {
 
   const { data: registry } = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
 
-  const nameFor = useMemo(
-    () => nameForIntegration((registry?.integrations ?? []) as IntegrationSummary[]),
+  const appFor = useMemo(
+    () => integrationLookup((registry?.integrations ?? []) as IntegrationSummary[]),
     [registry]
   );
 
@@ -137,7 +137,7 @@ export default function Activity() {
         ) : events.length === 0 ? (
           <EmptyState message="No tool calls recorded yet." />
         ) : (
-          <ActivityTable events={events} caption="Tool call history" nameFor={nameFor} />
+          <ActivityTable events={events} caption="Tool call history" appFor={appFor} />
         )}
       </Box>
 

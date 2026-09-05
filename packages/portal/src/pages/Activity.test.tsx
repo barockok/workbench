@@ -7,7 +7,7 @@ vi.mock("../api", () => ({
   fetchActivity: vi.fn(),
   fetchIntegrations: vi.fn(async () => ({
     integrations: [
-      { name: "acme", displayName: "Acme", version: "1.0.0", toolCount: 2 },
+      { name: "acme", displayName: "Acme", version: "1.0.0", toolCount: 2, logo: "/logos/acme.svg" },
       { name: "demo-repo", displayName: "Demo Repo", version: "1.0.0", toolCount: 2 },
     ],
   })),
@@ -51,6 +51,15 @@ describe("Activity", () => {
     renderPage();
     expect(await screen.findByText("acme_search")).toBeInTheDocument();
     expect(screen.getByText("412ms")).toBeInTheDocument();
+  });
+
+  it("shows each row's app with its logo, and a fallback mark when it has none", async () => {
+    renderPage();
+    const acme = await screen.findByAltText("Acme logo");
+    expect(acme).toHaveAttribute("src", "/logos/acme.svg");
+    // demo-repo carries no logo in the registry, so it falls back to the cog.
+    const fallbackRow = screen.getByText("repo_diff").closest("tr");
+    expect(fallbackRow?.querySelector(".integ-logo-fallback")).toBeInTheDocument();
   });
 
   it("groups events under a day heading", async () => {

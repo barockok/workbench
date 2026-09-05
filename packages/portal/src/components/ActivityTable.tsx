@@ -1,15 +1,21 @@
 import { Fragment } from "react";
 import type { ActivityEvent, IntegrationSummary } from "../api";
 import { DataTable } from "./ui/DataTable";
+import IntegrationLogo from "./IntegrationLogo";
 import { dayLabel, timeLabel, durationLabel } from "../format";
 
-// Shared by every page that feeds ActivityTable: map an integration's stable
-// name to its display name, falling back to the name itself when the
+export interface AppLabel {
+  label: string;
+  logo?: string;
+}
+
+// Shared by every page that shows an integration by name: resolve a stable
+// name to its display name and logo, falling back to the name itself when the
 // registry hasn't loaded or doesn't know it.
-export function nameForIntegration(integrations: IntegrationSummary[]): (name: string) => string {
-  const map = new Map<string, string>();
-  integrations.forEach((i) => map.set(i.name, i.displayName || i.name));
-  return (name: string) => map.get(name) ?? name;
+export function integrationLookup(integrations: IntegrationSummary[]): (name: string) => AppLabel {
+  const map = new Map<string, AppLabel>();
+  integrations.forEach((i) => map.set(i.name, { label: i.displayName || i.name, logo: i.logo }));
+  return (name: string) => map.get(name) ?? { label: name };
 }
 
 // Rows arrive newest-first; walk them in order and emit a group header row
@@ -28,14 +34,14 @@ function groupByDay(events: ActivityEvent[]): { day: string; events: ActivityEve
 export function ActivityTable({
   events,
   caption,
-  nameFor,
+  appFor,
 }: {
   events: ActivityEvent[];
   caption: string;
-  /** Map an integration name to its display name; identity if unknown. */
-  nameFor?: (name: string) => string;
+  /** Map an integration name to its display name + logo; name-only if unknown. */
+  appFor?: (name: string) => AppLabel;
 }) {
-  const label = nameFor ?? ((n: string) => n);
+  const app: (name: string) => AppLabel = appFor ?? ((n) => ({ label: n }));
 
   return (
     <DataTable
@@ -58,7 +64,21 @@ export function ActivityTable({
           {g.events.map((e) => (
             <tr key={e.id}>
               <td className="wb-cell-time">{timeLabel(e.created_at)}</td>
-              <td>{e.integration ? label(e.integration) : "—"}</td>
+              <td>
+                {e.integration ? (
+                  <span className="wb-cell-app">
+                    <IntegrationLogo
+                      name={e.integration}
+                      displayName={app(e.integration).label}
+                      logo={app(e.integration).logo}
+                      size={16}
+                    />
+                    {app(e.integration).label}
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </td>
               <td>
                 <code className="wb-mono">{e.tool ?? "—"}</code>
                 {!e.success && e.error && (

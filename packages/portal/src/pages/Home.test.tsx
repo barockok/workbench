@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Home from "./Home";
@@ -17,7 +17,7 @@ import { fetchStats, fetchActivity, fetchIntegrations, fetchConnections } from "
 const NOW = Math.floor(Date.now() / 1000);
 
 const INTEGRATIONS = [
-  { name: "acme", displayName: "Acme", version: "1.0.0", toolCount: 4 },
+  { name: "acme", displayName: "Acme", version: "1.0.0", toolCount: 4, logo: "/logos/acme.svg" },
   { name: "demo-repo", displayName: "Demo Repo", version: "1.0.0", toolCount: 9 },
 ];
 
@@ -54,6 +54,18 @@ describe("Home", () => {
     const cell = screen.getByText(label).closest(".ui-stat");
     return cell?.querySelector(".ui-stat-value")?.textContent ?? "";
   }
+
+  it("badges the most-used app with its logo", async () => {
+    renderPage();
+    // Two queries feed this cell — the stat and the registry that carries the
+    // logo — so wait for the mark itself rather than the label beside it.
+    await waitFor(() => {
+      const cell = screen.getByText("Most used app").closest(".ui-stat");
+      const logo = cell?.querySelector("img");
+      expect(logo).toHaveAttribute("src", "/logos/acme.svg");
+      expect(logo).toHaveAttribute("alt", "Acme logo");
+    });
+  });
 
   it("shows the four headline numbers", async () => {
     renderPage();
