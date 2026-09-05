@@ -573,6 +573,7 @@ body {
   height: var(--topbar-h);
   display: flex;
   align-items: center;
+  gap: var(--s-8);
   padding: 0 var(--s-8);
   font-size: 14px;
   font-weight: 700;
@@ -920,11 +921,16 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: #fff;
+  /* Outline tile: the stroke carries the accent, the surface fill keeps the
+     glyph legible on any ground — including a dark browser tab, where a
+     transparent tile would leave the letter floating on the chrome. */
+  border: 1.5px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
   font-weight: 700;
-  letter-spacing: -.01em;
+  letter-spacing: -.02em;
   line-height: 1;
+  box-sizing: border-box;
 }
 
 .brand-lockup { display: flex; align-items: center; gap: var(--s-8); }

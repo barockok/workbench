@@ -49,4 +49,10 @@ describe("Sidebar", () => {
     renderAt("/");
     expect(screen.queryByRole("link", { name: "Help" })).not.toBeInTheDocument();
   });
+
+  it("carries the workbench mark beside the wordmark", () => {
+    const { container } = renderAt("/");
+    expect(container.querySelector(".brand-mark")).toHaveTextContent("w");
+    expect(screen.getByText("workbench")).toBeInTheDocument();
+  });
 });

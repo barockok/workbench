@@ -41,4 +41,9 @@ describe("Login", () => {
     render(<Login />);
     expect(await screen.findByText("No auth provider configured")).toBeInTheDocument();
   });
+
+  it("carries the workbench mark beside the wordmark", () => {
+    const { container } = render(<Login />);
+    expect(container.querySelector(".brand-mark")).toHaveTextContent("w");
+  });
 });
