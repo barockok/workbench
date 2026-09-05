@@ -61,7 +61,7 @@ describe("Settings", () => {
 
   it("opens the help link in a new tab without leaking the referrer", () => {
     renderPage();
-    const help = screen.getByRole("link", { name: "Docs & source on GitHub" });
+    const help = screen.getByRole("link", { name: "workbench documentation" });
     expect(help).toHaveAttribute("target", "_blank");
     expect(help).toHaveAttribute("rel", expect.stringContaining("noreferrer"));
   });
