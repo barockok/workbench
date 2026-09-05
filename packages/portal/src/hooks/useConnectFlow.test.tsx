@@ -49,6 +49,7 @@ function renderHarness(integration: IntegrationSummary) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
 });
 
 describe("useConnectFlow", () => {
@@ -62,6 +63,18 @@ describe("useConnectFlow", () => {
 
     await waitFor(() => expect(startIntegrationAuth).toHaveBeenCalledWith("acme", undefined));
     await waitFor(() => expect(window.location.href).toBe("https://example.com/authorize"));
+  });
+
+  it("clears any agent-link marker so a portal-initiated connect is not mistaken for one", async () => {
+    sessionStorage.setItem("awb_connect_origin", "link");
+    vi.mocked(startIntegrationAuth).mockResolvedValue({ type: "oauth2", url: "https://example.com/authorize" });
+    Object.defineProperty(window, "location", { value: { href: "" }, writable: true });
+
+    renderHarness(OAUTH);
+    fireEvent.click(screen.getByText("do connect"));
+
+    await waitFor(() => expect(window.location.href).toBe("https://example.com/authorize"));
+    expect(sessionStorage.getItem("awb_connect_origin")).toBeNull();
   });
 
   it("asks for an instance URL first when the integration declares one", async () => {
