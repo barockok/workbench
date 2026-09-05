@@ -70,8 +70,15 @@ jobs:
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
           TEST_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/workbench_test
 
+      # Dependabot pull requests run without repository secrets, so the token is
+      # empty and the upload fails the job after the tests have already passed.
+      # Skip the upload when there is no token rather than report a red build
+      # for a reason unrelated to the change under test.
       - name: Upload coverage
+        if: env.CODECOV_TOKEN != ''
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: ./packages/server/coverage/lcov.info
           fail_ci_if_error: true
