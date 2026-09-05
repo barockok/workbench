@@ -38,16 +38,37 @@ function findPluginsBasePath(): string | undefined {
   return undefined;
 }
 
-function filterTools(module: Record<string, unknown>): PluginTool[] {
-  return Object.values(module).filter(
-    (v): v is PluginTool =>
-      typeof v === "object" &&
-      v !== null &&
-      "name" in v &&
-      "handler" in v &&
-      typeof (v as Record<string, unknown>).handler === "function" &&
-      (v as Record<string, unknown>).inputSchema instanceof z.ZodType
+function isTool(v: unknown): v is PluginTool {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return (
+    "name" in o &&
+    "handler" in o &&
+    typeof o.handler === "function" &&
+    o.inputSchema instanceof z.ZodType
   );
+}
+
+// A plugin's tools are named exports when the module graph stays ESM, but a
+// CJS-transpiled plugin arrives as a namespace holding `default` (and
+// `module.exports`) with the tools nested inside. The server is compiled to CJS
+// in the container while plugins load from .ts through tsx, so that is the
+// shape it actually sees — every directory-loaded plugin reported zero tools
+// because only the top level was searched. unwrapDefault already handles the
+// same shape for the manifest.
+export function filterTools(module: Record<string, unknown>): PluginTool[] {
+  const found = new Map<string, PluginTool>();
+  const visit = (candidate: unknown, depth = 0) => {
+    if (typeof candidate !== "object" || candidate === null || depth > 2) return;
+    for (const v of Object.values(candidate as Record<string, unknown>)) {
+      if (isTool(v)) found.set(v.name, v);
+    }
+    const o = candidate as Record<string, unknown>;
+    visit(o.default, depth + 1);
+    visit(o["module.exports"], depth + 1);
+  };
+  visit(module);
+  return Array.from(found.values());
 }
 
 function unwrapDefault<T>(mod: Record<string, unknown>): T {
