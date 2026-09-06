@@ -146,7 +146,10 @@ body {
 @media (max-width: 880px) {
   body { overflow-x: hidden; }
   .login-shell { grid-template-columns: 1fr; }
-  .login-art { min-height: 46vh; border-right: 0; border-bottom: 1px solid var(--border); }
+  .login-art { min-height: 64vh; border-right: 0; border-bottom: 1px solid var(--border); }
+  /* The mark sits in the upper part of the aside here (markY); this keeps
+     the brand lockup clear of it instead of sitting flush against the top. */
+  .login-art-copy { padding-top: 6vh; }
 }
 
 /* --- MCP API key panel --- */

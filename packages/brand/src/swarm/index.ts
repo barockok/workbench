@@ -6,6 +6,7 @@ import { ENTER_MS, LANES, laneState, entranceDone, projectLane, settle, smoother
 export interface SwarmOptions {
   ground?: SwarmGround;
   markX?: number;
+  markY?: number;
   markFrac?: number;
   ambient?: boolean;
   rasterize?: (svg: string, size: number) => Promise<Mask>;
@@ -62,7 +63,7 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
   const rasterize = opts.rasterize ?? rasterizeWithImage;
   const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const coarse = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
-  const markX = opts.markX ?? 0.66, markFrac = opts.markFrac ?? 0.86, wantAmbient = opts.ambient ?? true;
+  const markX = opts.markX ?? 0.66, markY = opts.markY ?? 0.5, markFrac = opts.markFrac ?? 0.86, wantAmbient = opts.ambient ?? true;
   let ground: SwarmGround = opts.ground ?? "dark";
   let W = 0, H = 0, raf = 0, born = 0, done = reduced, doneAt = 0, poseMix = reduced ? 1 : 0, ready = false, disposed = false;
   let parts: Particle[] = [], targets: SwarmTarget[] = [], big: Ambient[] = [], tiny: Ambient[] = [];
@@ -93,8 +94,8 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
     // margin: the prototype was 16:9, but a tall narrow hero (a login aside)
     // can put the mark's centre close enough to an edge that the unclamped
     // size overruns the canvas.
-    const cx = W * markX;
-    const size = Math.round(Math.min(Math.min(W, H) * markFrac, 2 * Math.min(cx, W - cx) * 0.92));
+    const cx = W * markX, cy = H * markY;
+    const size = Math.round(Math.min(Math.min(W, H) * markFrac, 2 * Math.min(cx, W - cx) * 0.92, 2 * Math.min(cy, H - cy) * 0.92));
     if (size <= 0) { ready = false; parts = []; big = []; tiny = []; return; }
     seed = ((W * 73856093) ^ (H * 19349663)) >>> 0;
     let mask: Mask;
@@ -144,7 +145,7 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
 
   function step(t: number) {
     if (!born) born = t;                        // clock starts on the first painted frame
-    const el = t - born, ts = t / 1000, cx = W * markX, cy = H / 2, cam = Math.min(W, H) * CAM;
+    const el = t - born, ts = t / 1000, cx = W * markX, cy = H * markY, cam = Math.min(W, H) * CAM;
     ease.x += (pointer.nx - ease.x) * 0.06; ease.y += (pointer.ny - ease.y) * 0.06;
     if (!done && entranceDone(el)) { done = true; doneAt = t; }
     poseMix = reduced ? 1 : done ? Math.min(1, (t - doneAt) / POSE_MS) : 0;

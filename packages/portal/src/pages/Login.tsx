@@ -47,21 +47,27 @@ export default function Login() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dark = document.documentElement.dataset.theme === "dark" ||
     (!document.documentElement.dataset.theme && typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches);
-  // Below the two-column breakpoint the aside stacks above the form: centre the mark, drop the ambient field.
+  // Below the two-column breakpoint the aside stacks above the form: centre the mark, shrink it,
+  // pull it above the copy pinned at the bottom, and drop the ambient field.
   const narrow = typeof matchMedia === "function" && matchMedia("(max-width: 880px)").matches;
+  // The prototype mark assumes a 16:9-ish frame; a tall aside (narrow stacked
+  // layout, or simply a tall desktop viewport) needs it centred instead of
+  // offset, or it runs past the right edge. Measured here (inside the hook's
+  // mount effect, after layout) rather than during render, since the canvas
+  // fills its aside via CSS and isn't sized yet on the first render pass.
+  const tallAside = () => {
+    const el = canvasRef.current;
+    return !el || el.clientHeight === 0 || el.clientWidth / el.clientHeight < 1.3;
+  };
   useSwarm(canvasRef, {
     ground: dark ? "dark" : "accent",
-    // The prototype mark assumes a 16:9-ish frame; a tall aside (narrow
-    // stacked layout, or simply a tall desktop viewport) needs it centred
-    // instead of offset, or it runs past the right edge. Measured here
-    // (inside the hook's mount effect, after layout) rather than during
-    // render, since the canvas fills its aside via CSS and isn't sized yet
-    // on the first render pass.
-    markX: () => {
-      const el = canvasRef.current;
-      const tall = !el || el.clientHeight === 0 || el.clientWidth / el.clientHeight < 1.3;
-      return tall ? 0.5 : 0.66;
-    },
+    markX: () => (narrow || tallAside() ? 0.5 : 0.66),
+    // On narrow (stacked) layouts the copy is pinned to the bottom of the
+    // aside, so the mark is pulled well above centre to leave it clear. A
+    // tall desktop column has more room: nudge it up just enough that it
+    // doesn't touch the copy block below.
+    markY: () => (narrow ? 0.36 : tallAside() ? 0.42 : 0.5),
+    markFrac: narrow ? 0.6 : undefined,
     ambient: !narrow,
   });
 

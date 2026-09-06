@@ -184,4 +184,22 @@ describe("createSwarm", () => {
     }
     s.destroy();
   });
+
+  it("markY moves the mark up so it clears copy pinned below it", async () => {
+    const narrow = document.createElement("canvas");
+    Object.defineProperty(narrow, "clientWidth", { value: 400 });
+    Object.defineProperty(narrow, "clientHeight", { value: 900 });
+    vi.spyOn(narrow, "getContext").mockReturnValue(ctx.ctx as unknown as CanvasRenderingContext2D);
+    document.body.innerHTML = ""; const host = document.createElement("div"); host.appendChild(narrow); document.body.appendChild(host);
+
+    const s = createSwarm(narrow, { rasterize, now, ambient: false, markY: 0.3 });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    const H = 900, markY = 0.3;
+    for (const t of s.state().targets) {
+      const py = t.ty + markY * H;
+      expect(py).toBeGreaterThanOrEqual(0);
+      expect(py).toBeLessThanOrEqual(H * 0.6);
+    }
+    s.destroy();
+  });
 });
