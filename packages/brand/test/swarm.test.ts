@@ -1,0 +1,98 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createSwarm } from "../src/swarm/index";
+import { ENTER_MS } from "../src/swarm/lanes";
+import type { Mask } from "../src/swarm/sample";
+
+// jsdom has no 2D context. A recording stub is enough: the engine only needs
+// the calls to exist, and the tests read what was drawn.
+function stubContext() {
+  const calls: string[] = [];
+  const ctx: Record<string, unknown> = { globalAlpha: 1, lineWidth: 1, strokeStyle: "", shadowBlur: 0, shadowColor: "" };
+  for (const m of ["setTransform", "clearRect", "save", "restore", "translate", "rotate", "scale", "beginPath", "arc", "rect", "moveTo", "lineTo", "closePath", "stroke"]) ctx[m] = vi.fn(() => calls.push(m));
+  return { ctx, calls };
+}
+// A 64×64 mask whose centre 32×32 is solid.
+async function rasterize(): Promise<Mask> {
+  const size = 64, data = new Uint8ClampedArray(size * size * 4);
+  for (let y = 16; y < 48; y++) for (let x = 16; x < 48; x++) { const k = (y * size + x) * 4; data[k] = data[k + 1] = data[k + 2] = data[k + 3] = 255; }
+  return { size, data };
+}
+
+let canvas: HTMLCanvasElement, ctx: ReturnType<typeof stubContext>, clock = 0, rafCbs: FrameRequestCallback[] = [];
+beforeEach(() => {
+  clock = 0; rafCbs = [];
+  ctx = stubContext();
+  canvas = document.createElement("canvas");
+  Object.defineProperty(canvas, "clientWidth", { value: 640 }); Object.defineProperty(canvas, "clientHeight", { value: 360 });
+  vi.spyOn(canvas, "getContext").mockReturnValue(ctx.ctx as unknown as CanvasRenderingContext2D);
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { rafCbs.push(cb); return rafCbs.length; });
+  vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+  document.body.innerHTML = ""; const host = document.createElement("div"); host.appendChild(canvas); document.body.appendChild(host);
+});
+afterEach(() => vi.unstubAllGlobals());
+const tick = (ms: number) => { clock += ms; const cbs = rafCbs.splice(0); for (const cb of cbs) cb(clock); };
+const now = () => clock;
+
+describe("createSwarm", () => {
+  it("samples the mask, then draws every particle each frame", async () => {
+    const s = createSwarm(canvas, { rasterize, now, ambient: false });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    const n = s.state().count; expect(n).toBeGreaterThan(50);
+    ctx.calls.length = 0; tick(16);
+    expect(ctx.calls.filter((c) => c === "stroke").length).toBe(n);
+    s.destroy();
+  });
+
+  it("is not done until ENTER_MS and blends the idle pose in over 1200ms after", async () => {
+    const s = createSwarm(canvas, { rasterize, now, ambient: false });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    tick(16); tick(ENTER_MS - 100);
+    expect(s.state().done).toBe(false);
+    tick(200);
+    expect(s.state().done).toBe(true); expect(s.state().poseMix).toBeLessThan(0.3);
+    tick(1300);
+    expect(s.state().poseMix).toBe(1);
+    s.destroy();
+  });
+
+  it("keeps every particle alpha at 1 on the hand-off frame (no blink)", async () => {
+    const s = createSwarm(canvas, { rasterize, now, ambient: false });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    const alphas: number[] = [];
+    (ctx.ctx.stroke as ReturnType<typeof vi.fn>).mockImplementation(() => alphas.push(ctx.ctx.globalAlpha as number));
+    tick(16); tick(ENTER_MS); alphas.length = 0; tick(16);
+    expect(Math.min(...alphas)).toBeGreaterThanOrEqual(0.6);   // body 0.6, rim 0.95 — nothing faded
+    s.destroy();
+  });
+
+  it("re-seeds onto an existing target, never off the mark", async () => {
+    const s = createSwarm(canvas, { rasterize, now, ambient: false });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    tick(16); tick(ENTER_MS + 2000);
+    for (let i = 0; i < 400; i++) tick(16);   // long enough for every particle to have re-seeded at least once
+    const targets = new Set(s.state().targets.map((t) => `${t.tx},${t.ty}`));
+    for (const p of s.state().particles) expect(targets.has(`${p.tx},${p.ty}`)).toBe(true);
+    s.destroy();
+  });
+
+  it("destroy cancels the frame and removes pointer listeners from the host", async () => {
+    const host = canvas.parentElement!;
+    const add = vi.spyOn(host, "addEventListener"), rem = vi.spyOn(host, "removeEventListener");
+    const s = createSwarm(canvas, { rasterize, now, ambient: false });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    s.destroy();
+    expect(cancelAnimationFrame).toHaveBeenCalled();
+    for (const [type] of add.mock.calls) expect(rem).toHaveBeenCalledWith(type, expect.any(Function));
+  });
+
+  it("with reduced motion, renders one posed frame and never schedules a loop", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("reduce"), media: q, addEventListener() {}, removeEventListener() {} }));
+    const s = createSwarm(canvas, { rasterize, now, ambient: false });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    expect(rafCbs.length).toBe(0);
+    expect(ctx.calls.filter((c) => c === "stroke").length).toBeGreaterThan(0);
+    s.destroy();
+  });
+});
