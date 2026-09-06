@@ -5,7 +5,7 @@
 
 **Self-hosted MCP tool aggregator.** One endpoint, per-user OAuth, 194 tools across 16 integrations — behind 9 meta-tools.
 
-[**Website**](https://workbench.netlify.app) ·
+[**Website**](https://barockok.github.io/workbench/) ·
 [**Documentation**](docs/site/_content/index.md) ·
 [Quickstart](docs/site/_content/start/quickstart.md) ·
 [Integrations](docs/site/_content/integrations/index.md) ·

@@ -33,14 +33,24 @@ describe("renderPage", () => {
     const filled = fillReplay([{ result: "a · b · c (3 of {{tools}})" }], data.inventory.totals);
     expect(renderPage({ ...data, replay: filled })).toContain("3 of 12");
   });
-  it("has exactly five sections in layout B order", () => {
+  it("has sections in layout B order", () => {
     const ids = [...html.matchAll(/<section[^>]*id="([a-z-]+)"/g)].map((m) => m[1]);
-    expect(ids).toEqual(["hero", "integrations", "demo", "pillars", "cta"]);
+    expect(ids).toEqual(["hero", "integrations", "demo", "pillars", "contribute", "teams", "cta"]);
+  });
+  it("shows the live integration count in the contribute headline", () => {
+    expect(html).toContain("1 integration today. Yours next.");
+  });
+  it("describes the audit trail in the teams section", () => {
+    expect(html).toContain("One audit trail");
   });
   it("links docs and the repo, carries the OG image, and hosts a swarm canvas", () => {
     expect(html).toContain('href="https://example.com/docs"');
     expect(html).toContain('href="https://example.com/repo"');
     expect(html).toContain('property="og:image" content="og-1200x630.png"');
     expect(html).toContain('<canvas id="swarm"');
+  });
+  it("resolves the hero docs link relative to a same-domain docs path", () => {
+    const relative = renderPage({ ...data, docsUrl: "docs/" });
+    expect(relative).toContain('href="docs/start/quickstart.html"');
   });
 });
