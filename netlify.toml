@@ -1,0 +1,13 @@
+[build]
+  base    = "."
+  command = "npm ci && npx playwright install chromium && npm run build -w @a-workbench/shared -w @a-workbench/brand && npm run build -w @a-workbench/site"
+  publish = "site/_site"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
