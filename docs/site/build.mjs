@@ -453,7 +453,15 @@ const searchIndex = [];
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 cpSync(join(ROOT, '..', '..', 'packages', 'shared', 'styles', 'tokens.css'), join(ROOT, 'assets', 'tokens.css'));
-for (const f of ['favicon.svg', 'apple-touch-180.png', 'og-1200x630.png']) cpSync(join(BRAND_DIST, f), join(ROOT, 'assets', f));
+cpSync(join(BRAND_DIST, 'favicon.svg'), join(ROOT, 'assets', 'favicon.svg'));
+// A browserless brand build (BRAND_SKIP_PNG) leaves no PNGs in dist/; the
+// committed copies under docs/assets/brand are the fallback.
+const BRAND_STATIC = join(ROOT, '..', 'assets', 'brand');
+for (const f of ['favicon-32.png', 'apple-touch-180.png', 'og-1200x630.png']) {
+  const src = [join(BRAND_DIST, f), join(BRAND_STATIC, f)].find((p) => existsSync(p));
+  if (!src) throw new Error(`docs build needs ${f} in packages/brand/dist or docs/assets/brand.`);
+  cpSync(src, join(ROOT, 'assets', f));
+}
 cpSync(join(ROOT, 'assets'), join(OUT, 'assets'), { recursive: true });
 // Without .nojekyll, Pages runs the output through Jekyll and drops every
 // path that starts with an underscore.

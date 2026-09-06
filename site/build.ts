@@ -10,7 +10,20 @@ if (!existsSync(join(brandDist, "index.js"))) throw new Error("site: build @a-wo
 
 mkdirSync(join(out, "brand"), { recursive: true }); mkdirSync(join(out, "shots"), { recursive: true });
 cpSync(brandDist, join(out, "brand"), { recursive: true });
-for (const f of ["favicon.svg", "apple-touch-180.png", "og-1200x630.png"]) copyFileSync(join(brandDist, f), join(out, f));
+
+// Netlify builds with BRAND_SKIP_PNG, so dist/ holds no PNGs there. The
+// committed copies under docs/assets/brand are the fallback, which is why CI
+// keeps them current.
+const brandStatic = join(root, "docs", "assets", "brand");
+function brandFile(f: string): string {
+  for (const dir of [brandDist, brandStatic]) if (existsSync(join(dir, f))) return join(dir, f);
+  throw new Error(`site: ${f} is in neither packages/brand/dist nor docs/assets/brand — run \`npm run build -w @a-workbench/brand\``);
+}
+for (const f of ["favicon-32.png", "apple-touch-180.png", "og-1200x630.png"]) {
+  const src = brandFile(f);
+  copyFileSync(src, join(out, f)); copyFileSync(src, join(out, "brand", f));
+}
+copyFileSync(join(brandDist, "favicon.svg"), join(out, "favicon.svg"));
 copyFileSync(join(root, "packages", "shared", "styles", "tokens.css"), join(out, "tokens.css"));
 for (const f of ["site.css", "site.js"]) copyFileSync(join(here, "assets", f), join(out, f));
 for (const f of ["apps.png", "connect.png", "result.png"]) {

@@ -1,7 +1,8 @@
 // Writes the static brand assets to dist/. SVGs come straight from the
 // renderer; PNGs are screenshots of those SVGs taken with the Playwright the
-// repo already has. Set BRAND_SKIP_PNG=1 to skip the browser step (no Chromium).
-import { mkdirSync, writeFileSync } from "node:fs";
+// repo already has. Set BRAND_SKIP_PNG=1 to skip the browser step (no Chromium),
+// BRAND_SYNC_STATIC=1 to refresh the committed copies under docs/assets/brand.
+import { mkdirSync, writeFileSync, copyFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -31,13 +32,20 @@ const files = {
 for (const [name, svg] of Object.entries(files)) writeFileSync(join(dist, name), svg);
 
 // packages/brand/dist is gitignored, so GitHub cannot render the README's
-// lockup images from it. Commit a copy of just the two lockups instead.
-const readmeDir = join(here, "..", "..", "docs", "assets", "brand");
-mkdirSync(readmeDir, { recursive: true });
-for (const f of ["lockup-light.svg", "lockup-dark.svg"]) writeFileSync(join(readmeDir, f), files[f]);
+// lockups from it and a browserless build (Netlify) has no source for the
+// PNGs. docs/assets/brand holds committed copies of both. Writing them is a
+// deliberate act — BRAND_SYNC_STATIC=1 — so a plain build never dirties
+// tracked files; CI runs it and checks the SVGs still match.
+const staticDir = join(here, "..", "..", "docs", "assets", "brand");
+const sync = Boolean(process.env.BRAND_SYNC_STATIC);
+if (sync) {
+  mkdirSync(staticDir, { recursive: true });
+  for (const f of ["lockup-light.svg", "lockup-dark.svg"]) writeFileSync(join(staticDir, f), files[f]);
+}
 
 if (process.env.BRAND_SKIP_PNG) { console.log("brand: skipped PNGs (BRAND_SKIP_PNG)"); process.exit(0); }
 
+const PNGS = ["favicon-32.png", "apple-touch-180.png", "og-1200x630.png"];
 const { chromium } = await import("playwright");
 const browser = await chromium.launch();
 async function png(name, { width, height, html }) {
@@ -55,4 +63,5 @@ await png("og-1200x630.png", {
         `<span style="color:#fff;font-size:120px;font-weight:800;letter-spacing:-.03em">workbench</span></div>`,
 });
 await browser.close();
-console.log("brand: wrote", Object.keys(files).length + 3, "files to dist/");
+if (sync) for (const f of PNGS) copyFileSync(join(dist, f), join(staticDir, f));
+console.log("brand: wrote", Object.keys(files).length + PNGS.length, "files to dist/" + (sync ? ` (static copies synced to ${staticDir})` : ""));

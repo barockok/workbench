@@ -10,7 +10,7 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
-    "test:docs": "node --test docs/site/test/**/*.mjs",
+    "test:docs": "node --test docs/site/test/*.test.mjs",
     "lint": "turbo run lint",
     "dev": "turbo run dev"
   },

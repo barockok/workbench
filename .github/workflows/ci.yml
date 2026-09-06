@@ -59,6 +59,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The build itself never touches tracked files. This step refreshes the
+      # committed copies deliberately and fails if the SVGs have drifted.
+      # (PNG bytes vary by Chromium build, so only the SVGs are compared.)
+      - name: Sync brand static copies
+        run: BRAND_SYNC_STATIC=1 node packages/brand/build.mjs
+
+      - name: Brand static copies are current
+        run: git diff --exit-code -- docs/assets/brand/*.svg
+
       # tsconfig.json only covers src/, so the build never sees the test suite.
       # This step does. See packages/server/tsconfig.test.json.
       - name: Typecheck tests
@@ -87,6 +96,8 @@ jobs:
 
       - name: Brand tests
         run: npm test -w @a-workbench/brand
+        env:
+          BRAND_TEST_PNG: "1"
 
       # Dependabot pull requests run without repository secrets, so the token is
       # empty and the upload fails the job after the tests have already passed.

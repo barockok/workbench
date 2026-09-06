@@ -1,10 +1,13 @@
 [build]
   base    = "."
-  command = "npm ci && npx playwright install chromium && npm run build -w @a-workbench/shared -w @a-workbench/brand && npm run build -w @a-workbench/site"
+  command = "npm ci && npm run build -w @a-workbench/shared -w @a-workbench/brand && npm run build -w @a-workbench/site"
   publish = "site/_site"
 
 [build.environment]
   NODE_VERSION = "22"
+  # No browser on the build image: the PNGs come from the committed copies
+  # under docs/assets/brand, which CI keeps current.
+  BRAND_SKIP_PNG = "1"
 
 [[headers]]
   for = "/*"
