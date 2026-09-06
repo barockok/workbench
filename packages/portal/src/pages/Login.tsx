@@ -49,7 +49,21 @@ export default function Login() {
     (!document.documentElement.dataset.theme && typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches);
   // Below the two-column breakpoint the aside stacks above the form: centre the mark, drop the ambient field.
   const narrow = typeof matchMedia === "function" && matchMedia("(max-width: 880px)").matches;
-  useSwarm(canvasRef, { ground: dark ? "dark" : "accent", markX: narrow ? 0.5 : 0.66, ambient: !narrow });
+  useSwarm(canvasRef, {
+    ground: dark ? "dark" : "accent",
+    // The prototype mark assumes a 16:9-ish frame; a tall aside (narrow
+    // stacked layout, or simply a tall desktop viewport) needs it centred
+    // instead of offset, or it runs past the right edge. Measured here
+    // (inside the hook's mount effect, after layout) rather than during
+    // render, since the canvas fills its aside via CSS and isn't sized yet
+    // on the first render pass.
+    markX: () => {
+      const el = canvasRef.current;
+      const tall = !el || el.clientHeight === 0 || el.clientWidth / el.clientHeight < 1.3;
+      return tall ? 0.5 : 0.66;
+    },
+    ambient: !narrow,
+  });
 
   return (
     <div className="login-shell">

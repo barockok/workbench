@@ -89,7 +89,12 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
   async function build() {
     const myEpoch = ++buildEpoch;
     resize();
-    const size = Math.round(Math.min(W, H) * markFrac);
+    // Clamp the sampled slab so it fits horizontally around markX with a
+    // margin: the prototype was 16:9, but a tall narrow hero (a login aside)
+    // can put the mark's centre close enough to an edge that the unclamped
+    // size overruns the canvas.
+    const cx = W * markX;
+    const size = Math.round(Math.min(Math.min(W, H) * markFrac, 2 * Math.min(cx, W - cx) * 0.92));
     if (size <= 0) { ready = false; parts = []; big = []; tiny = []; return; }
     seed = ((W * 73856093) ^ (H * 19349663)) >>> 0;
     let mask: Mask;

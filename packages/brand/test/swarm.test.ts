@@ -166,4 +166,22 @@ describe("createSwarm", () => {
     FakeImage.instances[1].onload?.();
     await expect(p2).resolves.toBe(FakeImage.instances[1]);
   });
+
+  it("keeps the mark inside a narrow canvas instead of overrunning its edge", async () => {
+    const narrow = document.createElement("canvas");
+    Object.defineProperty(narrow, "clientWidth", { value: 400 });
+    Object.defineProperty(narrow, "clientHeight", { value: 900 });
+    vi.spyOn(narrow, "getContext").mockReturnValue(ctx.ctx as unknown as CanvasRenderingContext2D);
+    document.body.innerHTML = ""; const host = document.createElement("div"); host.appendChild(narrow); document.body.appendChild(host);
+
+    const s = createSwarm(narrow, { rasterize, now, ambient: false });
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    const W = 400, markX = 0.66;
+    for (const t of s.state().targets) {
+      const px = t.tx + markX * W;
+      expect(px).toBeGreaterThanOrEqual(0);
+      expect(px).toBeLessThanOrEqual(W);
+    }
+    s.destroy();
+  });
 });
