@@ -1,9 +1,11 @@
 <div align="center">
 
-# workbench
+<img src="docs/assets/brand/lockup-light.svg#gh-light-mode-only" alt="workbench" height="40">
+<img src="docs/assets/brand/lockup-dark.svg#gh-dark-mode-only" alt="workbench" height="40">
 
-**Self-hosted MCP tool aggregator.** One endpoint, per-user OAuth, 178 tools across 16 integrations — behind 9 meta-tools.
+**Self-hosted MCP tool aggregator.** One endpoint, per-user OAuth, 194 tools across 16 integrations — behind 9 meta-tools.
 
+[**Website**](https://workbench.netlify.app) ·
 [**Documentation**](docs/site/_content/index.md) ·
 [Quickstart](docs/site/_content/start/quickstart.md) ·
 [Integrations](docs/site/_content/integrations/index.md) ·
@@ -27,7 +29,7 @@ list stays the same size whether one integration is connected or all of them.
 flowchart LR
   Agent["Agent"] -->|JSON-RPC| MCP["POST /mcp"]
   MCP --> Meta["9 meta-tools"]
-  Meta --> Reg["Plugin registry<br/>16 integrations · 178 tools"]
+  Meta --> Reg["Plugin registry<br/>16 integrations · 194 tools"]
   Reg -->|credential injected| APIs["Jira · GitHub · Slack · Google · …"]
   Portal["Portal"] --> Store[("Encrypted tokens")]
   Meta -.-> Store
@@ -70,7 +72,7 @@ The docs are the product surface — start there, not here.
 | | |
 |---|---|
 | Integrations | 16 on disk, plus 2 internal (`browser`, `jots`) |
-| Tools | 178 plugin tools, reached through 9 meta-tools |
+| Tools | 194 plugin tools, reached through 9 meta-tools |
 | Auth modes | `oauth2`, `apikey`, `cookie`, `none` |
 | Agent auth | Workbench API key or OAuth 2.1 (dynamic registration + PKCE) |
 | Portal SSO | Google, Keycloak, or both |

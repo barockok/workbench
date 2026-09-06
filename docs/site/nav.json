@@ -4,9 +4,8 @@
     "description": "Self-hosted MCP tool aggregator. One endpoint, per-user OAuth, every SaaS tool your agent needs.",
     "repo": "https://github.com/barockok/workbench",
     "domain": "github.io",
-    "version": "0.24.0",
-    "mark": "w",
-    "favicon": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='1.25' y='1.25' width='29.5' height='29.5' rx='7' fill='#ffffff' stroke='#853291' stroke-width='2.5'/><text x='16' y='23' font-family='Helvetica,Arial,sans-serif' font-size='19' font-weight='700' fill='#853291' text-anchor='middle'>w</text></svg>"
+    "marketing": "https://workbench.netlify.app",
+    "version": "0.24.0"
   },
   "tabs": [
     {

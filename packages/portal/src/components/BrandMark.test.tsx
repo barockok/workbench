@@ -3,29 +3,47 @@ import { render, screen } from "@testing-library/react";
 import { BrandMark, BrandLockup } from "./BrandMark";
 
 describe("BrandMark", () => {
-  it("is the lowercase w the docs site and favicon already use", () => {
+  it("is the Node W from the brand package, not a letter", () => {
     const { container } = render(<BrandMark />);
-    const mark = container.querySelector(".brand-mark");
-    expect(mark).toHaveTextContent("w");
+    const mark = container.querySelector(".brand-mark")!;
+    expect(mark.querySelector("svg")).not.toBeNull();
+    expect(mark.textContent).toBe("");
+    expect(mark.innerHTML).toContain("M5 8 L10 24 L16 12 L22 24 L27 8");
   });
 
-  it("scales the glyph with the tile so it can sit in a 24px topbar or a 56px pair", () => {
+  it("uses currentColor so the accent token themes it", () => {
+    const { container } = render(<BrandMark />);
+    expect(container.querySelector(".brand-mark svg")!.outerHTML).toContain('stroke="currentColor"');
+  });
+
+  it("drops the node shapes at 16px and below", () => {
+    const { container } = render(<BrandMark size={16} />);
+    expect(container.querySelector(".brand-mark svg")!.outerHTML).not.toContain("<rect");
+    const notSmall = render(<BrandMark size={20} />);
+    expect(notSmall.container.querySelector(".brand-mark svg")!.outerHTML).toContain("<rect");
+    const big = render(<BrandMark size={56} />);
+    expect(big.container.querySelector(".brand-mark svg")!.outerHTML).toContain("<rect");
+  });
+
+  it("sizes the root svg", () => {
     const { container } = render(<BrandMark size={56} />);
-    const mark = container.querySelector(".brand-mark") as HTMLElement;
-    expect(mark.style.width).toBe("56px");
-    expect(mark.style.height).toBe("56px");
+    expect(container.querySelector("svg")).toHaveAttribute("width", "56");
   });
 
   it("is decorative — the wordmark beside it carries the name", () => {
     const { container } = render(<BrandMark />);
-    expect(container.querySelector(".brand-mark")).toHaveAttribute("aria-hidden");
+    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });
 
 describe("BrandLockup", () => {
   it("pairs the mark with the wordmark", () => {
     const { container } = render(<BrandLockup />);
-    expect(container.querySelector(".brand-mark")).toBeInTheDocument();
+    expect(container.querySelector(".brand-mark svg")).toBeInTheDocument();
     expect(screen.getByText("workbench")).toBeInTheDocument();
+  });
+  it("compact uses the 20px mark", () => {
+    const { container } = render(<BrandLockup compact />);
+    expect(container.querySelector("svg")).toHaveAttribute("width", "20");
   });
 });

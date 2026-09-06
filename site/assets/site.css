@@ -1,0 +1,40 @@
+body { margin: 0; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, system-ui, sans-serif; line-height: 1.5; }
+a { color: inherit; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; max-width: 1200px; margin: 0 auto; }
+.brand { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--accent); }
+.brand-name { font-weight: 700; font-size: 16px; letter-spacing: -.01em; color: var(--text); }
+.topbar nav { display: flex; gap: 20px; font-weight: 500; }
+.hero { position: relative; overflow: hidden; min-height: 78vh; display: flex; align-items: flex-end; background: #4a1552; color: #fff; }
+:root[data-theme="dark"] .hero { background: #07090e; color: #e8eaed; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero { background: #07090e; color: #e8eaed; } }
+.hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.hero-copy { position: relative; z-index: 1; max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 24px 72px; }
+.hero h1 { font-size: clamp(34px, 5.2vw, 64px); font-weight: 800; letter-spacing: -.03em; line-height: 1.02; max-width: 12ch; margin: 0 0 16px; text-wrap: balance; }
+.lede { font-size: 17px; max-width: 52ch; opacity: .85; margin: 0 0 28px; }
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.cmd { display: inline-flex; align-items: center; gap: 12px; font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-size: 13px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.18); border-radius: 6px; padding: 10px 12px; }
+.copy { font: inherit; background: #fff; color: #4a1552; border: 0; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+.button-secondary { display: inline-block; padding: 10px 16px; border: 1px solid rgba(255,255,255,.4); border-radius: 6px; text-decoration: none; font-weight: 600; }
+.strip { max-width: 1200px; margin: 0 auto; padding: 40px 24px 8px; }
+.strip-counts { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin: 0 0 18px; }
+.logos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.logos li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-weight: 500; }
+.logos svg { width: 22px; height: 22px; flex: none; }
+.demo, .pillars { max-width: 1200px; margin: 0 auto; padding: 56px 24px; display: grid; gap: 32px; }
+.demo { grid-template-columns: 1fr 1fr; }
+.eyebrow { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin: 0 0 8px; }
+.demo h2, .pillars h3 { letter-spacing: -.02em; margin: 0 0 16px; }
+.terminal { background: var(--code-bg); color: #e8eaed; border-radius: 6px; padding: 16px; min-height: 260px; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; overflow-x: auto; }
+.terminal pre { margin: 0 0 8px; white-space: pre-wrap; }
+.t-prompt { color: #fff; } .t-call { color: #e5b8ef; } .t-result { color: #a2abb8; }
+.demo figure { margin: 0 0 14px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.demo img { display: block; width: 100%; height: auto; }
+.pillars { grid-template-columns: repeat(3, 1fr); }
+.pillars article { border-top: 2px solid var(--accent); padding-top: 14px; }
+.pillars p { color: var(--text-2); }
+.close { text-align: center; padding: 72px 24px 96px; background: var(--bg-sunk); }
+.close h2 { font-size: clamp(24px, 3.4vw, 40px); letter-spacing: -.025em; max-width: 22ch; margin: 0 auto 24px; text-wrap: balance; }
+.close .cmd { background: var(--code-bg); color: #e8eaed; border-color: transparent; }
+.close .copy { background: var(--accent); color: #fff; }
+@media (max-width: 880px) { .demo, .pillars { grid-template-columns: 1fr; } .hero { min-height: 100vh; } }
+@media (max-width: 380px) { .hero { min-height: 109vh; } }

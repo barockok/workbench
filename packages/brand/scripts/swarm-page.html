@@ -1,0 +1,9 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>swarm check</title>
+<style>html,body{margin:0;height:100%;background:#07090e}#host{position:relative;width:100vw;height:100vh}canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}</style>
+<div id="host"><canvas id="swarm"></canvas></div>
+<script type="module">
+  import { createSwarm } from "../dist/index.js";
+  window.swarm = createSwarm(document.getElementById("swarm"), { ground: "dark" });
+</script>
