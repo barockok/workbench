@@ -1,9 +1,11 @@
 <div align="center">
 
-# workbench
+<img src="docs/assets/brand/lockup-light.svg#gh-light-mode-only" alt="workbench" height="40">
+<img src="docs/assets/brand/lockup-dark.svg#gh-dark-mode-only" alt="workbench" height="40">
 
 **Self-hosted MCP tool aggregator.** One endpoint, per-user OAuth, 178 tools across 16 integrations — behind 9 meta-tools.
 
+[**Website**](https://workbench.netlify.app) ·
 [**Documentation**](docs/site/_content/index.md) ·
 [Quickstart](docs/site/_content/start/quickstart.md) ·
 [Integrations](docs/site/_content/integrations/index.md) ·

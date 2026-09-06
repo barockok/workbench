@@ -44,6 +44,9 @@ docs/site/_site/
 
 # Generated copy of the shared design tokens (build.mjs copies this in on every build)
 docs/site/assets/tokens.css
+docs/site/assets/favicon.svg
+docs/site/assets/apple-touch-180.png
+docs/site/assets/og-1200x630.png
 
 # brainstorming visual companion sessions
 .superpowers/

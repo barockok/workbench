@@ -70,6 +70,9 @@ jobs:
       - name: Build the docs site
         run: node docs/site/build.mjs
 
+      - name: Docs tests
+        run: npm run test:docs
+
       - name: Build the landing site
         run: npm run build -w @a-workbench/site
 

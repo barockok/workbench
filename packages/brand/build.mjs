@@ -30,6 +30,12 @@ const files = {
 };
 for (const [name, svg] of Object.entries(files)) writeFileSync(join(dist, name), svg);
 
+// packages/brand/dist is gitignored, so GitHub cannot render the README's
+// lockup images from it. Commit a copy of just the two lockups instead.
+const readmeDir = join(here, "..", "..", "docs", "assets", "brand");
+mkdirSync(readmeDir, { recursive: true });
+for (const f of ["lockup-light.svg", "lockup-dark.svg"]) writeFileSync(join(readmeDir, f), files[f]);
+
 if (process.env.BRAND_SKIP_PNG) { console.log("brand: skipped PNGs (BRAND_SKIP_PNG)"); process.exit(0); }
 
 const { chromium } = await import("playwright");

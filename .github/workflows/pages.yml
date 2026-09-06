@@ -30,6 +30,9 @@ jobs:
 
       - run: npm ci
 
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build -w @a-workbench/shared -w @a-workbench/brand
+
       # The generated HTML is not committed. This job is its only author, so
       # what is published is always a build of the Markdown at this commit.
       - name: Build the docs site

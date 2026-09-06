@@ -18,7 +18,7 @@
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { join, dirname, relative, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Marked } from 'marked';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -27,6 +27,14 @@ const OUT = join(ROOT, '_site');
 const nav = JSON.parse(readFileSync(join(ROOT, 'nav.json'), 'utf8'));
 
 const SITE = nav.site;
+
+const BRAND_DIST = join(ROOT, '..', '..', 'packages', 'brand', 'dist');
+if (!existsSync(join(BRAND_DIST, 'index.js'))) {
+  throw new Error(
+    `docs build needs packages/brand/dist — run "npm run build -w @a-workbench/brand" first.`,
+  );
+}
+const { markSvg } = await import(pathToFileURL(join(BRAND_DIST, 'index.js')).href);
 
 /* ------------------------------------------------------------------ *
  * Front matter
@@ -349,7 +357,9 @@ function layout({ page, title, description, content, headings }) {
 <meta property="og:title" content="${esc(title)} — ${esc(SITE.name)}">
 <meta property="og:description" content="${esc(description || SITE.description)}">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,${encodeURIComponent(SITE.favicon)}">
+<link rel="icon" href="${A}assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="${A}assets/apple-touch-180.png">
+<meta property="og:image" content="${A}assets/og-1200x630.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -366,7 +376,7 @@ function layout({ page, title, description, content, headings }) {
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
     </button>
     <a class="brand" href="${href(page.path, 'index')}">
-      <span class="brand-mark" aria-hidden="true">${SITE.mark}</span>
+      <span class="brand-mark">${markSvg({ size: 24, surface: 'var(--surface)' })}</span>
       <span class="brand-name">${esc(SITE.name)}</span>
       <span class="brand-sub">Docs</span>
     </a>
@@ -443,6 +453,7 @@ const searchIndex = [];
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 cpSync(join(ROOT, '..', '..', 'packages', 'shared', 'styles', 'tokens.css'), join(ROOT, 'assets', 'tokens.css'));
+for (const f of ['favicon.svg', 'apple-touch-180.png', 'og-1200x630.png']) cpSync(join(BRAND_DIST, f), join(ROOT, 'assets', f));
 cpSync(join(ROOT, 'assets'), join(OUT, 'assets'), { recursive: true });
 // Without .nojekyll, Pages runs the output through Jekyll and drops every
 // path that starts with an underscore.
