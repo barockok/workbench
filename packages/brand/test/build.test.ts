@@ -5,11 +5,18 @@ import { join } from "node:path";
 
 const root = join(__dirname, "..");
 const dist = join(root, "dist");
+const PNG = Boolean(process.env.BRAND_TEST_PNG);
 
 describe("build.mjs", () => {
   beforeAll(() => {
     execFileSync("npx", ["tsc", "-p", root], { stdio: "inherit" });
-    execFileSync("node", [join(root, "build.mjs")], { stdio: "inherit", env: { ...process.env } });
+    // A browser round-trip costs ~15s and needs `playwright install chromium`,
+    // so the unit suite skips the PNGs unless BRAND_TEST_PNG asks for them. CI
+    // sets it, so the PNG path is still exercised on every push.
+    execFileSync("node", [join(root, "build.mjs")], {
+      stdio: "inherit",
+      env: { ...process.env, ...(PNG ? {} : { BRAND_SKIP_PNG: "1" }) },
+    });
   }, 120_000);
 
   it.each(["mark.svg", "mark-small.svg", "mark-knockout.svg", "favicon.svg", "lockup-light.svg", "lockup-dark.svg"])(
@@ -28,10 +35,7 @@ describe("build.mjs", () => {
     expect(svg).toContain(">workbench<");
   });
 
-  it.each(["favicon-32.png", "apple-touch-180.png", "og-1200x630.png"])(
-    "renders %s when a browser is available", (f) => {
-      if (process.env.BRAND_SKIP_PNG) return;
-      expect(statSync(join(dist, f)).size).toBeGreaterThan(500);
-    },
+  it.skipIf(!PNG).each(["favicon-32.png", "apple-touch-180.png", "og-1200x630.png"])(
+    "renders %s", (f) => { expect(statSync(join(dist, f)).size).toBeGreaterThan(500); },
   );
 });
