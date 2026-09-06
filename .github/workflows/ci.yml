@@ -53,6 +53,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Install Chromium for brand assets
+        run: npx playwright install --with-deps chromium
+
       - name: Build
         run: npm run build
 
@@ -72,6 +75,9 @@ jobs:
         env:
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
           TEST_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/workbench_test
+
+      - name: Brand tests
+        run: npm test -w @a-workbench/brand
 
       # Dependabot pull requests run without repository secrets, so the token is
       # empty and the upload fails the job after the tests have already passed.
