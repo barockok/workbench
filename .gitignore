@@ -58,3 +58,6 @@ packages/portal/public/
 # Generated landing site build and copied design tokens
 site/_site/
 site/assets/tokens.css
+
+# Assembled GitHub Pages output (site + docs combined; built by CI)
+/_pages/

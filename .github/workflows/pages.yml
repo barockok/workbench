@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'site/**'
+      - 'packages/brand/**'
+      - 'packages/plugins/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -38,10 +41,24 @@ jobs:
       - name: Build the docs site
         run: node docs/site/build.mjs
 
+      # The landing site is the Pages root; the docs build above lands under
+      # docs/ within it, so docsUrl and the OG image must resolve there.
+      - name: Build the landing site
+        run: npm run build -w @a-workbench/site
+        env:
+          SITE_DOCS_URL: docs/
+          SITE_URL: https://barockok.github.io/workbench
+
+      - name: Assemble the Pages output
+        run: |
+          mkdir -p _pages
+          cp -R site/_site/. _pages/
+          cp -R docs/site/_site/. _pages/docs/
+
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
-          path: docs/site/_site
+          path: _pages
 
   deploy:
     needs: build

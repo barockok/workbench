@@ -49,4 +49,8 @@ describe("renderPage", () => {
     expect(html).toContain('property="og:image" content="og-1200x630.png"');
     expect(html).toContain('<canvas id="swarm"');
   });
+  it("resolves the hero docs link relative to a same-domain docs path", () => {
+    const relative = renderPage({ ...data, docsUrl: "docs/" });
+    expect(relative).toContain('href="docs/start/quickstart.html"');
+  });
 });

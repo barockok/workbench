@@ -32,7 +32,7 @@ const files = {
 for (const [name, svg] of Object.entries(files)) writeFileSync(join(dist, name), svg);
 
 // packages/brand/dist is gitignored, so GitHub cannot render the README's
-// lockups from it and a browserless build (Netlify) has no source for the
+// lockups from it and a browserless build has no source for the
 // PNGs. docs/assets/brand holds committed copies of both. Writing them is a
 // deliberate act — BRAND_SYNC_STATIC=1 — so a plain build never dirties
 // tracked files; CI runs it and checks the SVGs still match.

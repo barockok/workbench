@@ -11,7 +11,7 @@ if (!existsSync(join(brandDist, "index.js"))) throw new Error("site: build @a-wo
 mkdirSync(join(out, "brand"), { recursive: true }); mkdirSync(join(out, "shots"), { recursive: true });
 cpSync(brandDist, join(out, "brand"), { recursive: true });
 
-// Netlify builds with BRAND_SKIP_PNG, so dist/ holds no PNGs there. The
+// A browserless build sets BRAND_SKIP_PNG, so dist/ holds no PNGs there. The
 // committed copies under docs/assets/brand are the fallback, which is why CI
 // keeps them current.
 const brandStatic = join(root, "docs", "assets", "brand");
@@ -37,9 +37,9 @@ if (inventory.totals.integrations === 0 || inventory.totals.tools === 0 || inven
 const replay = JSON.parse(readFileSync(join(here, "data", "replay.json"), "utf8")) as ReplayStep[];
 const html = renderPage({
   inventory, replay: fillReplay(replay, inventory.totals),
-  docsUrl: process.env.SITE_DOCS_URL ?? "https://barockok.github.io/workbench/",
+  docsUrl: process.env.SITE_DOCS_URL ?? "https://barockok.github.io/workbench/docs/",
   repoUrl: "https://github.com/barockok/workbench",
-  image: (process.env.URL ?? "") + "/og-1200x630.png",   // Netlify sets URL to the deploy's origin
+  image: process.env.SITE_URL ? `${process.env.SITE_URL}/og-1200x630.png` : (process.env.URL ?? "") + "/og-1200x630.png",
   shots: { apps: "shots/apps.png", connect: "shots/connect.png", result: "shots/result.png" },
 });
 if (/@(icloud|gmail)\.com/i.test(html)) throw new Error("site: output matches the PII guard");
