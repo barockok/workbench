@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsx build.ts",
     "test": "vitest run",
-    "shots": "node scripts/shots.mjs"
+    "shots": "tsx scripts/shots.mjs"
   },
   "dependencies": { "@a-workbench/brand": "*" },
   "devDependencies": { "playwright": "^1.62.1", "tsx": "^4.23.0", "typescript": "^5.4", "vitest": "^4.1.11" }

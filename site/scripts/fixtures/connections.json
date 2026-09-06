@@ -1,0 +1,6 @@
+{
+  "connections": [
+    { "name": "github", "connected": true },
+    { "name": "slack", "connected": true }
+  ]
+}
