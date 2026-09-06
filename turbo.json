@@ -1,8 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"] },
-    "test": { "dependsOn": ["build"], "env": ["ENCRYPTION_KEY", "NODE_ENV"] },
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**"], "env": ["BRAND_SKIP_PNG", "BRAND_SYNC_STATIC"] },
+    "test": { "dependsOn": ["build"], "env": ["ENCRYPTION_KEY", "NODE_ENV", "BRAND_TEST_PNG"] },
     "lint": {},
     "dev": { "cache": false, "persistent": true }
   }
