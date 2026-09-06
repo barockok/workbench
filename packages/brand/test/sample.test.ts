@@ -62,3 +62,42 @@ describe("sampleMask", () => {
     expect(a).toEqual(b);
   });
 });
+
+// A 688×688 mask (the landing hero's size on a 1440×900 screen) shaped like the
+// mark: solid, with a hollow in the middle the way the nodes' interiors are.
+function hollowMask(): Mask {
+  const size = 688, data = new Uint8ClampedArray(size * size * 4);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    if (x >= 194 && x < 494 && y >= 194 && y < 494) continue;
+    const k = (y * size + x) * 4; data[k] = data[k + 1] = data[k + 2] = 255; data[k + 3] = 255;
+  }
+  return { size, data };
+}
+
+// Two solid squares with nothing between them: the sampler has to find both.
+function splitMask(): Mask {
+  const size = 200, data = new Uint8ClampedArray(size * size * 4);
+  const fill = (x0: number, y0: number) => {
+    for (let y = y0; y < y0 + 40; y++) for (let x = x0; x < x0 + 40; x++) { const k = (y * size + x) * 4; data[k] = data[k + 1] = data[k + 2] = 255; data[k + 3] = 255; }
+  };
+  fill(10, 10); fill(150, 150);
+  return { size, data };
+}
+
+describe("sampleMask at hero size", () => {
+  it("fills a 688px mask with a hollow in well under a frame budget", () => {
+    const m = hollowMask();
+    const t0 = performance.now();
+    const pts = sampleMask(m, { gap: 3.4, rnd: lcg(4), nodeCentres: MARK.nodeCentres });
+    const ms = performance.now() - t0;
+    expect(pts.length).toBeGreaterThan(5000);
+    expect(ms).toBeLessThan(300);
+    for (const p of pts) expect(inside(m, p.mx, p.my)).toBe(true);
+  });
+
+  it("covers disjoint regions of the mask", () => {
+    const pts = sampleMask(splitMask(), { gap: 4, rnd: lcg(3), nodeCentres: MARK.nodeCentres });
+    expect(pts.filter((p) => p.mx < 100).length).toBeGreaterThan(20);
+    expect(pts.filter((p) => p.mx > 100).length).toBeGreaterThan(20);
+  });
+});
