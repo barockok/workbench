@@ -16,9 +16,11 @@ describe("BrandMark", () => {
     expect(container.querySelector(".brand-mark svg")!.outerHTML).toContain('stroke="currentColor"');
   });
 
-  it("drops the node shapes at 20px and below", () => {
-    const { container } = render(<BrandMark size={20} />);
+  it("drops the node shapes at 16px and below", () => {
+    const { container } = render(<BrandMark size={16} />);
     expect(container.querySelector(".brand-mark svg")!.outerHTML).not.toContain("<rect");
+    const notSmall = render(<BrandMark size={20} />);
+    expect(notSmall.container.querySelector(".brand-mark svg")!.outerHTML).toContain("<rect");
     const big = render(<BrandMark size={56} />);
     expect(big.container.querySelector(".brand-mark svg")!.outerHTML).toContain("<rect");
   });

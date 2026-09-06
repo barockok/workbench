@@ -4,7 +4,7 @@ import { markSvg, LOCKUP } from "@a-workbench/brand";
 // site and the marketing site cannot drift. Inline SVG (not an <img>) so the
 // accent token colours it through currentColor in both themes.
 export function BrandMark({ size = LOCKUP.standard.mark }: { size?: number }) {
-  const svg = markSvg({ size, surface: "var(--surface)", variant: size <= 20 ? "small" : "full" });
+  const svg = markSvg({ size, surface: "var(--surface)", variant: size <= 16 ? "small" : "full" });
   return <span className="brand-mark" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
