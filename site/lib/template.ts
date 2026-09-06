@@ -86,6 +86,44 @@ export function renderPage(d: PageData): string {
   <article><h3>Yours to run</h3><p>SQLite or PostgreSQL, tokens encrypted at rest with AES-256-GCM, one container.</p><a href="${esc(d.docsUrl)}deploy/install.html">Deploy →</a></article>
 </section>
 
+<section id="contribute" class="contribute">
+  <p class="eyebrow">Open source</p>
+  <h2>${plural(totals.integrations, "integration")} today. Yours next.</h2>
+  <div class="contribute-col">
+    <pre class="code">${esc(`custom-plugins/acme-wiki/
+├── manifest.ts
+└── tools/index.ts
+
+// manifest.ts
+export default {
+  name: "acme-wiki",
+  displayName: "Acme Wiki",
+  description: "Internal wiki — pages and search.",
+  logo: "logo.svg",
+  auth: { type: "apikey", header: "X-Api-Key" },
+  proxy: { baseUrl: "https://wiki.acme.example" },
+};`)}</pre>
+  </div>
+  <div class="contribute-col">
+    <article><h3>No fork.</h3><p>Drop a folder into <code>custom-plugins/</code>; the server loads it on restart and the portal lists it beside the built-ins.</p></article>
+    <article><h3>Keep it or share it.</h3><p>Private to your instance by default. Open a pull request when others would use it and it ships in the next release.</p></article>
+    <article><h3>Same rules as ours.</h3><p>A manifest, a tools file, one of four auth modes — the built-in integrations are written exactly the same way.</p></article>
+    <a href="${esc(d.docsUrl)}plugins/index.html">Build a plugin →</a>
+  </div>
+</section>
+
+<section id="teams" class="teams">
+  <p class="eyebrow">For teams</p>
+  <h2>Set it up once. The whole org connects.</h2>
+  <div class="teams-grid">
+    <article><h3>One setup per provider.</h3><p>Client ID and secret live on the instance. Nobody hands out API keys or pastes secrets into an agent config.</p></article>
+    <article><h3>Everyone brings their own account.</h3><p>Each person connects with one click; tokens are per-user, encrypted at rest, and the agent never sees them.</p></article>
+    <article><h3>One audit trail.</h3><p>Every tool call is logged with who, which agent, which integration, and the outcome — the Activity page is the record.</p></article>
+    <article><h3>Easy to govern.</h3><p>Revoke a person's connection or an agent's access in one place; it stops everywhere at once.</p></article>
+  </div>
+  <a href="${esc(d.docsUrl)}deploy/install.html">Deploy for your team →</a>
+</section>
+
 <section id="cta" class="close">
   <h2>Your agent already knows what to do. Give it the tools.</h2>
   <code class="cmd" data-copy="${esc(DOCKER)}"><span>${esc(DOCKER)}</span><button type="button" class="copy" aria-label="Copy command">Copy</button></code>
