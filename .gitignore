@@ -50,3 +50,7 @@ docs/site/assets/tokens.css
 
 # Copied from packages/brand/dist by packages/portal/scripts/copy-brand.mjs
 packages/portal/public/
+
+# Generated landing site build and copied design tokens
+site/_site/
+site/assets/tokens.css
