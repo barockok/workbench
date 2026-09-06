@@ -95,4 +95,38 @@ describe("createSwarm", () => {
     expect(ctx.calls.filter((c) => c === "stroke").length).toBeGreaterThan(0);
     s.destroy();
   });
+
+  it("a stale rebuild does not land after a newer one supersedes it", async () => {
+    const size = 64;
+    function squareMask(lo: number, hi: number): Mask {
+      const data = new Uint8ClampedArray(size * size * 4);
+      for (let y = lo; y < hi; y++) for (let x = lo; x < hi; x++) { const k = (y * size + x) * 4; data[k] = data[k + 1] = data[k + 2] = data[k + 3] = 255; }
+      return { size, data };
+    }
+    let call = 0;
+    const pending: { resolve: (m: Mask) => void; mask: Mask }[] = [];
+    // First build gets a large solid square (more particles); every later
+    // build gets a smaller one (fewer particles) — resolving them out of
+    // order must still land only the latest.
+    const deferredRasterize = (): Promise<Mask> => {
+      call++;
+      const mask = call === 1 ? squareMask(4, 60) : squareMask(24, 40);
+      return new Promise<Mask>((resolve) => pending.push({ resolve, mask }));
+    };
+    const s = createSwarm(canvas, { rasterize: deferredRasterize, now, ambient: false });
+    await vi.waitFor(() => expect(pending.length).toBe(1));   // first (stale-to-be) build in flight
+    s.replay();
+    await vi.waitFor(() => expect(pending.length).toBe(2));   // second (latest) build in flight
+
+    // Resolve the latest build first, then the stale one — the stale
+    // resolution arriving after must not overwrite the latest state.
+    pending[1].resolve(pending[1].mask);
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    const freshCount = s.state().count;
+
+    pending[0].resolve(pending[0].mask);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(s.state().count).toBe(freshCount);
+    s.destroy();
+  });
 });

@@ -26,10 +26,25 @@ export interface Swarm {
 const FADE = 70, PUSH_R = 100, PUSH_PX = 24, POSE_MS = 1200, GAP = 3.4, THICK = 0.06, CAM = 2.2;
 
 // Default rasterizer: draw the mark SVG through an <img> onto an offscreen canvas.
+// The SVG text (and thus the decoded image) is the same for every build and
+// every swarm instance, so the decode happens once and is cached — a resize
+// only re-draws that cached image at the new size, it never re-decodes.
+const markImageCache = new Map<string, Promise<HTMLImageElement>>();
+function loadMarkImage(svg: string): Promise<HTMLImageElement> {
+  let p = markImageCache.get(svg);
+  if (!p) {
+    p = new Promise<HTMLImageElement>((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => rej(new Error("mark failed to load"));
+      img.src = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+    });
+    markImageCache.set(svg, p);
+  }
+  return p;
+}
 async function rasterizeWithImage(svg: string, size: number): Promise<Mask> {
-  const img = new Image();
-  img.src = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-  await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error("mark failed to load")); });
+  const img = await loadMarkImage(svg);
   const off = document.createElement("canvas"); off.width = off.height = size;
   const o = off.getContext("2d", { willReadFrequently: true })!;
   o.drawImage(img, 0, 0, size, size);
@@ -47,7 +62,7 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
   let ground: SwarmGround = opts.ground ?? "dark";
   let W = 0, H = 0, raf = 0, born = 0, done = reduced, doneAt = 0, poseMix = reduced ? 1 : 0, ready = false, disposed = false;
   let parts: Particle[] = [], targets: SwarmTarget[] = [], big: Ambient[] = [], tiny: Ambient[] = [];
-  let slowFrames = 0, glow = true;
+  let slowFrames = 0, glow = true, buildEpoch = 0, resizeRaf = 0;
   const pointer = { x: -1e4, y: -1e4, nx: 0, ny: 0, down: false }, ease = { x: 0, y: 0 };
   let seed = 11; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
 
@@ -68,12 +83,13 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
   function recolor() { const pal = SWARM_PALETTES[ground]; for (const p of parts) p.color = colorFor(p, pal); for (const a of big) a.color = colorFor(a, pal); for (const a of tiny) a.color = pal[a.ci % 8]; }
 
   async function build() {
+    const myEpoch = ++buildEpoch;
     resize();
     const size = Math.round(Math.min(W, H) * markFrac);
-    if (size <= 0) return;
+    if (size <= 0) { ready = false; parts = []; big = []; tiny = []; return; }
     seed = ((W * 73856093) ^ (H * 19349663)) >>> 0;
     const mask = await rasterize(maskSvg(), size);
-    if (disposed) return;
+    if (disposed || myEpoch !== buildEpoch) return;   // a newer build (or a resize) superseded this one
     let pts: SamplePoint[] = sampleMask(mask, { gap: GAP, rnd, nodeCentres: MARK.nodeCentres });
     if (coarse) pts = pts.filter((_, i) => i % 2 === 0);
     const thick = size * THICK, reach = Math.max(W, H);
@@ -182,12 +198,18 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
   function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; }
 
   const rect = () => canvas.getBoundingClientRect();
-  const onMove = (e: PointerEvent) => { if (e.pointerType !== "mouse" && !pointer.down) return; const r = rect(); pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top; pointer.nx = (pointer.x / W) * 2 - 1; pointer.ny = (pointer.y / H) * 2 - 1; };
+  const onMove = (e: PointerEvent) => { if (e.pointerType !== "mouse" && !pointer.down) return; const r = rect(); pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top; pointer.nx = W ? (pointer.x / W) * 2 - 1 : 0; pointer.ny = H ? (pointer.y / H) * 2 - 1 : 0; };
   const onDown = (e: PointerEvent) => { pointer.down = true; onMove(e); };
   const onUp = () => { pointer.down = false; };
   const onLeave = () => { pointer.x = pointer.y = -1e4; pointer.nx = pointer.ny = 0; pointer.down = false; };
   const onVis = () => { if (document.hidden) stop(); else start(); };
-  const onResize = () => { void build(); };
+  // Coalesce to at most one rebuild per animation frame: a burst of resize
+  // events during a drag only queues one build, and a later event in the
+  // same frame cancels the one still pending.
+  const onResize = () => {
+    if (resizeRaf) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; void build(); });
+  };
   host.addEventListener("pointermove", onMove, { passive: true });
   host.addEventListener("pointerdown", onDown, { passive: true });
   host.addEventListener("pointerup", onUp, { passive: true });
@@ -201,12 +223,14 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
   return {
     destroy() {
       disposed = true; stop();
+      if (resizeRaf) cancelAnimationFrame(resizeRaf);
+      resizeRaf = 0;
       host.removeEventListener("pointermove", onMove); host.removeEventListener("pointerdown", onDown); host.removeEventListener("pointerup", onUp);
       host.removeEventListener("pointercancel", onLeave); host.removeEventListener("pointerleave", onLeave);
       window.removeEventListener("scroll", onLeave); document.removeEventListener("visibilitychange", onVis); window.removeEventListener("resize", onResize);
     },
     setGround(g) { ground = g; recolor(); },
     replay() { void build(); },
-    state() { return { ready, done, poseMix, count: parts.length, targets, particles: parts.map(({ tx, ty, tz, rim, shape }) => ({ tx, ty, tz, rim, shape })) }; },
+    state() { return { ready, done, poseMix, count: parts.length, targets: targets.slice(), particles: parts.map(({ tx, ty, tz, rim, shape }) => ({ tx, ty, tz, rim, shape })) }; },
   };
 }
