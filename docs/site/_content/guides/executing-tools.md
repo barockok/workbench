@@ -4,7 +4,7 @@ description: How execute_tools runs plugin tools, what happens to each one, and 
 ---
 
 `execute_tools` is the only way to run a plugin tool. Everything the catalog offers —
-all 178 tools across 16 plugins, plus the built-in `browser` and `jots` tools — is
+all 194 tools across 16 plugins, plus the built-in `browser` and `jots` tools — is
 reached through this single meta-tool.
 
 > [!WARNING] There is no `execute_tool` (singular)

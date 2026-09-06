@@ -1,9 +1,9 @@
 ---
 title: Tool catalog
-description: Every tool a stock install loads — 178 plugin tools across 16 integrations, plus 12 built-in tools.
+description: Every tool a stock install loads — 194 plugin tools across 16 integrations, plus 12 built-in tools.
 ---
 
-A stock install registers **190 tools**: 178 from the 16 built-in plugins, plus 9
+A stock install registers **206 tools**: 194 from the 16 built-in plugins, plus 9
 browser tools and 3 jots tools from the two internal plugins.
 
 None of them appear in MCP `tools/list` — that returns only the
