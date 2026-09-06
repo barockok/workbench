@@ -39,7 +39,7 @@ export function renderPage(d: PageData): string {
   <canvas id="swarm" class="hero-canvas" aria-hidden="true"></canvas>
   <div class="hero-copy">
     <h1>One endpoint. Every tool your agent needs.</h1>
-    <p class="lede">A self-hosted MCP server that holds a separate OAuth connection per user per provider and exposes ${counts} through a fixed set of nine. Your tokens never leave your box.</p>
+    <p class="lede">A self-hosted MCP server that holds a separate OAuth connection per user per provider and exposes ${plural(totals.tools, "tool")} across ${plural(totals.integrations, "integration")} through ${totals.metaTools} meta-tools. Your tokens never leave your box.</p>
     <div class="cta-row">
       <code class="cmd" data-copy="${esc(DOCKER)}"><span>${esc(DOCKER)}</span><button type="button" class="copy" aria-label="Copy command">Copy</button></code>
       <a class="button-secondary" href="${esc(d.docsUrl)}start/quickstart.html">Read the docs</a>
@@ -85,7 +85,7 @@ export function renderPage(d: PageData): string {
   const dark = document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && matchMedia("(prefers-color-scheme: dark)").matches);
   const narrow = matchMedia("(max-width: 880px)").matches;
   createSwarm(document.getElementById("swarm"), narrow
-    ? { ground: dark ? "dark" : "accent", markX: 0.5, markY: 0.4, markFrac: 0.6, ambient: false }
+    ? { ground: dark ? "dark" : "accent", markX: 0.5, markY: 0.3, markFrac: 0.58, ambient: false }
     : { ground: dark ? "dark" : "accent", markY: 0.5 });
 </script>
 <script src="site.js" defer></script>

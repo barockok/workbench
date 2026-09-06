@@ -8,7 +8,7 @@
 .mcp.json
 
 # Data
-data/
+/data/
 *.db
 
 # Node

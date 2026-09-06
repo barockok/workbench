@@ -36,4 +36,5 @@ a { color: inherit; }
 .close h2 { font-size: clamp(24px, 3.4vw, 40px); letter-spacing: -.025em; max-width: 22ch; margin: 0 auto 24px; text-wrap: balance; }
 .close .cmd { background: var(--code-bg); color: #e8eaed; border-color: transparent; }
 .close .copy { background: var(--accent); color: #fff; }
-@media (max-width: 880px) { .demo, .pillars { grid-template-columns: 1fr; } .hero { min-height: 120vh; } }
+@media (max-width: 880px) { .demo, .pillars { grid-template-columns: 1fr; } .hero { min-height: 100vh; } }
+@media (max-width: 380px) { .hero { min-height: 109vh; } }
