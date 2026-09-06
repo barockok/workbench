@@ -55,7 +55,7 @@ describe("Sidebar", () => {
     const lockup = container.querySelector(".brand-lockup");
     expect(lockup).toBeInTheDocument();
     // Mark and wordmark inside the one container that sets the gap between them.
-    expect(lockup?.querySelector(".brand-mark")).toHaveTextContent("w");
+    expect(lockup?.querySelector(".brand-mark svg")).not.toBeNull();
     expect(lockup?.querySelector(".brand-name")).toHaveTextContent("workbench");
   });
 });

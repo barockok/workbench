@@ -46,7 +46,7 @@ describe("Login", () => {
     const { container } = render(<Login />);
     const lockup = container.querySelector(".brand-lockup");
     expect(lockup).toBeInTheDocument();
-    expect(lockup?.querySelector(".brand-mark")).toHaveTextContent("w");
+    expect(lockup?.querySelector(".brand-mark svg")).not.toBeNull();
     expect(lockup?.querySelector(".brand-name")).toHaveTextContent("workbench");
   });
 });

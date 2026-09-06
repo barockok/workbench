@@ -18,7 +18,7 @@ describe("ConnectPair", () => {
   it("puts the real workbench mark on our end of the pair", () => {
     const { container } = render(<ConnectPair logo={null} label="Acme" />);
     const mark = container.querySelector(".brand-mark");
-    expect(mark).toHaveTextContent("w");
+    expect(mark?.querySelector("svg")).not.toBeNull();
     // The mono "wb" placeholder matched nothing else in the product.
     expect(container.textContent).not.toContain("wb");
   });

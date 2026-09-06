@@ -2,12 +2,13 @@
   "name": "@a-workbench/portal",
   "version": "0.22.0",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "node scripts/copy-brand.mjs && vite",
+    "build": "node scripts/copy-brand.mjs && tsc && vite build",
     "preview": "vite preview",
     "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run"
   },
   "dependencies": {
+    "@a-workbench/brand": "*",
     "@tanstack/react-query": "^5.102.8",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

@@ -904,25 +904,9 @@ body {
    the link is spent, and the result screen the provider callback redirects
    to. Full-viewport, outside the app shell — a human lands here from a link
    or from a provider, not from the nav. */
-/* The workbench mark and wordmark, matching the docs site's topbar so the two
-   surfaces present the same identity. Used by the pages outside the app shell,
-   which have no sidebar to carry the brand for them. */
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-  /* Outline tile: the stroke carries the accent, the surface fill keeps the
-     glyph legible on any ground — including a dark browser tab, where a
-     transparent tile would leave the letter floating on the chrome. */
-  border: 1.5px solid var(--accent);
-  background: var(--surface);
-  color: var(--accent);
-  font-weight: 700;
-  letter-spacing: -.02em;
-  line-height: 1;
-  box-sizing: border-box;
-}
+/* The Node W from @a-workbench/brand, inline SVG coloured by the accent token. */
+.brand-mark { display: inline-flex; align-items: center; justify-content: center; color: var(--accent); line-height: 0; }
+.brand-mark svg { display: block; width: 100%; height: 100%; }
 
 .brand-lockup { display: flex; align-items: center; gap: var(--s-8); }
 .brand-name { font-size: 16px; font-weight: 700; letter-spacing: -.01em; color: var(--text); }
