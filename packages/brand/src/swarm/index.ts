@@ -30,13 +30,17 @@ const FADE = 70, PUSH_R = 100, PUSH_PX = 24, POSE_MS = 1200, GAP = 3.4, THICK = 
 // every swarm instance, so the decode happens once and is cached — a resize
 // only re-draws that cached image at the new size, it never re-decodes.
 const markImageCache = new Map<string, Promise<HTMLImageElement>>();
-function loadMarkImage(svg: string): Promise<HTMLImageElement> {
+// Exported for the eviction-on-failure unit test only — not part of the
+// package's public API, so it is not re-exported from src/index.ts.
+export function loadMarkImage(svg: string): Promise<HTMLImageElement> {
   let p = markImageCache.get(svg);
   if (!p) {
     p = new Promise<HTMLImageElement>((res, rej) => {
       const img = new Image();
       img.onload = () => res(img);
-      img.onerror = () => rej(new Error("mark failed to load"));
+      // A failed decode must not poison the cache forever — drop this entry
+      // so the next call (a resize, replay(), or a new Swarm) gets a fresh Image.
+      img.onerror = () => { markImageCache.delete(svg); rej(new Error("mark failed to load")); };
       img.src = "data:image/svg+xml;utf8," + encodeURIComponent(svg);
     });
     markImageCache.set(svg, p);
@@ -88,7 +92,17 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
     const size = Math.round(Math.min(W, H) * markFrac);
     if (size <= 0) { ready = false; parts = []; big = []; tiny = []; return; }
     seed = ((W * 73856093) ^ (H * 19349663)) >>> 0;
-    const mask = await rasterize(maskSvg(), size);
+    let mask: Mask;
+    try {
+      mask = await rasterize(maskSvg(), size);
+    } catch {
+      // A failed rasterize must never surface as an unhandled rejection, and
+      // must never leave the engine looking "ready" over stale/no particles.
+      // A later replay() or resize retries (the default rasterizer's own
+      // cache is cleared on failure so that retry gets a fresh decode).
+      if (!disposed && myEpoch === buildEpoch) { ready = false; parts = []; big = []; tiny = []; }
+      return;
+    }
     if (disposed || myEpoch !== buildEpoch) return;   // a newer build (or a resize) superseded this one
     let pts: SamplePoint[] = sampleMask(mask, { gap: GAP, rnd, nodeCentres: MARK.nodeCentres });
     if (coarse) pts = pts.filter((_, i) => i % 2 === 0);

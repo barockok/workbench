@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createSwarm } from "../src/swarm/index";
+import { createSwarm, loadMarkImage } from "../src/swarm/index";
 import { ENTER_MS } from "../src/swarm/lanes";
 import type { Mask } from "../src/swarm/sample";
 
@@ -128,5 +128,42 @@ describe("createSwarm", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(s.state().count).toBe(freshCount);
     s.destroy();
+  });
+
+  it("a rasterize failure leaves ready false without an unhandled rejection, then replay() retries", async () => {
+    let call = 0;
+    const flakyRasterize = (): Promise<Mask> => {
+      call++;
+      return call === 1 ? Promise.reject(new Error("decode failed")) : rasterize();
+    };
+    const s = createSwarm(canvas, { rasterize: flakyRasterize, now, ambient: false });
+    await new Promise((r) => setTimeout(r, 0));   // let the first (rejected) build settle
+    expect(s.state().ready).toBe(false);
+    s.replay();
+    await vi.waitFor(() => expect(s.state().ready).toBe(true));
+    expect(s.state().count).toBeGreaterThan(0);
+    s.destroy();
+  });
+
+  it("loadMarkImage evicts a failed decode from the cache so a retry gets a fresh Image", async () => {
+    const svg = "<svg data-eviction-test/>";
+    class FakeImage {
+      static instances: FakeImage[] = [];
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      src = "";
+      constructor() { FakeImage.instances.push(this); }
+    }
+    vi.stubGlobal("Image", FakeImage as unknown as typeof Image);
+
+    const p1 = loadMarkImage(svg);
+    expect(FakeImage.instances.length).toBe(1);
+    FakeImage.instances[0].onerror?.();
+    await expect(p1).rejects.toThrow();
+
+    const p2 = loadMarkImage(svg);
+    expect(FakeImage.instances.length).toBe(2);   // eviction meant a fresh Image, not the rejected one
+    FakeImage.instances[1].onload?.();
+    await expect(p2).resolves.toBe(FakeImage.instances[1]);
   });
 });
