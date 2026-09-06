@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { fetchAuthUrl, fetchKeycloakAuthUrl, fetchProviders } from "../api";
 import { safeReturnPath } from "../return-path";
 import { Button } from "../components/ui/Button";
 import { BrandLockup } from "../components/BrandMark";
+import { useSwarm } from "../hooks/useSwarm";
 
 export default function Login() {
   const { login, token } = useAuth();
@@ -43,17 +44,29 @@ export default function Login() {
     }
   };
 
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const dark = document.documentElement.dataset.theme === "dark" ||
+    (!document.documentElement.dataset.theme && typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches);
+  // Below the two-column breakpoint the aside stacks above the form: centre the mark, drop the ambient field.
+  const narrow = typeof matchMedia === "function" && matchMedia("(max-width: 880px)").matches;
+  useSwarm(canvasRef, { ground: dark ? "dark" : "accent", markX: narrow ? 0.5 : 0.66, ambient: !narrow });
+
   return (
     <div className="login-shell">
-      <aside className="login-art">
-        <div className="login-art-brand">
-          <BrandLockup compact />
+      <aside className="login-art" data-ground={dark ? "dark" : "accent"}>
+        <canvas ref={canvasRef} className="login-art-canvas" aria-hidden="true" />
+        <div className="login-art-copy">
+          <div className="login-art-brand">
+            <BrandLockup compact />
+          </div>
+          <div>
+            <h1 className="login-art-title">Connect your agent's toolbelt.</h1>
+            <p className="login-art-sub">
+              One sign-in pairs your agent sessions to the tools you already use. Credentials stay encrypted on
+              your own instance.
+            </p>
+          </div>
         </div>
-        <h1 className="login-art-title">Connect your agent's toolbelt.</h1>
-        <p className="login-art-sub">
-          One sign-in pairs your agent sessions to the tools you already use. Credentials stay encrypted on
-          your own instance.
-        </p>
       </aside>
 
       <section className="login-form">

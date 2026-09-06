@@ -58,20 +58,30 @@ body {
   background: var(--surface);
 }
 .login-art {
+  position: relative;
+  overflow: hidden;
   border-right: 1px solid var(--border);
   padding: var(--s-40);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: var(--s-32);
-  background: var(--surface-2);
+  justify-content: flex-end;
+  /* The hero is the one saturated surface on the light theme; on dark it
+     matches the reference's near-black so the purples carry the colour. */
+  background: #4a1552;
+  color: #ffffff;
 }
+.login-art[data-ground="dark"] { background: #07090e; color: #e8eaed; }
+.login-art-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.login-art-copy { position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; gap: var(--s-32); min-height: 100%; }
+.login-art .brand-mark { color: currentColor; }
+.login-art .brand-name { color: currentColor; }
 .login-art-brand { display: flex; align-items: center; }
 
 .login-art-sub {
   font-size: 14px;
   line-height: 1.6;
-  color: var(--text-2);
+  color: currentColor;
+  opacity: .8;
   max-width: 42ch;
 }
 
@@ -79,7 +89,7 @@ body {
   font-family: var(--sans);
   font-size: 28px;
   font-weight: 700;
-  color: var(--text);
+  color: currentColor;
 }
 
 .login-form {
@@ -136,7 +146,7 @@ body {
 @media (max-width: 880px) {
   body { overflow-x: hidden; }
   .login-shell { grid-template-columns: 1fr; }
-  .login-art { display: none; }
+  .login-art { min-height: 46vh; border-right: 0; border-bottom: 1px solid var(--border); }
 }
 
 /* --- MCP API key panel --- */

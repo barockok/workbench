@@ -12,6 +12,11 @@ vi.mock("../api", () => ({
   fetchKeycloakAuthUrl: vi.fn(),
 }));
 
+vi.mock("@a-workbench/brand", async (orig) => ({
+  ...(await orig<typeof import("@a-workbench/brand")>()),
+  createSwarm: vi.fn(() => ({ destroy: vi.fn(), setGround: vi.fn(), replay: vi.fn(), state: vi.fn() })),
+}));
+
 // Block body, not an expression body — `tsc` rejects the value `vi.clearAllMocks()`
 // returns as a hook callback's return type.
 beforeEach(() => {
@@ -48,5 +53,19 @@ describe("Login", () => {
     expect(lockup).toBeInTheDocument();
     expect(lockup?.querySelector(".brand-mark svg")).not.toBeNull();
     expect(lockup?.querySelector(".brand-name")).toHaveTextContent("workbench");
+  });
+
+  it("hosts the swarm canvas behind the hero copy", async () => {
+    // vi.clearAllMocks() (above) clears call history but not an implementation
+    // installed via mockResolvedValue, so an earlier test's override of
+    // fetchProviders can otherwise leak in here regardless of run order.
+    const { fetchProviders } = await import("../api");
+    vi.mocked(fetchProviders).mockResolvedValue({ providers: ["google", "keycloak"] });
+    const { container } = render(<Login />);
+    await waitFor(() => screen.getByRole("button", { name: /Continue with Google/ }));
+    const aside = container.querySelector(".login-art")!;
+    expect(aside.querySelector("canvas.login-art-canvas")).not.toBeNull();
+    expect(aside.querySelector(".login-art-copy")).not.toBeNull();
+    expect(screen.getByText("Connect your agent's toolbelt.")).toBeInTheDocument();
   });
 });

@@ -17,6 +17,13 @@ vi.mock("./api", () => ({
   SERVER_URL: "",
 }));
 
+// jsdom has no 2D canvas context, so the login hero's real swarm cannot run
+// against a route table that lands unauthenticated visitors on /login.
+vi.mock("@a-workbench/brand", async (orig) => ({
+  ...(await orig<typeof import("@a-workbench/brand")>()),
+  createSwarm: vi.fn(() => ({ destroy: vi.fn(), setGround: vi.fn(), replay: vi.fn(), state: vi.fn() })),
+}));
+
 function renderAt(path: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
