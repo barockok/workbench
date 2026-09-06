@@ -2,7 +2,7 @@ import { mkdirSync, cpSync, copyFileSync, writeFileSync, readFileSync, existsSyn
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { collectInventory } from "./lib/inventory";
-import { renderPage, type ReplayStep } from "./lib/template";
+import { renderPage, fillReplay, type ReplayStep } from "./lib/template";
 
 const here = dirname(fileURLToPath(import.meta.url)), root = join(here, ".."), out = join(here, "_site");
 const brandDist = join(root, "packages", "brand", "dist");
@@ -23,7 +23,7 @@ const inventory = await collectInventory(root);
 if (inventory.totals.integrations === 0 || inventory.totals.tools === 0 || inventory.totals.metaTools === 0) throw new Error("site: a count is zero");
 const replay = JSON.parse(readFileSync(join(here, "data", "replay.json"), "utf8")) as ReplayStep[];
 const html = renderPage({
-  inventory, replay,
+  inventory, replay: fillReplay(replay, inventory.totals),
   docsUrl: process.env.SITE_DOCS_URL ?? "https://barockok.github.io/workbench/",
   repoUrl: "https://github.com/barockok/workbench",
   image: (process.env.URL ?? "") + "/og-1200x630.png",   // Netlify sets URL to the deploy's origin

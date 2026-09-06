@@ -2,6 +2,18 @@ import { markSvg, LOCKUP } from "@a-workbench/brand";
 import type { Inventory } from "./inventory";
 
 export interface ReplayStep { prompt?: string; call?: { tool: string; args: Record<string, unknown> }; result?: string }
+
+// The replay is authored copy, so any count in it would go stale the moment a
+// plugin lands. `{{tools}}` is filled from the same inventory the strip renders.
+export function fillReplay(replay: ReplayStep[], totals: Inventory["totals"]): ReplayStep[] {
+  const sub = (s: string) => s.replace(/\{\{tools\}\}/g, String(totals.tools));
+  return replay.map((step) => ({
+    ...step,
+    ...(step.prompt === undefined ? {} : { prompt: sub(step.prompt) }),
+    ...(step.result === undefined ? {} : { result: sub(step.result) }),
+  }));
+}
+
 export interface PageData { inventory: Inventory; replay: ReplayStep[]; docsUrl: string; repoUrl: string; image: string; shots: { apps: string; connect: string; result: string } }
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));

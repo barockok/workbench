@@ -1,7 +1,7 @@
 [
   { "prompt": "Move every ticket in this sprint that's blocked to next sprint and tell the channel." },
   { "call": { "tool": "search_tools", "args": { "query": "jira sprint issues" } } },
-  { "result": "jira_search_issues · jira_update_issue · jira_list_sprints (3 of 178)" },
+  { "result": "jira_search_issues · jira_update_issue · jira_list_sprints (3 of {{tools}})" },
   { "call": { "tool": "get_tool_schema", "args": { "name": "jira_search_issues" } } },
   { "result": "{ jql: string, fields?: string[], limit?: number }" },
   { "call": { "tool": "execute_tools", "args": { "calls": [

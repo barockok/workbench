@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { renderPage } from "./template";
+import { renderPage, fillReplay } from "./template";
 
 const data = {
   inventory: { integrations: [{ name: "github", displayName: "GitHub", description: "Code hosting", logoSvg: "<svg id='gh'></svg>", toolCount: 12 }], totals: { integrations: 1, tools: 12, metaTools: 9 } },
@@ -28,6 +28,10 @@ describe("renderPage", () => {
     expect(html).toContain('id="replay-data"');
     expect(html).toContain("search_tools");
     expect(html).toContain('src="shots/apps.png"');
+  });
+  it("fills a {{tools}} placeholder in the replay with the live count", () => {
+    const filled = fillReplay([{ result: "a · b · c (3 of {{tools}})" }], data.inventory.totals);
+    expect(renderPage({ ...data, replay: filled })).toContain("3 of 12");
   });
   it("has exactly five sections in layout B order", () => {
     const ids = [...html.matchAll(/<section[^>]*id="([a-z-]+)"/g)].map((m) => m[1]);
