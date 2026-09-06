@@ -15,7 +15,7 @@
 - Node `>=22`; CI matrix is Node 22 and 26. No new runtime dependencies in `packages/brand` (devDependencies only).
 - Mark geometry, verbatim: viewBox 32; wire `M5 8 L10 24 L16 12 L22 24 L27 8` at stroke 4.2; nodes at stroke 1.8 — circle (5,8) r3 · square x24 y5 6×6 rx0.9 · triangle `10,20.4 13.3,26.8 6.7,26.8` · diamond `22,20.2 25.8,24 22,27.8 18.2,24`; hub circle (16,12) r3.7 filled; caps and joins `round`.
 - Colours: accent `#853291` (light) / `#c98ad2` (dark). Hero palettes: dark `['#ffffff','#f3dcff','#e5b8ef','#c98ad2','#ff8de6','#a45bb0','#853291','#ffb340']`, accent `['#ffffff','#fbeaff','#f0c9f8','#e5b8ef','#ffa3ec','#d49be0','#c98ad2','#ffc36b']`. Index 0–1 rim, 2–6 body, 7 amber.
-- Swarm timings: `ENTER_MS 4200`, `STAGGER_MS 900`, `LANES 12`, `FADE 70`, pose blend 1200 ms, push radius 100 / 24 px eased 0.14, gap 3.4 (rim 0.62×), rim test 2.5 px, slab thickness 6 %, camera 2.2 × min(W,H), DPR cap 2.
+- Swarm timings: `ENTER_MS 4200`, `STAGGER_MS 900`, `LANES 12`, `FADE 70`, pose blend 1200 ms, push radius 100 / 24 px eased 0.14, gap 3.4 (rim 0.62×), rim test 2.5 px, slab thickness 24 %, camera 1.5 × min(W,H), yaw ±1.0 rad, pitch ±0.65 rad, pointer ease 0.09, DPR cap 2.
 - The repo is public. Fixtures use only synthetic values (`acme`, `Test User`, `dev@example.com`, `tok-abc`). Before every commit run: `git diff --cached | grep -inIE '@(icloud|gmail)\.com' ; git diff --cached | grep -iE 'co-authored-by|generated with'` — both must print nothing.
 - No `Co-Authored-By` or "Generated with" trailers. Commits are authored by the human's git identity.
 - Never use bare `git stash`; the stash stack is shared across worktrees.

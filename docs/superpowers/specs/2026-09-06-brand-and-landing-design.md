@@ -101,12 +101,16 @@ Pointer listeners attach to the canvas's parent; the canvas itself has
   A point is *rim* if any of its four 2.5 px neighbours is outside the mask.
   Each point takes the shape of its nearest node when within 20 units², else
   a random one of the four. Particles are stroked, never filled.
-- **Rigid slab.** Every target has `(tx, ty, tz)`, `tz` random within 6 % of
-  the mark size. The whole cloud yaws (±0.42 rad × pointer x) and pitches
-  (±0.30 rad × pointer y) with the eased pointer, plus a slow idle pose, and
-  projects through a camera at 2.2 × min(W,H). A coherent position-phased
-  ripple (0.9 px) replaces any per-particle drift. Local push: radius 100,
-  24 px, eased 0.14, returns.
+- **Rigid slab.** Every target has `(tx, ty, tz)`, `tz` random within 24 % of
+  the mark size, read as a thick 3D object. The whole cloud yaws (±1.0 rad ×
+  pointer x) and pitches (±0.65 rad × pointer y) with the eased pointer
+  (0.09), plus a slow idle pose, and projects through a camera at
+  1.5 × min(W,H). A coherent position-phased ripple (0.9 px) replaces any
+  per-particle drift. Local push: radius 100, 24 px, eased 0.14, returns.
+  Depth shading: each mark particle's projected scale (near → larger) maps to
+  a 0.75–1.35× size multiplier and a 0.55–1.0× alpha multiplier (far to near,
+  clamped ≤1), on top of the existing rim/body alpha — near dots read larger
+  and brighter than far ones, drawn far-to-near.
 - **Entrance (Eliza).** 12 lanes, 4200 ms, 900 ms stagger. Particles start on a
   ring 0.55–1.05 × max(W,H) out with a random z, and each lane makes one full
   orbit (yaw 2π, tilt 0.24, roll ±0.28, perspective clamped 0.68–1.55) while

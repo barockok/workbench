@@ -24,7 +24,7 @@ export interface Swarm {
   state(): { ready: boolean; done: boolean; poseMix: number; count: number; targets: SwarmTarget[]; particles: SwarmTarget[] };
 }
 
-const FADE = 70, PUSH_R = 100, PUSH_PX = 24, POSE_MS = 1200, GAP = 3.4, THICK = 0.06, CAM = 2.2;
+const FADE = 70, PUSH_R = 100, PUSH_PX = 24, POSE_MS = 1200, GAP = 3.4, THICK = 0.24, CAM = 1.5;
 
 // Default rasterizer: draw the mark SVG through an <img> onto an offscreen canvas.
 // The SVG text (and thus the decoded image) is the same for every build and
@@ -95,7 +95,7 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
     // can put the mark's centre close enough to an edge that the unclamped
     // size overruns the canvas.
     const cx = W * markX, cy = H * markY;
-    const size = Math.round(Math.min(Math.min(W, H) * markFrac, 2 * Math.min(cx, W - cx) * 0.92, 2 * Math.min(cy, H - cy) * 0.92));
+    const size = Math.round(Math.min(Math.min(W, H) * markFrac, 2 * Math.min(cx, W - cx) * 0.84, 2 * Math.min(cy, H - cy) * 0.84));
     if (size <= 0) { ready = false; parts = []; big = []; tiny = []; return; }
     seed = ((W * 73856093) ^ (H * 19349663)) >>> 0;
     let mask: Mask;
@@ -146,12 +146,12 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
   function step(t: number) {
     if (!born) born = t;                        // clock starts on the first painted frame
     const el = t - born, ts = t / 1000, cx = W * markX, cy = H * markY, cam = Math.min(W, H) * CAM;
-    ease.x += (pointer.nx - ease.x) * 0.06; ease.y += (pointer.ny - ease.y) * 0.06;
+    ease.x += (pointer.nx - ease.x) * 0.09; ease.y += (pointer.ny - ease.y) * 0.09;
     if (!done && entranceDone(el)) { done = true; doneAt = t; }
     poseMix = reduced ? 1 : done ? Math.min(1, (t - doneAt) / POSE_MS) : 0;
     const pm = smootherstep(poseMix);
-    const yaw = ((reduced ? 0 : Math.sin(ts * 0.25) * 0.10) + ease.x * 0.42) * pm;
-    const pitch = ((reduced ? 0 : Math.cos(ts * 0.19) * 0.06) - ease.y * 0.30) * pm;
+    const yaw = ((reduced ? 0 : Math.sin(ts * 0.25) * 0.10) + ease.x * 1.0) * pm;
+    const pitch = ((reduced ? 0 : Math.cos(ts * 0.19) * 0.06) - ease.y * 0.65) * pm;
     const breathe = reduced ? 1 : 1 + Math.sin(ts * 0.4) * 0.02;
     const lanes = Array.from({ length: LANES }, (_, l) => laneState(l, el));
     for (const p of parts) {
@@ -201,10 +201,16 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
     for (const a of tiny) { const par = (0.6 + a.z * 0.4) * 30; drawOne(a.px - ease.x * par + Math.sin(ts * 0.3 + a.wob) * 3, a.py - ease.y * par + Math.cos(ts * 0.25 + a.wob) * 3, a, a.size, 0.25 + (a.z + 1) * 0.2, 1, 0); }
     for (const a of big) { const par = (0.7 + a.z * 0.5) * 48; drawOne(a.px - ease.x * par + Math.sin(ts * 0.22 + a.wob) * 6, a.py - ease.y * par + Math.cos(ts * 0.18 + a.wob) * 6, a, a.size, 0.28 + (a.z + 1) * 0.22, 1.4, 14); }
     const arrive = done ? 1 : Math.min(1, (t - born) / ENTER_MS), arrivalScale = 0.64 + settle(arrive) * 0.36;   // dots grow into place; no alpha ramp
-    const order = parts.slice().sort((a, b) => a.k - b.k);
+    const order = parts.slice().sort((a, b) => a.k - b.k);   // far to near
+    // Slab depth shading: normalise this frame's k range (far..near) to 0..1
+    // so the thicker slab reads as a solid object — near dots bigger/brighter.
+    const kMin = order.length ? order[0].k : 0, kMax = order.length ? order[order.length - 1].k : 0, kSpan = kMax - kMin || 1;
     for (const p of order) {
+      const depth = (p.k - kMin) / kSpan;
+      const depthSize = 0.75 + depth * 0.6, depthAlpha = 0.55 + depth * 0.45;
       const fade = done && !reduced ? Math.min(1, Math.min(p.age, p.life) / FADE) : 1;
-      drawOne(p.x, p.y, p, p.size * arrivalScale * p.k, (p.rim ? 0.95 : 0.6) * fade, p.rim ? 1.3 : 1, 0);
+      const alpha = Math.min(1, (p.rim ? 0.95 : 0.6) * fade * depthAlpha);
+      drawOne(p.x, p.y, p, p.size * arrivalScale * p.k * depthSize, alpha, p.rim ? 1.3 : 1, 0);
     }
     ctx.globalAlpha = 1;
   }

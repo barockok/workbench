@@ -63,7 +63,12 @@ describe("createSwarm", () => {
     const alphas: number[] = [];
     (ctx.ctx.stroke as ReturnType<typeof vi.fn>).mockImplementation(() => alphas.push(ctx.ctx.globalAlpha as number));
     tick(16); tick(ENTER_MS); alphas.length = 0; tick(16);
-    expect(Math.min(...alphas)).toBeGreaterThanOrEqual(0.6);   // body 0.6, rim 0.95 — nothing faded
+    // Depth shading (thicker slab) scales body/rim alpha by 0.55–1.0 across the
+    // slab's far-to-near span on top of the base 0.6/0.95 — so the floor is the
+    // farthest body dot (0.6 × 0.55), not the base body alpha. Still >0, so
+    // nothing is additionally faded out by age/life on this hand-off frame.
+    expect(Math.min(...alphas)).toBeGreaterThanOrEqual(0.6 * 0.55);
+    expect(Math.min(...alphas)).toBeLessThanOrEqual(0.6);
     s.destroy();
   });
 
