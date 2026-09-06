@@ -24,7 +24,7 @@ export interface Swarm {
   state(): { ready: boolean; done: boolean; poseMix: number; count: number; targets: SwarmTarget[]; particles: SwarmTarget[] };
 }
 
-const FADE = 70, PUSH_R = 100, PUSH_PX = 24, POSE_MS = 1200, GAP = 3.4, THICK = 0.24, CAM = 1.5;
+const FADE = 70, PUSH_R = 100, PUSH_PX = 24, POSE_MS = 1200, GAP = 3.4, THICK = 0.16, CAM = 1.7;
 
 // Default rasterizer: draw the mark SVG through an <img> onto an offscreen canvas.
 // The SVG text (and thus the decoded image) is the same for every build and
@@ -113,7 +113,11 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
     let pts: SamplePoint[] = sampleMask(mask, { gap: GAP, rnd, nodeCentres: MARK.nodeCentres });
     if (coarse) pts = pts.filter((_, i) => i % 2 === 0);
     const thick = size * THICK, reach = Math.max(W, H);
-    targets = pts.map((p) => ({ tx: p.mx - size / 2, ty: p.my - size / 2, tz: (rnd() - 0.5) * thick, rim: p.rim, shape: p.shape }));
+    // Rim points draw tz from the full slab range (they form the side walls,
+    // so the silhouette edges carry the depth); body points draw from a
+    // shallower quarter range (a denser core), so the face stays solid while
+    // the outline reads as a thick object.
+    targets = pts.map((p) => ({ tx: p.mx - size / 2, ty: p.my - size / 2, tz: (rnd() - 0.5) * (p.rim ? thick : thick / 2), rim: p.rim, shape: p.shape }));
     parts = targets.map((t) => {
       const a = rnd() * Math.PI * 2, r = reach * (0.55 + rnd() * 0.5);
       return { ...t, sx: Math.cos(a) * r, sy: Math.sin(a) * r, sz: Math.min(W, H) * (0.35 + rnd() * 0.55) * (rnd() < 0.5 ? -1 : 1),
@@ -150,8 +154,8 @@ export function createSwarm(canvas: HTMLCanvasElement, opts: SwarmOptions = {}):
     if (!done && entranceDone(el)) { done = true; doneAt = t; }
     poseMix = reduced ? 1 : done ? Math.min(1, (t - doneAt) / POSE_MS) : 0;
     const pm = smootherstep(poseMix);
-    const yaw = ((reduced ? 0 : Math.sin(ts * 0.25) * 0.10) + ease.x * 1.0) * pm;
-    const pitch = ((reduced ? 0 : Math.cos(ts * 0.19) * 0.06) - ease.y * 0.65) * pm;
+    const yaw = ((reduced ? 0 : Math.sin(ts * 0.25) * 0.10) + ease.x * 0.6) * pm;
+    const pitch = ((reduced ? 0 : Math.cos(ts * 0.19) * 0.06) - ease.y * 0.4) * pm;
     const breathe = reduced ? 1 : 1 + Math.sin(ts * 0.4) * 0.02;
     const lanes = Array.from({ length: LANES }, (_, l) => laneState(l, el));
     for (const p of parts) {
