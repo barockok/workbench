@@ -20,6 +20,9 @@ RUN npm ci
 # stage can copy it unconditionally.
 RUN mkdir -p /app/packages/server/node_modules
 COPY . .
+# No Chromium in this stage to render the brand PNGs; skip that step and let
+# the portal build fall back to the committed copies under docs/assets/brand.
+ENV BRAND_SKIP_PNG=1
 RUN npm run build
 
 FROM node:26-bookworm-slim
