@@ -1,0 +1,260 @@
+<!-- Approved hero prototype (v8), 2026-09-06. Standalone: works as a fragment inside the brainstorming companion frame; to view alone wrap in an HTML skeleton. Companion-only bits: toggleSelect(), .option/.hs-tab classes. -->
+<h2>Login hero v8 — no blip at hand-off</h2>
+<p class="subtitle">v5 dissolved because every particle drifted and parallaxed on its own. v6 treats the mark as one rigid slab of particles in 3D: the whole cloud yaws and pitches with the mouse and projects through a camera, so it <em>turns</em> instead of smearing. Entrance is Eliza's: twelve staggered lanes, each a full orbit through the camera onto the mark, no alpha ramp. Dots still fade out and reseed onto fixed target points, so the shape never degrades. Also: every particle is an <em>outlined</em> shape, the mark's silhouette is denser and brighter than its interior (rim), and the empty space carries ~30 large slow outlined shapes with glow plus a scatter of tiny ones — over the copy too. Mouse: parallax on everything, push on the mark, big ambient shapes lean the most. Reload to replay.</p>
+
+<style>
+  .hs-tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .hs-tab { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px; background: var(--bg-secondary); }
+  .hs-tab.on { border-color: var(--selected-border); background: var(--selected-bg); }
+  .hs-stage { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 16 / 9; max-height: 620px; }
+  .hs-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hs-copy { position: absolute; left: 6%; bottom: 10%; max-width: 44%; pointer-events: none; font-family: Inter, -apple-system, system-ui, sans-serif; }
+  .hs-copy .lock { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; letter-spacing: -.01em; margin-bottom: 26px; }
+  .hs-copy h1 { font-size: clamp(24px, 3.4vw, 44px); font-weight: 800; letter-spacing: -.03em; line-height: 1.02; margin: 0 0 12px; }
+  .hs-copy p { font-size: 14px; line-height: 1.5; margin: 0; opacity: .8; }
+  .hs-stage[data-ground="dark"]   { background: #07090e; color: #e8eaed; }
+  .hs-stage[data-ground="accent"] { background: #4a1552; color: #fff; }
+  .hs-note { font-size: 12.5px; color: var(--text-secondary); margin-top: 10px; }
+  .hs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+</style>
+
+<div class="hs-tabs">
+  <div class="hs-tab on" data-choice="ground-dark"   onclick="setGround('dark', this)">Ground · near-black (Dala)</div>
+  <div class="hs-tab"    data-choice="ground-accent" onclick="setGround('accent', this)">Ground · deep accent</div>
+</div>
+
+<div class="hs-stage" id="stage" data-ground="dark">
+  <canvas id="swarm"></canvas>
+  <div class="hs-copy">
+    <div class="lock"><svg width="22" height="22" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8 L10 24 L16 12 L22 24 L27 8" stroke-width="4.2"/><circle cx="16" cy="12" r="3.7" fill="currentColor" stroke="none"/></svg>workbench</div>
+    <h1>Connect your agent's toolbelt.</h1>
+    <p>One sign-in pairs your agent sessions to the tools you already use. Credentials stay encrypted on your own instance.</p>
+  </div>
+</div>
+<p class="hs-note">Palette is the purple spread you ticked — magenta to near-white lavender — with the rim in the two lightest steps so the silhouette glows the way Dala's gold edge does.</p>
+
+<div class="options hs-grid" data-multiselect>
+  <div class="option" data-choice="v8-no-blip" onclick="toggleSelect(this)"><div class="letter">1</div><div class="content"><h3>Hand-off clean?</h3><p>Tick if the mark no longer blinks when the entrance finishes.</p></div></div>
+  <div class="option" data-choice="ambient-ok-now" onclick="toggleSelect(this)"><div class="letter">2</div><div class="content"><h3>Ambient: right now?</h3><p>~40% more big shapes, 45% larger max size, 40% more tiny ones. Tick if this is the amount.</p></div></div>
+  <div class="option" data-choice="amber-ok" onclick="toggleSelect(this)"><div class="letter">3</div><div class="content"><h3>Amber: keep?</h3><p>One amber step: about one body dot in six, one big ambient shape in three. Tick to keep; say "less" or "more" otherwise.</p></div></div>
+  <div class="option" data-choice="mark-larger" onclick="toggleSelect(this)"><div class="letter">4</div><div class="content"><h3>Mark larger</h3><p>Dala's brain fills ~70% of the viewport height. Tick to push the mark from 80% to 95%.</p></div></div>
+</div>
+
+<script>
+(() => {
+  const MARK = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='#fff' stroke-linecap='round' stroke-linejoin='round'>
+    <path d='M5 8 L10 24 L16 12 L22 24 L27 8' stroke-width='4.2'/>
+    <g stroke-width='1.8' fill='#000'>
+      <circle cx='5' cy='8' r='3'/><rect x='24' y='5' width='6' height='6' rx='.9'/>
+      <path d='M10 20.4 L13.3 26.8 L6.7 26.8 Z'/><path d='M22 20.2 L25.8 24 L22 27.8 L18.2 24 Z'/>
+    </g>
+    <circle cx='16' cy='12' r='3.7' fill='#fff' stroke='none'/>
+  </svg>`;
+  // index 0-1 = rim (lightest), 2-7 = body spread
+  const PALETTES = {
+    dark:   ['#ffffff', '#f3dcff', '#e5b8ef', '#c98ad2', '#ff8de6', '#a45bb0', '#853291', '#ffb340'],
+    accent: ['#ffffff', '#fbeaff', '#f0c9f8', '#e5b8ef', '#ffa3ec', '#d49be0', '#c98ad2', '#ffc36b'],
+  };
+  const stage = document.getElementById('stage'), canvas = document.getElementById('swarm'), ctx = canvas.getContext('2d');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let ground = 'dark';
+  let W = 0, H = 0, dpr = 1, parts = [], big = [], tiny = [], born = 0, raf = 0;
+  const pointer = { x: -1e4, y: -1e4, nx: 0, ny: 0 }, ease = { x: 0, y: 0 };
+  let seed = 11; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const quintic = x => x < .5 ? 16*x*x*x*x*x : 1 - Math.pow(-2*x + 2, 5) / 2;
+  const MARK_FRAC = 0.86, MARK_CX = 0.66;
+
+  window.setGround = (g, el) => { ground = g; stage.dataset.ground = g; recolor(); document.querySelectorAll('.hs-tab').forEach(t => t.classList.toggle('on', t === el)); };
+
+  const img = new Image(); img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(MARK);
+  function resize() { dpr = Math.min(devicePixelRatio || 1, 2); W = canvas.clientWidth; H = canvas.clientHeight; canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+
+  function sample() {
+    seed = (W * 73856093 ^ H * 19349663) >>> 0;
+    const size = Math.round(Math.min(W, H) * MARK_FRAC), gap = 3.4;
+    const off = document.createElement('canvas'); off.width = off.height = size;
+    const o = off.getContext('2d', { willReadFrequently: true }); o.drawImage(img, 0, 0, size, size);
+    const d = o.getImageData(0, 0, size, size).data;
+    const inside = (x, y) => x >= 0 && y >= 0 && x < size && y < size && d[((y|0) * size + (x|0)) * 4 + 3] > 128 && d[((y|0) * size + (x|0)) * 4] > 128;
+    const cell = gap / Math.SQRT2, cols = Math.ceil(size / cell), grid = new Int32Array(cols * cols).fill(-1), pts = [];
+    const nodes = [[5,8],[27,8],[10,24],[22,24],[16,12]];
+    for (let i = 0, tries = size * size; i < tries; i++) {
+      const x = rnd() * size, y = rnd() * size;
+      if (!inside(x, y)) continue;
+      // rim: within ~2.5px of the silhouette edge. Denser and brighter, like Dala's gold edge.
+      const rim = !(inside(x-2.5, y) && inside(x+2.5, y) && inside(x, y-2.5) && inside(x, y+2.5));
+      const g2 = rim ? gap * 0.62 : gap;
+      const gx = (x / cell) | 0, gy = (y / cell) | 0; let ok = true;
+      for (let yy = Math.max(0, gy-2); yy <= Math.min(cols-1, gy+2) && ok; yy++) for (let xx = Math.max(0, gx-2); xx <= Math.min(cols-1, gx+2); xx++) {
+        const j = grid[yy * cols + xx]; if (j < 0) continue;
+        const p = pts[j], dx = p.mx - x, dy = p.my - y; if (dx*dx + dy*dy < g2*g2) { ok = false; break; }
+      }
+      if (!ok) continue;
+      const ux = x / size * 32, uy = y / size * 32; let g = 4, bd = 1e9;
+      nodes.forEach(([nx, ny], j) => { const dd = (ux-nx)**2 + (uy-ny)**2; if (dd < bd) { bd = dd; g = j; } });
+      const shape = bd < 20 && g < 4 ? g : (rnd() * 4) | 0;
+      if (grid[gy * cols + gx] < 0) grid[gy * cols + gx] = pts.length;
+      pts.push({ mx: x, my: y, rim, shape });
+    }
+    return pts;
+  }
+  function recolor() {
+    const pal = PALETTES[ground];
+    for (const p of parts) p.color = p.rim ? pal[p.ci % 2] : pal[2 + (p.ci % 6)];
+    for (const p of big) p.color = p.ci % 3 === 0 ? pal[7] : pal[2 + (p.ci % 5)];
+    for (const p of tiny) p.color = pal[p.ci % 8];
+  }
+  let init = function () {
+    if (!img.complete || !W) return;
+    const cx = W * MARK_CX, cy = H / 2, R = Math.min(W, H) * 0.43;
+    parts = sample().map(t => {
+      const z = rnd() * 2 - 1;
+      const a = Math.atan2(t.my - Math.min(W,H)*MARK_FRAC/2, t.mx - Math.min(W,H)*MARK_FRAC/2) + (rnd() - .5) * 1.4, r = R * (2.4 + rnd() * 1.8);
+      const sx = cx + Math.cos(a) * r, sy = cy + Math.sin(a) * r;
+      return { ...t, z, x: sx, y: sy, sx, sy, vx: 0, vy: 0, ci: (rnd() * 8) | 0,
+        size: (t.rim ? 3.2 : 2.8) + rnd() * 2.6, delay: rnd(),
+        ax: rnd() * 6.28, ay: rnd() * 6.28, spin: (0.25 + rnd() * 0.6) * (rnd() < .5 ? -1 : 1), wob: rnd() * 6.28,
+        life: rnd() * 220 + 140, age: 0, ent: 0 };
+    });
+    const mk = () => ({ x: rnd() * W, y: rnd() * H, z: rnd() * 2 - 1, shape: (rnd() * 4) | 0, ci: (rnd() * 8) | 0,
+      dx: (rnd() - .5) * 0.3, dy: -(0.06 + rnd() * 0.2), ax: rnd() * 6.28, ay: rnd() * 6.28,
+      spin: (0.1 + rnd() * 0.35) * (rnd() < .5 ? -1 : 1), wob: rnd() * 6.28, delay: rnd(), ent: 0 });
+    big  = Array.from({ length: Math.round(W / 32) }, () => ({ ...mk(), size: 22 + rnd() * rnd() * 84 }));
+    tiny = Array.from({ length: Math.round((W * H) / 6500) }, () => ({ ...mk(), size: 2.5 + rnd() * 4 }));
+    recolor(); born = 0;
+  };
+  img.onload = () => { resize(); init(); start(); };
+  addEventListener('resize', () => { resize(); init(); });
+  stage.addEventListener('pointermove', e => { const r = canvas.getBoundingClientRect(); pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top; pointer.nx = (pointer.x / W) * 2 - 1; pointer.ny = (pointer.y / H) * 2 - 1; }, { passive: true });
+  stage.addEventListener('pointerleave', () => { pointer.x = pointer.y = -1e4; pointer.nx = pointer.ny = 0; });
+
+  // ---- rigid 3D mark + Eliza lane entrance ----
+  const ENTER_MS = 4200, STAGGER_MS = 900, LANES = 12, FADE = 70;
+  const ss = p => p*p*p*(p*(p*6-15)+10);
+  const settle = p => { const q = ss(p), i = 1 - q; return 1 - i*i; };
+  const laneA = new Float32Array(LANES), laneT = new Float32Array(LANES), laneR = new Float32Array(LANES), laneE = new Float32Array(LANES);
+  let targets = [], done = reduced, doneAt = 0;
+  // rebuild: give every particle a fixed target (tx,ty,tz) in mark-centred space, and a ring start
+  function rig() {
+    const msize = Math.round(Math.min(W, H) * MARK_FRAC), thick = msize * 0.06;
+    targets = parts.map(p => ({ tx: p.mx - msize / 2, ty: p.my - msize / 2, tz: (rnd() - .5) * thick, rim: p.rim, shape: p.shape }));
+    const reach = Math.max(W, H);
+    parts.forEach((p, i) => {
+      const t = targets[i]; p.ti = i; p.tx = t.tx; p.ty = t.ty; p.tz = t.tz;
+      const a = rnd() * 6.283, r = reach * (0.55 + rnd() * 0.5);
+      p.sx = Math.cos(a) * r; p.sy = Math.sin(a) * r; p.sz = Math.min(W, H) * (0.35 + rnd() * 0.55) * (rnd() < .5 ? -1 : 1);
+      p.lane = (rnd() * LANES) | 0; p.ox = p.oy = 0; p.age = FADE; p.life = FADE + rnd() * 240 + 60;
+    });
+    for (const a of big.concat(tiny)) { const ang = rnd() * 6.283, r = reach * (0.6 + rnd() * 0.5); a.sx = W/2 + Math.cos(ang) * r; a.sy = H/2 + Math.sin(ang) * r; a.lane = (rnd() * LANES) | 0; }
+  }
+  const _init = init; init = function () { _init(); rig(); done = reduced; };
+  function project(x, y, z, yaw, pitch, cam) {
+    // rigid rotation about the mark centre, then perspective
+    const cy_ = Math.cos(yaw), sy_ = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const X = x * cy_ + z * sy_, Z1 = -x * sy_ + z * cy_;
+    const Y = y * cp - Z1 * sp, Z = y * sp + Z1 * cp;
+    const k = cam / (cam + Z);
+    return [X * k, Y * k, k, Z];
+  }
+  function step(now) {
+    if (!born) born = now;
+    const t = now / 1000, cx = W * MARK_CX, cy = H / 2, cam = Math.min(W, H) * 2.2;
+    ease.x += (pointer.nx - ease.x) * 0.06; ease.y += (pointer.ny - ease.y) * 0.06;
+    if (!done) {
+      let forming = false;
+      for (let l = 0; l < LANES; l++) {
+        const delay = l / (LANES - 1) * STAGGER_MS;
+        const p = Math.min(1, Math.max(0, (now - born - delay) / (ENTER_MS - delay)));
+        const spin = ss(p);
+        laneA[l] = spin * 6.283; laneT[l] = Math.sin(spin * Math.PI) * 0.24; laneR[l] = Math.sin(spin * Math.PI) * 0.28 * (l % 2 ? -1 : 1); laneE[l] = settle(p);
+        if (p < 1) forming = true;
+      }
+      if (!forming) { done = true; doneAt = now; }
+    }
+    const poseMix = reduced ? 1 : Math.min(1, (now - doneAt) / 1200);
+    // idle pose: slow drift plus mouse — the whole slab turns as one object
+    const yaw = ((reduced ? 0 : Math.sin(t * 0.25) * 0.10) + ease.x * 0.42) * ss(poseMix);
+    const pitch = ((reduced ? 0 : Math.cos(t * 0.19) * 0.06) - ease.y * 0.30) * ss(poseMix);
+    const breathe = reduced ? 1 : 1 + Math.sin(t * 0.4) * 0.02;
+    for (const p of parts) {
+      let px, py, k;
+      if (!done) {
+        const e = laneE[p.lane];
+        // Eliza: blend start→target while the lane orbits through the camera
+        const rx = p.sx + (p.tx * breathe - p.sx) * e, ry = p.sy + (p.ty * breathe - p.sy) * e, rz = p.sz + (p.tz - p.sz) * e;
+        const ca = Math.cos(laneA[p.lane]), sa = Math.sin(laneA[p.lane]);
+        const X = rx * ca + rz * sa, Z1 = -rx * sa + rz * ca;
+        const ct = Math.cos(laneT[p.lane]), st = Math.sin(laneT[p.lane]);
+        const Y = ry * ct - Z1 * st, depth = ry * st + Z1 * ct;
+        const cr = Math.cos(laneR[p.lane]), sr = Math.sin(laneR[p.lane]);
+        const cxr = X * cr - Y * sr, cyr = X * sr + Y * cr;
+        k = Math.min(1.55, Math.max(0.68, cam / (cam + depth)));
+        px = cx + cxr * k; py = cy + cyr * k;
+        p.ent = e;
+      } else {
+        [px, py, k] = project(p.tx * breathe, p.ty * breathe, p.tz, yaw, pitch, cam);
+        px += cx; py += cy; p.ent = 1;
+        // coherent surface ripple: phase from position, not per-particle random — keeps the shape
+        const w = Math.sin(t * 1.1 + p.tx * 0.02 + p.ty * 0.015) * 0.9 * poseMix;
+        px += w; py += w * 0.6;
+        p.age++;
+        if (--p.life <= 0) { const n = targets[(Math.random() * targets.length) | 0]; p.tx = n.tx; p.ty = n.ty; p.tz = n.tz; p.rim = n.rim; p.shape = n.shape; recolorOne(p); p.ox = p.oy = 0; p.life = Math.random() * 150 + 90 + FADE * 2; p.age = 0; }
+      }
+      // local push (temporary, returns) — the only per-particle displacement
+      const dx = pointer.x - px, dy = pointer.y - py, d2 = dx*dx + dy*dy, Rp = 100; let fx = 0, fy = 0;
+      if (d2 < Rp*Rp && d2 > 1) { const d = Math.sqrt(d2), f = (Rp - d) / Rp; fx = -(dx / d) * f * 24; fy = -(dy / d) * f * 24; }
+      p.ox += (fx - p.ox) * 0.14; p.oy += (fy - p.oy) * 0.14;
+      p.x = px + p.ox; p.y = py + p.oy; p.k = k;
+      p.ax += p.spin * 0.02; p.ay += p.spin * 0.016;
+    }
+    for (const a of big.concat(tiny)) {
+      // ambient rides the same lanes in from the ring, then drifts
+      const e = done ? 1 : laneE[a.lane];
+      a.ent = e;
+      if (done) { a.x += a.dx; a.y += a.dy; if (a.y < -80) { a.y = H + 80; a.x = rnd() * W; } else if (a.x < -80) a.x = W + 80; else if (a.x > W + 80) a.x = -80; }
+      a.px = a.sx + (a.x - a.sx) * e; a.py = a.sy + (a.y - a.sy) * e;
+      a.ax += a.spin * 0.01; a.ay += a.spin * 0.008;
+    }
+  }
+  function recolorOne(p) { const pal = PALETTES[ground]; p.color = p.rim ? pal[p.ci % 2] : pal[2 + (p.ci % 6)]; }
+  function path(shape, s) {
+    ctx.beginPath();
+    switch (shape) {
+      case 0: ctx.arc(0, 0, s * 0.5, 0, 6.283); break;
+      case 1: ctx.rect(-s/2, -s/2, s, s); break;
+      case 2: ctx.moveTo(0, -s*0.58); ctx.lineTo(s*0.55, s*0.38); ctx.lineTo(-s*0.55, s*0.38); ctx.closePath(); break;
+      default: ctx.moveTo(0, -s*0.62); ctx.lineTo(s*0.62, 0); ctx.lineTo(0, s*0.62); ctx.lineTo(-s*0.62, 0); ctx.closePath();
+    }
+  }
+  function drawOne(x, y, p, s, alpha, lw, glow) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(p.ax); ctx.scale(Math.max(0.1, Math.abs(Math.cos(p.ay))), 1);
+    ctx.globalAlpha = alpha; ctx.strokeStyle = p.color; ctx.lineWidth = lw;
+    if (glow) { ctx.shadowColor = p.color; ctx.shadowBlur = glow; }
+    path(p.shape, s); ctx.stroke(); ctx.restore();
+  }
+  function draw(now) {
+    ctx.clearRect(0, 0, W, H);
+    const t = now / 1000;
+    for (const a of tiny) {
+      const par = (0.6 + a.z * 0.4) * 30;
+      drawOne(a.px - ease.x * par + Math.sin(t * 0.3 + a.wob) * 3, a.py - ease.y * par + Math.cos(t * 0.25 + a.wob) * 3, a, a.size, (0.25 + (a.z + 1) * 0.2), 1, 0);
+    }
+    for (const a of big) {
+      const par = (0.7 + a.z * 0.5) * 48;
+      drawOne(a.px - ease.x * par + Math.sin(t * 0.22 + a.wob) * 6, a.py - ease.y * par + Math.cos(t * 0.18 + a.wob) * 6, a, a.size, (0.28 + (a.z + 1) * 0.22), 1.4, 14);
+    }
+    // arrival scale like Eliza: dots grow into place; no alpha ramp
+    const arrive = done ? 1 : Math.min(1, (now - born) / ENTER_MS), arrivalScale = 0.64 + settle(arrive) * 0.36;
+    const order = parts.slice().sort((a, b) => a.k - b.k);
+    for (const p of order) {
+      const fade = done && !reduced ? Math.min(1, Math.min(p.age, p.life) / FADE) : 1; // age starts at FADE, so this is 1 at hand-off
+      const alpha = (p.rim ? 0.95 : 0.6) * fade;
+      drawOne(p.x, p.y, p, p.size * arrivalScale * (p.k || 1), alpha, p.rim ? 1.3 : 1, 0);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function loop(now) { step(now); draw(now); raf = document.hidden ? 0 : requestAnimationFrame(loop); }
+  function start() { if (!raf && !document.hidden) raf = requestAnimationFrame(loop); if (reduced) { step(performance.now()); draw(performance.now()); } }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else start(); });
+})();
+</script>
